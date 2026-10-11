@@ -138,13 +138,18 @@ function stableId(href: string, team: string): number {
   return (h % 2000000) + 100000
 }
 
+// Minimum total games a player must have played for a team to be included.
+// Filters out true cup-of-coffee stints (1-9 games) while keeping all
+// meaningful contributors — benchwarmers, backups, short-term players, etc.
+const MIN_GAMES_PER_TEAM = 10
+
 async function main() {
   console.log('EBK Player Scraper — Basketball Reference')
-  console.log('Scraping NBA seasons 1950–2024 (team-split mode)...\n')
+  console.log('Scraping NBA seasons 1950–2025 (team-split mode)...\n')
 
   const allSeasons: PlayerTeamSeason[] = []
 
-  for (let year = 1950; year <= 2024; year++) {
+  for (let year = 1950; year <= 2025; year++) {
     process.stdout.write(`Fetching ${year - 1}-${year}... `)
     const seasons = await fetchSeasonPage(year)
     allSeasons.push(...seasons)
@@ -191,8 +196,8 @@ async function main() {
     entry.name     = ps.name  // keep most recent spelling
   }
 
-  const all = Array.from(careerMap.values())
-  console.log(`Unique player-team entries: ${all.length}`)
+  const all = Array.from(careerMap.values()).filter(p => p.totalGames >= MIN_GAMES_PER_TEAM)
+  console.log(`Unique player-team entries (≥${MIN_GAMES_PER_TEAM} games): ${all.length}`)
 
   // Compute EBK scores (inverted percentile — lower stats = higher score)
   function computePercentileScores(entries: TeamCareer[]) {
@@ -279,7 +284,7 @@ async function main() {
   const bottom10 = [...scored].sort((a, b) => a.ebkScore - b.ebkScore).slice(0, 10)
 
   console.log('\nTop 10 EBK (niche gems):')
-  top10.forEach(p => console.log(`  ${p.name} (${p.team}): EBK ${p.ebkScore} — ${p.totalGames}GP ${p.careerPPG.toFixed(1)}PPG ${p.yearFrom-1}-${p.yearTo}`))
+  top10.forEach(p => console.log(`  ${p.name} (${p.team}): EBK ${p.ebkScore} — ${p.totalGames}GP ${p.careerPPG.toFixed(1)}PPG ${p.yearFrom}-${p.yearTo}`))
 
   console.log('\nBottom 10 EBK (stars to avoid):')
   bottom10.forEach(p => console.log(`  ${p.name} (${p.team}): EBK ${p.ebkScore} — ${p.totalGames}GP ${p.careerPPG.toFixed(1)}PPG`))
