@@ -13,12 +13,6 @@ export async function GET(request: NextRequest) {
 
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
-    include: {
-      games: {
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-      }
-    }
   })
 
   if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 })
