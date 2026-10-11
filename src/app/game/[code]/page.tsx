@@ -393,8 +393,12 @@ function GameContent() {
   // DRAFTING PHASE
   const spunTeamInfo = spunTeam ? CURRENT_TEAMS.find(t => t.abbr === spunTeam) : null
 
-  // Current slot the picker is filling
-  const currentSlotPos = requiredSlots[myPicks.length] // 'PG','SG','SF','PF','C', or 'BENCH'
+  // Positions already used in my 5 starter slots (picks 0-4)
+  const usedStarterPositions = new Set(
+    myPicks.slice(0, 5).map(id => players.find(p => p.id === id)?.position).filter((x): x is string => Boolean(x))
+  )
+  const isStarterSlot = myPicks.length < 5
+  const remainingStarterPositions = ['PG', 'SG', 'SF', 'PF', 'C'].filter(p => !usedStarterPositions.has(p))
 
   // Build display list from shuffled order; apply search/pos filter on top
   const filteredPlayers = shuffledIds
@@ -402,8 +406,8 @@ function GameContent() {
     .filter((p): p is Player => {
       if (!p) return false
       if (takenIds.has(p.id)) return false
-      // Position lock: bench slots accept anyone, starter slots require matching position
-      if (currentSlotPos !== 'BENCH' && p.position !== currentSlotPos) return false
+      // Starter slots: block positions already used; bench slots: no restriction
+      if (isStarterSlot && usedStarterPositions.has(p.position)) return false
       if (filterPos !== 'ALL' && !p.positions.split(',').includes(filterPos)) return false
       if (searchQuery) {
         const q = searchQuery.toLowerCase()
@@ -448,10 +452,12 @@ function GameContent() {
               {requiredSlots.map((slotPos, i) => {
                 const pickedId = myPicks[i]
                 const pickedPlayer = pickedId ? players.find(p => p.id === pickedId) : null
+                const isBench = slotPos === 'BENCH'
+                const displayLabel = pickedPlayer ? pickedPlayer.position : (isBench ? 'BN' : '?')
                 return (
                   <div key={i} className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 ${pickedPlayer ? 'bg-[#0A0A0A]' : 'bg-[#0A0A0A] border border-dashed border-gray-700'}`}>
-                    <span className={`font-bold w-8 shrink-0 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-orange-400'}`}>
-                      {slotPos === 'BENCH' ? 'BN' : slotPos}
+                    <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-600' : pickedPlayer ? 'text-orange-400' : 'text-gray-500'}`}>
+                      {displayLabel}
                     </span>
                     {pickedPlayer ? (
                       <span className="text-white truncate">{pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-gray-500">({pickedPlayer.team})</span></span>
@@ -515,14 +521,17 @@ function GameContent() {
               )}
             </div>
 
-            {/* Current position slot banner */}
-            <div className="flex items-center gap-2 mb-2 bg-[#111827] rounded-lg px-3 py-2">
-              <span className="text-gray-400 text-xs">Picking:</span>
-              <span className={`text-xs font-black px-2 py-0.5 rounded ${currentSlotPos === 'BENCH' ? 'bg-gray-700 text-gray-300' : 'bg-orange-600 text-white'}`}>
-                {currentSlotPos === 'BENCH' ? 'BENCH (any)' : currentSlotPos}
-              </span>
-              {currentSlotPos !== 'BENCH' && (
-                <span className="text-gray-500 text-xs">— only {currentSlotPos}s shown</span>
+            {/* Position availability banner */}
+            <div className="flex items-center gap-2 mb-2 bg-[#111827] rounded-lg px-3 py-2 flex-wrap">
+              {isStarterSlot ? (
+                <>
+                  <span className="text-gray-400 text-xs shrink-0">Still need:</span>
+                  {remainingStarterPositions.map(pos => (
+                    <span key={pos} className="text-xs font-black px-2 py-0.5 rounded bg-orange-600 text-white">{pos}</span>
+                  ))}
+                </>
+              ) : (
+                <span className="text-gray-400 text-xs">Bench slot — any player</span>
               )}
             </div>
 
@@ -620,10 +629,12 @@ function GameContent() {
               {requiredSlots.map((slotPos, i) => {
                 const pickedId = oppPicks[i]
                 const pickedPlayer = pickedId ? players.find(p => p.id === pickedId) : null
+                const isBench = slotPos === 'BENCH'
+                const displayLabel = pickedPlayer ? pickedPlayer.position : (isBench ? 'BN' : '?')
                 return (
                   <div key={i} className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 bg-[#0A0A0A] ${!pickedPlayer ? 'border border-dashed border-gray-700' : ''}`}>
-                    <span className={`font-bold w-8 shrink-0 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-blue-400'}`}>
-                      {slotPos === 'BENCH' ? 'BN' : slotPos}
+                    <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-600' : pickedPlayer ? 'text-blue-400' : 'text-gray-500'}`}>
+                      {displayLabel}
                     </span>
                     {pickedPlayer ? (
                       <span className="text-white truncate">{pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-gray-500">({pickedPlayer.team})</span></span>

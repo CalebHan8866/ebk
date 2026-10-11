@@ -69,21 +69,24 @@ function getRequiredPositions(teamMode: TeamMode): string[] {
   return [...starters, ...bench]
 }
 
-function getCurrentSlotPos(room: Room): string {
+function getPickerUsedPositions(room: Room): { usedPositions: Set<string>; isStarterSlot: boolean } {
   const picker = room.draftOrder[room.currentPickIndex]
   const pickerPicks = picker === 'host' ? room.hostPicks : room.guestPicks
-  const slots = getRequiredPositions(room.teamMode)
-  return slots[pickerPicks.length] ?? 'BENCH'
+  const isStarterSlot = pickerPicks.length < 5
+  const usedPositions = new Set(
+    pickerPicks.slice(0, 5).map(id => allPlayers.find(p => p.id === id)?.position).filter((x): x is string => Boolean(x))
+  )
+  return { usedPositions, isStarterSlot }
 }
 
 function spinTeam(room: Room): string {
   const takenIds = new Set([...room.hostPicks, ...room.guestPicks])
-  const slotPos = getCurrentSlotPos(room)
-  // Find which current-franchise teams have available players eligible for this slot
+  const { usedPositions, isStarterSlot } = getPickerUsedPositions(room)
+  // Only spin teams that have players eligible for this pick
   const available = new Set<string>()
   for (const p of allPlayers) {
     if (takenIds.has(p.id)) continue
-    if (slotPos !== 'BENCH' && p.position !== slotPos) continue
+    if (isStarterSlot && usedPositions.has(p.position)) continue
     available.add(getCurrentTeam(p.team))
   }
   const choices = CURRENT_TEAM_ABBRS.filter(t => available.has(t))
@@ -226,10 +229,10 @@ function calculateResult(room: Room): GameResult {
 
 function autoPickPlayer(room: Room): number | null {
   const takenIds = new Set([...room.hostPicks, ...room.guestPicks])
-  const slotPos = getCurrentSlotPos(room)
+  const { usedPositions, isStarterSlot } = getPickerUsedPositions(room)
   let available = allPlayers.filter(p => {
     if (takenIds.has(p.id)) return false
-    if (slotPos !== 'BENCH' && p.position !== slotPos) return false
+    if (isStarterSlot && usedPositions.has(p.position)) return false
     return true
   })
   if (available.length === 0) {
@@ -425,12 +428,12 @@ app.prepare().then(async () => {
         }
       }
 
-      // Validate position constraint
-      const slotPos = getCurrentSlotPos(room)
-      if (slotPos !== 'BENCH') {
+      // Validate no duplicate positions in starter slots
+      const { usedPositions, isStarterSlot } = getPickerUsedPositions(room)
+      if (isStarterSlot) {
         const player = allPlayers.find(p => p.id === playerId)
-        if (player && player.position !== slotPos) {
-          socket.emit('pick-error', { message: `This slot requires a ${slotPos}` })
+        if (player && usedPositions.has(player.position)) {
+          socket.emit('pick-error', { message: `You already have a ${player.position} in your starting lineup` })
           return
         }
       }

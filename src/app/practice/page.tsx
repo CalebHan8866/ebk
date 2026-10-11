@@ -74,7 +74,7 @@ function PracticeContent() {
     setLoadingPlayers(true)
     fetch('/api/players')
       .then(r => r.json())
-      .then((data: Player[]) => { setPlayers(data); setLoadingPlayers(false); triggerSpin(data, 0) })
+      .then((data: Player[]) => { setPlayers(data); setLoadingPlayers(false); triggerSpin(data, []) })
       .catch(() => setLoadingPlayers(false))
   }, [screen, players.length])
 
@@ -82,13 +82,22 @@ function PracticeContent() {
   const requiredSlots = getRequiredPositions(teamMode)
   const takenIds = new Set(picks)
 
-  function triggerSpin(afterPlayers: Player[], nextPickIndex?: number) {
-    const takenNow = new Set(picks)
-    const slotIndex = nextPickIndex !== undefined ? nextPickIndex : picks.length
-    const slotPos = requiredSlots[slotIndex]
+  // Positions already used in the 5 starter slots (picks 0-4)
+  const usedStarterPositions = new Set(
+    picks.slice(0, 5).map(id => players.find(p => p.id === id)?.position).filter((x): x is string => Boolean(x))
+  )
+  const isStarterSlot = picks.length < 5
+  const remainingStarterPositions = ['PG', 'SG', 'SF', 'PF', 'C'].filter(p => !usedStarterPositions.has(p))
+
+  function triggerSpin(afterPlayers: Player[], currentPicks: number[]) {
+    const takenNow = new Set(currentPicks)
+    const isNextStarter = currentPicks.length < 5
+    const usedPos = new Set(
+      currentPicks.slice(0, 5).map(id => afterPlayers.find(p => p.id === id)?.position).filter((x): x is string => Boolean(x))
+    )
     const available = afterPlayers.filter(p => {
       if (takenNow.has(p.id)) return false
-      if (slotPos && slotPos !== 'BENCH' && p.position !== slotPos) return false
+      if (isNextStarter && usedPos.has(p.position)) return false
       return true
     })
     const availableTeams = Array.from(new Set(available.map(p => getCurrentTeam(p.team))))
@@ -124,14 +133,13 @@ function PracticeContent() {
 
   const spunTeamInfo = spunTeam ? CURRENT_TEAMS.find(t => t.abbr === spunTeam) : null
 
-  const currentSlotPos = requiredSlots[picks.length]
-
   const filteredPlayers = shuffledIds
     .map(id => players.find(p => p.id === id))
     .filter((p): p is Player => {
       if (!p) return false
       if (takenIds.has(p.id)) return false
-      if (currentSlotPos !== 'BENCH' && p.position !== currentSlotPos) return false
+      // Starter slots: block positions already used in starters; bench slots: no restriction
+      if (isStarterSlot && usedStarterPositions.has(p.position)) return false
       if (filterPos !== 'ALL' && !p.positions.split(',').includes(filterPos)) return false
       if (searchQuery) {
         const q = searchQuery.toLowerCase()
@@ -145,7 +153,7 @@ function PracticeContent() {
     if (spunTeam && getCurrentTeam(players.find(p => p.id === id)?.team || '') !== spunTeam) return
     const newPicks = [...picks, id]
     setPicks(newPicks)
-    if (newPicks.length < teamSize) triggerSpin(players, newPicks.length)
+    if (newPicks.length < teamSize) triggerSpin(players, newPicks)
   }
 
   function unpick(id: number) {
@@ -251,10 +259,12 @@ function PracticeContent() {
                   {requiredSlots.map((slotPos, i) => {
                     const pickedId = picks[i]
                     const pickedPlayer = pickedId ? players.find(p => p.id === pickedId) : null
+                    const isBench = slotPos === 'BENCH'
+                    const displayLabel = pickedPlayer ? pickedPlayer.position : (isBench ? 'BN' : '?')
                     return (
                       <div key={i} className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 ${pickedPlayer ? 'bg-[#0A0A0A]' : 'bg-[#0A0A0A] border border-dashed border-gray-700'}`}>
-                        <span className={`font-bold w-8 shrink-0 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-orange-400'}`}>
-                          {slotPos === 'BENCH' ? 'BN' : slotPos}
+                        <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-600' : pickedPlayer ? 'text-orange-400' : 'text-gray-500'}`}>
+                          {displayLabel}
                         </span>
                         {pickedPlayer ? (
                           <span className="text-white truncate flex-1">
@@ -322,15 +332,18 @@ function PracticeContent() {
                   )}
                 </div>
 
-                {/* Current position slot banner */}
+                {/* Position availability banner */}
                 {!isDone && (
-                  <div className="flex items-center gap-2 mb-2 bg-[#111827] rounded-lg px-3 py-2">
-                    <span className="text-gray-400 text-xs">Picking:</span>
-                    <span className={`text-xs font-black px-2 py-0.5 rounded ${currentSlotPos === 'BENCH' ? 'bg-gray-700 text-gray-300' : 'bg-orange-600 text-white'}`}>
-                      {currentSlotPos === 'BENCH' ? 'BENCH (any)' : currentSlotPos}
-                    </span>
-                    {currentSlotPos !== 'BENCH' && (
-                      <span className="text-gray-500 text-xs">— only {currentSlotPos}s shown</span>
+                  <div className="flex items-center gap-2 mb-2 bg-[#111827] rounded-lg px-3 py-2 flex-wrap">
+                    {isStarterSlot ? (
+                      <>
+                        <span className="text-gray-400 text-xs shrink-0">Still need:</span>
+                        {remainingStarterPositions.map(pos => (
+                          <span key={pos} className="text-xs font-black px-2 py-0.5 rounded bg-orange-600 text-white">{pos}</span>
+                        ))}
+                      </>
+                    ) : (
+                      <span className="text-gray-400 text-xs">Bench slot — any player</span>
                     )}
                   </div>
                 )}
