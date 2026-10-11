@@ -7,7 +7,7 @@ import { PrismaClient } from '@prisma/client'
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = '0.0.0.0'
 const port = parseInt(process.env.PORT || '3000')
-const app = next({ dev, hostname, port })
+const app = next({ dev, hostname, port, dir: process.cwd() })
 const handle = app.getRequestHandler()
 const prisma = new PrismaClient()
 
