@@ -11,7 +11,8 @@ COPY . .
 
 RUN npx prisma generate
 RUN npx next build
+RUN npx tsc --project tsconfig.server.json
 
 EXPOSE 3000
 
-CMD ["npx", "ts-node", "--project", "tsconfig.server.json", "server.ts"]
+CMD ["node", "dist/server.js"]
