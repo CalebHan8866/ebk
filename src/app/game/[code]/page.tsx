@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, Suspense } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import { getSocket } from '@/lib/socket'
 import { CURRENT_TEAMS, getCurrentTeam } from '@/lib/teams'
+import { EMOTES } from '@/lib/accessories'
 
 type TeamMode = 'starter5' | 'bench8' | 'full12'
 
@@ -135,6 +136,11 @@ function GameContent() {
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null)
   const [lastResult, setLastResult] = useState<GameResult | null>(null)
   const [disconnected, setDisconnected] = useState(false)
+  // Emotes & accessories
+  const [opponentEmote, setOpponentEmote] = useState<string | null>(null)
+  const [unlockedToast, setUnlockedToast] = useState<{ type: string; name: string }[] | null>(null)
+  const [myEmotes, setMyEmotes] = useState<string[]>([])
+  const emoteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Pick timer state
   const [pickTimeLeft, setPickTimeLeft] = useState(30)
@@ -223,6 +229,17 @@ function GameContent() {
       setTimeout(() => setPickError(null), 3000)
     }
 
+    const handleOpponentEmote = ({ emoteText }: { emoteText: string }) => {
+      setOpponentEmote(emoteText)
+      if (emoteTimerRef.current) clearTimeout(emoteTimerRef.current)
+      emoteTimerRef.current = setTimeout(() => setOpponentEmote(null), 3000)
+    }
+
+    const handleAccessoriesUnlocked = ({ items }: { items: { type: string; name: string }[] }) => {
+      setUnlockedToast(items)
+      setTimeout(() => setUnlockedToast(null), 6000)
+    }
+
     const handlePickTimeout = ({ picker, pickedId, consecutive }: { picker: 'host' | 'guest'; pickedId: number; consecutive: number }) => {
       if (pickTimerRef.current) { clearInterval(pickTimerRef.current); pickTimerRef.current = null }
       const p = playersRef.current.find(pl => pl.id === pickedId)
@@ -249,6 +266,8 @@ function GameContent() {
     socket.on('pick-timeout', handlePickTimeout)
     socket.on('player-disqualified', handlePlayerDisqualified)
     socket.on('pick-error', handlePickError)
+    socket.on('opponent-emote', handleOpponentEmote)
+    socket.on('accessories-unlocked', handleAccessoriesUnlocked)
 
     // Request current room state from server
     socket.emit('get-room', { code, role })
@@ -265,10 +284,25 @@ function GameContent() {
       socket.off('pick-timeout', handlePickTimeout)
       socket.off('player-disqualified', handlePlayerDisqualified)
       socket.off('pick-error', handlePickError)
+      socket.off('opponent-emote', handleOpponentEmote)
+      socket.off('accessories-unlocked', handleAccessoriesUnlocked)
       if (pickTimerRef.current) clearInterval(pickTimerRef.current)
       if (spinIntervalRef.current) clearInterval(spinIntervalRef.current)
+      if (emoteTimerRef.current) clearTimeout(emoteTimerRef.current)
     }
   }, [code, role])
+
+  // Load user's unlocked emotes
+  useEffect(() => {
+    fetch('/api/auth/me').then(r => r.json()).then(d => {
+      if (d.user?.unlockedEmotes) {
+        try {
+          const arr = JSON.parse(d.user.unlockedEmotes)
+          setMyEmotes(Array.isArray(arr) ? arr : [])
+        } catch { setMyEmotes([]) }
+      }
+    }).catch(() => {})
+  }, [])
 
   function pickPlayer(playerId: number) {
     const socket = getSocket()
@@ -359,6 +393,21 @@ function GameContent() {
           {timeoutWarning && (
             <div className="bg-yellow-900/40 border border-yellow-700 text-yellow-400 rounded-2xl px-4 py-3 text-sm text-center mb-4">
               {timeoutWarning}
+            </div>
+          )}
+
+          {/* Unlock toast */}
+          {unlockedToast && unlockedToast.length > 0 && (
+            <div className="bg-orange-900/30 border border-orange-500 rounded-2xl px-5 py-4 mb-4">
+              <div className="text-orange-400 font-black text-sm mb-2 uppercase tracking-widest">Unlocked!</div>
+              <div className="space-y-1">
+                {unlockedToast.map((item, i) => (
+                  <div key={i} className="text-white text-sm font-semibold">
+                    <span className="text-orange-400 mr-2">{item.type === 'badge' ? '🏅' : item.type === 'emote' ? '💬' : '🏆'}</span>
+                    {item.name}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -537,7 +586,17 @@ function GameContent() {
     })
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] py-6 px-4">
+    <div className="min-h-screen bg-[#0A0A0A] py-6 px-4 relative">
+      {/* Opponent emote popup */}
+      {opponentEmote && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+          <div className="bg-[#1a1a2e] border border-orange-500 text-white text-lg px-5 py-3 rounded-2xl shadow-2xl font-medium animate-bounce">
+            <span className="text-gray-400 text-xs block text-center mb-0.5">{oppName}</span>
+            {opponentEmote}
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
@@ -718,6 +777,29 @@ function GameContent() {
               <div className="mb-2 bg-orange-600/10 border border-orange-500 rounded-lg px-3 py-2 text-xs text-orange-300 flex items-center justify-between">
                 <span><span className="font-black text-orange-400">{selectedPlayer.firstName} {selectedPlayer.lastName}</span> selected — tap a slot</span>
                 <button onClick={() => setSelectedPlayerId(null)} className="text-orange-400 hover:text-white ml-2">✕</button>
+              </div>
+            )}
+
+            {/* Emote bar */}
+            {myEmotes.length > 0 && (
+              <div className="flex gap-2 mb-3 flex-wrap">
+                {myEmotes.map(emoteId => {
+                  const emote = EMOTES.find(e => e.id === emoteId)
+                  if (!emote) return null
+                  return (
+                    <button
+                      key={emoteId}
+                      onClick={() => {
+                        const socket = getSocket()
+                        socket.emit('use-emote', { code, emoteText: emote.text })
+                      }}
+                      className="bg-[#1a1a2e] hover:bg-[#252540] border border-gray-700 hover:border-orange-500 text-white text-sm px-3 py-1.5 rounded-xl transition-all font-medium"
+                      title={emote.label}
+                    >
+                      {emote.text}
+                    </button>
+                  )
+                })}
               </div>
             )}
 

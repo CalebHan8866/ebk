@@ -1,17 +1,29 @@
 'use client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
+import { BADGES } from '@/lib/accessories'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
   const router = useRouter()
+  const [equippedBadgeId, setEquippedBadgeId] = useState<string>('')
+
+  useEffect(() => {
+    if (!user) { setEquippedBadgeId(''); return }
+    fetch('/api/auth/me')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.user?.equippedBadge) setEquippedBadgeId(d.user.equippedBadge) })
+  }, [user])
 
   async function handleLogout() {
     await logout()
     router.push('/')
     router.refresh()
   }
+
+  const equippedBadge = equippedBadgeId ? BADGES.find(b => b.id === equippedBadgeId) : null
 
   return (
     <nav className="bg-[#111827] border-b border-orange-500/20">
@@ -24,9 +36,19 @@ export default function Navbar() {
           <Link href="/lobby" className="text-gray-300 hover:text-orange-400 text-sm font-semibold transition-colors">Play</Link>
           {user ? (
             <>
-              <Link href="/profile" className="text-gray-300 hover:text-orange-400 text-sm font-semibold">
-                {user.username}
-                <span className="text-gray-500 text-xs ml-1.5">{user.wins}-{user.losses}-{user.draws}</span>
+              <Link href="/profile" className="flex items-center gap-2 text-gray-300 hover:text-orange-400 text-sm font-semibold">
+                <span>{user.username}</span>
+                {equippedBadge && (
+                  <span className={[
+                    'inline-block text-[10px] font-black tracking-wider px-1.5 py-0.5 rounded border',
+                    equippedBadge.bgClass,
+                    equippedBadge.textClass,
+                    equippedBadge.borderClass,
+                  ].join(' ')}>
+                    {equippedBadge.label}
+                  </span>
+                )}
+                <span className="text-gray-500 text-xs">{user.wins}-{user.losses}-{user.draws}</span>
               </Link>
               <button onClick={handleLogout} className="text-xs bg-orange-600 hover:bg-orange-700 px-3 py-1.5 rounded font-semibold transition-colors">
                 Logout

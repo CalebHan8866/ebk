@@ -3,6 +3,7 @@ import { parse } from 'url'
 import next from 'next'
 import { Server as SocketServer } from 'socket.io'
 import { PrismaClient } from '@prisma/client'
+import { BADGES, EMOTES, MILESTONES } from './src/lib/accessories'
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = '0.0.0.0'
@@ -213,6 +214,7 @@ interface GameListing {
   hostUserId: string | null
   hostName: string
   hostRecord: { wins: number; losses: number; draws: number }
+  hostBadge: string
   teamMode: TeamMode
   series: SeriesLength
 }
@@ -225,7 +227,109 @@ const gameListings = new Map<string, GameListing>()
 const listingTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const pickTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const consecutiveTimeouts = new Map<string, { host: number; guest: number }>()
+// cooldown: userId → Map(opponentId → timestamp of last game end)
+const recentMatchups = new Map<string, Map<string, number>>()
 let allPlayers: PlayerData[] = []
+
+// ─── Cooldown helpers ────────────────────────────────────────────────────────
+
+const COOLDOWN_MS = 30 * 60 * 1000
+
+function recordMatchup(userId1: string | null, userId2: string | null) {
+  if (!userId1 || !userId2) return
+  const now = Date.now()
+  if (!recentMatchups.has(userId1)) recentMatchups.set(userId1, new Map())
+  if (!recentMatchups.has(userId2)) recentMatchups.set(userId2, new Map())
+  recentMatchups.get(userId1)!.set(userId2, now)
+  recentMatchups.get(userId2)!.set(userId1, now)
+}
+
+function cooldownRemaining(userId1: string | null, userId2: string | null): number {
+  if (!userId1 || !userId2) return 0
+  const last = recentMatchups.get(userId1)?.get(userId2)
+  if (!last) return 0
+  return Math.max(0, COOLDOWN_MS - (Date.now() - last))
+}
+
+// ─── Accessories unlock ───────────────────────────────────────────────────────
+
+async function updateStatsAndUnlock(
+  io: SocketServer,
+  userId: string,
+  socketId: string,
+  won: boolean,
+  isDraw: boolean,
+) {
+  try {
+    // Update wins/losses/draws/gamesPlayed/winStreak atomically
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        wins:        won    ? { increment: 1 } : undefined,
+        losses:      !won && !isDraw ? { increment: 1 } : undefined,
+        draws:       isDraw ? { increment: 1 } : undefined,
+        gamesPlayed: { increment: 1 },
+        winStreak:   won    ? { increment: 1 } : { set: 0 },
+      },
+    })
+
+    const u = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { wins: true, gamesPlayed: true, winStreak: true, maxWinStreak: true,
+                unlockedBadges: true, unlockedEmotes: true, unlockedMilestones: true },
+    })
+    if (!u) return
+
+    // Update maxWinStreak if beaten
+    if (u.winStreak > u.maxWinStreak) {
+      await prisma.user.update({ where: { id: userId }, data: { maxWinStreak: u.winStreak } })
+    }
+    const effectiveMaxStreak = Math.max(u.maxWinStreak, u.winStreak)
+
+    const stats = { wins: u.wins, gamesPlayed: u.gamesPlayed, winStreak: u.winStreak, maxWinStreak: effectiveMaxStreak }
+    const curBadges:     string[] = JSON.parse(u.unlockedBadges     || '[]')
+    const curEmotes:     string[] = JSON.parse(u.unlockedEmotes     || '[]')
+    const curMilestones: string[] = JSON.parse(u.unlockedMilestones || '[]')
+
+    const newBadges:     string[] = []
+    const newEmotes:     string[] = []
+    const newMilestones: string[] = []
+    const newlyUnlocked: { type: string; id: string; name: string }[] = []
+
+    for (const b of BADGES) {
+      if (curBadges.includes(b.id)) continue
+      const ok = (b.winsRequired     !== undefined && stats.wins             >= b.winsRequired)
+              || (b.gamesRequired    !== undefined && stats.gamesPlayed      >= b.gamesRequired)
+              || (b.streakRequired   !== undefined && stats.maxWinStreak     >= b.streakRequired)
+      if (ok) { newBadges.push(b.id); newlyUnlocked.push({ type: 'badge', id: b.id, name: b.name }) }
+    }
+    for (const e of EMOTES) {
+      if (curEmotes.includes(e.id)) continue
+      if (stats.wins >= e.winsRequired) { newEmotes.push(e.id); newlyUnlocked.push({ type: 'emote', id: e.id, name: e.label }) }
+    }
+    for (const m of MILESTONES) {
+      if (curMilestones.includes(m.id)) continue
+      const ok = (m.winsRequired   !== undefined && stats.wins         >= m.winsRequired)
+              || (m.gamesRequired  !== undefined && stats.gamesPlayed  >= m.gamesRequired)
+              || (m.streakRequired !== undefined && stats.maxWinStreak >= m.streakRequired)
+      if (ok) { newMilestones.push(m.id); newlyUnlocked.push({ type: 'milestone', id: m.id, name: m.name }) }
+    }
+
+    if (newBadges.length || newEmotes.length || newMilestones.length) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          unlockedBadges:     JSON.stringify([...curBadges,     ...newBadges]),
+          unlockedEmotes:     JSON.stringify([...curEmotes,     ...newEmotes]),
+          unlockedMilestones: JSON.stringify([...curMilestones, ...newMilestones]),
+        },
+      })
+    }
+    if (newlyUnlocked.length) {
+      io.to(socketId).emit('accessories-unlocked', { items: newlyUnlocked })
+    }
+  } catch { /* non-critical */ }
+}
 
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -347,13 +451,9 @@ function startPickTimer(io: SocketServer, room: Room) {
       pickTimers.delete(code)
 
       if (currentRoom.source === 'online') {
-        const updateDB = async () => {
-          const hostId = currentRoom.hostUserId
-          const guestId = currentRoom.guestUserId
-          if (hostId) await prisma.user.update({ where: { id: hostId }, data: { wins: winner === 'host' ? { increment: 1 } : undefined, losses: loser === 'host' ? { increment: 1 } : undefined } }).catch(() => {})
-          if (guestId) await prisma.user.update({ where: { id: guestId }, data: { wins: winner === 'guest' ? { increment: 1 } : undefined, losses: loser === 'guest' ? { increment: 1 } : undefined } }).catch(() => {})
-        }
-        updateDB()
+        recordMatchup(currentRoom.hostUserId, currentRoom.guestUserId)
+        if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, winner === 'host', false)
+        if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, winner === 'guest', false)
       }
 
       io.to(code).emit('player-disqualified', { room: currentRoom, disqualifiedRole: loser, winner })
@@ -377,6 +477,11 @@ function startPickTimer(io: SocketServer, room: Room) {
 
       if (seriesDone) {
         const seriesWinner = currentRoom.hostSeriesScore > currentRoom.guestSeriesScore ? 'host' : currentRoom.guestSeriesScore > currentRoom.hostSeriesScore ? 'guest' : 'draw'
+        if (currentRoom.source === 'online') {
+          recordMatchup(currentRoom.hostUserId, currentRoom.guestUserId)
+          if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, seriesWinner === 'host', seriesWinner === 'draw')
+          if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw')
+        }
         io.to(code).emit('series-complete', { room: currentRoom, seriesWinner })
       } else {
         io.to(code).emit('game-result', { room: currentRoom, result })
@@ -567,11 +672,9 @@ app.prepare().then(async () => {
         if (seriesDone) {
           const seriesWinner = room.hostSeriesScore > room.guestSeriesScore ? 'host' : room.guestSeriesScore > room.hostSeriesScore ? 'guest' : 'draw'
           if (room.source === 'online') {
-            const updateDB = async () => {
-              if (room.hostUserId) await prisma.user.update({ where: { id: room.hostUserId }, data: { wins: seriesWinner === 'host' ? { increment: 1 } : undefined, losses: seriesWinner === 'guest' ? { increment: 1 } : undefined, draws: seriesWinner === 'draw' ? { increment: 1 } : undefined } }).catch(() => {})
-              if (room.guestUserId) await prisma.user.update({ where: { id: room.guestUserId }, data: { wins: seriesWinner === 'guest' ? { increment: 1 } : undefined, losses: seriesWinner === 'host' ? { increment: 1 } : undefined, draws: seriesWinner === 'draw' ? { increment: 1 } : undefined } }).catch(() => {})
-            }
-            updateDB()
+            recordMatchup(room.hostUserId, room.guestUserId)
+            if (room.hostUserId) updateStatsAndUnlock(io, room.hostUserId, room.hostSocketId, seriesWinner === 'host', seriesWinner === 'draw')
+            if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw')
           }
           io.to(code).emit('series-complete', { room, seriesWinner })
         } else {
@@ -655,7 +758,8 @@ app.prepare().then(async () => {
       let code = generateCode()
       while (rooms.has(code) || readyRooms.has(code) || gameListings.has(code)) code = generateCode()
 
-      const listing: GameListing = { code, hostSocketId: socket.id, hostUserId: userId, hostName: userName, hostRecord, teamMode, series }
+      const hostUser = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { equippedBadge: true } }).catch(() => null) : null
+      const listing: GameListing = { code, hostSocketId: socket.id, hostUserId: userId, hostName: userName, hostRecord, hostBadge: hostUser?.equippedBadge || '', teamMode, series }
       gameListings.set(code, listing)
 
       // Auto-expire listing after 10 minutes
@@ -691,17 +795,23 @@ app.prepare().then(async () => {
         return
       }
 
+      // 30-min cooldown check
+      const remaining = cooldownRemaining(userId, listing.hostUserId)
+      if (remaining > 0) {
+        const mins = Math.ceil(remaining / 60000)
+        socket.emit('listing-error', { message: `Cooldown: ${mins} min remaining before you can rematch this player` })
+        return
+      }
+
       // Remove listing immediately so nobody else can join
       clearTimeout(listingTimers.get(code))
       listingTimers.delete(code)
       gameListings.delete(code)
       io.emit('listings-updated', { listings: Array.from(gameListings.values()) })
 
-      const guestRecord = { wins: 0, losses: 0, draws: 0 }
-      if (userId) {
-        const u = await prisma.user.findUnique({ where: { id: userId }, select: { wins: true, losses: true, draws: true } }).catch(() => null)
-        if (u) { guestRecord.wins = u.wins; guestRecord.losses = u.losses; guestRecord.draws = u.draws }
-      }
+      const guestUser = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { wins: true, losses: true, draws: true, equippedBadge: true } }).catch(() => null) : null
+      const guestRecord = { wins: guestUser?.wins || 0, losses: guestUser?.losses || 0, draws: guestUser?.draws || 0 }
+      const guestBadge = guestUser?.equippedBadge || ''
 
       const hostEntry: QueueEntry = {
         socketId: listing.hostSocketId, userId: listing.hostUserId, userName: listing.hostName,
@@ -724,16 +834,28 @@ app.prepare().then(async () => {
       const basePayload = { proposedTeamMode: listing.teamMode, proposedSeries: listing.series }
       io.to(listing.hostSocketId).emit('match-found', {
         ...basePayload, code, isHost: true,
-        opponentName: userName, opponentRecord: guestRecord,
+        opponentName: userName, opponentRecord: guestRecord, opponentBadge: guestBadge,
+        myBadge: listing.hostBadge,
         myTeamMode: listing.teamMode, mySeries: listing.series,
         opponentTeamMode: listing.teamMode, opponentSeries: listing.series,
       })
       socket.emit('match-found', {
         ...basePayload, code, isHost: false,
-        opponentName: listing.hostName, opponentRecord: listing.hostRecord,
+        opponentName: listing.hostName, opponentRecord: listing.hostRecord, opponentBadge: listing.hostBadge,
+        myBadge: guestBadge,
         myTeamMode: listing.teamMode, mySeries: listing.series,
         opponentTeamMode: listing.teamMode, opponentSeries: listing.series,
       })
+    })
+
+    socket.on('use-emote', ({ code, emoteText }: { code: string; emoteText: string }) => {
+      const room = rooms.get(code)
+      if (!room || room.status !== 'drafting') return
+      const isHost = socket.id === room.hostSocketId
+      const isGuest = socket.id === room.guestSocketId
+      if (!isHost && !isGuest) return
+      const targetSocketId = isHost ? room.guestSocketId : room.hostSocketId
+      if (targetSocketId) io.to(targetSocketId).emit('opponent-emote', { emoteText })
     })
 
     socket.on('decline-match', ({ code }: { code: string }) => {

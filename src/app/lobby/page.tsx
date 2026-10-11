@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getSocket } from '@/lib/socket'
 import { useAuth } from '@/context/AuthContext'
+import { BADGES } from '@/lib/accessories'
 
 type TeamMode = 'starter5' | 'bench8' | 'full12'
 type SeriesLength = 1 | 3 | 5
@@ -16,6 +17,7 @@ interface GameListing {
   code: string
   hostName: string
   hostRecord: UserRecord
+  hostBadge: string
   teamMode: TeamMode
   series: SeriesLength
 }
@@ -24,9 +26,21 @@ interface MatchInfo {
   code: string
   opponentName: string
   opponentRecord: UserRecord
+  opponentBadge: string
+  myBadge: string
   proposedTeamMode: TeamMode
   proposedSeries: SeriesLength
   isHost: boolean
+}
+
+function BadgeChip({ badgeId }: { badgeId: string }) {
+  const badge = BADGES.find(b => b.id === badgeId)
+  if (!badge) return null
+  return (
+    <span className={`text-xs font-black px-1.5 py-0.5 rounded border ${badge.bgClass} ${badge.textClass} ${badge.borderClass}`}>
+      {badge.label}
+    </span>
+  )
 }
 
 const MODE_LABEL: Record<TeamMode, string> = { starter5: 'Starter 5', bench8: 'Bench 8', full12: 'Full 12' }
@@ -316,7 +330,10 @@ export default function LobbyPage() {
                     listings.map(l => (
                       <div key={l.code} className="flex items-center gap-3 px-5 py-4 hover:bg-white/[0.02] transition-colors">
                         <div className="flex-1 min-w-0">
-                          <div className="text-white font-black text-sm truncate">{l.hostName}</div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-black text-sm truncate">{l.hostName}</span>
+                            <BadgeChip badgeId={l.hostBadge} />
+                          </div>
                           <div className="text-gray-500 text-xs mt-0.5">
                             {l.hostRecord.wins}W {l.hostRecord.losses}L
                             <span className="text-gray-700 mx-1.5">·</span>
@@ -427,13 +444,16 @@ export default function LobbyPage() {
                 {/* Players */}
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: 'You', name: displayName, record: `${user.wins}W ${user.losses}L`, ready: matchInfo.isHost ? hostReady : guestReady, accent: 'text-orange-400' },
-                    { label: 'Opponent', name: matchInfo.opponentName, record: `${matchInfo.opponentRecord.wins}W ${matchInfo.opponentRecord.losses}L`, ready: matchInfo.isHost ? guestReady : hostReady, accent: 'text-blue-400' },
+                    { label: 'You', name: displayName, record: `${user.wins}W ${user.losses}L`, badge: matchInfo.myBadge, ready: matchInfo.isHost ? hostReady : guestReady, accent: 'text-orange-400' },
+                    { label: 'Opponent', name: matchInfo.opponentName, record: `${matchInfo.opponentRecord.wins}W ${matchInfo.opponentRecord.losses}L`, badge: matchInfo.opponentBadge, ready: matchInfo.isHost ? guestReady : hostReady, accent: 'text-blue-400' },
                   ].map(side => (
                     <div key={side.label} className="bg-[#0A0A0A] rounded-2xl p-4 text-center">
                       <div className={`${side.accent} text-xs uppercase tracking-widest mb-2 font-bold`}>{side.label}</div>
-                      <div className="text-white font-black text-sm truncate">{side.name}</div>
-                      <div className="text-gray-500 text-xs mt-1">{side.record}</div>
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <span className="text-white font-black text-sm truncate">{side.name}</span>
+                        <BadgeChip badgeId={side.badge} />
+                      </div>
+                      <div className="text-gray-500 text-xs">{side.record}</div>
                       {side.ready && <div className="mt-2 text-green-400 text-xs font-bold">Ready</div>}
                     </div>
                   ))}

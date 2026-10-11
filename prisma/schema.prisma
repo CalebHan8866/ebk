@@ -18,6 +18,14 @@ model User {
   wins              Int       @default(0)
   losses            Int       @default(0)
   draws             Int       @default(0)
+  gamesPlayed       Int       @default(0)
+  winStreak         Int       @default(0)
+  maxWinStreak      Int       @default(0)
+  unlockedBadges    String    @default("[]")
+  unlockedEmotes    String    @default("[]")
+  unlockedMilestones String   @default("[]")
+  equippedBadge     String    @default("")
+  equippedEmote     String    @default("")
   createdAt         DateTime  @default(now())
 }
 
