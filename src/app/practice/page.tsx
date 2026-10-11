@@ -260,10 +260,10 @@ function PracticeContent() {
                     const pickedId = picks[i]
                     const pickedPlayer = pickedId ? players.find(p => p.id === pickedId) : null
                     const isBench = slotPos === 'BENCH'
-                    const displayLabel = pickedPlayer ? pickedPlayer.position : (isBench ? 'BN' : '?')
+                    const displayLabel = pickedPlayer ? pickedPlayer.position : (isBench ? 'BN' : slotPos)
                     return (
                       <div key={i} className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 ${pickedPlayer ? 'bg-[#0A0A0A]' : 'bg-[#0A0A0A] border border-dashed border-gray-700'}`}>
-                        <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-600' : pickedPlayer ? 'text-orange-400' : 'text-gray-500'}`}>
+                        <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-600' : 'text-orange-400'}`}>
                           {displayLabel}
                         </span>
                         {pickedPlayer ? (
