@@ -515,6 +515,17 @@ function GameContent() {
               )}
             </div>
 
+            {/* Current position slot banner */}
+            <div className="flex items-center gap-2 mb-2 bg-[#111827] rounded-lg px-3 py-2">
+              <span className="text-gray-400 text-xs">Picking:</span>
+              <span className={`text-xs font-black px-2 py-0.5 rounded ${currentSlotPos === 'BENCH' ? 'bg-gray-700 text-gray-300' : 'bg-orange-600 text-white'}`}>
+                {currentSlotPos === 'BENCH' ? 'BENCH (any)' : currentSlotPos}
+              </span>
+              {currentSlotPos !== 'BENCH' && (
+                <span className="text-gray-500 text-xs">— only {currentSlotPos}s shown</span>
+              )}
+            </div>
+
             {/* Position filter */}
             <div className="flex gap-1.5 mb-3 flex-wrap">
               {['ALL', 'PG', 'SG', 'SF', 'PF', 'C'].map(pos => (

@@ -74,7 +74,7 @@ function PracticeContent() {
     setLoadingPlayers(true)
     fetch('/api/players')
       .then(r => r.json())
-      .then((data: Player[]) => { setPlayers(data); setLoadingPlayers(false); triggerSpin(data) })
+      .then((data: Player[]) => { setPlayers(data); setLoadingPlayers(false); triggerSpin(data, 0) })
       .catch(() => setLoadingPlayers(false))
   }, [screen, players.length])
 
@@ -82,9 +82,15 @@ function PracticeContent() {
   const requiredSlots = getRequiredPositions(teamMode)
   const takenIds = new Set(picks)
 
-  function triggerSpin(afterPlayers: Player[]) {
+  function triggerSpin(afterPlayers: Player[], nextPickIndex?: number) {
     const takenNow = new Set(picks)
-    const available = afterPlayers.filter(p => !takenNow.has(p.id))
+    const slotIndex = nextPickIndex !== undefined ? nextPickIndex : picks.length
+    const slotPos = requiredSlots[slotIndex]
+    const available = afterPlayers.filter(p => {
+      if (takenNow.has(p.id)) return false
+      if (slotPos && slotPos !== 'BENCH' && !p.positions.split(',').includes(slotPos)) return false
+      return true
+    })
     const availableTeams = Array.from(new Set(available.map(p => getCurrentTeam(p.team))))
       .filter(t => CURRENT_TEAMS.some(ct => ct.abbr === t))
     if (availableTeams.length === 0) return
@@ -139,7 +145,7 @@ function PracticeContent() {
     if (spunTeam && getCurrentTeam(players.find(p => p.id === id)?.team || '') !== spunTeam) return
     const newPicks = [...picks, id]
     setPicks(newPicks)
-    if (newPicks.length < teamSize) triggerSpin(players)
+    if (newPicks.length < teamSize) triggerSpin(players, newPicks.length)
   }
 
   function unpick(id: number) {
@@ -316,7 +322,20 @@ function PracticeContent() {
                   )}
                 </div>
 
-                {/* Position filter */}
+                {/* Current position slot banner */}
+                {!isDone && (
+                  <div className="flex items-center gap-2 mb-2 bg-[#111827] rounded-lg px-3 py-2">
+                    <span className="text-gray-400 text-xs">Picking:</span>
+                    <span className={`text-xs font-black px-2 py-0.5 rounded ${currentSlotPos === 'BENCH' ? 'bg-gray-700 text-gray-300' : 'bg-orange-600 text-white'}`}>
+                      {currentSlotPos === 'BENCH' ? 'BENCH (any)' : currentSlotPos}
+                    </span>
+                    {currentSlotPos !== 'BENCH' && (
+                      <span className="text-gray-500 text-xs">— only {currentSlotPos}s shown</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Position filter (search within current slot) */}
                 <div className="flex gap-1.5 mb-2 flex-wrap">
                   {['ALL', 'PG', 'SG', 'SF', 'PF', 'C'].map(pos => (
                     <button key={pos} onClick={() => setFilterPos(pos)}
