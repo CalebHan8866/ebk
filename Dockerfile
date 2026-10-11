@@ -17,4 +17,4 @@ RUN npx tsc --project tsconfig.server.json
 
 EXPOSE 3000
 
-CMD ["node", "dist/server.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/server.js"]
