@@ -83,7 +83,7 @@ function spinTeam(room: Room): string {
   const available = new Set<string>()
   for (const p of allPlayers) {
     if (takenIds.has(p.id)) continue
-    if (slotPos !== 'BENCH' && !p.positions.split(',').includes(slotPos)) continue
+    if (slotPos !== 'BENCH' && p.position !== slotPos) continue
     available.add(getCurrentTeam(p.team))
   }
   const choices = CURRENT_TEAM_ABBRS.filter(t => available.has(t))
@@ -229,7 +229,7 @@ function autoPickPlayer(room: Room): number | null {
   const slotPos = getCurrentSlotPos(room)
   let available = allPlayers.filter(p => {
     if (takenIds.has(p.id)) return false
-    if (slotPos !== 'BENCH' && !p.positions.split(',').includes(slotPos)) return false
+    if (slotPos !== 'BENCH' && p.position !== slotPos) return false
     return true
   })
   if (available.length === 0) {
@@ -429,7 +429,7 @@ app.prepare().then(async () => {
       const slotPos = getCurrentSlotPos(room)
       if (slotPos !== 'BENCH') {
         const player = allPlayers.find(p => p.id === playerId)
-        if (player && !player.positions.split(',').includes(slotPos)) {
+        if (player && player.position !== slotPos) {
           socket.emit('pick-error', { message: `This slot requires a ${slotPos}` })
           return
         }

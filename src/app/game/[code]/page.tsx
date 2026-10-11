@@ -403,7 +403,7 @@ function GameContent() {
       if (!p) return false
       if (takenIds.has(p.id)) return false
       // Position lock: bench slots accept anyone, starter slots require matching position
-      if (currentSlotPos !== 'BENCH' && !p.positions.split(',').includes(currentSlotPos)) return false
+      if (currentSlotPos !== 'BENCH' && p.position !== currentSlotPos) return false
       if (filterPos !== 'ALL' && !p.positions.split(',').includes(filterPos)) return false
       if (searchQuery) {
         const q = searchQuery.toLowerCase()

@@ -88,7 +88,7 @@ function PracticeContent() {
     const slotPos = requiredSlots[slotIndex]
     const available = afterPlayers.filter(p => {
       if (takenNow.has(p.id)) return false
-      if (slotPos && slotPos !== 'BENCH' && !p.positions.split(',').includes(slotPos)) return false
+      if (slotPos && slotPos !== 'BENCH' && p.position !== slotPos) return false
       return true
     })
     const availableTeams = Array.from(new Set(available.map(p => getCurrentTeam(p.team))))
@@ -131,7 +131,7 @@ function PracticeContent() {
     .filter((p): p is Player => {
       if (!p) return false
       if (takenIds.has(p.id)) return false
-      if (currentSlotPos !== 'BENCH' && !p.positions.split(',').includes(currentSlotPos)) return false
+      if (currentSlotPos !== 'BENCH' && p.position !== currentSlotPos) return false
       if (filterPos !== 'ALL' && !p.positions.split(',').includes(filterPos)) return false
       if (searchQuery) {
         const q = searchQuery.toLowerCase()
