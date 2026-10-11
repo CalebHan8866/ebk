@@ -413,9 +413,9 @@ function GameContent() {
   const mySlots = assignToSlots(myPicks, players, requiredSlots)
   const oppSlots = assignToSlots(oppPicks, players, requiredSlots)
 
-  // Positions already used in my 5 starter slots
+  // Track consumed slot positions by slot label (not player's primary position)
   const usedStarterPositions = new Set(
-    mySlots.slice(0, 5).filter((p): p is Player => p !== null).map(p => p.position)
+    requiredSlots.slice(0, 5).filter((_, i) => mySlots[i] !== null)
   )
   const isStarterSlot = myPicks.length < 5
   const remainingStarterPositions = ['PG', 'SG', 'SF', 'PF', 'C'].filter(p => !usedStarterPositions.has(p))
@@ -424,10 +424,11 @@ function GameContent() {
 
   function getValidSlots(player: Player): Set<number> {
     const valid = new Set<number>()
+    const playerPositions = player.positions.split(',')
     requiredSlots.forEach((s, i) => {
       if (mySlots[i] !== null) return
-      if (s === player.position) valid.add(i)
-      if (s === 'BENCH') valid.add(i)
+      if (playerPositions.includes(s)) valid.add(i) // any of the player's listed positions
+      if (s === 'BENCH') valid.add(i)               // any bench slot
     })
     return valid
   }
@@ -462,8 +463,8 @@ function GameContent() {
     .filter((p): p is Player => {
       if (!p) return false
       if (takenIds.has(p.id)) return false
-      // Starter slots: block positions already used; bench slots: no restriction
-      if (isStarterSlot && usedStarterPositions.has(p.position)) return false
+      // Starter slots: hide only if ALL of the player's positions are used
+      if (isStarterSlot && p.positions.split(',').every(pos => usedStarterPositions.has(pos))) return false
       if (filterPos !== 'ALL' && !p.positions.split(',').includes(filterPos)) return false
       if (searchQuery) {
         const q = searchQuery.toLowerCase()
@@ -508,7 +509,7 @@ function GameContent() {
               {requiredSlots.map((slotPos, i) => {
                 const pickedPlayer = mySlots[i]
                 const isBench = slotPos === 'BENCH'
-                const displayLabel = pickedPlayer ? pickedPlayer.position : (isBench ? 'BN' : slotPos)
+                const displayLabel = isBench ? 'BN' : slotPos
                 const validSlots = selectedPlayer ? getValidSlots(selectedPlayer) : new Set<number>()
                 const isValidTarget = isMyTurn && selectedPlayer !== null && validSlots.has(i) && pickedPlayer === null
                 const isBlocked = isMyTurn && selectedPlayer !== null && !validSlots.has(i) && pickedPlayer === null
@@ -711,7 +712,7 @@ function GameContent() {
               {requiredSlots.map((slotPos, i) => {
                 const pickedPlayer = oppSlots[i]
                 const isBench = slotPos === 'BENCH'
-                const displayLabel = pickedPlayer ? pickedPlayer.position : (isBench ? 'BN' : slotPos)
+                const displayLabel = isBench ? 'BN' : slotPos
                 return (
                   <div key={i} className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 bg-[#0A0A0A] ${!pickedPlayer ? 'border border-dashed border-gray-700' : ''}`}>
                     <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-600' : 'text-blue-400'}`}>

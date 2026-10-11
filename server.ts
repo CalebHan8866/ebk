@@ -73,9 +73,9 @@ function getPickerUsedPositions(room: Room): { usedPositions: Set<string>; isSta
   const picker = room.draftOrder[room.currentPickIndex]
   const pickerPicks = picker === 'host' ? room.hostPicks : room.guestPicks
   const isStarterSlot = pickerPicks.length < 5
-  const usedPositions = new Set(
-    pickerPicks.slice(0, 5).map(id => allPlayers.find(p => p.id === id)?.position).filter((x): x is string => Boolean(x))
-  )
+  // Track consumed slot positions by slot label (same as client)
+  const slots = getRequiredPositions(room.teamMode)
+  const usedPositions = new Set(slots.slice(0, 5).filter((_, i) => pickerPicks[i] !== undefined))
   return { usedPositions, isStarterSlot }
 }
 
@@ -86,7 +86,8 @@ function spinTeam(room: Room): string {
   const available = new Set<string>()
   for (const p of allPlayers) {
     if (takenIds.has(p.id)) continue
-    if (isStarterSlot && usedPositions.has(p.position)) continue
+    // Eligible if ANY of the player's positions is not yet used
+    if (isStarterSlot && p.positions.split(',').every(pos => usedPositions.has(pos))) continue
     available.add(getCurrentTeam(p.team))
   }
   const choices = CURRENT_TEAM_ABBRS.filter(t => available.has(t))
@@ -232,7 +233,7 @@ function autoPickPlayer(room: Room): number | null {
   const { usedPositions, isStarterSlot } = getPickerUsedPositions(room)
   let available = allPlayers.filter(p => {
     if (takenIds.has(p.id)) return false
-    if (isStarterSlot && usedPositions.has(p.position)) return false
+    if (isStarterSlot && p.positions.split(',').every(pos => usedPositions.has(pos))) return false
     return true
   })
   if (available.length === 0) {
@@ -432,8 +433,8 @@ app.prepare().then(async () => {
       const { usedPositions, isStarterSlot } = getPickerUsedPositions(room)
       if (isStarterSlot) {
         const player = allPlayers.find(p => p.id === playerId)
-        if (player && usedPositions.has(player.position)) {
-          socket.emit('pick-error', { message: `You already have a ${player.position} in your starting lineup` })
+        if (player && player.positions.split(',').every(pos => usedPositions.has(pos))) {
+          socket.emit('pick-error', { message: `All positions for this player are already filled` })
           return
         }
       }

@@ -85,12 +85,9 @@ function PracticeContent() {
   const filledCount = picks.filter(id => id !== null).length
   const takenIds = new Set(picks.filter((id): id is number => id !== null))
 
-  // Positions used in filled starter slots (indices 0-4)
+  // Track which starter slot positions are already filled (by slot label, not player's primary)
   const usedStarterPositions = new Set(
-    picks.slice(0, 5)
-      .filter((id): id is number => id !== null)
-      .map(id => players.find(p => p.id === id)?.position)
-      .filter((x): x is string => Boolean(x))
+    requiredSlots.slice(0, 5).filter((_, i) => picks[i] !== null)
   )
   const isStarterSlot = picks.slice(0, 5).some(id => id === null)
   const remainingStarterPositions = ['PG', 'SG', 'SF', 'PF', 'C'].filter(p => !usedStarterPositions.has(p))
@@ -98,15 +95,12 @@ function PracticeContent() {
   function triggerSpin(afterPlayers: Player[], currentPicks: (number | null)[]) {
     const takenNow = new Set(currentPicks.filter((id): id is number => id !== null))
     const isNextStarter = currentPicks.slice(0, 5).some(id => id === null)
-    const usedPos = new Set(
-      currentPicks.slice(0, 5)
-        .filter((id): id is number => id !== null)
-        .map(id => afterPlayers.find(p => p.id === id)?.position)
-        .filter((x): x is string => Boolean(x))
-    )
+    // Which slot positions are consumed in current picks
+    const usedPos = new Set(requiredSlots.slice(0, 5).filter((_, i) => currentPicks[i] !== null))
     const available = afterPlayers.filter(p => {
       if (takenNow.has(p.id)) return false
-      if (isNextStarter && usedPos.has(p.position)) return false
+      // Block only if ALL of the player's positions are already used
+      if (isNextStarter && p.positions.split(',').every(pos => usedPos.has(pos))) return false
       return true
     })
     const availableTeams = Array.from(new Set(available.map(p => getCurrentTeam(p.team))))
@@ -147,8 +141,8 @@ function PracticeContent() {
     .filter((p): p is Player => {
       if (!p) return false
       if (takenIds.has(p.id)) return false
-      // Starter slots: block positions already used in starters; bench slots: no restriction
-      if (isStarterSlot && usedStarterPositions.has(p.position)) return false
+      // Starter slots: hide player only if ALL their positions are already used
+      if (isStarterSlot && p.positions.split(',').every(pos => usedStarterPositions.has(pos))) return false
       if (filterPos !== 'ALL' && !p.positions.split(',').includes(filterPos)) return false
       if (searchQuery) {
         const q = searchQuery.toLowerCase()
@@ -162,10 +156,11 @@ function PracticeContent() {
   // Which slots are valid targets for the selected player
   function getValidSlots(player: Player): Set<number> {
     const valid = new Set<number>()
+    const playerPositions = player.positions.split(',')
     requiredSlots.forEach((s, i) => {
       if (picks[i] !== null) return // already filled
-      if (s === player.position) valid.add(i)   // matching position slot
-      if (s === 'BENCH') valid.add(i)            // any bench slot
+      if (playerPositions.includes(s)) valid.add(i) // any of the player's positions
+      if (s === 'BENCH') valid.add(i)               // any bench slot
     })
     return valid
   }
@@ -301,7 +296,7 @@ function PracticeContent() {
                     const pickedId = picks[i]
                     const pickedPlayer = (pickedId !== null && pickedId !== undefined) ? players.find(p => p.id === pickedId) ?? null : null
                     const isBench = slotPos === 'BENCH'
-                    const displayLabel = pickedPlayer ? pickedPlayer.position : (isBench ? 'BN' : slotPos)
+                    const displayLabel = isBench ? 'BN' : slotPos
                     const validSlots = selectedPlayer ? getValidSlots(selectedPlayer) : new Set<number>()
                     const isValidTarget = selectedPlayer !== null && validSlots.has(i) && pickedPlayer === null
                     const isBlocked = selectedPlayer !== null && !validSlots.has(i) && pickedPlayer === null
