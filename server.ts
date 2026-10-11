@@ -69,25 +69,56 @@ function getRequiredPositions(teamMode: TeamMode): string[] {
   return [...starters, ...bench]
 }
 
-function getPickerUsedPositions(room: Room): { usedPositions: Set<string>; isStarterSlot: boolean } {
+function getPickerUsedPositions(room: Room): { usedPositions: Set<string>; remainingBenchSlots: number } {
   const picker = room.draftOrder[room.currentPickIndex]
   const pickerPicks = picker === 'host' ? room.hostPicks : room.guestPicks
-  const isStarterSlot = pickerPicks.length < 5
-  // Track consumed slot positions by slot label (same as client)
   const slots = getRequiredPositions(room.teamMode)
-  const usedPositions = new Set(slots.slice(0, 5).filter((_, i) => pickerPicks[i] !== undefined))
-  return { usedPositions, isStarterSlot }
+
+  // Simulate slot assignment for already-picked players
+  // (same greedy logic as assignToSlots on the client)
+  const usedSlotIndices = new Set<number>()
+
+  for (const id of pickerPicks) {
+    const player = allPlayers.find(p => p.id === id)
+    if (!player) continue
+    const playerPositions = player.positions.split(',')
+
+    // Try the first starter slot whose position label matches
+    let placed = false
+    for (const pos of playerPositions) {
+      const idx = slots.findIndex((s, i) => i < 5 && s === pos && !usedSlotIndices.has(i))
+      if (idx !== -1) { usedSlotIndices.add(idx); placed = true; break }
+    }
+    // Fall back to the first available bench slot
+    if (!placed) {
+      const idx = slots.findIndex((s, i) => s === 'BENCH' && !usedSlotIndices.has(i))
+      if (idx !== -1) usedSlotIndices.add(idx)
+    }
+  }
+
+  // Which starter position labels are actually consumed?
+  const usedPositions = new Set(slots.slice(0, 5).filter((_, i) => usedSlotIndices.has(i)))
+
+  // How many bench slots are still open?
+  const totalBench = slots.filter(s => s === 'BENCH').length
+  const usedBench = [...usedSlotIndices].filter(i => i >= 5).length
+  const remainingBenchSlots = totalBench - usedBench
+
+  return { usedPositions, remainingBenchSlots }
 }
 
 function spinTeam(room: Room): string {
   const takenIds = new Set([...room.hostPicks, ...room.guestPicks])
-  const { usedPositions, isStarterSlot } = getPickerUsedPositions(room)
+  const { usedPositions, remainingBenchSlots } = getPickerUsedPositions(room)
+  const starterSlotOpen = usedPositions.size < 5
   // Only spin teams that have players eligible for this pick
   const available = new Set<string>()
   for (const p of allPlayers) {
     if (takenIds.has(p.id)) continue
-    // Eligible if ANY of the player's positions is not yet used
-    if (isStarterSlot && p.positions.split(',').every(pos => usedPositions.has(pos))) continue
+    const playerPositions = p.positions.split(',')
+    const canFitStarter = starterSlotOpen && playerPositions.some(pos => !usedPositions.has(pos))
+    const canFitBench = remainingBenchSlots > 0
+    if (!canFitStarter && !canFitBench) continue
     available.add(getCurrentTeam(p.team))
   }
   const choices = CURRENT_TEAM_ABBRS.filter(t => available.has(t))
@@ -239,11 +270,14 @@ function calculateResult(room: Room): GameResult {
 
 function autoPickPlayer(room: Room): number | null {
   const takenIds = new Set([...room.hostPicks, ...room.guestPicks])
-  const { usedPositions, isStarterSlot } = getPickerUsedPositions(room)
+  const { usedPositions, remainingBenchSlots } = getPickerUsedPositions(room)
+  const starterSlotOpen = usedPositions.size < 5
   let available = allPlayers.filter(p => {
     if (takenIds.has(p.id)) return false
-    if (isStarterSlot && p.positions.split(',').every(pos => usedPositions.has(pos))) return false
-    return true
+    const playerPositions = p.positions.split(',')
+    const canFitStarter = starterSlotOpen && playerPositions.some(pos => !usedPositions.has(pos))
+    const canFitBench = remainingBenchSlots > 0
+    return canFitStarter || canFitBench
   })
   if (available.length === 0) {
     // Fallback: ignore position filter if no eligible players
@@ -438,11 +472,15 @@ app.prepare().then(async () => {
         }
       }
 
-      // Validate no duplicate positions in starter slots
-      const { usedPositions, isStarterSlot } = getPickerUsedPositions(room)
-      if (isStarterSlot) {
-        const player = allPlayers.find(p => p.id === playerId)
-        if (player && player.positions.split(',').every(pos => usedPositions.has(pos))) {
+      // Validate the player can fit in at least one remaining slot
+      const { usedPositions, remainingBenchSlots } = getPickerUsedPositions(room)
+      const player = allPlayers.find(p => p.id === playerId)
+      if (player) {
+        const playerPositions = player.positions.split(',')
+        const starterSlotOpen = usedPositions.size < 5
+        const canFitStarter = starterSlotOpen && playerPositions.some(pos => !usedPositions.has(pos))
+        const canFitBench = remainingBenchSlots > 0
+        if (!canFitStarter && !canFitBench) {
           socket.emit('pick-error', { message: `All positions for this player are already filled` })
           return
         }
