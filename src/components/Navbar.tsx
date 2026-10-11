@@ -17,9 +17,8 @@ export default function Navbar() {
     <nav className="bg-[#111827] border-b border-orange-500/20">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <span className="text-xl">🏀</span>
-          <span className="text-lg font-black text-orange-500 tracking-widest">EBK</span>
-          <span className="text-xs text-gray-500 hidden sm:block">Elite Ball Knowledge</span>
+          <span className="font-display text-2xl text-orange-500 leading-none">EBK</span>
+          <span className="text-xs text-gray-600 hidden sm:block tracking-widest uppercase">Elite Ball Knowledge</span>
         </Link>
         <div className="flex items-center gap-4">
           <Link href="/lobby" className="text-gray-300 hover:text-orange-400 text-sm font-semibold transition-colors">Play</Link>

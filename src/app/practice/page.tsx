@@ -212,9 +212,8 @@ function PracticeContent() {
             ← Back to Lobby
           </button>
           <div className="text-center mb-8">
-            <div className="text-4xl mb-2">🏋️</div>
-            <h1 className="text-2xl font-black text-white">Practice Mode</h1>
-            <p className="text-gray-500 text-sm mt-1">Draft solo — no pressure, no timer</p>
+            <h1 className="font-display text-5xl text-white leading-none">Practice</h1>
+            <p className="text-gray-500 text-sm mt-2">Draft solo — no pressure, no timer</p>
           </div>
 
           <div className="bg-[#111827] rounded-2xl p-6 space-y-5">
@@ -241,7 +240,7 @@ function PracticeContent() {
                 </button>
                 <button onClick={() => setDifficulty('ebk')}
                   className={`rounded-lg p-3 text-center border transition-all ${difficulty === 'ebk' ? 'border-yellow-500 bg-yellow-600/10 text-yellow-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                  <div className="font-black text-sm">EBK ⚡</div>
+                  <div className="font-black text-sm">EBK</div>
                   <div className="text-xs opacity-70 mt-0.5">No scores — blind picks</div>
                 </button>
               </div>
@@ -270,7 +269,7 @@ function PracticeContent() {
             <div>
               <div className="text-orange-500 font-black text-lg">
                 Practice · {teamMode === 'starter5' ? 'Starter 5' : teamMode === 'bench8' ? 'Bench 8' : 'Full 12'}
-                {difficulty === 'ebk' && <span className="ml-2 text-yellow-500">⚡ EBK</span>}
+                {difficulty === 'ebk' && <span className="ml-2 text-yellow-500">EBK</span>}
               </div>
               <div className="text-gray-500 text-xs">No timer · No opponent · Stats revealed at the end</div>
             </div>
@@ -280,7 +279,7 @@ function PracticeContent() {
           {loadingPlayers ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <div className="text-3xl animate-bounce mb-3">🏀</div>
+                <div className="w-7 h-7 rounded-full border-2 border-orange-500 border-t-transparent animate-spin mx-auto mb-3"></div>
                 <p className="text-gray-400 text-sm">Loading players...</p>
               </div>
             </div>
@@ -501,11 +500,10 @@ function PracticeContent() {
     <div className="min-h-screen bg-[#0A0A0A] py-10 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <div className="text-5xl mb-3">📋</div>
-          <h1 className="text-3xl font-black text-white">Your Team</h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <h1 className="font-display text-5xl text-white leading-none">Your Team</h1>
+          <p className="text-gray-500 text-sm mt-2">
             {teamMode === 'starter5' ? 'Starter 5' : teamMode === 'bench8' ? 'Bench 8' : 'Full 12'} ·{' '}
-            {difficulty === 'casual' ? 'Casual' : 'EBK ⚡'}
+            {difficulty === 'casual' ? 'Casual' : 'EBK'}
           </p>
         </div>
 
@@ -539,7 +537,7 @@ function PracticeContent() {
                       p.ebkScore >= 80 ? 'text-green-400' :
                       p.ebkScore >= 60 ? 'text-yellow-400' :
                       p.ebkScore >= 40 ? 'text-orange-400' : 'text-red-400'
-                    }`}>⚡{p.ebkScore}</div>
+                    }`}>{p.ebkScore}</div>
                   )}
                 </div>
               )
@@ -568,7 +566,7 @@ function PracticeContent() {
                 totalEBK / teamSize >= 50 ? 'text-yellow-400' :
                 totalEBK / teamSize >= 30 ? 'text-orange-400' : 'text-red-400'
               }`}>
-                ⚡{totalEBK.toFixed(1)} <span className="text-sm font-normal text-gray-500">(avg {(totalEBK / teamSize).toFixed(1)})</span>
+                {totalEBK.toFixed(1)} <span className="text-sm font-normal text-gray-500">(avg {(totalEBK / teamSize).toFixed(1)})</span>
               </div>
             </div>
           )}
@@ -593,7 +591,7 @@ export default function PracticePage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="text-4xl animate-bounce">🏀</div>
+        <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin"></div>
       </div>
     }>
       <PracticeContent />

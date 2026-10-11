@@ -23,8 +23,7 @@ function VerifyContent() {
       <div className="text-center max-w-md">
         {success ? (
           <>
-            <div className="text-6xl mb-4">🎉</div>
-            <h1 className="text-3xl font-black text-white mb-3">Email Verified!</h1>
+            <h1 className="font-display text-5xl text-orange-500 mb-3 leading-none">Verified!</h1>
             <p className="text-gray-400 mb-8">Your account is confirmed. You&apos;re ready to play EBK.</p>
             <Link href="/lobby" className="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-4 rounded-xl inline-block text-lg transition-colors">
               Start Playing

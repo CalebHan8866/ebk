@@ -162,9 +162,8 @@ export default function LobbyPage() {
     <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
-          <div className="text-5xl mb-2">🏀</div>
-          <h1 className="text-3xl font-black text-orange-500">EBK</h1>
-          <p className="text-gray-500 text-sm">Elite Ball Knowledge</p>
+          <h1 className="font-display text-6xl text-orange-500 leading-none">EBK</h1>
+          <p className="text-gray-600 text-xs tracking-widest uppercase mt-1">Elite Ball Knowledge</p>
         </div>
 
         {error && (
@@ -178,33 +177,33 @@ export default function LobbyPage() {
         <div className="grid grid-cols-3 gap-3 mb-6">
           <button
             onClick={() => { setMainTab('online'); setError('') }}
-            className={`rounded-2xl p-5 text-left border-2 transition-all ${mainTab === 'online' ? 'border-orange-500 bg-orange-600/10' : 'border-gray-800 bg-[#111827] hover:border-gray-600'}`}
+            className={`rounded-xl p-5 text-left border transition-all ${mainTab === 'online' ? 'border-orange-500 bg-orange-600/10' : 'border-white/5 bg-[#101010] hover:border-white/15'}`}
           >
-            <div className="text-2xl mb-2">🌐</div>
+            <div className="font-display text-xs text-orange-500/60 tracking-widest mb-2">01</div>
             <div className="font-black text-white">Online</div>
-            <div className="text-gray-400 text-xs mt-1">Auto-match with a random opponent</div>
+            <div className="text-gray-500 text-xs mt-1">Auto-match with a random opponent</div>
           </button>
           <button
             onClick={() => { setMainTab('friends'); setError('') }}
-            className={`rounded-2xl p-5 text-left border-2 transition-all ${mainTab === 'friends' ? 'border-orange-500 bg-orange-600/10' : 'border-gray-800 bg-[#111827] hover:border-gray-600'}`}
+            className={`rounded-xl p-5 text-left border transition-all ${mainTab === 'friends' ? 'border-orange-500 bg-orange-600/10' : 'border-white/5 bg-[#101010] hover:border-white/15'}`}
           >
-            <div className="text-2xl mb-2">👥</div>
+            <div className="font-display text-xs text-orange-500/60 tracking-widest mb-2">02</div>
             <div className="font-black text-white">Friends</div>
-            <div className="text-gray-400 text-xs mt-1">Create or join a private room</div>
+            <div className="text-gray-500 text-xs mt-1">Create or join a private room</div>
           </button>
           <button
             onClick={() => router.push('/practice')}
-            className="rounded-2xl p-5 text-left border-2 border-gray-800 bg-[#111827] hover:border-gray-600 transition-all"
+            className="rounded-xl p-5 text-left border border-white/5 bg-[#101010] hover:border-white/15 transition-all"
           >
-            <div className="text-2xl mb-2">🏋️</div>
+            <div className="font-display text-xs text-orange-500/60 tracking-widest mb-2">03</div>
             <div className="font-black text-white">Practice</div>
-            <div className="text-gray-400 text-xs mt-1">Solo draft, no timer</div>
+            <div className="text-gray-500 text-xs mt-1">Solo draft, no timer</div>
           </button>
         </div>
 
         {/* ── ONLINE MODE ─────────────────────────────────────────────────── */}
         {mainTab === 'online' && (
-          <div className="bg-[#111827] rounded-2xl p-6">
+          <div className="bg-[#101010] border border-white/5 rounded-xl p-6">
             {onlineState === 'idle' && (
               <div className="space-y-4">
                 {!user && (
@@ -239,7 +238,7 @@ export default function LobbyPage() {
                   </div>
                 </div>
                 <div className="bg-yellow-900/20 border border-yellow-600/40 rounded-lg px-4 py-2.5 text-xs text-yellow-400 text-center">
-                  ⚡ Online always plays in EBK mode — no scores shown
+                  Online always plays in EBK mode — no scores shown
                 </div>
                 <button onClick={handleFindMatch} className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black py-3 rounded-xl transition-colors text-lg">
                   Find Match
@@ -249,7 +248,7 @@ export default function LobbyPage() {
 
             {onlineState === 'searching' && (
               <div className="text-center py-6">
-                <div className="text-4xl animate-spin mb-4">🏀</div>
+                <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin mx-auto mb-4"></div>
                 <h3 className="text-xl font-black text-white mb-2">Searching for opponent...</h3>
                 <p className="text-gray-400 text-sm mb-6">Waiting for another player to join</p>
                 <button onClick={handleCancelSearch} className="text-gray-400 hover:text-white text-sm underline">Cancel</button>
@@ -258,7 +257,7 @@ export default function LobbyPage() {
 
             {onlineState === 'found' && (
               <div className="text-center py-4">
-                <div className="text-4xl mb-3">⚔️</div>
+                <div className="font-display text-4xl text-orange-500 mb-3 leading-none">VS</div>
                 <h3 className="text-xl font-black text-white mb-1">Match Found!</h3>
                 <p className="text-gray-400 mb-4">vs <span className="text-orange-400 font-bold">{opponentName}</span></p>
 
@@ -279,7 +278,7 @@ export default function LobbyPage() {
 
                 <button onClick={handleConfirmReady}
                   className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 rounded-xl text-lg transition-all hover:scale-105 mb-3">
-                  ✓ Start Game
+                  Start Game
                 </button>
                 <p className="text-gray-500 text-xs">Both players must press Start Game to begin</p>
               </div>
@@ -289,7 +288,7 @@ export default function LobbyPage() {
 
         {/* ── PLAY WITH FRIENDS MODE ──────────────────────────────────────── */}
         {mainTab === 'friends' && (
-          <div className="bg-[#111827] rounded-2xl overflow-hidden">
+          <div className="bg-[#101010] border border-white/5 rounded-xl overflow-hidden">
             <div className="flex">
               <button onClick={() => setFriendsTab('create')} className={`flex-1 py-3 font-bold text-sm transition-colors ${friendsTab === 'create' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>
                 Create Room
@@ -343,7 +342,7 @@ export default function LobbyPage() {
                       </button>
                       <button onClick={() => setDifficulty('ebk')}
                         className={`rounded-lg p-3 text-center border transition-all ${difficulty === 'ebk' ? 'border-yellow-500 bg-yellow-600/10 text-yellow-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                        <div className="font-black text-sm">EBK ⚡</div>
+                        <div className="font-black text-sm">EBK</div>
                         <div className="text-xs opacity-70 mt-0.5">No scores — blind picks</div>
                       </button>
                     </div>

@@ -37,8 +37,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="text-5xl mb-2">🏀</div>
-          <h1 className="text-3xl font-black text-orange-500">EBK</h1>
+          <h1 className="font-display text-5xl text-orange-500 leading-none">EBK</h1>
           <p className="text-gray-400 text-sm">Elite Ball Knowledge</p>
         </div>
         <div className="bg-[#111827] rounded-2xl p-8">

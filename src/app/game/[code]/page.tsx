@@ -218,7 +218,7 @@ function GameContent() {
       if (pickTimerRef.current) { clearInterval(pickTimerRef.current); pickTimerRef.current = null }
       setRoom(r)
       setSeriesWinner(winner)
-      setTimeoutWarning(disqualifiedRole === role ? '❌ You were disqualified for 2 consecutive timeouts' : '🏆 Opponent disqualified for 2 consecutive timeouts')
+      setTimeoutWarning(disqualifiedRole === role ? 'You were disqualified for 2 consecutive timeouts' : 'Opponent disqualified for 2 consecutive timeouts')
     }
 
     socket.on('room-state', handleRoomState)
@@ -280,7 +280,7 @@ function GameContent() {
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl animate-bounce mb-4">🏀</div>
+          <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400">Connecting...</p>
         </div>
       </div>
@@ -292,7 +292,7 @@ function GameContent() {
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center text-center px-4">
         <div>
-          <div className="text-5xl mb-4 animate-pulse">⏳</div>
+          <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin mx-auto mb-4"></div>
           <h2 className="text-3xl font-black text-white mb-2">Waiting for opponent...</h2>
           <p className="text-gray-400 mb-6">Share this code with your opponent:</p>
           <div className="bg-[#111827] border-2 border-orange-500 rounded-2xl px-10 py-6 mb-6 inline-block">
@@ -325,7 +325,9 @@ function GameContent() {
     return (
       <div className="min-h-screen bg-[#0A0A0A] py-10 px-4">
         <div className="max-w-2xl mx-auto text-center">
-          <div className="text-6xl mb-4">{iWon ? '🏆' : isDraw ? '🤝' : '😤'}</div>
+          <div className={`font-display text-6xl mb-4 leading-none ${iWon ? 'text-orange-500' : isDraw ? 'text-gray-400' : 'text-gray-600'}`}>
+            {iWon ? 'W' : isDraw ? 'DRAW' : 'L'}
+          </div>
           <h1 className="text-4xl font-black text-white mb-2">
             {iWon ? 'You Win the Series!' : isDraw ? 'Series Draw!' : 'You Lost the Series'}
           </h1>
@@ -369,7 +371,9 @@ function GameContent() {
     return (
       <div className="min-h-screen bg-[#0A0A0A] py-10 px-4">
         <div className="max-w-2xl mx-auto text-center">
-          <div className="text-5xl mb-4">{iWon ? '🎉' : isDraw ? '🤝' : '😤'}</div>
+          <div className={`font-display text-5xl mb-4 leading-none ${iWon ? 'text-orange-500' : isDraw ? 'text-gray-400' : 'text-gray-600'}`}>
+            {iWon ? 'W' : isDraw ? 'D' : 'L'}
+          </div>
           <h1 className="text-3xl font-black text-white mb-1">
             {iWon ? 'You Won Game ' + lastResult.game : isDraw ? 'Draw!' : 'You Lost Game ' + lastResult.game}
           </h1>
@@ -482,7 +486,7 @@ function GameContent() {
             <div className="text-orange-500 font-black text-lg">EBK · Game {room.currentGame}{room.series > 1 ? ` of ${room.series}` : ''}</div>
             <div className="text-gray-500 text-xs">
               {room.code} · {STAT_LABELS[statMode]} · Lower total wins
-              {room.difficulty === 'ebk' && <span className="ml-2 text-yellow-500 font-bold">⚡ EBK Mode</span>}
+              {room.difficulty === 'ebk' && <span className="ml-2 text-yellow-500 font-bold">EBK Mode</span>}
             </div>
           </div>
           {room.series > 1 && (
@@ -496,7 +500,7 @@ function GameContent() {
 
         {/* Turn Banner */}
         <div className={`rounded-xl p-3 mb-4 text-center font-bold ${isMyTurn ? 'bg-orange-600/20 border border-orange-500 text-orange-400' : 'bg-gray-800/40 border border-gray-700 text-gray-400'}`}>
-          {isMyTurn ? '⚡ YOUR PICK' : `⏳ ${currentPicker === 'host' ? room.hostName : room.guestName}&apos;s pick...`}
+          {isMyTurn ? 'YOUR PICK' : `${currentPicker === 'host' ? room.hostName : room.guestName}&apos;s pick...`}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -624,7 +628,7 @@ function GameContent() {
             {room.status === 'drafting' && currentPickerInTimer && (
               <div className="mb-3">
                 <div className="flex justify-between text-xs text-gray-400 mb-1">
-                  <span>{currentPickerInTimer === role ? '⚡ Your pick' : `⏳ ${currentPickerInTimer === 'host' ? room.hostName : room.guestName}'s pick`}</span>
+                  <span>{currentPickerInTimer === role ? 'Your pick' : `${currentPickerInTimer === 'host' ? room.hostName : room.guestName}'s pick`}</span>
                   <span className={`font-black ${pickTimeLeft <= 5 ? 'text-red-400 animate-pulse' : pickTimeLeft <= 10 ? 'text-yellow-400' : 'text-green-400'}`}>
                     {pickTimeLeft}s
                   </span>
@@ -739,7 +743,7 @@ export default function GamePage() {
     <Suspense fallback={
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl animate-bounce mb-4">🏀</div>
+          <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400">Loading...</p>
         </div>
       </div>
