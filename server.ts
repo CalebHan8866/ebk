@@ -195,6 +195,7 @@ interface QueueEntry {
   teamMode: TeamMode
   series: SeriesLength
   difficulty: Difficulty
+  userRecord: { wins: number; losses: number; draws: number }
 }
 
 interface ReadyRoom {
@@ -206,11 +207,22 @@ interface ReadyRoom {
   timer: ReturnType<typeof setTimeout>
 }
 
+interface GameListing {
+  code: string
+  hostSocketId: string
+  hostUserId: string | null
+  hostName: string
+  hostRecord: { wins: number; losses: number; draws: number }
+  teamMode: TeamMode
+  series: SeriesLength
+}
+
 // ─── Room Store ──────────────────────────────────────────────────────────────
 
 const rooms = new Map<string, Room>()
-const matchmakingQueue: QueueEntry[] = []
 const readyRooms = new Map<string, ReadyRoom>()
+const gameListings = new Map<string, GameListing>()
+const listingTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const pickTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const consecutiveTimeouts = new Map<string, { host: number; guest: number }>()
 let allPlayers: PlayerData[] = []
@@ -379,6 +391,44 @@ function startPickTimer(io: SocketServer, room: Room) {
   io.to(code).emit('pick-timer-start', { picker: currentPicker, duration: 30, spunTeam })
 }
 
+function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
+  const code = rr.code
+  const teamSize = TEAM_SIZES[rr.hostEntry.teamMode]
+  const room: Room = {
+    code,
+    hostSocketId: rr.hostEntry.socketId,
+    guestSocketId: rr.guestEntry.socketId,
+    hostUserId: rr.hostEntry.userId,
+    guestUserId: rr.guestEntry.userId,
+    hostName: rr.hostEntry.userName,
+    guestName: rr.guestEntry.userName,
+    teamMode: rr.hostEntry.teamMode,
+    series: rr.hostEntry.series,
+    difficulty: 'ebk',
+    source: 'online',
+    status: 'drafting',
+    draftOrder: buildSnakeDraft(teamSize),
+    currentPickIndex: 0,
+    hostPicks: [],
+    guestPicks: [],
+    currentGame: 1,
+    hostSeriesScore: 0,
+    guestSeriesScore: 0,
+    gameResults: [],
+    currentSpunTeam: null,
+  }
+  rooms.set(code, room)
+  consecutiveTimeouts.set(code, { host: 0, guest: 0 })
+
+  const hostSocket = io.sockets.sockets.get(rr.hostEntry.socketId)
+  const guestSocket = io.sockets.sockets.get(rr.guestEntry.socketId)
+  hostSocket?.join(code)
+  guestSocket?.join(code)
+
+  io.to(code).emit('draft-started', { room, players: allPlayers })
+  startPickTimer(io, room)
+}
+
 // ─── Server ──────────────────────────────────────────────────────────────────
 
 app.prepare().then(async () => {
@@ -541,6 +591,7 @@ app.prepare().then(async () => {
       room.hostPicks = []
       room.guestPicks = []
       room.currentPickIndex = 0
+      room.currentSpunTeam = null
       room.draftOrder = buildSnakeDraft(TEAM_SIZES[room.teamMode])
       if (room.currentGame % 2 === 0) {
         room.draftOrder = room.draftOrder.map(p => p === 'host' ? 'guest' : 'host')
@@ -572,64 +623,132 @@ app.prepare().then(async () => {
       if (room.status === 'drafting') {
         // Re-emit timer start for the current picker so rejoining client syncs
         const currentPicker = room.draftOrder[room.currentPickIndex]
-        socket.emit('pick-timer-start', { picker: currentPicker, duration: 30 })
+        socket.emit('pick-timer-start', { picker: currentPicker, duration: 30, spunTeam: room.currentSpunTeam })
       }
     })
 
-    // ── Matchmaking ──────────────────────────────────────────────────────────
+    // ── Game Listings (open lobby browser) ───────────────────────────────────
 
-    socket.on('join-queue', ({ userName, userId, teamMode, series, difficulty }: {
-      userName: string, userId: string | null, teamMode: TeamMode, series: SeriesLength, difficulty: Difficulty
+    socket.on('get-listings', () => {
+      socket.emit('listings-updated', { listings: Array.from(gameListings.values()) })
+    })
+
+    socket.on('create-listing', async ({ userName, userId, teamMode, series }: {
+      userName: string, userId: string, teamMode: TeamMode, series: SeriesLength
     }) => {
-      // Remove if already in queue
-      const existingIdx = matchmakingQueue.findIndex(e => e.socketId === socket.id)
-      if (existingIdx !== -1) matchmakingQueue.splice(existingIdx, 1)
-
-      const entry: QueueEntry = { socketId: socket.id, userId, userName, teamMode, series, difficulty: difficulty || 'casual' }
-      matchmakingQueue.push(entry)
-      socket.emit('queue-joined', { position: matchmakingQueue.length })
-
-      // Try to find a match (first other person in queue)
-      const otherIdx = matchmakingQueue.findIndex(e => e.socketId !== socket.id)
-      if (otherIdx !== -1) {
-        const other = matchmakingQueue[otherIdx]
-        // Remove both from queue
-        const myIdx = matchmakingQueue.findIndex(e => e.socketId === socket.id)
-        matchmakingQueue.splice(Math.max(otherIdx, myIdx), 1)
-        matchmakingQueue.splice(Math.min(otherIdx, myIdx), 1)
-
-        // Create a ready room using the first player's settings
-        let code = generateCode()
-        while (rooms.has(code) || readyRooms.has(code)) code = generateCode()
-
-        const readyTimer = setTimeout(() => {
-          const rr = readyRooms.get(code)
-          if (!rr) return
-          readyRooms.delete(code)
-          io.to(rr.hostEntry.socketId).emit('match-cancelled', { reason: 'Opponent did not ready up in time' })
-          io.to(rr.guestEntry.socketId).emit('match-cancelled', { reason: 'Opponent did not ready up in time' })
-        }, 60000)
-
-        const readyRoom: ReadyRoom = {
-          code,
-          hostEntry: other,
-          guestEntry: entry,
-          hostReady: false,
-          guestReady: false,
-          timer: readyTimer,
+      // Remove any stale listing by this socket
+      for (const [c, l] of gameListings.entries()) {
+        if (l.hostSocketId === socket.id) {
+          clearTimeout(listingTimers.get(c))
+          listingTimers.delete(c)
+          gameListings.delete(c)
+          break
         }
-        readyRooms.set(code, readyRoom)
-
-        const matchPayload = { code, teamMode: other.teamMode, series: other.series }
-        io.to(other.socketId).emit('match-found', { ...matchPayload, opponentName: entry.userName })
-        io.to(entry.socketId).emit('match-found', { ...matchPayload, opponentName: other.userName })
       }
+
+      const hostRecord = { wins: 0, losses: 0, draws: 0 }
+      if (userId) {
+        const u = await prisma.user.findUnique({ where: { id: userId }, select: { wins: true, losses: true, draws: true } }).catch(() => null)
+        if (u) { hostRecord.wins = u.wins; hostRecord.losses = u.losses; hostRecord.draws = u.draws }
+      }
+
+      let code = generateCode()
+      while (rooms.has(code) || readyRooms.has(code) || gameListings.has(code)) code = generateCode()
+
+      const listing: GameListing = { code, hostSocketId: socket.id, hostUserId: userId, hostName: userName, hostRecord, teamMode, series }
+      gameListings.set(code, listing)
+
+      // Auto-expire listing after 10 minutes
+      const expireTimer = setTimeout(() => {
+        if (gameListings.has(code)) {
+          gameListings.delete(code)
+          listingTimers.delete(code)
+          socket.emit('listing-expired')
+          io.emit('listings-updated', { listings: Array.from(gameListings.values()) })
+        }
+      }, 10 * 60 * 1000)
+      listingTimers.set(code, expireTimer)
+
+      socket.emit('listing-created', { code })
+      io.emit('listings-updated', { listings: Array.from(gameListings.values()) })
     })
 
-    socket.on('leave-queue', () => {
-      const idx = matchmakingQueue.findIndex(e => e.socketId === socket.id)
-      if (idx !== -1) matchmakingQueue.splice(idx, 1)
-      socket.emit('queue-left')
+    socket.on('cancel-listing', ({ code }: { code: string }) => {
+      const listing = gameListings.get(code)
+      if (!listing || listing.hostSocketId !== socket.id) return
+      clearTimeout(listingTimers.get(code))
+      listingTimers.delete(code)
+      gameListings.delete(code)
+      io.emit('listings-updated', { listings: Array.from(gameListings.values()) })
+    })
+
+    socket.on('join-listing', async ({ code, userName, userId }: {
+      code: string, userName: string, userId: string
+    }) => {
+      const listing = gameListings.get(code)
+      if (!listing) {
+        socket.emit('listing-error', { message: 'Game no longer available' })
+        return
+      }
+
+      // Remove listing immediately so nobody else can join
+      clearTimeout(listingTimers.get(code))
+      listingTimers.delete(code)
+      gameListings.delete(code)
+      io.emit('listings-updated', { listings: Array.from(gameListings.values()) })
+
+      const guestRecord = { wins: 0, losses: 0, draws: 0 }
+      if (userId) {
+        const u = await prisma.user.findUnique({ where: { id: userId }, select: { wins: true, losses: true, draws: true } }).catch(() => null)
+        if (u) { guestRecord.wins = u.wins; guestRecord.losses = u.losses; guestRecord.draws = u.draws }
+      }
+
+      const hostEntry: QueueEntry = {
+        socketId: listing.hostSocketId, userId: listing.hostUserId, userName: listing.hostName,
+        teamMode: listing.teamMode, series: listing.series, difficulty: 'ebk', userRecord: listing.hostRecord,
+      }
+      const guestEntry: QueueEntry = {
+        socketId: socket.id, userId, userName,
+        teamMode: listing.teamMode, series: listing.series, difficulty: 'ebk', userRecord: guestRecord,
+      }
+
+      const readyTimer = setTimeout(() => {
+        const rr = readyRooms.get(code)
+        if (!rr) return
+        readyRooms.delete(code)
+        startGameFromReadyRoom(io, rr)
+      }, 60000)
+
+      readyRooms.set(code, { code, hostEntry, guestEntry, hostReady: false, guestReady: false, timer: readyTimer })
+
+      const basePayload = { proposedTeamMode: listing.teamMode, proposedSeries: listing.series }
+      io.to(listing.hostSocketId).emit('match-found', {
+        ...basePayload, code, isHost: true,
+        opponentName: userName, opponentRecord: guestRecord,
+        myTeamMode: listing.teamMode, mySeries: listing.series,
+        opponentTeamMode: listing.teamMode, opponentSeries: listing.series,
+      })
+      socket.emit('match-found', {
+        ...basePayload, code, isHost: false,
+        opponentName: listing.hostName, opponentRecord: listing.hostRecord,
+        myTeamMode: listing.teamMode, mySeries: listing.series,
+        opponentTeamMode: listing.teamMode, opponentSeries: listing.series,
+      })
+    })
+
+    socket.on('decline-match', ({ code }: { code: string }) => {
+      const rr = readyRooms.get(code)
+      if (!rr) return
+      clearTimeout(rr.timer)
+      readyRooms.delete(code)
+      const isHost = socket.id === rr.hostEntry.socketId
+      const declinerName = isHost ? rr.hostEntry.userName : rr.guestEntry.userName
+      io.to(rr.hostEntry.socketId).emit('match-cancelled', {
+        reason: isHost ? 'You declined the match' : `${declinerName} declined`,
+      })
+      io.to(rr.guestEntry.socketId).emit('match-cancelled', {
+        reason: isHost ? `${declinerName} declined` : 'You declined the match',
+      })
     })
 
     socket.on('confirm-ready', ({ code }: { code: string }) => {
@@ -649,49 +768,21 @@ app.prepare().then(async () => {
       if (rr.hostReady && rr.guestReady) {
         clearTimeout(rr.timer)
         readyRooms.delete(code)
-
-        // Create actual room
-        const teamSize = TEAM_SIZES[rr.hostEntry.teamMode]
-        const room: Room = {
-          code,
-          hostSocketId: rr.hostEntry.socketId,
-          guestSocketId: rr.guestEntry.socketId,
-          hostUserId: rr.hostEntry.userId,
-          guestUserId: rr.guestEntry.userId,
-          hostName: rr.hostEntry.userName,
-          guestName: rr.guestEntry.userName,
-          teamMode: rr.hostEntry.teamMode,
-          series: rr.hostEntry.series,
-          difficulty: 'ebk',
-          source: 'online',
-          status: 'drafting',
-          draftOrder: buildSnakeDraft(teamSize),
-          currentPickIndex: 0,
-          hostPicks: [],
-          guestPicks: [],
-          currentGame: 1,
-          hostSeriesScore: 0,
-          guestSeriesScore: 0,
-          gameResults: [],
-          currentSpunTeam: null,
-        }
-        rooms.set(code, room)
-        consecutiveTimeouts.set(code, { host: 0, guest: 0 })
-
-        const hostSocket = io.sockets.sockets.get(rr.hostEntry.socketId)
-        const guestSocket = io.sockets.sockets.get(rr.guestEntry.socketId)
-        hostSocket?.join(code)
-        guestSocket?.join(code)
-
-        io.to(code).emit('draft-started', { room, players: allPlayers })
-        startPickTimer(io, room)
+        startGameFromReadyRoom(io, rr)
       }
     })
 
     socket.on('disconnect', () => {
-      // Remove from matchmaking queue
-      const qIdx = matchmakingQueue.findIndex(e => e.socketId === socket.id)
-      if (qIdx !== -1) matchmakingQueue.splice(qIdx, 1)
+      // Remove any open listing by this socket
+      for (const [code, listing] of gameListings.entries()) {
+        if (listing.hostSocketId === socket.id) {
+          clearTimeout(listingTimers.get(code))
+          listingTimers.delete(code)
+          gameListings.delete(code)
+          io.emit('listings-updated', { listings: Array.from(gameListings.values()) })
+          break
+        }
+      }
 
       // Cancel any ready room
       readyRooms.forEach((rr, code) => {

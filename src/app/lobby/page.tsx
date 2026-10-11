@@ -1,28 +1,57 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { getSocket } from '@/lib/socket'
 import { useAuth } from '@/context/AuthContext'
 
 type TeamMode = 'starter5' | 'bench8' | 'full12'
 type SeriesLength = 1 | 3 | 5
 type Difficulty = 'casual' | 'ebk'
-type OnlineState = 'idle' | 'searching' | 'found'
+type OnlineState = 'idle' | 'listing' | 'found'
+
+interface UserRecord { wins: number; losses: number; draws: number }
+
+interface GameListing {
+  code: string
+  hostName: string
+  hostRecord: UserRecord
+  teamMode: TeamMode
+  series: SeriesLength
+}
+
+interface MatchInfo {
+  code: string
+  opponentName: string
+  opponentRecord: UserRecord
+  proposedTeamMode: TeamMode
+  proposedSeries: SeriesLength
+  isHost: boolean
+}
+
+const MODE_LABEL: Record<TeamMode, string> = { starter5: 'Starter 5', bench8: 'Bench 8', full12: 'Full 12' }
+const MODE_SUB: Record<TeamMode, string> = { starter5: '5 players', bench8: '8 players', full12: '12 players' }
+function seriesLabel(s: SeriesLength) { return s === 1 ? '1 Game' : `Best of ${s}` }
 
 export default function LobbyPage() {
-  const [mainTab, setMainTab] = useState<'online' | 'friends' | 'practice'>('online')
+  const [mainTab, setMainTab] = useState<'online' | 'friends'>('online')
   const { user } = useAuth()
 
   // ── Online state ──────────────────────────────────────────────────────────
   const [onlineState, setOnlineState] = useState<OnlineState>('idle')
+  const [listings, setListings] = useState<GameListing[]>([])
+  const [myListingCode, setMyListingCode] = useState<string | null>(null)
+  const [matchInfo, setMatchInfo] = useState<MatchInfo | null>(null)
   const [matchCode, setMatchCode] = useState('')
-  const [opponentName, setOpponentName] = useState('')
   const [hostReady, setHostReady] = useState(false)
   const [guestReady, setGuestReady] = useState(false)
   const [countdown, setCountdown] = useState(60)
-  const [onlineTeamMode, setOnlineTeamMode] = useState<TeamMode>('starter5')
-  const [onlineSeries, setOnlineSeries] = useState<SeriesLength>(1)
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // create form
+  const [showCreate, setShowCreate] = useState(false)
+  const [createTeamMode, setCreateTeamMode] = useState<TeamMode>('starter5')
+  const [createSeries, setCreateSeries] = useState<SeriesLength>(1)
 
   // ── Friends state ─────────────────────────────────────────────────────────
   const [friendsTab, setFriendsTab] = useState<'create' | 'join'>('create')
@@ -32,6 +61,7 @@ export default function LobbyPage() {
   const [joinCode, setJoinCode] = useState('')
   const [userName, setUserName] = useState(user?.username || '')
   const [error, setError] = useState('')
+  const [listingError, setListingError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const router = useRouter()
@@ -44,14 +74,29 @@ export default function LobbyPage() {
   useEffect(() => {
     const socket = getSocket()
 
-    const handleQueueJoined = () => setOnlineState('searching')
-    const handleQueueLeft = () => setOnlineState('idle')
+    const handleListingsUpdated = ({ listings: l }: { listings: GameListing[] }) => setListings(l)
 
-    const handleMatchFound = ({ code, opponentName: oppName }: {
-      code: string; opponentName: string; teamMode: TeamMode; series: SeriesLength
-    }) => {
-      setMatchCode(code)
-      setOpponentName(oppName)
+    const handleListingCreated = ({ code }: { code: string }) => {
+      setMyListingCode(code)
+      setOnlineState('listing')
+      setShowCreate(false)
+    }
+
+    const handleListingExpired = () => {
+      setOnlineState('idle')
+      setMyListingCode(null)
+      setListingError('Your game listing expired after 10 minutes')
+    }
+
+    const handleListingError = ({ message }: { message: string }) => {
+      setListingError(message)
+      setTimeout(() => setListingError(''), 3000)
+    }
+
+    const handleMatchFound = (info: MatchInfo & { opponentTeamMode: TeamMode; opponentSeries: SeriesLength; myTeamMode: TeamMode; mySeries: SeriesLength }) => {
+      setMatchInfo(info)
+      setMatchCode(info.code)
+      setMyListingCode(null)
       setOnlineState('found')
       setCountdown(60)
       setHostReady(false)
@@ -59,10 +104,7 @@ export default function LobbyPage() {
       if (countdownRef.current) clearInterval(countdownRef.current)
       countdownRef.current = setInterval(() => {
         setCountdown(c => {
-          if (c <= 1) {
-            clearInterval(countdownRef.current!)
-            return 0
-          }
+          if (c <= 1) { clearInterval(countdownRef.current!); return 0 }
           return c - 1
         })
       }, 1000)
@@ -84,48 +126,71 @@ export default function LobbyPage() {
     const handleMatchCancelled = ({ reason }: { reason: string }) => {
       if (countdownRef.current) clearInterval(countdownRef.current)
       setOnlineState('idle')
+      setMatchInfo(null)
+      setMyListingCode(null)
       setError(reason)
     }
 
-    socket.on('queue-joined', handleQueueJoined)
-    socket.on('queue-left', handleQueueLeft)
+    socket.on('listings-updated', handleListingsUpdated)
+    socket.on('listing-created', handleListingCreated)
+    socket.on('listing-expired', handleListingExpired)
+    socket.on('listing-error', handleListingError)
     socket.on('match-found', handleMatchFound)
     socket.on('ready-update', handleReadyUpdate)
     socket.on('draft-started', handleDraftStarted)
     socket.on('match-cancelled', handleMatchCancelled)
 
+    // Fetch current listings on mount
+    socket.emit('get-listings')
+
     return () => {
-      socket.off('queue-joined', handleQueueJoined)
-      socket.off('queue-left', handleQueueLeft)
+      socket.off('listings-updated', handleListingsUpdated)
+      socket.off('listing-created', handleListingCreated)
+      socket.off('listing-expired', handleListingExpired)
+      socket.off('listing-error', handleListingError)
       socket.off('match-found', handleMatchFound)
       socket.off('ready-update', handleReadyUpdate)
       socket.off('draft-started', handleDraftStarted)
       socket.off('match-cancelled', handleMatchCancelled)
+      if (countdownRef.current) clearInterval(countdownRef.current)
     }
   }, [router, user, userName])
 
-  function handleFindMatch() {
-    const name = user?.username || userName.trim()
-    if (!name) { setError('Enter your name first'); return }
-    setError('')
+  function handlePostGame() {
+    if (!user) return
+    setListingError('')
     const socket = getSocket()
-    socket.emit('join-queue', {
-      userName: name,
-      userId: user?.id || null,
-      teamMode: onlineTeamMode,
-      series: onlineSeries,
+    socket.emit('create-listing', {
+      userName: user.username,
+      userId: user.id,
+      teamMode: createTeamMode,
+      series: createSeries,
     })
   }
 
-  function handleCancelSearch() {
+  function handleCancelListing() {
+    if (!myListingCode) return
     const socket = getSocket()
-    socket.emit('leave-queue')
+    socket.emit('cancel-listing', { code: myListingCode })
+    setMyListingCode(null)
     setOnlineState('idle')
   }
 
-  function handleConfirmReady() {
+  function handleJoinListing(code: string) {
+    if (!user) return
+    setListingError('')
     const socket = getSocket()
-    socket.emit('confirm-ready', { code: matchCode })
+    socket.emit('join-listing', { code, userName: user.username, userId: user.id })
+  }
+
+  function handleAccept() {
+    getSocket().emit('confirm-ready', { code: matchCode })
+  }
+
+  function handleDecline() {
+    getSocket().emit('decline-match', { code: matchCode })
+    setOnlineState('idle')
+    setMatchInfo(null)
   }
 
   function handleCreate() {
@@ -181,7 +246,7 @@ export default function LobbyPage() {
           >
             <div className="font-display text-xs text-orange-500/60 tracking-widest mb-2">01</div>
             <div className="font-black text-white">Online</div>
-            <div className="text-gray-500 text-xs mt-1">Auto-match with a random opponent</div>
+            <div className="text-gray-500 text-xs mt-1">Browse or post open games</div>
           </button>
           <button
             onClick={() => { setMainTab('friends'); setError('') }}
@@ -203,84 +268,204 @@ export default function LobbyPage() {
 
         {/* ── ONLINE MODE ─────────────────────────────────────────────────── */}
         {mainTab === 'online' && (
-          <div className="bg-[#101010] border border-white/5 rounded-xl p-6">
-            {onlineState === 'idle' && (
-              <div className="space-y-4">
-                {!user && (
+          <div className="bg-[#101010] border border-white/5 rounded-xl overflow-hidden">
+
+            {/* Login gate */}
+            {!user && (
+              <div className="p-6 text-center py-8">
+                <div className="text-white font-black text-lg mb-2">Sign in to play online</div>
+                <p className="text-gray-600 text-sm mb-6">An account is required to track your record and join games.</p>
+                <div className="flex gap-3 justify-center">
+                  <Link href="/login" className="bg-orange-600 hover:bg-orange-700 text-white font-black px-6 py-3 rounded-xl transition-colors">Sign In</Link>
+                  <Link href="/signup" className="bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-white font-black px-6 py-3 rounded-xl transition-colors">Sign Up</Link>
+                </div>
+              </div>
+            )}
+
+            {/* Game browser */}
+            {user && onlineState === 'idle' && !showCreate && (
+              <div>
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-white/5">
                   <div>
-                    <label className="block text-gray-400 text-xs mb-1 uppercase tracking-wide">Your Name</label>
-                    <input value={userName} onChange={e => setUserName(e.target.value)}
-                      placeholder="Enter your name"
-                      className="w-full bg-[#0A0A0A] border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-orange-500" />
+                    <div className="text-white font-black text-sm">Open Games</div>
+                    <div className="text-gray-600 text-xs mt-0.5">{listings.length} available · EBK mode</div>
+                  </div>
+                  <button
+                    onClick={() => setShowCreate(true)}
+                    className="bg-orange-600 hover:bg-orange-700 text-white font-black text-sm px-4 py-2 rounded-lg transition-colors"
+                  >
+                    + Create
+                  </button>
+                </div>
+
+                {listingError && (
+                  <div className="mx-4 mt-3 bg-red-900/40 border border-red-500/40 text-red-300 rounded-lg px-3 py-2 text-xs text-center">
+                    {listingError}
                   </div>
                 )}
+
+                {/* Listings */}
+                <div className="divide-y divide-white/5 max-h-[360px] overflow-y-auto">
+                  {listings.length === 0 ? (
+                    <div className="text-center py-12 px-6">
+                      <div className="text-gray-600 font-black text-sm mb-2">No open games</div>
+                      <div className="text-gray-700 text-xs">Be the first — create a game above</div>
+                    </div>
+                  ) : (
+                    listings.map(l => (
+                      <div key={l.code} className="flex items-center gap-3 px-5 py-4 hover:bg-white/[0.02] transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-white font-black text-sm truncate">{l.hostName}</div>
+                          <div className="text-gray-500 text-xs mt-0.5">
+                            {l.hostRecord.wins}W {l.hostRecord.losses}L
+                            <span className="text-gray-700 mx-1.5">·</span>
+                            {MODE_LABEL[l.teamMode]}
+                            <span className="text-gray-700 mx-1.5">·</span>
+                            {seriesLabel(l.series)}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleJoinListing(l.code)}
+                          className="bg-orange-600 hover:bg-orange-700 text-white font-black text-xs px-4 py-2 rounded-lg transition-colors shrink-0"
+                        >
+                          Join
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Your record */}
+                <div className="px-5 py-3 border-t border-white/5 flex items-center justify-between">
+                  <div className="text-gray-600 text-xs">{user.username} · {user.wins}W {user.losses}L</div>
+                  <div className="text-orange-500 text-xs font-bold">EBK</div>
+                </div>
+              </div>
+            )}
+
+            {/* Create game form */}
+            {user && onlineState === 'idle' && showCreate && (
+              <div className="p-5 space-y-4">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-white font-black">Create Game</div>
+                  <button onClick={() => setShowCreate(false)} className="text-gray-500 hover:text-white text-xs">✕ Cancel</button>
+                </div>
+
                 <div>
-                  <label className="block text-gray-400 text-xs mb-2 uppercase tracking-wide">Team Mode</label>
+                  <label className="block text-gray-500 text-xs mb-2 uppercase tracking-wide">Team Mode</label>
                   <div className="grid grid-cols-3 gap-2">
-                    {([['starter5', 'Starter 5', '5 players'], ['bench8', 'Bench 8', '8 players'], ['full12', 'Full 12', '12 players']] as const).map(([val, label, sub]) => (
-                      <button key={val} onClick={() => setOnlineTeamMode(val)}
-                        className={`rounded-lg p-2.5 text-center text-xs border transition-all ${onlineTeamMode === val ? 'border-orange-500 bg-orange-600/20 text-orange-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                        <div className="font-black text-sm">{label}</div>
-                        <div className="text-gray-500">{sub}</div>
+                    {(['starter5', 'bench8', 'full12'] as TeamMode[]).map(val => (
+                      <button key={val} onClick={() => setCreateTeamMode(val)}
+                        className={`rounded-lg p-2.5 text-center border transition-all ${createTeamMode === val ? 'border-orange-500 bg-orange-600/20 text-orange-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
+                        <div className="font-black text-sm">{MODE_LABEL[val]}</div>
+                        <div className="text-xs opacity-60 mt-0.5">{MODE_SUB[val]}</div>
                       </button>
                     ))}
                   </div>
                 </div>
+
                 <div>
-                  <label className="block text-gray-400 text-xs mb-2 uppercase tracking-wide">Series</label>
+                  <label className="block text-gray-500 text-xs mb-2 uppercase tracking-wide">Series</label>
                   <div className="grid grid-cols-3 gap-2">
                     {([1, 3, 5] as SeriesLength[]).map(s => (
-                      <button key={s} onClick={() => setOnlineSeries(s)}
-                        className={`rounded-lg p-2.5 text-center text-sm font-black border transition-all ${onlineSeries === s ? 'border-orange-500 bg-orange-600/20 text-orange-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                        {s === 1 ? '1 Game' : `Best of ${s}`}
+                      <button key={s} onClick={() => setCreateSeries(s)}
+                        className={`rounded-lg p-2.5 text-center text-sm font-black border transition-all ${createSeries === s ? 'border-orange-500 bg-orange-600/20 text-orange-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
+                        {seriesLabel(s)}
                       </button>
                     ))}
                   </div>
                 </div>
-                <div className="bg-yellow-900/20 border border-yellow-600/40 rounded-lg px-4 py-2.5 text-xs text-yellow-400 text-center">
-                  Online always plays in EBK mode — no scores shown
-                </div>
-                <button onClick={handleFindMatch} className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black py-3 rounded-xl transition-colors text-lg">
-                  Find Match
+
+                <button onClick={handlePostGame} className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black py-3 rounded-xl transition-colors">
+                  Post Game
                 </button>
               </div>
             )}
 
-            {onlineState === 'searching' && (
-              <div className="text-center py-6">
-                <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin mx-auto mb-4"></div>
-                <h3 className="text-xl font-black text-white mb-2">Searching for opponent...</h3>
-                <p className="text-gray-400 text-sm mb-6">Waiting for another player to join</p>
-                <button onClick={handleCancelSearch} className="text-gray-400 hover:text-white text-sm underline">Cancel</button>
+            {/* Your listing is live */}
+            {user && onlineState === 'listing' && (
+              <div className="p-6">
+                <div className="text-center mb-5">
+                  <div className="font-display text-2xl text-orange-500 leading-none mb-1">Game Posted</div>
+                  <div className="text-gray-500 text-xs">Waiting for an opponent to join</div>
+                </div>
+
+                <div className="bg-[#0A0A0A] rounded-2xl p-4 mb-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <div className="text-white font-black">{user.username}</div>
+                      <div className="text-gray-500 text-xs mt-0.5">{user.wins}W {user.losses}L</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-orange-400 font-black text-sm">{MODE_LABEL[createTeamMode]}</div>
+                      <div className="text-gray-500 text-xs">{seriesLabel(createSeries)}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
+                    <span className="text-green-400 text-xs font-bold">Visible to all players</span>
+                  </div>
+                </div>
+
+                <button onClick={handleCancelListing} className="w-full bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-gray-400 hover:text-white font-black py-3 rounded-xl transition-colors">
+                  Cancel
+                </button>
               </div>
             )}
 
-            {onlineState === 'found' && (
-              <div className="text-center py-4">
-                <div className="font-display text-4xl text-orange-500 mb-3 leading-none">VS</div>
-                <h3 className="text-xl font-black text-white mb-1">Match Found!</h3>
-                <p className="text-gray-400 mb-4">vs <span className="text-orange-400 font-bold">{opponentName}</span></p>
-
-                {/* Countdown */}
-                <div className={`text-5xl font-black mb-4 ${countdown <= 10 ? 'text-red-400 animate-pulse' : countdown <= 30 ? 'text-yellow-400' : 'text-green-400'}`}>
-                  {countdown}s
-                </div>
-
-                {/* Ready status */}
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                  <div className={`rounded-lg p-3 text-center text-sm font-bold border ${hostReady ? 'border-green-500 bg-green-900/30 text-green-400' : 'border-gray-700 text-gray-500'}`}>
-                    {displayName || 'You'} {hostReady ? '✓ Ready' : '...'}
-                  </div>
-                  <div className={`rounded-lg p-3 text-center text-sm font-bold border ${guestReady ? 'border-green-500 bg-green-900/30 text-green-400' : 'border-gray-700 text-gray-500'}`}>
-                    {opponentName} {guestReady ? '✓ Ready' : '...'}
+            {/* Match found — pre-game lobby */}
+            {user && onlineState === 'found' && matchInfo && (
+              <div className="p-5 space-y-4">
+                <div className="text-center">
+                  <div className="font-display text-3xl text-orange-500 leading-none mb-1">Match Found</div>
+                  <div className={`text-xs font-bold tabular-nums ${countdown <= 10 ? 'text-red-400' : countdown <= 20 ? 'text-yellow-400' : 'text-gray-500'}`}>
+                    {countdown > 0 ? `Auto-starts in ${countdown}s` : 'Starting...'}
                   </div>
                 </div>
 
-                <button onClick={handleConfirmReady}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 rounded-xl text-lg transition-all hover:scale-105 mb-3">
-                  Start Game
-                </button>
-                <p className="text-gray-500 text-xs">Both players must press Start Game to begin</p>
+                {/* Players */}
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: 'You', name: displayName, record: `${user.wins}W ${user.losses}L`, ready: matchInfo.isHost ? hostReady : guestReady, accent: 'text-orange-400' },
+                    { label: 'Opponent', name: matchInfo.opponentName, record: `${matchInfo.opponentRecord.wins}W ${matchInfo.opponentRecord.losses}L`, ready: matchInfo.isHost ? guestReady : hostReady, accent: 'text-blue-400' },
+                  ].map(side => (
+                    <div key={side.label} className="bg-[#0A0A0A] rounded-2xl p-4 text-center">
+                      <div className={`${side.accent} text-xs uppercase tracking-widest mb-2 font-bold`}>{side.label}</div>
+                      <div className="text-white font-black text-sm truncate">{side.name}</div>
+                      <div className="text-gray-500 text-xs mt-1">{side.record}</div>
+                      {side.ready && <div className="mt-2 text-green-400 text-xs font-bold">Ready</div>}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Game settings */}
+                <div className="bg-[#0A0A0A] rounded-2xl px-4 py-3 flex items-center justify-between">
+                  <div className="text-gray-500 text-xs">Game</div>
+                  <div className="text-white font-black text-sm">
+                    {MODE_LABEL[matchInfo.proposedTeamMode]}
+                    <span className="text-gray-600 mx-1.5">·</span>
+                    {seriesLabel(matchInfo.proposedSeries)}
+                    <span className="text-gray-600 mx-1.5">·</span>
+                    <span className="text-yellow-400">EBK</span>
+                  </div>
+                </div>
+
+                {/* Accept / Decline */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button onClick={handleDecline} className="bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-gray-400 hover:text-white font-black py-3 rounded-xl transition-colors">
+                    Decline
+                  </button>
+                  <button onClick={handleAccept} className="bg-orange-600 hover:bg-orange-700 text-white font-black py-3 rounded-xl transition-colors">
+                    Accept
+                  </button>
+                </div>
+
+                {(hostReady || guestReady) && !(hostReady && guestReady) && (
+                  <p className="text-center text-gray-600 text-xs">
+                    Waiting for {(matchInfo.isHost ? guestReady : hostReady) ? displayName : matchInfo.opponentName} to accept...
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -312,11 +497,11 @@ export default function LobbyPage() {
                   <div>
                     <label className="block text-gray-400 text-xs mb-2 uppercase tracking-wide">Team Mode</label>
                     <div className="grid grid-cols-3 gap-2">
-                      {([['starter5', 'Starter 5', '1 per pos'], ['bench8', 'Bench 8', '5+3'], ['full12', 'Full 12', '5+7']] as const).map(([val, label, sub]) => (
+                      {(['starter5', 'bench8', 'full12'] as TeamMode[]).map(val => (
                         <button key={val} onClick={() => setTeamMode(val)}
                           className={`rounded-lg p-2.5 text-center text-xs border transition-all ${teamMode === val ? 'border-orange-500 bg-orange-600/20 text-orange-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                          <div className="font-black text-sm">{label}</div>
-                          <div className="text-gray-500">{sub}</div>
+                          <div className="font-black text-sm">{MODE_LABEL[val]}</div>
+                          <div className="text-gray-500">{MODE_SUB[val]}</div>
                         </button>
                       ))}
                     </div>
@@ -327,7 +512,7 @@ export default function LobbyPage() {
                       {([1, 3, 5] as SeriesLength[]).map(s => (
                         <button key={s} onClick={() => setSeries(s)}
                           className={`rounded-lg p-2.5 text-center text-sm font-black border transition-all ${series === s ? 'border-orange-500 bg-orange-600/20 text-orange-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                          {s === 1 ? '1 Game' : `Best of ${s}`}
+                          {seriesLabel(s)}
                         </button>
                       ))}
                     </div>
@@ -338,12 +523,12 @@ export default function LobbyPage() {
                       <button onClick={() => setDifficulty('casual')}
                         className={`rounded-lg p-3 text-center border transition-all ${difficulty === 'casual' ? 'border-orange-500 bg-orange-600/20 text-orange-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
                         <div className="font-black text-sm">Casual</div>
-                        <div className="text-xs opacity-70 mt-0.5">EBK scores shown</div>
+                        <div className="text-xs opacity-70 mt-0.5">Stats shown</div>
                       </button>
                       <button onClick={() => setDifficulty('ebk')}
                         className={`rounded-lg p-3 text-center border transition-all ${difficulty === 'ebk' ? 'border-yellow-500 bg-yellow-600/10 text-yellow-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
                         <div className="font-black text-sm">EBK</div>
-                        <div className="text-xs opacity-70 mt-0.5">No scores — blind picks</div>
+                        <div className="text-xs opacity-70 mt-0.5">Blind picks</div>
                       </button>
                     </div>
                   </div>
