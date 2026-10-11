@@ -85,7 +85,7 @@ function PracticeContent() {
   function triggerSpin(afterPlayers: Player[]) {
     const takenNow = new Set(picks)
     const available = afterPlayers.filter(p => !takenNow.has(p.id))
-    const availableTeams = [...new Set(available.map(p => getCurrentTeam(p.team)))]
+    const availableTeams = Array.from(new Set(available.map(p => getCurrentTeam(p.team))))
       .filter(t => CURRENT_TEAMS.some(ct => ct.abbr === t))
     if (availableTeams.length === 0) return
     const target = availableTeams[Math.floor(Math.random() * availableTeams.length)]
