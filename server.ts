@@ -17,6 +17,63 @@ type TeamMode = 'starter5' | 'bench8' | 'full12'
 type SeriesLength = 1 | 3 | 5
 type Difficulty = 'casual' | 'ebk'
 
+// ─── Team Lineage ────────────────────────────────────────────────────────────
+
+const CURRENT_TEAM_ABBRS = [
+  'ATL','BOS','BKN','CHA','CHI','CLE','DAL','DEN','DET','GSW',
+  'HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK',
+  'OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS',
+]
+
+const TEAM_LINEAGE: Record<string, string> = {
+  'ATL':'ATL','STL':'ATL','MHK':'ATL','TCB':'ATL','TRI':'ATL',
+  'BOS':'BOS',
+  'BKN':'BKN','NJN':'BKN','NJA':'BKN','NYN':'BKN',
+  'CHA':'CHA','CHH':'CHA','CHB':'CHA',
+  'CHI':'CHI',
+  'CLE':'CLE',
+  'DAL':'DAL',
+  'DEN':'DEN','DNV':'DEN',
+  'DET':'DET','FTW':'DET',
+  'GSW':'GSW','SFW':'GSW','PHW':'GSW',
+  'HOU':'HOU','SDR':'HOU',
+  'IND':'IND',
+  'LAC':'LAC','SDC':'LAC','BUF':'LAC',
+  'LAL':'LAL','MNL':'LAL',
+  'MEM':'MEM','VAN':'MEM',
+  'MIA':'MIA',
+  'MIL':'MIL',
+  'MIN':'MIN',
+  'NOP':'NOP','NOH':'NOP','NOK':'NOP',
+  'NYK':'NYK',
+  'OKC':'OKC','SEA':'OKC',
+  'ORL':'ORL',
+  'PHI':'PHI','SYR':'PHI',
+  'PHX':'PHX','PHO':'PHX',
+  'POR':'POR',
+  'SAC':'SAC','KCK':'SAC','KCO':'SAC','CIN':'SAC','ROC':'SAC',
+  'SAS':'SAS',
+  'TOR':'TOR',
+  'UTA':'UTA','NOJ':'UTA',
+  'WAS':'WAS','WSB':'WAS','CAP':'WAS','BAL':'WAS','BLB':'WAS','CHZ':'WAS',
+}
+
+function getCurrentTeam(abbr: string): string {
+  return TEAM_LINEAGE[abbr] || abbr
+}
+
+function spinTeam(room: Room): string {
+  const takenIds = new Set([...room.hostPicks, ...room.guestPicks])
+  // Find which current-franchise teams have available players
+  const available = new Set<string>()
+  for (const p of allPlayers) {
+    if (!takenIds.has(p.id)) available.add(getCurrentTeam(p.team))
+  }
+  const choices = CURRENT_TEAM_ABBRS.filter(t => available.has(t))
+  if (choices.length === 0) return CURRENT_TEAM_ABBRS[Math.floor(Math.random() * CURRENT_TEAM_ABBRS.length)]
+  return choices[Math.floor(Math.random() * choices.length)]
+}
+
 const TEAM_SIZES: Record<TeamMode, number> = {
   starter5: 5,
   bench8: 8,
@@ -54,6 +111,7 @@ interface Room {
   hostSeriesScore: number
   guestSeriesScore: number
   gameResults: GameResult[]
+  currentSpunTeam: string | null
 }
 
 interface PlayerData {
@@ -151,11 +209,16 @@ function calculateResult(room: Room): GameResult {
 
 function autoPickPlayer(room: Room): number | null {
   const takenIds = new Set([...room.hostPicks, ...room.guestPicks])
-  const available = allPlayers.filter(p => !takenIds.has(p.id))
+  let available = allPlayers.filter(p => !takenIds.has(p.id))
   if (available.length === 0) return null
+  // Respect spun team constraint if set
+  if (room.currentSpunTeam) {
+    const teamAvail = available.filter(p => getCurrentTeam(p.team) === room.currentSpunTeam)
+    if (teamAvail.length > 0) available = teamAvail
+  }
   const statMode = getStatModeForGame(room.currentGame)
-  const sorted = available.sort((a, b) => getStatForMode(a, statMode) - getStatForMode(b, statMode))
-  return sorted[0].id
+  available.sort((a, b) => getStatForMode(a, statMode) - getStatForMode(b, statMode))
+  return available[0].id
 }
 
 function startPickTimer(io: SocketServer, room: Room) {
@@ -163,6 +226,10 @@ function startPickTimer(io: SocketServer, room: Room) {
   // Clear any existing timer
   const existing = pickTimers.get(code)
   if (existing) clearTimeout(existing)
+
+  // Spin a team for this pick
+  const spunTeam = spinTeam(room)
+  room.currentSpunTeam = spunTeam
 
   const currentPicker = room.draftOrder[room.currentPickIndex]
 
@@ -236,8 +303,7 @@ function startPickTimer(io: SocketServer, room: Room) {
   }, 30000)
 
   pickTimers.set(code, timer)
-  // Tell clients when the timer started
-  io.to(code).emit('pick-timer-start', { picker: currentPicker, duration: 30 })
+  io.to(code).emit('pick-timer-start', { picker: currentPicker, duration: 30, spunTeam })
 }
 
 // ─── Server ──────────────────────────────────────────────────────────────────
@@ -287,6 +353,7 @@ app.prepare().then(async () => {
         hostSeriesScore: 0,
         guestSeriesScore: 0,
         gameResults: [],
+        currentSpunTeam: null,
       }
       rooms.set(code, room)
       socket.join(code)
@@ -322,6 +389,15 @@ app.prepare().then(async () => {
 
       if ((currentPicker === 'host' && !isHost) || (currentPicker === 'guest' && !isGuest)) return
       if (room.hostPicks.includes(playerId) || room.guestPicks.includes(playerId)) return
+
+      // Validate spun team constraint
+      if (room.currentSpunTeam) {
+        const player = allPlayers.find(p => p.id === playerId)
+        if (player && getCurrentTeam(player.team) !== room.currentSpunTeam) {
+          socket.emit('pick-error', { message: `Must pick a ${room.currentSpunTeam} player this turn` })
+          return
+        }
+      }
 
       // Clear pick timer
       const timer = pickTimers.get(code)
@@ -510,6 +586,7 @@ app.prepare().then(async () => {
           hostSeriesScore: 0,
           guestSeriesScore: 0,
           gameResults: [],
+          currentSpunTeam: null,
         }
         rooms.set(code, room)
         consecutiveTimeouts.set(code, { host: 0, guest: 0 })

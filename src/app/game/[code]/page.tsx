@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef, Suspense } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import { getSocket } from '@/lib/socket'
+import { CURRENT_TEAMS, getCurrentTeam } from '@/lib/teams'
 
 type TeamMode = 'starter5' | 'bench8' | 'full12'
 
@@ -51,6 +52,7 @@ interface Room {
   hostSeriesScore: number
   guestSeriesScore: number
   gameResults: GameResult[]
+  currentSpunTeam: string | null
 }
 
 const STAT_LABELS: Record<string, string> = {
@@ -106,8 +108,16 @@ function GameContent() {
   const [currentPickerInTimer, setCurrentPickerInTimer] = useState<'host' | 'guest' | null>(null)
   const [timeoutWarning, setTimeoutWarning] = useState<string | null>(null)
   const pickTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  // Ref so timeout handler can look up player names without being in deps
   const playersRef = useRef<Player[]>([])
+
+  // Spinner state
+  const [spunTeam, setSpunTeam] = useState<string | null>(null)
+  const [isSpinning, setIsSpinning] = useState(false)
+  const [spinDisplay, setSpinDisplay] = useState<string>('?')
+  const [pickError, setPickError] = useState<string | null>(null)
+  const spinIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // Stable shuffle order — set once per spin, never re-sorted mid-turn
+  const [shuffledIds, setShuffledIds] = useState<number[]>([])
 
   useEffect(() => {
     const socket = getSocket()
@@ -133,16 +143,51 @@ function GameContent() {
       console.error('Room error:', message)
     }
 
-    const handlePickTimerStart = ({ picker, duration }: { picker: 'host' | 'guest'; duration: number }) => {
+    const handlePickTimerStart = ({ picker, duration, spunTeam: team }: { picker: 'host' | 'guest'; duration: number; spunTeam: string }) => {
       if (pickTimerRef.current) clearInterval(pickTimerRef.current)
       setPickTimeLeft(duration)
       setCurrentPickerInTimer(picker)
+      setPickError(null)
+
+      // Spinner animation: 3 phases (fast → medium → slow → stop)
+      if (spinIntervalRef.current) clearInterval(spinIntervalRef.current)
+      setSpunTeam(null)
+      setIsSpinning(true)
+      setSpinDisplay('?')
+      const allAbbrs = CURRENT_TEAMS.map(t => t.abbr)
+      const rnd = () => allAbbrs[Math.floor(Math.random() * allAbbrs.length)]
+
+      const p1 = setInterval(() => setSpinDisplay(rnd()), 80)
+      const t1 = setTimeout(() => {
+        clearInterval(p1)
+        const p2 = setInterval(() => setSpinDisplay(rnd()), 160)
+        const t2 = setTimeout(() => {
+          clearInterval(p2)
+          const p3 = setInterval(() => setSpinDisplay(rnd()), 320)
+          const t3 = setTimeout(() => {
+            clearInterval(p3)
+            setSpunTeam(team)
+            setIsSpinning(false)
+            setSpinDisplay(team)
+            // Shuffle the team's players once, stable for this entire pick turn
+            const pool = playersRef.current.filter(p => getCurrentTeam(p.team) === team)
+            setShuffledIds([...pool].sort(() => Math.random() - 0.5).map(p => p.id))
+          }, 640)
+          spinIntervalRef.current = t3 as unknown as ReturnType<typeof setInterval>
+        }, 800)
+      }, 1200)
+
       pickTimerRef.current = setInterval(() => {
         setPickTimeLeft(t => {
           if (t <= 1) { clearInterval(pickTimerRef.current!); return 0 }
           return t - 1
         })
       }, 1000)
+    }
+
+    const handlePickError = ({ message }: { message: string }) => {
+      setPickError(message)
+      setTimeout(() => setPickError(null), 3000)
     }
 
     const handlePickTimeout = ({ picker, pickedId, consecutive }: { picker: 'host' | 'guest'; pickedId: number; consecutive: number }) => {
@@ -170,6 +215,7 @@ function GameContent() {
     socket.on('pick-timer-start', handlePickTimerStart)
     socket.on('pick-timeout', handlePickTimeout)
     socket.on('player-disqualified', handlePlayerDisqualified)
+    socket.on('pick-error', handlePickError)
 
     // Request current room state from server
     socket.emit('get-room', { code, role })
@@ -185,7 +231,9 @@ function GameContent() {
       socket.off('pick-timer-start', handlePickTimerStart)
       socket.off('pick-timeout', handlePickTimeout)
       socket.off('player-disqualified', handlePlayerDisqualified)
+      socket.off('pick-error', handlePickError)
       if (pickTimerRef.current) clearInterval(pickTimerRef.current)
+      if (spinIntervalRef.current) clearInterval(spinIntervalRef.current)
     }
   }, [code, role])
 
@@ -343,16 +391,21 @@ function GameContent() {
   }
 
   // DRAFTING PHASE
-  const filteredPlayers = players.filter(p => {
-    if (takenIds.has(p.id)) return false
-    if (filterPos !== 'ALL' && !p.positions.split(',').includes(filterPos)) return false
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase()
-      const fullName = `${p.firstName} ${p.lastName}`.toLowerCase()
-      if (!fullName.includes(q) && !p.team.toLowerCase().includes(q)) return false
-    }
-    return true
-  }).sort((a, b) => getStatValue(a, statMode) - getStatValue(b, statMode))
+  const spunTeamInfo = spunTeam ? CURRENT_TEAMS.find(t => t.abbr === spunTeam) : null
+
+  // Build display list from shuffled order; apply search/pos filter on top
+  const filteredPlayers = shuffledIds
+    .map(id => players.find(p => p.id === id))
+    .filter((p): p is Player => {
+      if (!p) return false
+      if (takenIds.has(p.id)) return false
+      if (filterPos !== 'ALL' && !p.positions.split(',').includes(filterPos)) return false
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase()
+        if (!`${p.firstName} ${p.lastName}`.toLowerCase().includes(q) && !p.team.toLowerCase().includes(q)) return false
+      }
+      return true
+    })
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] py-6 px-4">
@@ -408,6 +461,40 @@ function GameContent() {
 
           {/* Player Pool */}
           <div className="lg:col-span-2">
+            {/* Team Spinner */}
+            <div className={`rounded-xl p-3 mb-3 flex items-center gap-3 border-2 transition-all ${
+              isSpinning ? 'border-yellow-500 bg-yellow-900/20' :
+              spunTeam ? 'border-orange-500 bg-orange-900/20' : 'border-gray-700 bg-[#111827]'
+            }`}>
+              <div className={`text-3xl font-black w-16 text-center shrink-0 transition-all ${
+                isSpinning ? 'text-yellow-400 animate-pulse' : 'text-orange-400'
+              }`}>
+                {spinDisplay}
+              </div>
+              <div className="flex-1">
+                {isSpinning ? (
+                  <div>
+                    <div className="text-yellow-400 font-black text-sm">Spinning...</div>
+                    <div className="text-gray-500 text-xs">Wait for your team assignment</div>
+                  </div>
+                ) : spunTeam && spunTeamInfo ? (
+                  <div>
+                    <div className="text-white font-black text-sm">{spunTeamInfo.city} {spunTeamInfo.name}</div>
+                    <div className="text-gray-400 text-xs">{filteredPlayers.length} available · Pick from this team only</div>
+                  </div>
+                ) : (
+                  <div className="text-gray-500 text-sm">Waiting for spin...</div>
+                )}
+              </div>
+            </div>
+
+            {/* Pick error */}
+            {pickError && (
+              <div className="bg-red-900/60 border border-red-500 text-red-300 rounded-lg px-4 py-2 text-sm mb-3 text-center">
+                {pickError}
+              </div>
+            )}
+
             {/* Search */}
             <div className="relative mb-2">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">🔍</span>
@@ -432,7 +519,7 @@ function GameContent() {
                   {pos}
                 </button>
               ))}
-              <span className="ml-auto text-xs text-gray-500 self-center">Sorted by ↑ {STAT_LABELS[statMode]}</span>
+              <span className="ml-auto text-xs text-gray-500 self-center">{filteredPlayers.length} players</span>
             </div>
 
             {/* Pick Timer Bar */}
@@ -460,11 +547,17 @@ function GameContent() {
               </div>
             )}
 
+            {isSpinning && (
+              <div className="flex items-center justify-center h-24 rounded-xl bg-yellow-900/10 border border-yellow-600/30 mb-3">
+                <p className="text-yellow-400 font-bold text-sm animate-pulse">🔒 Locked — waiting for spin to finish...</p>
+              </div>
+            )}
+
             <div className="space-y-1.5 max-h-[60vh] overflow-y-auto pr-1">
               {filteredPlayers.map(player => {
-                const statVal = getStatValue(player, statMode)
                 const playerPositions = player.positions.split(',')
-                const canPick = isMyTurn && !takenIds.has(player.id)
+                const canPick = isMyTurn && !isSpinning && spunTeam !== null && !takenIds.has(player.id)
+                const statVal = getStatValue(player, statMode)
 
                 return (
                   <button
@@ -486,24 +579,14 @@ function GameContent() {
                         <span key={pos} className="text-xs bg-orange-600/20 text-orange-400 px-1.5 py-0.5 rounded font-bold">{pos}</span>
                       ))}
                     </div>
-                    {room.difficulty === 'casual' ? (
-                      <div className="text-right shrink-0 min-w-[70px]">
-                        <div className={`font-black text-sm ${
-                          player.ebkScore >= 80 ? 'text-green-400' :
-                          player.ebkScore >= 60 ? 'text-yellow-400' :
-                          player.ebkScore >= 40 ? 'text-orange-400' :
-                          'text-red-400'
-                        }`}>
-                          ⚡{player.ebkScore}
+                    {room.difficulty === 'casual' && (
+                      <div className="text-right shrink-0 min-w-[56px]">
+                        <div className="text-white font-black text-sm">
+                          {statMode === 'games_played' ? statVal : statVal.toFixed(1)}
                         </div>
                         <div className="text-gray-500 text-xs">
-                          {statMode === 'games_played' ? statVal : statVal.toFixed(1)} {statMode === 'games_played' ? 'GP' : statMode.toUpperCase()}
+                          {statMode === 'games_played' ? 'GP' : statMode.toUpperCase()}
                         </div>
-                      </div>
-                    ) : (
-                      <div className="text-right shrink-0 min-w-[50px]">
-                        <div className="text-yellow-500 font-black text-sm">⚡?</div>
-                        <div className="text-gray-600 text-xs">hidden</div>
                       </div>
                     )}
                   </button>

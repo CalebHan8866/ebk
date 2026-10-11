@@ -1,6 +1,7 @@
 'use client'
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { CURRENT_TEAMS, getCurrentTeam } from '@/lib/teams'
 
 type TeamMode = 'starter5' | 'bench8' | 'full12'
 type Difficulty = 'casual' | 'ebk'
@@ -52,13 +53,20 @@ function PracticeContent() {
   const [screen, setScreen] = useState<'setup' | 'draft' | 'result'>('setup')
   const [teamMode, setTeamMode] = useState<TeamMode>('starter5')
   const [difficulty, setDifficulty] = useState<Difficulty>('casual')
-  const [sortStat, setSortStat] = useState<string>('games_played')
 
   const [players, setPlayers] = useState<Player[]>([])
   const [loadingPlayers, setLoadingPlayers] = useState(false)
   const [picks, setPicks] = useState<number[]>([])
   const [filterPos, setFilterPos] = useState('ALL')
   const [searchQuery, setSearchQuery] = useState('')
+  const [statMode, setStatMode] = useState('games_played')
+
+  // Spinner
+  const [spunTeam, setSpunTeam] = useState<string | null>(null)
+  const [isSpinning, setIsSpinning] = useState(false)
+  const [spinDisplay, setSpinDisplay] = useState('?')
+  const spinRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [shuffledIds, setShuffledIds] = useState<number[]>([])
 
   // Load players when entering draft
   useEffect(() => {
@@ -66,7 +74,7 @@ function PracticeContent() {
     setLoadingPlayers(true)
     fetch('/api/players')
       .then(r => r.json())
-      .then((data: Player[]) => { setPlayers(data); setLoadingPlayers(false) })
+      .then((data: Player[]) => { setPlayers(data); setLoadingPlayers(false); triggerSpin(data) })
       .catch(() => setLoadingPlayers(false))
   }, [screen, players.length])
 
@@ -74,19 +82,61 @@ function PracticeContent() {
   const requiredSlots = getRequiredPositions(teamMode)
   const takenIds = new Set(picks)
 
-  const filteredPlayers = players.filter(p => {
-    if (takenIds.has(p.id)) return false
-    if (filterPos !== 'ALL' && !p.positions.split(',').includes(filterPos)) return false
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase()
-      if (!`${p.firstName} ${p.lastName}`.toLowerCase().includes(q) && !p.team.toLowerCase().includes(q)) return false
-    }
-    return true
-  }).sort((a, b) => getStatValue(a, sortStat) - getStatValue(b, sortStat))
+  function triggerSpin(afterPlayers: Player[]) {
+    const takenNow = new Set(picks)
+    const available = afterPlayers.filter(p => !takenNow.has(p.id))
+    const availableTeams = [...new Set(available.map(p => getCurrentTeam(p.team)))]
+      .filter(t => CURRENT_TEAMS.some(ct => ct.abbr === t))
+    if (availableTeams.length === 0) return
+    const target = availableTeams[Math.floor(Math.random() * availableTeams.length)]
+
+    setIsSpinning(true)
+    setSpunTeam(null)
+    setSpinDisplay('?')
+    const allAbbrs = CURRENT_TEAMS.map(t => t.abbr)
+    const rnd = () => allAbbrs[Math.floor(Math.random() * allAbbrs.length)]
+
+    const p1 = setInterval(() => setSpinDisplay(rnd()), 80)
+    setTimeout(() => {
+      clearInterval(p1)
+      const p2 = setInterval(() => setSpinDisplay(rnd()), 160)
+      setTimeout(() => {
+        clearInterval(p2)
+        const p3 = setInterval(() => setSpinDisplay(rnd()), 320)
+        setTimeout(() => {
+          clearInterval(p3)
+          setSpunTeam(target)
+          setIsSpinning(false)
+          setSpinDisplay(target)
+          // Shuffle team's players once — stable for this pick turn
+          const pool = afterPlayers.filter(p => getCurrentTeam(p.team) === target)
+          setShuffledIds([...pool].sort(() => Math.random() - 0.5).map(p => p.id))
+        }, 640)
+      }, 800)
+    }, 1200)
+  }
+
+  const spunTeamInfo = spunTeam ? CURRENT_TEAMS.find(t => t.abbr === spunTeam) : null
+
+  const filteredPlayers = shuffledIds
+    .map(id => players.find(p => p.id === id))
+    .filter((p): p is Player => {
+      if (!p) return false
+      if (takenIds.has(p.id)) return false
+      if (filterPos !== 'ALL' && !p.positions.split(',').includes(filterPos)) return false
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase()
+        if (!`${p.firstName} ${p.lastName}`.toLowerCase().includes(q) && !p.team.toLowerCase().includes(q)) return false
+      }
+      return true
+    })
 
   function pick(id: number) {
     if (picks.length >= teamSize) return
-    setPicks(prev => [...prev, id])
+    if (spunTeam && getCurrentTeam(players.find(p => p.id === id)?.team || '') !== spunTeam) return
+    const newPicks = [...picks, id]
+    setPicks(newPicks)
+    if (newPicks.length < teamSize) triggerSpin(players)
   }
 
   function unpick(id: number) {
@@ -123,18 +173,6 @@ function PracticeContent() {
                     className={`rounded-lg p-2.5 text-center text-xs border transition-all ${teamMode === val ? 'border-orange-500 bg-orange-600/20 text-orange-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
                     <div className="font-black text-sm">{label}</div>
                     <div className="text-gray-500">{sub}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-gray-400 text-xs mb-2 uppercase tracking-wide">Sort By</label>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(STAT_LABELS).map(([val, label]) => (
-                  <button key={val} onClick={() => setSortStat(val)}
-                    className={`rounded-lg p-2.5 text-center text-xs border transition-all ${sortStat === val ? 'border-orange-500 bg-orange-600/20 text-orange-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                    {label}
                   </button>
                 ))}
               </div>
@@ -181,7 +219,7 @@ function PracticeContent() {
                 Practice · {teamMode === 'starter5' ? 'Starter 5' : teamMode === 'bench8' ? 'Bench 8' : 'Full 12'}
                 {difficulty === 'ebk' && <span className="ml-2 text-yellow-500">⚡ EBK</span>}
               </div>
-              <div className="text-gray-500 text-xs">Sorted by ↑ {STAT_LABELS[sortStat]} · No timer · No opponent</div>
+              <div className="text-gray-500 text-xs">No timer · No opponent · Stats revealed at the end</div>
             </div>
             <button onClick={reset} className="text-gray-500 hover:text-white text-sm">← Exit</button>
           </div>
@@ -235,6 +273,31 @@ function PracticeContent() {
 
               {/* Player Pool */}
               <div className="lg:col-span-3">
+                {/* Team Spinner */}
+                <div className={`rounded-xl p-3 mb-3 flex items-center gap-3 border-2 transition-all ${
+                  isSpinning ? 'border-yellow-500 bg-yellow-900/20' :
+                  spunTeam ? 'border-orange-500 bg-orange-900/20' : 'border-gray-700 bg-[#111827]'
+                }`}>
+                  <div className={`text-3xl font-black w-16 text-center shrink-0 ${isSpinning ? 'text-yellow-400 animate-pulse' : 'text-orange-400'}`}>
+                    {spinDisplay}
+                  </div>
+                  <div className="flex-1">
+                    {isSpinning ? (
+                      <div>
+                        <div className="text-yellow-400 font-black text-sm">Spinning...</div>
+                        <div className="text-gray-500 text-xs">Your team is being assigned</div>
+                      </div>
+                    ) : spunTeam && spunTeamInfo ? (
+                      <div>
+                        <div className="text-white font-black text-sm">{spunTeamInfo.city} {spunTeamInfo.name}</div>
+                        <div className="text-gray-400 text-xs">{filteredPlayers.length} available · Pick from this team only</div>
+                      </div>
+                    ) : (
+                      <div className="text-gray-500 text-sm">Loading teams...</div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Search */}
                 <div className="relative mb-2">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">🔍</span>
@@ -251,21 +314,38 @@ function PracticeContent() {
                 </div>
 
                 {/* Position filter */}
-                <div className="flex gap-1.5 mb-3 flex-wrap">
+                <div className="flex gap-1.5 mb-2 flex-wrap">
                   {['ALL', 'PG', 'SG', 'SF', 'PF', 'C'].map(pos => (
                     <button key={pos} onClick={() => setFilterPos(pos)}
                       className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${filterPos === pos ? 'bg-orange-600 text-white' : 'bg-[#111827] text-gray-400 hover:text-white'}`}>
                       {pos}
                     </button>
                   ))}
-                  <span className="ml-auto text-xs text-gray-500 self-center">{filteredPlayers.length} available</span>
+                  <span className="ml-auto text-xs text-gray-500 self-center">{filteredPlayers.length} players</span>
                 </div>
+
+                {/* Stat mode selector (casual only) */}
+                {difficulty === 'casual' && (
+                  <div className="flex gap-1.5 mb-3 flex-wrap">
+                    {([['games_played', 'GP'], ['ppg', 'PPG'], ['rpg', 'RPG'], ['apg', 'APG']] as const).map(([val, label]) => (
+                      <button key={val} onClick={() => setStatMode(val)}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${statMode === val ? 'bg-blue-600 text-white' : 'bg-[#111827] text-gray-400 hover:text-white'}`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {isSpinning && (
+                  <div className="flex items-center justify-center h-24 rounded-xl bg-yellow-900/10 border border-yellow-600/30 mb-3">
+                    <p className="text-yellow-400 font-bold text-sm animate-pulse">🔒 Locked — waiting for spin to finish...</p>
+                  </div>
+                )}
 
                 <div className="space-y-1.5 max-h-[70vh] overflow-y-auto pr-1">
                   {filteredPlayers.map(player => {
-                    const statVal = getStatValue(player, sortStat)
                     const playerPositions = player.positions.split(',')
-                    const canPick = picks.length < teamSize
+                    const canPick = picks.length < teamSize && !isSpinning && spunTeam !== null
 
                     return (
                       <button
@@ -282,30 +362,21 @@ function PracticeContent() {
                           <div className="text-white font-bold text-sm truncate">{player.firstName} {player.lastName}</div>
                           <div className="text-gray-500 text-xs">{player.team} · {player.yearFrom}–{player.yearTo}</div>
                         </div>
+                        {difficulty === 'casual' && (
+                          <div className="text-right shrink-0 min-w-[56px]">
+                            <div className="text-white font-black text-sm">
+                              {statMode === 'games_played' ? getStatValue(player, statMode) : getStatValue(player, statMode).toFixed(1)}
+                            </div>
+                            <div className="text-gray-500 text-xs">
+                              {statMode === 'games_played' ? 'GP' : statMode.toUpperCase()}
+                            </div>
+                          </div>
+                        )}
                         <div className="flex gap-1 shrink-0">
                           {playerPositions.map((pos: string) => (
                             <span key={pos} className="text-xs bg-orange-600/20 text-orange-400 px-1.5 py-0.5 rounded font-bold">{pos}</span>
                           ))}
                         </div>
-                        {difficulty === 'casual' ? (
-                          <div className="text-right shrink-0 min-w-[70px]">
-                            <div className={`font-black text-sm ${
-                              player.ebkScore >= 80 ? 'text-green-400' :
-                              player.ebkScore >= 60 ? 'text-yellow-400' :
-                              player.ebkScore >= 40 ? 'text-orange-400' : 'text-red-400'
-                            }`}>
-                              ⚡{player.ebkScore}
-                            </div>
-                            <div className="text-gray-500 text-xs">
-                              {sortStat === 'games_played' ? statVal : statVal.toFixed(1)} {sortStat === 'games_played' ? 'GP' : sortStat.toUpperCase()}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-right shrink-0 min-w-[50px]">
-                            <div className="text-yellow-500 font-black text-sm">⚡?</div>
-                            <div className="text-gray-600 text-xs">hidden</div>
-                          </div>
-                        )}
                       </button>
                     )
                   })}
