@@ -401,9 +401,9 @@ function PracticeContent() {
                   </div>
                 )}
 
-                {/* Position filter (search within current slot) */}
+                {/* Position filter — hidden in EBK mode */}
                 <div className="flex gap-1.5 mb-2 flex-wrap">
-                  {['ALL', 'PG', 'SG', 'SF', 'PF', 'C'].map(pos => (
+                  {difficulty !== 'ebk' && ['ALL', 'PG', 'SG', 'SF', 'PF', 'C'].map(pos => (
                     <button key={pos} onClick={() => setFilterPos(pos)}
                       className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${filterPos === pos ? 'bg-orange-600 text-white' : 'bg-[#111827] text-gray-400 hover:text-white'}`}>
                       {pos}
