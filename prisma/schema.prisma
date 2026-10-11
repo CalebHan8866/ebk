@@ -32,6 +32,7 @@ model Player {
   careerPPG   Float
   careerRPG   Float
   careerAPG   Float
+  careerMPG   Float   @default(0)
   yearFrom    Int     @default(0)
   yearTo      Int     @default(0)
   ebkScore    Float   @default(0)
@@ -39,4 +40,5 @@ model Player {
   ebkPpgScore Float   @default(0)
   ebkRpgScore Float   @default(0)
   ebkApgScore Float   @default(0)
+  ebkMpgScore Float   @default(0)
 }

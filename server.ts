@@ -146,6 +146,15 @@ interface PlayerData {
   careerPPG: number
   careerRPG: number
   careerAPG: number
+  careerMPG: number
+  ebkScore: number
+  ebkGpScore: number
+  ebkPpgScore: number
+  ebkRpgScore: number
+  ebkApgScore: number
+  ebkMpgScore: number
+  yearFrom: number
+  yearTo: number
 }
 
 interface QueueEntry {

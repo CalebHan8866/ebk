@@ -17,7 +17,9 @@ interface Player {
   careerPPG: number
   careerRPG: number
   careerAPG: number
+  careerMPG: number
   ebkScore: number
+  ebkMpgScore: number
   yearFrom: number
   yearTo: number
 }
@@ -525,6 +527,8 @@ function PracticeContent() {
                   </div>
                   <div className="text-right text-xs text-gray-400 shrink-0">
                     <span>{p.careerGames}GP</span>
+                    <span className="mx-1.5 text-gray-700">·</span>
+                    <span>{p.careerMPG.toFixed(1)}MP</span>
                     <span className="mx-1.5 text-gray-700">·</span>
                     <span>{p.careerPPG.toFixed(1)}P</span>
                     <span className="mx-1.5 text-gray-700">·</span>

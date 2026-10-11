@@ -13,6 +13,7 @@ interface PlayerTeamSeason {
   ppg: number
   rpg: number
   apg: number
+  mpg: number    // minutes per game
   year: number
 }
 
@@ -27,6 +28,7 @@ interface TeamCareer {
   careerPPG: number
   careerRPG: number
   careerAPG: number
+  careerMPG: number
   yearFrom: number   // earliest season-end year on this team
   yearTo: number     // latest season-end year on this team
 }
@@ -52,7 +54,6 @@ async function fetchSeasonPage(year: number): Promise<PlayerTeamSeason[]> {
 
     const $ = cheerio.load(response.data)
     const results: PlayerTeamSeason[] = []
-    // Track (href, team) pairs already added this season to avoid exact duplicates
     const seenThisSeason = new Set<string>()
 
     $('#per_game_stats tbody tr').each((_, row) => {
@@ -67,20 +68,17 @@ async function fetchSeasonPage(year: number): Promise<PlayerTeamSeason[]> {
         $row.find('[data-stat="team_id"]').text().trim()
       )
 
-      // Skip TOT/multi-team aggregate rows — we want real team stints only
       if (MULTI_TEAM.has(team) || !team) return
 
       const key = `${href}::${team}`
       if (seenThisSeason.has(key)) return
       seenThisSeason.add(key)
 
-      const gStr = (
-        $row.find('[data-stat="games"]').text().trim() ||
-        $row.find('[data-stat="g"]').text().trim()
-      )
+      const gStr   = ($row.find('[data-stat="games"]').text().trim()   || $row.find('[data-stat="g"]').text().trim())
       const ppgStr = $row.find('[data-stat="pts_per_g"]').text().trim()
       const rpgStr = $row.find('[data-stat="trb_per_g"]').text().trim()
       const apgStr = $row.find('[data-stat="ast_per_g"]').text().trim()
+      const mpgStr = $row.find('[data-stat="mp_per_g"]').text().trim()
       const name   = $row.find('[data-stat="name_display"] a, [data-stat="player"] a').text().trim()
       const pos    = $row.find('[data-stat="pos"]').text().trim()
 
@@ -88,10 +86,11 @@ async function fetchSeasonPage(year: number): Promise<PlayerTeamSeason[]> {
       const ppg   = parseFloat(ppgStr) || 0
       const rpg   = parseFloat(rpgStr) || 0
       const apg   = parseFloat(apgStr) || 0
+      const mpg   = parseFloat(mpgStr) || 0
 
       if (!name || games === 0) return
 
-      results.push({ href, name, pos, team, games, ppg, rpg, apg, year })
+      results.push({ href, name, pos, team, games, ppg, rpg, apg, mpg, year })
     })
 
     return results
@@ -138,8 +137,7 @@ function stableId(href: string, team: string): number {
   return (h % 2000000) + 100000
 }
 
-// Minimum total games a player must have played for a team to be included.
-// Set to 1 to include all players regardless of games played.
+// Include all player-team stints regardless of games played.
 const MIN_GAMES_PER_TEAM = 1
 
 async function main() {
@@ -158,7 +156,7 @@ async function main() {
 
   console.log(`\nTotal player-team-seasons: ${allSeasons.length}`)
 
-  // Aggregate per (href, team) — each entry = one player on one team
+  // Aggregate per (href, team)
   const careerMap = new Map<string, TeamCareer>()
 
   for (const ps of allSeasons) {
@@ -175,12 +173,13 @@ async function main() {
         careerPPG: 0,
         careerRPG: 0,
         careerAPG: 0,
+        careerMPG: 0,
         yearFrom: ps.year,
         yearTo: ps.year,
       })
     }
 
-    const entry = careerMap.get(key)!
+    const entry    = careerMap.get(key)!
     const prevGames = entry.totalGames
     const newGames  = prevGames + ps.games
 
@@ -188,38 +187,47 @@ async function main() {
     entry.careerPPG = (entry.careerPPG * prevGames + ps.ppg * ps.games) / newGames
     entry.careerRPG = (entry.careerRPG * prevGames + ps.rpg * ps.games) / newGames
     entry.careerAPG = (entry.careerAPG * prevGames + ps.apg * ps.games) / newGames
+    entry.careerMPG = (entry.careerMPG * prevGames + ps.mpg * ps.games) / newGames
     entry.totalGames = newGames
     entry.allPositions.add(ps.pos)
     entry.yearFrom = Math.min(entry.yearFrom, ps.year)
     entry.yearTo   = Math.max(entry.yearTo,   ps.year)
-    entry.name     = ps.name  // keep most recent spelling
+    entry.name     = ps.name
   }
 
   const all = Array.from(careerMap.values()).filter(p => p.totalGames >= MIN_GAMES_PER_TEAM)
-  console.log(`Unique player-team entries (≥${MIN_GAMES_PER_TEAM} games): ${all.length}`)
+  console.log(`Unique player-team entries (≥${MIN_GAMES_PER_TEAM} game): ${all.length}`)
 
   // Compute EBK scores (inverted percentile — lower stats = higher score)
+  // MPG is included to break ties among 1-game players:
+  //   someone who played 3 min scores higher than someone who played 38 min.
+  // Weights: GP 20% · PPG 25% · MPG 20% · RPG 18% · APG 17%
   function computePercentileScores(entries: TeamCareer[]) {
     const N = entries.length
 
     function invertedPct(arr: number[], val: number): number {
       const sorted = [...arr].sort((a, b) => a - b)
       const rank = sorted.findIndex(v => v >= val)
-      return ((N - 1 - rank) / (N - 1)) * 100
+      const r = rank === -1 ? N - 1 : rank
+      return parseFloat(((N - 1 - r) / (N - 1) * 100).toFixed(1))
     }
 
     const games = entries.map(p => p.totalGames)
     const ppgs  = entries.map(p => p.careerPPG)
     const rpgs  = entries.map(p => p.careerRPG)
     const apgs  = entries.map(p => p.careerAPG)
+    const mpgs  = entries.map(p => p.careerMPG)
 
     return entries.map(p => {
-      const gpScore  = parseFloat(invertedPct(games, p.totalGames).toFixed(1))
-      const ppgScore = parseFloat(invertedPct(ppgs,  p.careerPPG).toFixed(1))
-      const rpgScore = parseFloat(invertedPct(rpgs,  p.careerRPG).toFixed(1))
-      const apgScore = parseFloat(invertedPct(apgs,  p.careerAPG).toFixed(1))
-      const ebkScore = parseFloat((gpScore * 0.25 + ppgScore * 0.35 + rpgScore * 0.20 + apgScore * 0.20).toFixed(1))
-      return { ...p, gpScore, ppgScore, rpgScore, apgScore, ebkScore }
+      const gpScore  = invertedPct(games, p.totalGames)
+      const ppgScore = invertedPct(ppgs,  p.careerPPG)
+      const rpgScore = invertedPct(rpgs,  p.careerRPG)
+      const apgScore = invertedPct(apgs,  p.careerAPG)
+      const mpgScore = invertedPct(mpgs,  p.careerMPG)
+      const ebkScore = parseFloat(
+        (gpScore * 0.20 + ppgScore * 0.25 + mpgScore * 0.20 + rpgScore * 0.18 + apgScore * 0.17).toFixed(1)
+      )
+      return { ...p, gpScore, ppgScore, rpgScore, apgScore, mpgScore, ebkScore }
     })
   }
 
@@ -260,13 +268,15 @@ async function main() {
           careerPPG: parseFloat(p.careerPPG.toFixed(1)),
           careerRPG: parseFloat(p.careerRPG.toFixed(1)),
           careerAPG: parseFloat(p.careerAPG.toFixed(1)),
-          yearFrom: p.yearFrom - 1,   // season start year
-          yearTo:   p.yearTo,          // season end year
+          careerMPG: parseFloat(p.careerMPG.toFixed(1)),
+          yearFrom: p.yearFrom - 1,
+          yearTo:   p.yearTo,
           ebkScore:    p.ebkScore,
           ebkGpScore:  p.gpScore,
           ebkPpgScore: p.ppgScore,
           ebkRpgScore: p.rpgScore,
           ebkApgScore: p.apgScore,
+          ebkMpgScore: p.mpgScore,
         }
       })
       saved++
@@ -283,10 +293,14 @@ async function main() {
   const bottom10 = [...scored].sort((a, b) => a.ebkScore - b.ebkScore).slice(0, 10)
 
   console.log('\nTop 10 EBK (niche gems):')
-  top10.forEach(p => console.log(`  ${p.name} (${p.team}): EBK ${p.ebkScore} — ${p.totalGames}GP ${p.careerPPG.toFixed(1)}PPG ${p.yearFrom}-${p.yearTo}`))
+  top10.forEach(p => console.log(
+    `  ${p.name} (${p.team}): EBK ${p.ebkScore} — ${p.totalGames}GP ${p.careerMPG.toFixed(1)}MPG ${p.careerPPG.toFixed(1)}PPG`
+  ))
 
   console.log('\nBottom 10 EBK (stars to avoid):')
-  bottom10.forEach(p => console.log(`  ${p.name} (${p.team}): EBK ${p.ebkScore} — ${p.totalGames}GP ${p.careerPPG.toFixed(1)}PPG`))
+  bottom10.forEach(p => console.log(
+    `  ${p.name} (${p.team}): EBK ${p.ebkScore} — ${p.totalGames}GP ${p.careerMPG.toFixed(1)}MPG ${p.careerPPG.toFixed(1)}PPG`
+  ))
 
   await prisma.$disconnect()
 }
