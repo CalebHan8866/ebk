@@ -31,14 +31,14 @@ function VerifyContent() {
           </>
         ) : (
           <>
-            <div className="text-6xl mb-4">📧</div>
-            <h1 className="text-3xl font-black text-white mb-3">Check Your Email</h1>
-            <p className="text-gray-400 mb-4">We sent a verification link to your email address.</p>
-            <p className="text-gray-500 text-sm mb-8">
-              In development mode, the link is printed in the server terminal instead of being emailed.
+            <h1 className="font-display text-5xl text-white leading-none mb-3">Check Your Email</h1>
+            <p className="text-gray-400 mb-2">We sent a verification link to your inbox.</p>
+            <p className="text-gray-600 text-sm mb-8">
+              Click the link in the email to verify your account and start playing.
+              Check your spam folder if you don&apos;t see it within a minute.
             </p>
             <Link href="/login" className="text-orange-400 hover:text-orange-300 font-semibold">
-              Back to Login
+              Go to Login
             </Link>
           </>
         )}

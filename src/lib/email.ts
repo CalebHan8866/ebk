@@ -34,25 +34,23 @@ export async function sendVerificationEmail(email: string, username: string, tok
   }
 
   await transporter.sendMail({
-    from: `"EBK - Elite Ball Knowledge" <${process.env.FROM_EMAIL}>`,
+    from: `"EBK" <${process.env.FROM_EMAIL}>`,
     to: email,
     subject: 'Verify your EBK account',
     html: `
-      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0A0A0A;color:white;padding:32px;border-radius:12px">
-        <div style="text-align:center;margin-bottom:24px">
-          <span style="font-size:48px">🏀</span>
-          <h1 style="color:#F97316;font-size:28px;margin:8px 0">EBK</h1>
-          <p style="color:#9CA3AF;margin:0">Elite Ball Knowledge</p>
+      <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;background:#080808;color:white;padding:36px;border-radius:12px;border:1px solid #1f1f1f">
+        <div style="margin-bottom:28px">
+          <span style="color:#F97316;font-size:32px;font-weight:900;letter-spacing:0.05em">EBK</span>
+          <p style="color:#6B7280;margin:4px 0 0;font-size:12px;letter-spacing:0.2em;text-transform:uppercase">Elite Ball Knowledge</p>
         </div>
-        <h2 style="color:white">Hey ${username}, verify your email</h2>
-        <p style="color:#9CA3AF">Click the button below to verify your account and start playing.</p>
-        <div style="text-align:center;margin:32px 0">
-          <a href="${verifyUrl}" style="background:#EA580C;color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px">
-            Verify Email
-          </a>
-        </div>
-        <p style="color:#6B7280;font-size:12px">Or paste this link: ${verifyUrl}</p>
-        <p style="color:#6B7280;font-size:12px">Link expires in 24 hours.</p>
+        <h2 style="color:white;margin:0 0 8px;font-size:20px">Hey ${username}, verify your email</h2>
+        <p style="color:#9CA3AF;margin:0 0 28px;line-height:1.6">Click the button below to confirm your account and start playing.</p>
+        <a href="${verifyUrl}" style="display:inline-block;background:#EA580C;color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">
+          Verify Email
+        </a>
+        <p style="color:#4B5563;font-size:12px;margin-top:28px;word-break:break-all">
+          Or copy this link: ${verifyUrl}
+        </p>
       </div>
     `,
   })
