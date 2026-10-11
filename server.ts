@@ -62,12 +62,29 @@ function getCurrentTeam(abbr: string): string {
   return TEAM_LINEAGE[abbr] || abbr
 }
 
+function getRequiredPositions(teamMode: TeamMode): string[] {
+  const starters = ['PG', 'SG', 'SF', 'PF', 'C']
+  const benchCount = TEAM_SIZES[teamMode] - 5
+  const bench = Array(benchCount).fill('BENCH')
+  return [...starters, ...bench]
+}
+
+function getCurrentSlotPos(room: Room): string {
+  const picker = room.draftOrder[room.currentPickIndex]
+  const pickerPicks = picker === 'host' ? room.hostPicks : room.guestPicks
+  const slots = getRequiredPositions(room.teamMode)
+  return slots[pickerPicks.length] ?? 'BENCH'
+}
+
 function spinTeam(room: Room): string {
   const takenIds = new Set([...room.hostPicks, ...room.guestPicks])
-  // Find which current-franchise teams have available players
+  const slotPos = getCurrentSlotPos(room)
+  // Find which current-franchise teams have available players eligible for this slot
   const available = new Set<string>()
   for (const p of allPlayers) {
-    if (!takenIds.has(p.id)) available.add(getCurrentTeam(p.team))
+    if (takenIds.has(p.id)) continue
+    if (slotPos !== 'BENCH' && !p.positions.split(',').includes(slotPos)) continue
+    available.add(getCurrentTeam(p.team))
   }
   const choices = CURRENT_TEAM_ABBRS.filter(t => available.has(t))
   if (choices.length === 0) return CURRENT_TEAM_ABBRS[Math.floor(Math.random() * CURRENT_TEAM_ABBRS.length)]
@@ -209,7 +226,16 @@ function calculateResult(room: Room): GameResult {
 
 function autoPickPlayer(room: Room): number | null {
   const takenIds = new Set([...room.hostPicks, ...room.guestPicks])
-  let available = allPlayers.filter(p => !takenIds.has(p.id))
+  const slotPos = getCurrentSlotPos(room)
+  let available = allPlayers.filter(p => {
+    if (takenIds.has(p.id)) return false
+    if (slotPos !== 'BENCH' && !p.positions.split(',').includes(slotPos)) return false
+    return true
+  })
+  if (available.length === 0) {
+    // Fallback: ignore position filter if no eligible players
+    available = allPlayers.filter(p => !takenIds.has(p.id))
+  }
   if (available.length === 0) return null
   // Respect spun team constraint if set
   if (room.currentSpunTeam) {
@@ -395,6 +421,16 @@ app.prepare().then(async () => {
         const player = allPlayers.find(p => p.id === playerId)
         if (player && getCurrentTeam(player.team) !== room.currentSpunTeam) {
           socket.emit('pick-error', { message: `Must pick a ${room.currentSpunTeam} player this turn` })
+          return
+        }
+      }
+
+      // Validate position constraint
+      const slotPos = getCurrentSlotPos(room)
+      if (slotPos !== 'BENCH') {
+        const player = allPlayers.find(p => p.id === playerId)
+        if (player && !player.positions.split(',').includes(slotPos)) {
+          socket.emit('pick-error', { message: `This slot requires a ${slotPos}` })
           return
         }
       }

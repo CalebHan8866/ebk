@@ -118,11 +118,14 @@ function PracticeContent() {
 
   const spunTeamInfo = spunTeam ? CURRENT_TEAMS.find(t => t.abbr === spunTeam) : null
 
+  const currentSlotPos = requiredSlots[picks.length]
+
   const filteredPlayers = shuffledIds
     .map(id => players.find(p => p.id === id))
     .filter((p): p is Player => {
       if (!p) return false
       if (takenIds.has(p.id)) return false
+      if (currentSlotPos !== 'BENCH' && !p.positions.split(',').includes(currentSlotPos)) return false
       if (filterPos !== 'ALL' && !p.positions.split(',').includes(filterPos)) return false
       if (searchQuery) {
         const q = searchQuery.toLowerCase()
