@@ -139,9 +139,8 @@ function stableId(href: string, team: string): number {
 }
 
 // Minimum total games a player must have played for a team to be included.
-// Filters out true cup-of-coffee stints (1-9 games) while keeping all
-// meaningful contributors — benchwarmers, backups, short-term players, etc.
-const MIN_GAMES_PER_TEAM = 10
+// Set to 1 to include all players regardless of games played.
+const MIN_GAMES_PER_TEAM = 1
 
 async function main() {
   console.log('EBK Player Scraper — Basketball Reference')
