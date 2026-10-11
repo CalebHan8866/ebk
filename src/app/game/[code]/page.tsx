@@ -87,6 +87,21 @@ function getRequiredPositions(teamMode: TeamMode): string[] {
   return [...starters, ...bench]
 }
 
+// Map a flat list of picked player IDs to their correct position slots for display
+function assignToSlots(pickedIds: number[], allPlayers: Player[], requiredSlots: string[]): (Player | null)[] {
+  const slots: (Player | null)[] = requiredSlots.map(() => null)
+  const usedSlots = new Set<number>()
+  for (const id of pickedIds) {
+    const player = allPlayers.find(p => p.id === id)
+    if (!player) continue
+    const posSlot = requiredSlots.findIndex((s, i) => s === player.position && !usedSlots.has(i))
+    if (posSlot !== -1) { slots[posSlot] = player; usedSlots.add(posSlot); continue }
+    const benchSlot = requiredSlots.findIndex((s, i) => s === 'BENCH' && !usedSlots.has(i))
+    if (benchSlot !== -1) { slots[benchSlot] = player; usedSlots.add(benchSlot) }
+  }
+  return slots
+}
+
 function GameContent() {
   const params = useParams()
   const searchParams = useSearchParams()
@@ -100,6 +115,7 @@ function GameContent() {
   const [seriesWinner, setSeriesWinner] = useState<'host' | 'guest' | 'draw' | null>(null)
   const [filterPos, setFilterPos] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null)
   const [lastResult, setLastResult] = useState<GameResult | null>(null)
   const [disconnected, setDisconnected] = useState(false)
 
@@ -393,12 +409,52 @@ function GameContent() {
   // DRAFTING PHASE
   const spunTeamInfo = spunTeam ? CURRENT_TEAMS.find(t => t.abbr === spunTeam) : null
 
-  // Positions already used in my 5 starter slots (picks 0-4)
+  // Slot-based display for both teams
+  const mySlots = assignToSlots(myPicks, players, requiredSlots)
+  const oppSlots = assignToSlots(oppPicks, players, requiredSlots)
+
+  // Positions already used in my 5 starter slots
   const usedStarterPositions = new Set(
-    myPicks.slice(0, 5).map(id => players.find(p => p.id === id)?.position).filter((x): x is string => Boolean(x))
+    mySlots.slice(0, 5).filter((p): p is Player => p !== null).map(p => p.position)
   )
   const isStarterSlot = myPicks.length < 5
   const remainingStarterPositions = ['PG', 'SG', 'SF', 'PF', 'C'].filter(p => !usedStarterPositions.has(p))
+
+  const selectedPlayer = selectedPlayerId !== null ? players.find(p => p.id === selectedPlayerId) ?? null : null
+
+  function getValidSlots(player: Player): Set<number> {
+    const valid = new Set<number>()
+    requiredSlots.forEach((s, i) => {
+      if (mySlots[i] !== null) return
+      if (s === player.position) valid.add(i)
+      if (s === 'BENCH') valid.add(i)
+    })
+    return valid
+  }
+
+  function selectAndPick(playerId: number) {
+    const player = players.find(p => p.id === playerId)
+    if (!player) return
+    const validSlots = getValidSlots(player)
+    // If only one valid slot (or no bench available), pick immediately
+    if (validSlots.size === 1) {
+      pickPlayer(playerId)
+      setSelectedPlayerId(null)
+    } else if (validSlots.size === 0) {
+      return
+    } else {
+      // Multiple choices — select the player, let user tap a slot
+      setSelectedPlayerId(prev => prev === playerId ? null : playerId)
+    }
+  }
+
+  function pickIntoSlot(slotIndex: number) {
+    if (!selectedPlayer || !isMyTurn) return
+    const validSlots = getValidSlots(selectedPlayer)
+    if (!validSlots.has(slotIndex)) return
+    pickPlayer(selectedPlayer.id)
+    setSelectedPlayerId(null)
+  }
 
   // Build display list from shuffled order; apply search/pos filter on top
   const filteredPlayers = shuffledIds
@@ -450,19 +506,35 @@ function GameContent() {
             </h3>
             <div className="space-y-1.5">
               {requiredSlots.map((slotPos, i) => {
-                const pickedId = myPicks[i]
-                const pickedPlayer = pickedId ? players.find(p => p.id === pickedId) : null
+                const pickedPlayer = mySlots[i]
                 const isBench = slotPos === 'BENCH'
                 const displayLabel = pickedPlayer ? pickedPlayer.position : (isBench ? 'BN' : slotPos)
+                const validSlots = selectedPlayer ? getValidSlots(selectedPlayer) : new Set<number>()
+                const isValidTarget = isMyTurn && selectedPlayer !== null && validSlots.has(i) && pickedPlayer === null
+                const isBlocked = isMyTurn && selectedPlayer !== null && !validSlots.has(i) && pickedPlayer === null
                 return (
-                  <div key={i} className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 ${pickedPlayer ? 'bg-[#0A0A0A]' : 'bg-[#0A0A0A] border border-dashed border-gray-700'}`}>
+                  <div
+                    key={i}
+                    onClick={() => isValidTarget ? pickIntoSlot(i) : undefined}
+                    className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 transition-all ${
+                      isValidTarget
+                        ? 'bg-orange-600/20 border border-orange-500 cursor-pointer hover:bg-orange-600/40'
+                        : isBlocked
+                        ? 'bg-[#0A0A0A] border border-dashed border-gray-800 opacity-30'
+                        : pickedPlayer
+                        ? 'bg-[#0A0A0A]'
+                        : 'bg-[#0A0A0A] border border-dashed border-gray-700'
+                    }`}
+                  >
                     <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-600' : 'text-orange-400'}`}>
                       {displayLabel}
                     </span>
                     {pickedPlayer ? (
                       <span className="text-white truncate">{pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-gray-500">({pickedPlayer.team})</span></span>
                     ) : (
-                      <span className="text-gray-600">empty</span>
+                      <span className={isValidTarget ? 'text-orange-300' : 'text-gray-600'}>
+                        {isValidTarget ? 'tap to place' : 'empty'}
+                      </span>
                     )}
                   </div>
                 )
@@ -578,19 +650,29 @@ function GameContent() {
               </div>
             )}
 
+            {selectedPlayer && isMyTurn && (
+              <div className="mb-2 bg-orange-600/10 border border-orange-500 rounded-lg px-3 py-2 text-xs text-orange-300 flex items-center justify-between">
+                <span><span className="font-black text-orange-400">{selectedPlayer.firstName} {selectedPlayer.lastName}</span> selected — tap a slot</span>
+                <button onClick={() => setSelectedPlayerId(null)} className="text-orange-400 hover:text-white ml-2">✕</button>
+              </div>
+            )}
+
             <div className="space-y-1.5 max-h-[60vh] overflow-y-auto pr-1">
               {filteredPlayers.map(player => {
                 const playerPositions = player.positions.split(',')
                 const canPick = isMyTurn && !isSpinning && spunTeam !== null && !takenIds.has(player.id)
+                const isSelected = selectedPlayerId === player.id
                 const statVal = getStatValue(player, statMode)
 
                 return (
                   <button
                     key={player.id}
-                    onClick={() => canPick && pickPlayer(player.id)}
+                    onClick={() => canPick && selectAndPick(player.id)}
                     disabled={!canPick}
                     className={`w-full rounded-xl px-4 py-3 flex items-center gap-3 text-left transition-all ${
-                      canPick
+                      isSelected
+                        ? 'bg-orange-600/30 border-2 border-orange-500 cursor-pointer'
+                        : canPick
                         ? 'bg-[#111827] hover:bg-[#1e2d45] hover:border-orange-500 border-2 border-transparent cursor-pointer'
                         : 'bg-[#0D0D0D] border-2 border-transparent cursor-default opacity-50'
                     }`}
@@ -627,8 +709,7 @@ function GameContent() {
             </h3>
             <div className="space-y-1.5">
               {requiredSlots.map((slotPos, i) => {
-                const pickedId = oppPicks[i]
-                const pickedPlayer = pickedId ? players.find(p => p.id === pickedId) : null
+                const pickedPlayer = oppSlots[i]
                 const isBench = slotPos === 'BENCH'
                 const displayLabel = pickedPlayer ? pickedPlayer.position : (isBench ? 'BN' : slotPos)
                 return (

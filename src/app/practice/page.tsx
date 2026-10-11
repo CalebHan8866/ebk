@@ -56,7 +56,9 @@ function PracticeContent() {
 
   const [players, setPlayers] = useState<Player[]>([])
   const [loadingPlayers, setLoadingPlayers] = useState(false)
-  const [picks, setPicks] = useState<number[]>([])
+  // Slot-indexed: picks[i] = player id in slot i, null = empty
+  const [picks, setPicks] = useState<(number | null)[]>([])
+  const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null)
   const [filterPos, setFilterPos] = useState('ALL')
   const [searchQuery, setSearchQuery] = useState('')
   const [statMode, setStatMode] = useState('games_played')
@@ -80,20 +82,27 @@ function PracticeContent() {
 
   const teamSize = TEAM_SIZES[teamMode]
   const requiredSlots = getRequiredPositions(teamMode)
-  const takenIds = new Set(picks)
+  const filledCount = picks.filter(id => id !== null).length
+  const takenIds = new Set(picks.filter((id): id is number => id !== null))
 
-  // Positions already used in the 5 starter slots (picks 0-4)
+  // Positions used in filled starter slots (indices 0-4)
   const usedStarterPositions = new Set(
-    picks.slice(0, 5).map(id => players.find(p => p.id === id)?.position).filter((x): x is string => Boolean(x))
+    picks.slice(0, 5)
+      .filter((id): id is number => id !== null)
+      .map(id => players.find(p => p.id === id)?.position)
+      .filter((x): x is string => Boolean(x))
   )
-  const isStarterSlot = picks.length < 5
+  const isStarterSlot = picks.slice(0, 5).some(id => id === null)
   const remainingStarterPositions = ['PG', 'SG', 'SF', 'PF', 'C'].filter(p => !usedStarterPositions.has(p))
 
-  function triggerSpin(afterPlayers: Player[], currentPicks: number[]) {
-    const takenNow = new Set(currentPicks)
-    const isNextStarter = currentPicks.length < 5
+  function triggerSpin(afterPlayers: Player[], currentPicks: (number | null)[]) {
+    const takenNow = new Set(currentPicks.filter((id): id is number => id !== null))
+    const isNextStarter = currentPicks.slice(0, 5).some(id => id === null)
     const usedPos = new Set(
-      currentPicks.slice(0, 5).map(id => afterPlayers.find(p => p.id === id)?.position).filter((x): x is string => Boolean(x))
+      currentPicks.slice(0, 5)
+        .filter((id): id is number => id !== null)
+        .map(id => afterPlayers.find(p => p.id === id)?.position)
+        .filter((x): x is string => Boolean(x))
     )
     const available = afterPlayers.filter(p => {
       if (takenNow.has(p.id)) return false
@@ -148,16 +157,48 @@ function PracticeContent() {
       return true
     })
 
-  function pick(id: number) {
-    if (picks.length >= teamSize) return
-    if (spunTeam && getCurrentTeam(players.find(p => p.id === id)?.team || '') !== spunTeam) return
-    const newPicks = [...picks, id]
-    setPicks(newPicks)
-    if (newPicks.length < teamSize) triggerSpin(players, newPicks)
+  const selectedPlayer = selectedPlayerId !== null ? players.find(p => p.id === selectedPlayerId) ?? null : null
+
+  // Which slots are valid targets for the selected player
+  function getValidSlots(player: Player): Set<number> {
+    const valid = new Set<number>()
+    requiredSlots.forEach((s, i) => {
+      if (picks[i] !== null) return // already filled
+      if (s === player.position) valid.add(i)   // matching position slot
+      if (s === 'BENCH') valid.add(i)            // any bench slot
+    })
+    return valid
   }
 
-  function unpick(id: number) {
-    setPicks(prev => prev.filter(p => p !== id))
+  function selectPlayer(id: number) {
+    if (filledCount >= teamSize) return
+    const player = players.find(p => p.id === id)
+    if (!player) return
+    if (spunTeam && getCurrentTeam(player.team) !== spunTeam) return
+    // Toggle: clicking selected player again deselects
+    setSelectedPlayerId(prev => prev === id ? null : id)
+  }
+
+  function placeInSlot(slotIndex: number) {
+    if (!selectedPlayer) return
+    const validSlots = getValidSlots(selectedPlayer)
+    if (!validSlots.has(slotIndex)) return
+
+    const newPicks = [...picks]
+    newPicks[slotIndex] = selectedPlayer.id
+    setPicks(newPicks)
+    setSelectedPlayerId(null)
+
+    const newFilled = newPicks.filter(id => id !== null).length
+    if (newFilled < teamSize) triggerSpin(players, newPicks)
+  }
+
+  function unpick(fromSlot: number) {
+    const newPicks = [...picks]
+    newPicks[fromSlot] = null
+    setPicks(newPicks)
+    setSelectedPlayerId(null)
+    triggerSpin(players, newPicks)
   }
 
   function reset() {
@@ -212,7 +253,7 @@ function PracticeContent() {
             </div>
 
             <button
-              onClick={() => setScreen('draft')}
+              onClick={() => { setPicks(Array(TEAM_SIZES[teamMode]).fill(null)); setScreen('draft') }}
               className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black py-3 rounded-xl transition-colors text-lg">
               Start Practice
             </button>
@@ -224,7 +265,7 @@ function PracticeContent() {
 
   // ── Draft ──────────────────────────────────────────────────────────────────
   if (screen === 'draft') {
-    const isDone = picks.length >= teamSize
+    const isDone = filledCount >= teamSize
 
     return (
       <div className="min-h-screen bg-[#0A0A0A] py-6 px-4">
@@ -258,12 +299,27 @@ function PracticeContent() {
                 <div className="space-y-1.5">
                   {requiredSlots.map((slotPos, i) => {
                     const pickedId = picks[i]
-                    const pickedPlayer = pickedId ? players.find(p => p.id === pickedId) : null
+                    const pickedPlayer = (pickedId !== null && pickedId !== undefined) ? players.find(p => p.id === pickedId) ?? null : null
                     const isBench = slotPos === 'BENCH'
                     const displayLabel = pickedPlayer ? pickedPlayer.position : (isBench ? 'BN' : slotPos)
+                    const validSlots = selectedPlayer ? getValidSlots(selectedPlayer) : new Set<number>()
+                    const isValidTarget = selectedPlayer !== null && validSlots.has(i) && pickedPlayer === null
+                    const isBlocked = selectedPlayer !== null && !validSlots.has(i) && pickedPlayer === null
                     return (
-                      <div key={i} className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 ${pickedPlayer ? 'bg-[#0A0A0A]' : 'bg-[#0A0A0A] border border-dashed border-gray-700'}`}>
-                        <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-600' : 'text-orange-400'}`}>
+                      <div
+                        key={i}
+                        onClick={() => isValidTarget ? placeInSlot(i) : undefined}
+                        className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 transition-all ${
+                          isValidTarget
+                            ? 'bg-orange-600/20 border border-orange-500 cursor-pointer hover:bg-orange-600/40'
+                            : isBlocked
+                            ? 'bg-[#0A0A0A] border border-dashed border-gray-800 opacity-30'
+                            : pickedPlayer
+                            ? 'bg-[#0A0A0A]'
+                            : 'bg-[#0A0A0A] border border-dashed border-gray-700'
+                        }`}
+                      >
+                        <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-600' : isValidTarget ? 'text-orange-400' : 'text-orange-400'}`}>
                           {displayLabel}
                         </span>
                         {pickedPlayer ? (
@@ -271,10 +327,12 @@ function PracticeContent() {
                             {pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-gray-500">({pickedPlayer.team})</span>
                           </span>
                         ) : (
-                          <span className="text-gray-600">empty</span>
+                          <span className={isValidTarget ? 'text-orange-300' : 'text-gray-600'}>
+                            {isValidTarget ? 'tap to place' : 'empty'}
+                          </span>
                         )}
                         {pickedPlayer && (
-                          <button onClick={() => unpick(pickedPlayer.id)} className="text-gray-600 hover:text-red-400 text-xs shrink-0">✕</button>
+                          <button onClick={e => { e.stopPropagation(); unpick(i) }} className="text-gray-600 hover:text-red-400 text-xs shrink-0">✕</button>
                         )}
                       </div>
                     )
@@ -377,18 +435,28 @@ function PracticeContent() {
                   </div>
                 )}
 
+                {selectedPlayer && (
+                  <div className="mb-2 bg-orange-600/10 border border-orange-500 rounded-lg px-3 py-2 text-xs text-orange-300 flex items-center justify-between">
+                    <span><span className="font-black text-orange-400">{selectedPlayer.firstName} {selectedPlayer.lastName}</span> selected — tap a slot on the left</span>
+                    <button onClick={() => setSelectedPlayerId(null)} className="text-orange-400 hover:text-white ml-2">✕</button>
+                  </div>
+                )}
+
                 <div className="space-y-1.5 max-h-[70vh] overflow-y-auto pr-1">
                   {filteredPlayers.map(player => {
                     const playerPositions = player.positions.split(',')
-                    const canPick = picks.length < teamSize && !isSpinning && spunTeam !== null
+                    const canSelect = filledCount < teamSize && !isSpinning && spunTeam !== null
+                    const isSelected = selectedPlayerId === player.id
 
                     return (
                       <button
                         key={player.id}
-                        onClick={() => canPick && pick(player.id)}
-                        disabled={!canPick}
+                        onClick={() => canSelect && selectPlayer(player.id)}
+                        disabled={!canSelect}
                         className={`w-full rounded-xl px-4 py-3 flex items-center gap-3 text-left transition-all ${
-                          canPick
+                          isSelected
+                            ? 'bg-orange-600/30 border-2 border-orange-500 cursor-pointer'
+                            : canSelect
                             ? 'bg-[#111827] hover:bg-[#1e2d45] hover:border-orange-500 border-2 border-transparent cursor-pointer'
                             : 'bg-[#0D0D0D] border-2 border-transparent cursor-default opacity-40'
                         }`}
