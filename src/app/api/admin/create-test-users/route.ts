@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs'
 // POST { secret, count, prefix }
 export async function POST(request: NextRequest) {
   const { secret, count = 50, prefix = 'LoadBot' } = await request.json()
-  if (secret !== (process.env.DEV_SECRET || 'ebktest2024')) {
+  if (!process.env.DEV_SECRET || secret !== process.env.DEV_SECRET) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   if (count > 600) return NextResponse.json({ error: 'Max 600 per batch' }, { status: 400 })
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 // DELETE — wipe all load test accounts
 export async function DELETE(request: NextRequest) {
   const { secret, prefix = 'LoadBot' } = await request.json()
-  if (secret !== (process.env.DEV_SECRET || 'ebktest2024')) {
+  if (!process.env.DEV_SECRET || secret !== process.env.DEV_SECRET) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   const result = await prisma.user.deleteMany({
