@@ -569,8 +569,7 @@ function PracticeContent() {
     apg: pickedPlayers.reduce((s, p) => s + p.careerAPG, 0),
   }
   const totalEBK = pickedPlayers.reduce((s, p) => s + p.ebkScore, 0)
-  const bestTeam = getBestPossibleTeam(players, requiredSlots)
-  const bestEBK = bestTeam.reduce((s, p) => s + p.ebkScore, 0)
+  const bestEBK = getBestPossibleTeam(players, requiredSlots).reduce((s, p) => s + p.ebkScore, 0)
   const pct = bestEBK > 0 ? (totalEBK / bestEBK) * 100 : 0
   const { grade, label: gradeLabel, color: gradeColor } = getGrade(pct)
 
@@ -650,37 +649,6 @@ function PracticeContent() {
           <div className="mt-3 border-t border-gray-800 pt-3 flex justify-between items-center px-1">
             <span className="text-gray-500 text-xs uppercase tracking-wide">Team EBK Total</span>
             <span className={`font-black text-lg ${gradeColor}`}>{totalEBK.toFixed(1)}</span>
-          </div>
-        </div>
-
-        {/* Best possible team */}
-        <div className="bg-[#111827] rounded-2xl p-4 mb-5">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-gray-400 text-xs uppercase tracking-wide">Best Possible Roster</h2>
-            <span className="text-gray-600 text-xs">EBK {bestEBK.toFixed(1)}</span>
-          </div>
-          <div className="space-y-1.5">
-            {requiredSlots.map((slotPos, i) => {
-              const p = bestTeam[i]
-              if (!p) return null
-              const isPicked = pickedPlayers.some(pp => pp.id === p.id)
-              return (
-                <div key={i} className={`rounded-lg px-3 py-2 flex items-center gap-2 ${isPicked ? 'bg-green-900/20' : 'bg-[#0A0A0A]'}`}>
-                  <span className={`font-bold text-xs w-7 shrink-0 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-orange-400'}`}>
-                    {slotPos === 'BENCH' ? 'BN' : slotPos}
-                  </span>
-                  <span className={`text-sm font-bold flex-1 truncate ${isPicked ? 'text-green-400' : 'text-gray-400'}`}>
-                    {p.firstName} {p.lastName}
-                    {isPicked && <span className="text-green-600 text-xs font-normal ml-1">✓ you got them</span>}
-                  </span>
-                  <span className={`text-xs font-black shrink-0 ${
-                    p.ebkScore >= 80 ? 'text-green-400' :
-                    p.ebkScore >= 60 ? 'text-yellow-400' :
-                    p.ebkScore >= 40 ? 'text-orange-400' : 'text-red-400'
-                  }`}>{p.ebkScore.toFixed(1)}</span>
-                </div>
-              )
-            })}
           </div>
         </div>
 
