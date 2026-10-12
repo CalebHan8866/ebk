@@ -228,7 +228,13 @@ export default function LobbyPage() {
     const socket = getSocket()
     const timeout = setTimeout(() => { setError('No response from server — try refreshing'); setLoading(false) }, 8000)
     socket.once('room-error', ({ message }: { message: string }) => { clearTimeout(timeout); setError(message); setLoading(false) })
-    socket.once('draft-started', () => { clearTimeout(timeout) })
+    socket.once('draft-started', ({ room }: { room: { code: string; hostSocketId: string } }) => {
+      clearTimeout(timeout)
+      const s = getSocket()
+      const guestRole = room.hostSocketId === s.id ? 'host' : 'guest'
+      const name = user?.username || userName.trim() || 'Player'
+      router.push(`/game/${room.code}?role=${guestRole}&name=${encodeURIComponent(name)}`)
+    })
     socket.emit('join-room', { code: joinCode.trim().toUpperCase(), userName: userName.trim(), userId: user?.id || null })
   }
 
