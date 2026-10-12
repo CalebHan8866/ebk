@@ -21,6 +21,14 @@ interface Player {
 const CURRENT_YEAR = 2024
 
 const EVENTS = [
+  // — Ancient / BC —
+  { year: -3000, desc: 'the first Egyptian pyramids being built (3000 BC)',       emoji: '🏺' },
+  { year: -776,  desc: 'the first Olympic Games in ancient Greece (776 BC)',      emoji: '🏅' },
+  { year: -44,   desc: "Julius Caesar's assassination (44 BC)",                  emoji: '🗡️' },
+  // — AD / Common Era —
+  { year: 1,     desc: "the birth of Christ (1 AD)",                             emoji: '✝️' },
+  { year: 1066,  desc: 'the Norman conquest of England (1066)',                  emoji: '🏰' },
+  { year: 1215,  desc: 'the Magna Carta being signed (1215)',                    emoji: '📜' },
   // — Deep history —
   { year: 1347, desc: 'the Black Plague (1347)',                          emoji: '💀' },
   { year: 1492, desc: "Columbus's voyage to America (1492)",              emoji: '⛵' },
@@ -143,15 +151,22 @@ function generateFacts(p: Player): Fact[] {
   // Collect all events where saving $X/year since then would match earnings,
   // with $X in a relatable range. Use player ID to pick one → every player
   // gets a different event even at similar earnings levels.
-  const candidates = EVENTS.filter(e => {
-    const yrs = CURRENT_YEAR - e.year
-    const perYr = earnings / yrs
-    return perYr >= 30_000 && perYr <= 100_000
-  })
-  const pool = candidates.length > 0 ? candidates : (earnings > 100_000_000 ? EVENTS.slice(0, 5) : EVENTS.slice(-5))
+  // Find events where the implied yearly income is plausibly human-scale.
+  // We sort ALL events by how close their per-year amount is to a median salary
+  // (~$60K), then take the 6 closest — player ID picks one for variety.
+  // This guarantees we always pick the "most realistic" event, never a recent
+  // one that yields a per-year figure in the millions.
+  const TARGET_SALARY = 60_000
+  const eventsWithDiff = EVENTS.map(e => {
+    // For BC years (negative), add 1 to avoid the "year 0" gap
+    const yrsAgo = e.year < 0 ? CURRENT_YEAR + Math.abs(e.year) + 1 : CURRENT_YEAR - e.year
+    const perYr = earnings / yrsAgo
+    return { ...e, perYr, diff: Math.abs(perYr - TARGET_SALARY) }
+  }).sort((a, b) => a.diff - b.diff)
+  const pool = eventsWithDiff.slice(0, 6)
   const ev = pool[p.id % pool.length]
 
-  const evYears = CURRENT_YEAR - ev.year
+  const evYears = ev.year < 0 ? CURRENT_YEAR + Math.abs(ev.year) + 1 : CURRENT_YEAR - ev.year
   const perYearNeeded = Math.round(earnings / evYears)
 
   facts.push({
