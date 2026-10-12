@@ -4,6 +4,7 @@ import next from 'next'
 import { Server as SocketServer } from 'socket.io'
 import { PrismaClient } from '@prisma/client'
 import { BADGES, EMOTES, MILESTONES } from './src/lib/accessories'
+import { verifyToken } from './src/lib/auth'
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = '0.0.0.0'
