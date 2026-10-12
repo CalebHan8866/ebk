@@ -481,6 +481,59 @@ function GameContent() {
             </div>
           )}
 
+          {/* Last game team breakdown */}
+          {myPicks.length > 0 && (() => {
+            const lastGame = room.gameResults[room.gameResults.length - 1]
+            if (!lastGame) return null
+            const myPickSlotsComplete = role === 'host' ? (room.hostPickSlots || []) : (room.guestPickSlots || [])
+            const mySlotsComplete = myPickSlotsComplete.length > 0
+              ? buildSlotsFromPickSlots(myPicks, myPickSlotsComplete, players, requiredSlots)
+              : assignToSlots(myPicks, players, requiredSlots)
+            const myLastTotal = role === 'host' ? lastGame.hostTotal : lastGame.guestTotal
+            const oppLastTotal = role === 'host' ? lastGame.guestTotal : lastGame.hostTotal
+            return (
+              <div className="bg-[#111827] rounded-2xl p-4 mb-4">
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-gray-400 text-xs uppercase tracking-wide">Last Game — Your Team</h2>
+                  <span className="text-gray-600 text-xs">{STAT_LABELS[lastGame.statMode]}</span>
+                </div>
+                <div className="bg-[#0A0A0A] rounded-lg px-3 py-2 mb-2 text-xs text-gray-500 text-center">
+                  Lower total <span className="text-orange-400 font-semibold">{STAT_LABELS[lastGame.statMode]}</span> wins · add up each player&apos;s career stat
+                </div>
+                <div className="space-y-1.5">
+                  {requiredSlots.map((slotPos, i) => {
+                    const p = mySlotsComplete[i]
+                    if (!p) return null
+                    const playerStat = getStatValue(p, lastGame.statMode)
+                    return (
+                      <div key={i} className="bg-[#0A0A0A] rounded-lg px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold text-xs w-8 shrink-0 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-orange-400'}`}>
+                            {slotPos === 'BENCH' ? 'BN' : slotPos}
+                          </span>
+                          <span className="text-white text-sm font-bold flex-1 truncate">{p.firstName} {p.lastName}</span>
+                          <span className="text-orange-300 font-black text-sm shrink-0">
+                            {formatStat(playerStat, lastGame.statMode)}
+                          </span>
+                        </div>
+                        <div className="pl-10 mt-0.5">
+                          <span className="text-gray-600 text-xs">{p.team} · {p.yearFrom}–{p.yearTo}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="mt-3 border-t border-gray-800 pt-3 flex justify-between items-center px-1">
+                  <span className="text-gray-400 text-xs uppercase tracking-wide">Your Total</span>
+                  <span className="font-black text-base text-white">
+                    {formatStat(myLastTotal, lastGame.statMode)}
+                    <span className="text-gray-600 font-normal text-xs ml-1">vs {formatStat(oppLastTotal, lastGame.statMode)}</span>
+                  </span>
+                </div>
+              </div>
+            )
+          })()}
+
           <button onClick={() => router.push('/lobby')} className="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-4 rounded-2xl text-lg transition-colors w-full">
             Play Again
           </button>
@@ -496,11 +549,16 @@ function GameContent() {
     const iWon = lastResult.winner === role
     const isDraw = lastResult.winner === 'draw'
 
+    const myPickSlotsResult = role === 'host' ? (room.hostPickSlots || []) : (room.guestPickSlots || [])
+    const mySlotsResult = myPickSlotsResult.length > 0
+      ? buildSlotsFromPickSlots(myPicks, myPickSlotsResult, players, requiredSlots)
+      : assignToSlots(myPicks, players, requiredSlots)
+
     return (
       <div className="min-h-screen bg-[#0A0A0A] px-4 py-8 overflow-y-auto">
         <div className="max-w-md w-full mx-auto">
           {/* Result header */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-4">
             <div className={`font-display leading-none mb-2 ${iWon ? 'text-orange-500' : isDraw ? 'text-gray-400' : 'text-gray-600'}`}
               style={{ fontSize: 'clamp(4rem, 18vw, 7rem)' }}>
               {iWon ? 'W' : isDraw ? 'D' : 'L'}
@@ -508,7 +566,12 @@ function GameContent() {
             <div className="text-white font-black text-lg">
               {iWon ? `Game ${lastResult.game} — You Win` : isDraw ? `Game ${lastResult.game} — Draw` : `Game ${lastResult.game} — You Lose`}
             </div>
-            <div className="text-gray-500 text-sm mt-1">{STAT_LABELS[lastResult.statMode]}</div>
+          </div>
+
+          {/* Stat explanation */}
+          <div className="bg-[#111827] rounded-xl px-4 py-2.5 mb-4 text-center">
+            <div className="text-gray-300 text-sm">Lower total <span className="text-orange-400 font-black">{STAT_LABELS[lastResult.statMode]}</span> wins</div>
+            <div className="text-gray-600 text-xs mt-0.5">Add up every player&apos;s career {lastResult.statMode === 'games_played' ? 'games played' : lastResult.statMode.toUpperCase()} — lowest team total takes the game</div>
           </div>
 
           {/* Score cards */}
@@ -517,11 +580,9 @@ function GameContent() {
               const isWinner = (side.isMe && iWon) || (!side.isMe && !iWon && !isDraw)
               return (
                 <div key={side.name} className={`rounded-2xl p-4 text-center transition-all ${
-                  isWinner
-                    ? 'bg-green-900/20 border-2 border-green-500'
-                    : isDraw
-                    ? 'bg-[#111] border-2 border-gray-700'
-                    : 'bg-[#0D0D0D] border-2 border-[#1a1a1a]'
+                  isWinner ? 'bg-green-900/20 border-2 border-green-500'
+                  : isDraw ? 'bg-[#111] border-2 border-gray-700'
+                  : 'bg-[#0D0D0D] border-2 border-[#1a1a1a]'
                 }`}>
                   <div className="text-gray-500 text-xs uppercase tracking-widest mb-2 truncate">{side.name}</div>
                   <div className={`font-display leading-none mb-1 ${isWinner ? 'text-green-400' : 'text-white'}`}
@@ -529,22 +590,60 @@ function GameContent() {
                     {formatStat(side.total, lastResult.statMode)}
                   </div>
                   <div className="text-gray-600 text-xs leading-tight">{getStatUnit(lastResult.statMode)}</div>
+                  {isWinner && !isDraw && <div className="text-green-400 text-xs font-black mt-1">LOWER ✓</div>}
                 </div>
               )
             })}
           </div>
 
-          {/* Series score */}
-          <div className="bg-[#111] rounded-2xl px-4 py-3 mb-4 text-center">
-            <div className="text-gray-600 text-xs uppercase tracking-widest mb-1">Series</div>
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              <span className="text-white font-black text-lg truncate max-w-[100px]">{room.hostName}</span>
-              <span className="text-orange-400 font-black text-2xl">{room.hostSeriesScore}</span>
-              <span className="text-gray-600 text-xl">–</span>
-              <span className="text-orange-400 font-black text-2xl">{room.guestSeriesScore}</span>
-              <span className="text-white font-black text-lg truncate max-w-[100px]">{room.guestName}</span>
+          {/* Your Team Breakdown */}
+          <div className="bg-[#111827] rounded-2xl p-4 mb-4">
+            <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Your Team</h2>
+            <div className="space-y-1.5">
+              {requiredSlots.map((slotPos, i) => {
+                const p = mySlotsResult[i]
+                if (!p) return null
+                const playerStat = getStatValue(p, lastResult.statMode)
+                return (
+                  <div key={i} className="bg-[#0A0A0A] rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`font-bold text-xs w-8 shrink-0 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-orange-400'}`}>
+                        {slotPos === 'BENCH' ? 'BN' : slotPos}
+                      </span>
+                      <span className="text-white text-sm font-bold flex-1 truncate">{p.firstName} {p.lastName}</span>
+                      <span className="text-orange-300 font-black text-sm shrink-0">
+                        {formatStat(playerStat, lastResult.statMode)}
+                      </span>
+                    </div>
+                    <div className="pl-10 mt-0.5">
+                      <span className="text-gray-600 text-xs">{p.team} · {p.yearFrom}–{p.yearTo}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="mt-3 border-t border-gray-800 pt-3 flex justify-between items-center px-1">
+              <span className="text-gray-400 text-xs uppercase tracking-wide">Your Total</span>
+              <span className={`font-black text-lg ${iWon ? 'text-green-400' : isDraw ? 'text-gray-400' : 'text-white'}`}>
+                {formatStat(myTotal, lastResult.statMode)}
+                <span className="text-gray-600 font-normal text-xs ml-1">vs {formatStat(oppTotal, lastResult.statMode)}</span>
+              </span>
             </div>
           </div>
+
+          {/* Series score */}
+          {room.series > 1 && (
+            <div className="bg-[#111] rounded-2xl px-4 py-3 mb-4 text-center">
+              <div className="text-gray-600 text-xs uppercase tracking-widest mb-1">Series</div>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                <span className="text-white font-black text-lg truncate max-w-[100px]">{room.hostName}</span>
+                <span className="text-orange-400 font-black text-2xl">{room.hostSeriesScore}</span>
+                <span className="text-gray-600 text-xl">–</span>
+                <span className="text-orange-400 font-black text-2xl">{room.guestSeriesScore}</span>
+                <span className="text-white font-black text-lg truncate max-w-[100px]">{room.guestName}</span>
+              </div>
+            </div>
+          )}
 
           {/* CTA */}
           {role === 'host' ? (
