@@ -216,6 +216,7 @@ const listingTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const pickTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const pickTimerStartedAt = new Map<string, number>()
 const consecutiveTimeouts = new Map<string, { host: number; guest: number }>()
+const emoteLastSent = new Map<string, number>() // socketId → timestamp
 // cooldown: userId → Map(opponentId → timestamp of last game end)
 const recentMatchups = new Map<string, Map<string, number>>()
 // grudge: userId → Map(opponentId → total games played together)
@@ -644,6 +645,7 @@ app.prepare().then(async () => {
     socket.on('create-room', ({ teamMode, series, difficulty, userName, userId }: {
       teamMode: TeamMode, series: SeriesLength, difficulty: Difficulty, userName: string, userId: string | null
     }) => {
+      userName = (userName ?? '').trim().slice(0, 20) || 'Player'
       let code = generateCode()
       while (rooms.has(code)) code = generateCode()
 
@@ -683,6 +685,7 @@ app.prepare().then(async () => {
     socket.on('join-room', ({ code, userName, userId }: {
       code: string, userName: string, userId: string | null
     }) => {
+      userName = (userName ?? '').trim().slice(0, 20) || 'Player'
       const room = rooms.get(code.toUpperCase())
       if (!room) { socket.emit('room-error', { message: 'Room not found' }); return }
       if (room.guestSocketId) { socket.emit('room-error', { message: 'Room is full' }); return }
@@ -796,6 +799,7 @@ app.prepare().then(async () => {
     socket.on('next-game', ({ code }: { code: string }) => {
       const room = rooms.get(code)
       if (!room || room.status !== 'result') return
+      if (socket.id !== room.hostSocketId && socket.id !== room.guestSocketId) return
 
       room.currentGame++
       room.hostPicks = []
@@ -864,6 +868,7 @@ app.prepare().then(async () => {
     socket.on('create-listing', async ({ userName, userId, teamMode, series }: {
       userName: string, userId: string, teamMode: TeamMode, series: SeriesLength
     }) => {
+      userName = (userName ?? '').trim().slice(0, 20) || 'Player'
       // Remove any stale listing by this socket
       for (const [c, l] of gameListings.entries()) {
         if (l.hostSocketId === socket.id) {
@@ -915,6 +920,7 @@ app.prepare().then(async () => {
     socket.on('join-listing', async ({ code, userName, userId }: {
       code: string, userName: string, userId: string
     }) => {
+      userName = (userName ?? '').trim().slice(0, 20) || 'Player'
       const listing = gameListings.get(code)
       if (!listing) {
         socket.emit('listing-error', { message: 'Game no longer available' })
@@ -984,6 +990,10 @@ app.prepare().then(async () => {
       const isHost = socket.id === room.hostSocketId
       const isGuest = socket.id === room.guestSocketId
       if (!isHost && !isGuest) return
+      const now = Date.now()
+      const last = emoteLastSent.get(socket.id) ?? 0
+      if (now - last < 3000) return // 3s cooldown
+      emoteLastSent.set(socket.id, now)
       const targetSocketId = isHost ? room.guestSocketId : room.hostSocketId
       if (targetSocketId) io.to(targetSocketId).emit('opponent-emote', { emoteText })
     })
@@ -1025,6 +1035,7 @@ app.prepare().then(async () => {
     })
 
     socket.on('disconnect', () => {
+      emoteLastSent.delete(socket.id)
       // Remove any open listing by this socket
       for (const [code, listing] of gameListings.entries()) {
         if (listing.hostSocketId === socket.id) {
