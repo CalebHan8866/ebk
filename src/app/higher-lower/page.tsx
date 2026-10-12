@@ -35,6 +35,7 @@ const TOTAL_PLAYERS = 67
 
 export default function HigherLowerPage() {
   const { user } = useAuth()
+  const [allPlayers, setAllPlayers] = useState<Player[]>([])
   const [sequence, setSequence] = useState<Player[]>([])
   const [idx, setIdx] = useState(0)
   const [screen, setScreen] = useState<GameScreen>('loading')
@@ -45,6 +46,17 @@ export default function HigherLowerPage() {
   const [unlockedBadge, setUnlockedBadge] = useState<{ id: string; name: string } | null>(null)
   const [claimStatus, setClaimStatus] = useState<ClaimStatus>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const badgeClearRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isMounted = useRef(true)
+
+  useEffect(() => {
+    isMounted.current = true
+    return () => {
+      isMounted.current = false
+      if (timerRef.current) clearTimeout(timerRef.current)
+      if (badgeClearRef.current) clearTimeout(badgeClearRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? parseInt(localStorage.getItem('hl_best') || '0') : 0
@@ -53,27 +65,28 @@ export default function HigherLowerPage() {
     fetch('/api/players')
       .then(r => r.json())
       .then((all: Player[]) => {
+        if (!isMounted.current) return
         const filtered = all.filter(p => p.careerGames >= 80 && p.ebkScore >= 5 && p.ebkScore <= 88)
         const byGames = [...filtered].sort((a, b) => b.careerGames - a.careerGames).slice(0, 200)
-        const shuffled = seededShuffle(byGames, 7777)
-        setSequence(shuffled.slice(0, TOTAL_PLAYERS))
+        setAllPlayers(byGames)
+        const seed = Math.floor(Math.random() * 1_000_000)
+        setSequence(seededShuffle(byGames, seed).slice(0, TOTAL_PLAYERS))
         setScreen('playing')
       })
-      .catch(() => setScreen('playing'))
+      .catch(() => { if (isMounted.current) setScreen('playing') })
   }, [])
-
-  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
 
   async function tryUnlock(milestone: string) {
     if (!user) return
     const isGauntlet = milestone === 'hl_gauntlet'
-    if (isGauntlet) setClaimStatus('pending')
+    if (isGauntlet && isMounted.current) setClaimStatus('pending')
     try {
       const res = await fetch('/api/higher-lower/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ milestone }),
       })
+      if (!isMounted.current) return
       if (!res.ok) {
         if (isGauntlet) setClaimStatus('failed')
         return
@@ -87,14 +100,17 @@ export default function HigherLowerPage() {
             setClaimStatus('unlocked')
             // Don't auto-clear on the completion screen
           } else {
-            setTimeout(() => setUnlockedBadge(null), 5000)
+            if (badgeClearRef.current) clearTimeout(badgeClearRef.current)
+            badgeClearRef.current = setTimeout(() => {
+              if (isMounted.current) setUnlockedBadge(null)
+            }, 5000)
           }
         }
       } else if (data.alreadyUnlocked) {
         if (isGauntlet) setClaimStatus('already')
       }
     } catch {
-      if (isGauntlet) setClaimStatus('failed')
+      if (isMounted.current && isGauntlet) setClaimStatus('failed')
     }
   }
 
@@ -127,6 +143,7 @@ export default function HigherLowerPage() {
       if (newStreak === 25) tryUnlock('hl_25')
 
       timerRef.current = setTimeout(() => {
+        if (!isMounted.current) return
         const nextIdx = idx + 1
         if (nextIdx >= sequence.length - 1) {
           tryUnlock('hl_gauntlet')
@@ -140,19 +157,25 @@ export default function HigherLowerPage() {
       }, 1300)
     } else {
       timerRef.current = setTimeout(() => {
-        setScreen('gameover')
+        if (isMounted.current) setScreen('gameover')
       }, 1600)
     }
   }
 
   function restart() {
     if (timerRef.current) clearTimeout(timerRef.current)
+    if (badgeClearRef.current) clearTimeout(badgeClearRef.current)
     setIdx(0)
     setStreak(0)
     setLastCorrect(null)
     setLastTied(false)
     setUnlockedBadge(null)
     setClaimStatus(null)
+    // Shuffle a fresh sequence with a new random seed
+    if (allPlayers.length > 0) {
+      const seed = Math.floor(Math.random() * 1_000_000)
+      setSequence(seededShuffle(allPlayers, seed).slice(0, TOTAL_PLAYERS))
+    }
     setScreen('playing')
   }
 

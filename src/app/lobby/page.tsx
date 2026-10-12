@@ -274,6 +274,8 @@ export default function LobbyPage() {
             <Link href="/history" className="text-gray-500 hover:text-orange-400 text-xs font-bold transition-colors">My History</Link>
             <span className="text-gray-700 text-xs">·</span>
             <Link href="/higher-lower" className="text-gray-500 hover:text-orange-400 text-xs font-bold transition-colors">Higher/Lower</Link>
+            <span className="text-gray-700 text-xs">·</span>
+            <Link href="/fun-facts" className="text-gray-500 hover:text-orange-400 text-xs font-bold transition-colors">Fun Facts</Link>
             {user && <><span className="text-gray-700 text-xs">·</span><Link href="/profile" className="text-gray-500 hover:text-orange-400 text-xs font-bold transition-colors">Profile</Link></>}
           </div>
         </div>
