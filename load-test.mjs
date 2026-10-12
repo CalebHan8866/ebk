@@ -189,30 +189,42 @@ async function stressAPIs(cookies) {
 }
 
 // ── Step 5: Concurrent online matchmaking ─────────────────────────────────────
-// Flow: host emits create-listing → gets listing-created{code}
-//       guest emits join-listing{code} → both get match-found
-//       both emit accept-match → both get draft-started{room,players}
-//       pick-timer-start fires, current picker picks first valid player
-//       repeat until game-result
+
+// Map old team abbreviations → current franchise (mirrors server TEAM_LINEAGE)
+const LINEAGE = {
+  STL:'ATL',MHK:'ATL',TCB:'ATL',TRI:'ATL',
+  NJN:'BKN',NJA:'BKN',NYN:'BKN',
+  CHH:'CHA',CHB:'CHA',
+  DNV:'DEN',
+  FTW:'DET',
+  SFW:'GSW',PHW:'GSW',
+  SDR:'HOU',
+  SDC:'LAC',BUF:'LAC',
+  MNL:'LAL',
+  VAN:'MEM',
+  NOH:'NOP',NOK:'NOP',
+  SEA:'OKC',
+  SYR:'PHI',
+  PHO:'PHX',
+  KCK:'SAC',KCO:'SAC',CIN:'SAC',ROC:'SAC',
+  NOJ:'UTA',
+  WSB:'WAS',CAP:'WAS',BAL:'WAS',BLB:'WAS',CHZ:'WAS',
+}
+function normTeam(t) { return LINEAGE[t] || t }
 
 function pickFirstValid(players, spunTeam, takenIds, usedPositions, benchUsed, teamSize) {
-  const teamPlayers = players.filter(p => {
-    const abbr = p.team // already an abbr in the sent payload
-    return abbr === spunTeam && !takenIds.has(p.id)
-  })
   const starters = ['PG', 'SG', 'SF', 'PF', 'C']
-  const totalBench = teamSize - 5
-  const benchRemaining = totalBench - benchUsed
+  const benchRemaining = (teamSize - 5) - benchUsed
 
-  for (const p of teamPlayers) {
+  for (const p of players) {
+    if (normTeam(p.team) !== spunTeam) continue
+    if (takenIds.has(p.id)) continue
     const pPos = p.positions ? p.positions.split(',') : [p.position]
-    // Try starter slot first
     for (const pos of pPos) {
       if (starters.includes(pos) && !usedPositions.has(pos)) {
         return { playerId: p.id, slotPos: pos }
       }
     }
-    // Try bench
     if (benchRemaining > 0) {
       return { playerId: p.id, slotPos: 'BENCH' }
     }
@@ -250,55 +262,94 @@ async function runConcurrentGames(sockets, numGames) {
       // Both get match-found
       await Promise.all([waitFor(hostSock, 'match-found', 8000), waitFor(guestSock, 'match-found', 8000)])
 
-      // Both accept
-      hostSock.emit('accept-match', { code })
-      guestSock.emit('accept-match', { code })
+      // Buffer pick-timer-start events BEFORE awaiting draft-started —
+      // the server sends both nearly simultaneously and we'd miss the first one.
+      const timerBuf = []
+      let timerWaiter = null
+      const onTimer = (data) => {
+        if (timerWaiter) { const r = timerWaiter; timerWaiter = null; r(data) }
+        else timerBuf.push(data)
+      }
+      hostSock.on('pick-timer-start', onTimer)
+      guestSock.on('pick-timer-start', onTimer)
 
-      // Both get draft-started (with full player list)
+      // Also buffer pick-timeout (auto-picks) to track taken IDs
+      const autoTaken = []
+      const onTimeout = ({ pickedId }) => { if (pickedId) autoTaken.push(pickedId) }
+      hostSock.on('pick-timeout', onTimeout)
+
+      // Both accept
+      hostSock.emit('confirm-ready', { code })
+      guestSock.emit('confirm-ready', { code })
+
+      // Wait for draft-started
       const [draftData] = await Promise.all([
-        waitFor(hostSock, 'draft-started', 8000),
-        waitFor(guestSock, 'draft-started', 8000),
+        waitFor(hostSock, 'draft-started', 10000),
+        waitFor(guestSock, 'draft-started', 10000),
       ])
       const players = draftData.players || []
       const teamSize = 5 // starter5
 
-      // State tracking for this game
+      // Terminal event: resolves as soon as game ends for any reason
+      let terminalResolve, terminalReject
+      const terminalPromise = new Promise((res, rej) => { terminalResolve = res; terminalReject = rej })
+      const termTimeout = setTimeout(() => terminalReject(new Error('timeout:terminal')), 120000)
+      const onTerminal = (d) => { clearTimeout(termTimeout); terminalResolve(d) }
+      hostSock.once('game-result',         onTerminal)
+      hostSock.once('series-complete',     onTerminal)
+      hostSock.once('player-disqualified', onTerminal)
+
+      function nextTimer(ms = 35000) {
+        return new Promise((res, rej) => {
+          if (timerBuf.length) { res(timerBuf.shift()); return }
+          const t = setTimeout(() => { timerWaiter = null; rej(new Error('timeout:pick-timer-start')) }, ms)
+          timerWaiter = (d) => { clearTimeout(t); res(d) }
+        })
+      }
+
       const takenIds = new Set()
       const usedPositions = { host: new Set(), guest: new Set() }
       const benchUsed = { host: 0, guest: 0 }
 
-      // Play all 10 picks
-      for (let pick = 0; pick < 10; pick++) {
-        // Both listen for timer; one fires per pick
-        const timerData = await Promise.race([
-          waitFor(hostSock, 'pick-timer-start', 12000),
-          waitFor(guestSock, 'pick-timer-start', 12000),
-        ])
+      // Drive the pick loop — bail out as soon as the game ends
+      const pickLoop = (async () => {
+        for (let pick = 0; pick < 10; pick++) {
+          autoTaken.forEach(id => takenIds.add(id))
+          autoTaken.length = 0
 
-        const { picker, spunTeam } = timerData
-        const isHostTurn = picker === 'host'
-        const activeSock = isHostTurn ? hostSock : guestSock
-        const pickerKey  = isHostTurn ? 'host' : 'guest'
+          // Wait for next timer OR game over, whichever comes first
+          let timerData
+          try {
+            timerData = await Promise.race([nextTimer(42000), terminalPromise.then(() => null)])
+          } catch { break } // nextTimer timeout — game likely ended without our listener catching it
+          if (!timerData) break // game ended via terminal event
 
-        const choice = pickFirstValid(players, spunTeam, takenIds, usedPositions[pickerKey], benchUsed[pickerKey], teamSize)
-        if (!choice) {
-          // No valid pick found — server auto-pick will fire eventually, skip
-          continue
+          const { picker, spunTeam } = timerData
+          const pickerKey = picker === 'host' ? 'host' : 'guest'
+          const activeSock = picker === 'host' ? hostSock : guestSock
+
+          const choice = pickFirstValid(players, spunTeam, takenIds, usedPositions[pickerKey], benchUsed[pickerKey], teamSize)
+          if (!choice) continue
+
+          takenIds.add(choice.playerId)
+          if (choice.slotPos === 'BENCH') benchUsed[pickerKey]++
+          else usedPositions[pickerKey].add(choice.slotPos)
+
+          activeSock.emit('pick-player', { code, playerId: choice.playerId, position: choice.slotPos })
+          await sleep(80)
         }
+      })().catch(() => {})
 
-        takenIds.add(choice.playerId)
-        if (choice.slotPos === 'BENCH') benchUsed[pickerKey]++
-        else usedPositions[pickerKey].add(choice.slotPos)
+      // Wait for game to fully end
+      await terminalPromise
 
-        activeSock.emit('pick-player', { code, playerId: choice.playerId, position: choice.slotPos })
-        await sleep(100)
-      }
-
-      // Wait for game result
-      await Promise.race([
-        waitFor(hostSock, 'game-result', 15000),
-        waitFor(hostSock, 'series-complete', 15000),
-      ])
+      // Cleanup
+      hostSock.off('pick-timer-start', onTimer)
+      guestSock.off('pick-timer-start', onTimer)
+      hostSock.off('pick-timeout', onTimeout)
+      hostSock.off('game-result',         onTerminal)
+      hostSock.off('series-complete',     onTerminal)
+      hostSock.off('player-disqualified', onTerminal)
 
       gameTimings.push(Date.now() - gt0)
       gamesOk++
