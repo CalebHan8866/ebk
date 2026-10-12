@@ -18,6 +18,7 @@ interface GameListing {
   hostName: string
   hostRecord: UserRecord
   hostBadge: string
+  hostStreak: number
   teamMode: TeamMode
   series: SeriesLength
 }
@@ -28,6 +29,9 @@ interface MatchInfo {
   opponentRecord: UserRecord
   opponentBadge: string
   myBadge: string
+  myStreak: number
+  opponentStreak: number
+  grudgeMatch: boolean
   proposedTeamMode: TeamMode
   proposedSeries: SeriesLength
   isHost: boolean
@@ -336,6 +340,7 @@ export default function LobbyPage() {
                           <div className="flex items-center gap-2">
                             <span className="text-white font-black text-sm truncate">{l.hostName}</span>
                             <BadgeChip badgeId={l.hostBadge} />
+                            {l.hostStreak >= 3 && <span className="text-xs font-black text-orange-400" title={`${l.hostStreak}-game win streak`}>🔥{l.hostStreak}</span>}
                           </div>
                           <div className="text-gray-500 text-xs mt-0.5">
                             {l.hostRecord.wins}W {l.hostRecord.losses}L
@@ -437,6 +442,12 @@ export default function LobbyPage() {
             {/* Match found — pre-game lobby */}
             {user && onlineState === 'found' && matchInfo && (
               <div className="p-5 space-y-4">
+                {matchInfo.grudgeMatch && (
+                  <div className="bg-red-900/30 border border-red-500/40 rounded-xl py-2 px-4 text-center">
+                    <span className="text-red-400 font-black text-sm tracking-widest uppercase">Grudge Match</span>
+                    <span className="text-gray-500 text-xs ml-2">You&apos;ve played before</span>
+                  </div>
+                )}
                 <div className="text-center">
                   <div className="font-display text-3xl text-orange-500 leading-none mb-1">Match Found</div>
                   <div className={`text-xs font-bold tabular-nums ${countdown <= 10 ? 'text-red-400' : countdown <= 20 ? 'text-yellow-400' : 'text-gray-500'}`}>
@@ -447,8 +458,8 @@ export default function LobbyPage() {
                 {/* Players */}
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: 'You', name: displayName, record: `${user.wins}W ${user.losses}L`, badge: matchInfo.myBadge, ready: matchInfo.isHost ? hostReady : guestReady, accent: 'text-orange-400' },
-                    { label: 'Opponent', name: matchInfo.opponentName, record: `${matchInfo.opponentRecord.wins}W ${matchInfo.opponentRecord.losses}L`, badge: matchInfo.opponentBadge, ready: matchInfo.isHost ? guestReady : hostReady, accent: 'text-blue-400' },
+                    { label: 'You', name: displayName, record: `${user.wins}W ${user.losses}L`, badge: matchInfo.myBadge, streak: matchInfo.myStreak, ready: matchInfo.isHost ? hostReady : guestReady, accent: 'text-orange-400' },
+                    { label: 'Opponent', name: matchInfo.opponentName, record: `${matchInfo.opponentRecord.wins}W ${matchInfo.opponentRecord.losses}L`, badge: matchInfo.opponentBadge, streak: matchInfo.opponentStreak, ready: matchInfo.isHost ? guestReady : hostReady, accent: 'text-blue-400' },
                   ].map(side => (
                     <div key={side.label} className="bg-[#0A0A0A] rounded-2xl p-4 text-center">
                       <div className={`${side.accent} text-xs uppercase tracking-widest mb-2 font-bold`}>{side.label}</div>
@@ -457,7 +468,8 @@ export default function LobbyPage() {
                         <BadgeChip badgeId={side.badge} />
                       </div>
                       <div className="text-gray-500 text-xs">{side.record}</div>
-                      {side.ready && <div className="mt-2 text-green-400 text-xs font-bold">Ready</div>}
+                      {side.streak >= 3 && <div className="mt-1 text-orange-400 text-xs font-black">🔥 {side.streak}-game streak</div>}
+                      {side.ready && <div className="mt-1 text-green-400 text-xs font-bold">Ready</div>}
                     </div>
                   ))}
                 </div>

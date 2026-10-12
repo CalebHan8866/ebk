@@ -202,6 +202,7 @@ interface GameListing {
   hostName: string
   hostRecord: { wins: number; losses: number; draws: number }
   hostBadge: string
+  hostStreak: number
   teamMode: TeamMode
   series: SeriesLength
 }
@@ -216,6 +217,8 @@ const pickTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const consecutiveTimeouts = new Map<string, { host: number; guest: number }>()
 // cooldown: userId → Map(opponentId → timestamp of last game end)
 const recentMatchups = new Map<string, Map<string, number>>()
+// grudge: userId → Map(opponentId → total games played together)
+const matchupCount = new Map<string, Map<string, number>>()
 let allPlayers: PlayerData[] = []
 const JAMESON_CURRY_ID = 71
 
@@ -234,6 +237,17 @@ function recordMatchup(userId1: string | null, userId2: string | null) {
   if (!recentMatchups.has(userId2)) recentMatchups.set(userId2, new Map())
   recentMatchups.get(userId1)!.set(userId2, now)
   recentMatchups.get(userId2)!.set(userId1, now)
+  // Increment grudge count
+  if (!matchupCount.has(userId1)) matchupCount.set(userId1, new Map())
+  if (!matchupCount.has(userId2)) matchupCount.set(userId2, new Map())
+  const prev = matchupCount.get(userId1)!.get(userId2) || 0
+  matchupCount.get(userId1)!.set(userId2, prev + 1)
+  matchupCount.get(userId2)!.set(userId1, prev + 1)
+}
+
+function getMatchupCount(userId1: string | null, userId2: string | null): number {
+  if (!userId1 || !userId2) return 0
+  return matchupCount.get(userId1)?.get(userId2) || 0
 }
 
 function cooldownRemaining(userId1: string | null, userId2: string | null): number {
@@ -253,9 +267,10 @@ async function updateStatsAndUnlock(
   won: boolean,
   isDraw: boolean,
   jcGamesThisSeries: number = 0,
+  isHost: boolean = false,
 ) {
   try {
-    // Update wins/losses/draws/gamesPlayed/winStreak/jamesonCurryGames atomically
+    // Update wins/losses/draws/gamesPlayed/winStreak/jamesonCurryGames/firstPick atomically
     await prisma.user.update({
       where: { id: userId },
       data: {
@@ -265,6 +280,8 @@ async function updateStatsAndUnlock(
         gamesPlayed:       { increment: 1 },
         winStreak:         won    ? { increment: 1 } : { set: 0 },
         jamesonCurryGames: jcGamesThisSeries > 0 ? { increment: jcGamesThisSeries } : undefined,
+        firstPickGames:    isHost ? { increment: 1 } : undefined,
+        firstPickWins:     isHost && won ? { increment: 1 } : undefined,
       },
     })
 
@@ -469,8 +486,8 @@ function startPickTimer(io: SocketServer, room: Room) {
 
       if (currentRoom.source === 'online') {
         recordMatchup(currentRoom.hostUserId, currentRoom.guestUserId)
-        if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, winner === 'host', false, 0)
-        if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, winner === 'guest', false, 0)
+        if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, winner === 'host', false, 0, true)
+        if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, winner === 'guest', false, 0, false)
       }
 
       io.to(code).emit('player-disqualified', { room: currentRoom, disqualifiedRole: loser, winner })
@@ -499,8 +516,8 @@ function startPickTimer(io: SocketServer, room: Room) {
         const seriesWinner = currentRoom.hostSeriesScore > currentRoom.guestSeriesScore ? 'host' : currentRoom.guestSeriesScore > currentRoom.hostSeriesScore ? 'guest' : 'draw'
         if (currentRoom.source === 'online') {
           recordMatchup(currentRoom.hostUserId, currentRoom.guestUserId)
-          if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, seriesWinner === 'host', seriesWinner === 'draw', currentRoom.hostJCGames)
-          if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw', currentRoom.guestJCGames)
+          if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, seriesWinner === 'host', seriesWinner === 'draw', currentRoom.hostJCGames, true)
+          if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw', currentRoom.guestJCGames, false)
         }
         io.to(code).emit('series-complete', { room: currentRoom, seriesWinner })
       } else {
@@ -714,8 +731,8 @@ app.prepare().then(async () => {
           const seriesWinner = room.hostSeriesScore > room.guestSeriesScore ? 'host' : room.guestSeriesScore > room.hostSeriesScore ? 'guest' : 'draw'
           if (room.source === 'online') {
             recordMatchup(room.hostUserId, room.guestUserId)
-            if (room.hostUserId) updateStatsAndUnlock(io, room.hostUserId, room.hostSocketId, seriesWinner === 'host', seriesWinner === 'draw', room.hostJCGames)
-            if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw', room.guestJCGames)
+            if (room.hostUserId) updateStatsAndUnlock(io, room.hostUserId, room.hostSocketId, seriesWinner === 'host', seriesWinner === 'draw', room.hostJCGames, true)
+            if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw', room.guestJCGames, false)
           }
           io.to(code).emit('series-complete', { room, seriesWinner })
         } else {
@@ -793,16 +810,17 @@ app.prepare().then(async () => {
       }
 
       const hostRecord = { wins: 0, losses: 0, draws: 0 }
+      let hostStreak = 0
       if (userId) {
-        const u = await prisma.user.findUnique({ where: { id: userId }, select: { wins: true, losses: true, draws: true } }).catch(() => null)
-        if (u) { hostRecord.wins = u.wins; hostRecord.losses = u.losses; hostRecord.draws = u.draws }
+        const u = await prisma.user.findUnique({ where: { id: userId }, select: { wins: true, losses: true, draws: true, winStreak: true } }).catch(() => null)
+        if (u) { hostRecord.wins = u.wins; hostRecord.losses = u.losses; hostRecord.draws = u.draws; hostStreak = u.winStreak }
       }
 
       let code = generateCode()
       while (rooms.has(code) || readyRooms.has(code) || gameListings.has(code)) code = generateCode()
 
       const hostUser = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { equippedBadge: true } }).catch(() => null) : null
-      const listing: GameListing = { code, hostSocketId: socket.id, hostUserId: userId, hostName: userName, hostRecord, hostBadge: hostUser?.equippedBadge || '', teamMode, series }
+      const listing: GameListing = { code, hostSocketId: socket.id, hostUserId: userId, hostName: userName, hostRecord, hostBadge: hostUser?.equippedBadge || '', hostStreak, teamMode, series }
       gameListings.set(code, listing)
 
       // Auto-expire listing after 10 minutes
@@ -852,9 +870,11 @@ app.prepare().then(async () => {
       gameListings.delete(code)
       io.emit('listings-updated', { listings: Array.from(gameListings.values()) })
 
-      const guestUser = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { wins: true, losses: true, draws: true, equippedBadge: true } }).catch(() => null) : null
+      const guestUser = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { wins: true, losses: true, draws: true, equippedBadge: true, winStreak: true } }).catch(() => null) : null
       const guestRecord = { wins: guestUser?.wins || 0, losses: guestUser?.losses || 0, draws: guestUser?.draws || 0 }
       const guestBadge = guestUser?.equippedBadge || ''
+      const guestStreak = guestUser?.winStreak || 0
+      const grudgeMatch = getMatchupCount(listing.hostUserId, userId) >= 3
 
       const hostEntry: QueueEntry = {
         socketId: listing.hostSocketId, userId: listing.hostUserId, userName: listing.hostName,
@@ -874,11 +894,12 @@ app.prepare().then(async () => {
 
       readyRooms.set(code, { code, hostEntry, guestEntry, hostReady: false, guestReady: false, timer: readyTimer })
 
-      const basePayload = { proposedTeamMode: listing.teamMode, proposedSeries: listing.series }
+      const basePayload = { proposedTeamMode: listing.teamMode, proposedSeries: listing.series, grudgeMatch }
       io.to(listing.hostSocketId).emit('match-found', {
         ...basePayload, code, isHost: true,
         opponentName: userName, opponentRecord: guestRecord, opponentBadge: guestBadge,
         myBadge: listing.hostBadge,
+        myStreak: listing.hostStreak, opponentStreak: guestStreak,
         myTeamMode: listing.teamMode, mySeries: listing.series,
         opponentTeamMode: listing.teamMode, opponentSeries: listing.series,
       })
@@ -886,6 +907,7 @@ app.prepare().then(async () => {
         ...basePayload, code, isHost: false,
         opponentName: listing.hostName, opponentRecord: listing.hostRecord, opponentBadge: listing.hostBadge,
         myBadge: guestBadge,
+        myStreak: guestStreak, opponentStreak: listing.hostStreak,
         myTeamMode: listing.teamMode, mySeries: listing.series,
         opponentTeamMode: listing.teamMode, opponentSeries: listing.series,
       })

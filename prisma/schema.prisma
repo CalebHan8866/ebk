@@ -27,6 +27,8 @@ model User {
   unlockedEmotes    String    @default("[]")
   unlockedMilestones String   @default("[]")
   jamesonCurryGames  Int      @default(0)
+  firstPickWins      Int      @default(0)
+  firstPickGames     Int      @default(0)
   equippedBadge     String    @default("")
   equippedBadges    String    @default("[]")
   equippedEmote     String    @default("")

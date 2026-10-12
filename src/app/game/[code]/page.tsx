@@ -485,56 +485,76 @@ function GameContent() {
           )}
           </div>{/* end LEFT col */}
 
-          {/* RIGHT col: last game team breakdown */}
+          {/* RIGHT col: Draft Recap (last game) */}
           <div>
-          {/* Last game team breakdown */}
           {myPicks.length > 0 && (() => {
             const lastGame = room.gameResults[room.gameResults.length - 1]
             if (!lastGame) return null
+            const lastIWon = lastGame.winner === role
+            const lastDraw = lastGame.winner === 'draw'
             const myPickSlotsComplete = role === 'host' ? (room.hostPickSlots || []) : (room.guestPickSlots || [])
             const mySlotsComplete = myPickSlotsComplete.length > 0
               ? buildSlotsFromPickSlots(myPicks, myPickSlotsComplete, players, requiredSlots)
               : assignToSlots(myPicks, players, requiredSlots)
+            const oppPickSlotsComplete = role === 'host' ? (room.guestPickSlots || []) : (room.hostPickSlots || [])
+            const oppSlotsComplete = oppPickSlotsComplete.length > 0
+              ? buildSlotsFromPickSlots(oppPicks, oppPickSlotsComplete, players, requiredSlots)
+              : assignToSlots(oppPicks, players, requiredSlots)
             const myLastTotal = role === 'host' ? lastGame.hostTotal : lastGame.guestTotal
             const oppLastTotal = role === 'host' ? lastGame.guestTotal : lastGame.hostTotal
             return (
               <div className="bg-[#111827] rounded-2xl p-4 mb-4">
                 <div className="flex justify-between items-center mb-3">
-                  <h2 className="text-gray-400 text-xs uppercase tracking-wide">Last Game — Your Team</h2>
+                  <h2 className="text-gray-400 text-xs uppercase tracking-wide">Draft Recap — Game {lastGame.game}</h2>
                   <span className="text-gray-600 text-xs">{STAT_LABELS[lastGame.statMode]}</span>
                 </div>
-                <div className="bg-[#0A0A0A] rounded-lg px-3 py-2 mb-2 text-xs text-gray-500 text-center">
-                  Lower total <span className="text-orange-400 font-semibold">{STAT_LABELS[lastGame.statMode]}</span> wins · add up each player&apos;s career stat
-                </div>
-                <div className="space-y-1.5">
-                  {requiredSlots.map((slotPos, i) => {
-                    const p = mySlotsComplete[i]
-                    if (!p) return null
-                    const playerStat = getStatValue(p, lastGame.statMode)
-                    return (
-                      <div key={i} className="bg-[#0A0A0A] rounded-lg px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <span className={`font-bold text-xs w-8 shrink-0 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-orange-400'}`}>
-                            {slotPos === 'BENCH' ? 'BN' : slotPos}
-                          </span>
-                          <span className="text-white text-sm font-bold flex-1 truncate">{p.firstName} {p.lastName}</span>
-                          <span className="text-orange-300 font-black text-sm shrink-0">
-                            {formatStat(playerStat, lastGame.statMode)}
-                          </span>
-                        </div>
-                        <div className="pl-10 mt-0.5">
-                          <span className="text-gray-600 text-xs">{p.team} · {p.yearFrom}–{p.yearTo}</span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-                <div className="mt-3 border-t border-gray-800 pt-3 flex justify-between items-center px-1">
-                  <span className="text-gray-400 text-xs uppercase tracking-wide">Your Total</span>
-                  <span className="font-black text-base text-white">
-                    {formatStat(myLastTotal, lastGame.statMode)}
-                    <span className="text-gray-600 font-normal text-xs ml-1">vs {formatStat(oppLastTotal, lastGame.statMode)}</span>
-                  </span>
+                <div className="grid grid-cols-2 gap-2">
+                  {/* My team */}
+                  <div>
+                    <div className={`text-xs font-black mb-2 text-center truncate ${lastIWon ? 'text-green-400' : lastDraw ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {myName2} {lastIWon ? '✓' : lastDraw ? '—' : ''}
+                    </div>
+                    <div className="space-y-1">
+                      {requiredSlots.map((slotPos, i) => {
+                        const p = mySlotsComplete[i]
+                        if (!p) return null
+                        const val = getStatValue(p, lastGame.statMode)
+                        return (
+                          <div key={i} className="bg-[#0A0A0A] rounded px-2 py-1.5 flex items-center justify-between gap-1">
+                            <div className="min-w-0">
+                              <span className={`text-[10px] font-bold mr-1 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-orange-400'}`}>{slotPos === 'BENCH' ? 'BN' : slotPos}</span>
+                              <span className="text-white text-xs font-semibold truncate">{p.lastName}</span>
+                            </div>
+                            <span className={`text-xs font-black shrink-0 ${lastIWon ? 'text-green-400' : 'text-gray-300'}`}>{formatStat(val, lastGame.statMode)}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div className={`mt-2 text-center text-sm font-black border-t border-gray-800 pt-2 ${lastIWon ? 'text-green-400' : lastDraw ? 'text-gray-400' : 'text-white'}`}>{formatStat(myLastTotal, lastGame.statMode)}</div>
+                  </div>
+                  {/* Opponent team */}
+                  <div>
+                    <div className={`text-xs font-black mb-2 text-center truncate ${!lastIWon && !lastDraw ? 'text-green-400' : lastDraw ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {oppName} {!lastIWon && !lastDraw ? '✓' : lastDraw ? '—' : ''}
+                    </div>
+                    <div className="space-y-1">
+                      {requiredSlots.map((slotPos, i) => {
+                        const p = oppSlotsComplete[i]
+                        if (!p) return null
+                        const val = getStatValue(p, lastGame.statMode)
+                        return (
+                          <div key={i} className="bg-[#0A0A0A] rounded px-2 py-1.5 flex items-center justify-between gap-1">
+                            <div className="min-w-0">
+                              <span className={`text-[10px] font-bold mr-1 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-orange-400'}`}>{slotPos === 'BENCH' ? 'BN' : slotPos}</span>
+                              <span className="text-white text-xs font-semibold truncate">{p.lastName}</span>
+                            </div>
+                            <span className={`text-xs font-black shrink-0 ${!lastIWon && !lastDraw ? 'text-green-400' : 'text-gray-300'}`}>{formatStat(val, lastGame.statMode)}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div className={`mt-2 text-center text-sm font-black border-t border-gray-800 pt-2 ${!lastIWon && !lastDraw ? 'text-green-400' : lastDraw ? 'text-gray-400' : 'text-white'}`}>{formatStat(oppLastTotal, lastGame.statMode)}</div>
+                  </div>
                 </div>
               </div>
             )
@@ -561,6 +581,10 @@ function GameContent() {
     const mySlotsResult = myPickSlotsResult.length > 0
       ? buildSlotsFromPickSlots(myPicks, myPickSlotsResult, players, requiredSlots)
       : assignToSlots(myPicks, players, requiredSlots)
+    const oppPickSlotsResult = role === 'host' ? (room.guestPickSlots || []) : (room.hostPickSlots || [])
+    const oppSlotsResult = oppPickSlotsResult.length > 0
+      ? buildSlotsFromPickSlots(oppPicks, oppPickSlotsResult, players, requiredSlots)
+      : assignToSlots(oppPicks, players, requiredSlots)
 
     return (
       <div className="min-h-screen bg-[#0A0A0A] px-4 py-8 overflow-y-auto">
@@ -622,39 +646,57 @@ function GameContent() {
           )}
           </div>{/* end LEFT col */}
 
-          {/* RIGHT col: Your Team Breakdown */}
+          {/* RIGHT col: Draft Recap */}
           <div>
           <div className="bg-[#111827] rounded-2xl p-4 mb-4">
-            <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Your Team</h2>
-            <div className="space-y-1.5">
-              {requiredSlots.map((slotPos, i) => {
-                const p = mySlotsResult[i]
-                if (!p) return null
-                const playerStat = getStatValue(p, lastResult.statMode)
-                return (
-                  <div key={i} className="bg-[#0A0A0A] rounded-lg px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <span className={`font-bold text-xs w-8 shrink-0 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-orange-400'}`}>
-                        {slotPos === 'BENCH' ? 'BN' : slotPos}
-                      </span>
-                      <span className="text-white text-sm font-bold flex-1 truncate">{p.firstName} {p.lastName}</span>
-                      <span className="text-orange-300 font-black text-sm shrink-0">
-                        {formatStat(playerStat, lastResult.statMode)}
-                      </span>
-                    </div>
-                    <div className="pl-10 mt-0.5">
-                      <span className="text-gray-600 text-xs">{p.team} · {p.yearFrom}–{p.yearTo}</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-            <div className="mt-3 border-t border-gray-800 pt-3 flex justify-between items-center px-1">
-              <span className="text-gray-400 text-xs uppercase tracking-wide">Your Total</span>
-              <span className={`font-black text-lg ${iWon ? 'text-green-400' : isDraw ? 'text-gray-400' : 'text-white'}`}>
-                {formatStat(myTotal, lastResult.statMode)}
-                <span className="text-gray-600 font-normal text-xs ml-1">vs {formatStat(oppTotal, lastResult.statMode)}</span>
-              </span>
+            <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Draft Recap — Game {lastResult.game}</h2>
+            <div className="grid grid-cols-2 gap-2">
+              {/* My team */}
+              <div>
+                <div className={`text-xs font-black mb-2 text-center truncate ${iWon ? 'text-green-400' : isDraw ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {myName2} {iWon ? '✓' : isDraw ? '—' : ''}
+                </div>
+                <div className="space-y-1">
+                  {requiredSlots.map((slotPos, i) => {
+                    const p = mySlotsResult[i]
+                    if (!p) return null
+                    const val = getStatValue(p, lastResult.statMode)
+                    return (
+                      <div key={i} className="bg-[#0A0A0A] rounded px-2 py-1.5 flex items-center justify-between gap-1">
+                        <div className="min-w-0">
+                          <span className={`text-[10px] font-bold mr-1 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-orange-400'}`}>{slotPos === 'BENCH' ? 'BN' : slotPos}</span>
+                          <span className="text-white text-xs font-semibold truncate">{p.lastName}</span>
+                        </div>
+                        <span className={`text-xs font-black shrink-0 ${iWon ? 'text-green-400' : 'text-gray-300'}`}>{formatStat(val, lastResult.statMode)}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className={`mt-2 text-center text-sm font-black border-t border-gray-800 pt-2 ${iWon ? 'text-green-400' : isDraw ? 'text-gray-400' : 'text-white'}`}>{formatStat(myTotal, lastResult.statMode)}</div>
+              </div>
+              {/* Opponent team */}
+              <div>
+                <div className={`text-xs font-black mb-2 text-center truncate ${!iWon && !isDraw ? 'text-green-400' : isDraw ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {oppName} {!iWon && !isDraw ? '✓' : isDraw ? '—' : ''}
+                </div>
+                <div className="space-y-1">
+                  {requiredSlots.map((slotPos, i) => {
+                    const p = oppSlotsResult[i]
+                    if (!p) return null
+                    const val = getStatValue(p, lastResult.statMode)
+                    return (
+                      <div key={i} className="bg-[#0A0A0A] rounded px-2 py-1.5 flex items-center justify-between gap-1">
+                        <div className="min-w-0">
+                          <span className={`text-[10px] font-bold mr-1 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-orange-400'}`}>{slotPos === 'BENCH' ? 'BN' : slotPos}</span>
+                          <span className="text-white text-xs font-semibold truncate">{p.lastName}</span>
+                        </div>
+                        <span className={`text-xs font-black shrink-0 ${!iWon && !isDraw ? 'text-green-400' : 'text-gray-300'}`}>{formatStat(val, lastResult.statMode)}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className={`mt-2 text-center text-sm font-black border-t border-gray-800 pt-2 ${!iWon && !isDraw ? 'text-green-400' : isDraw ? 'text-gray-400' : 'text-white'}`}>{formatStat(oppTotal, lastResult.statMode)}</div>
+              </div>
             </div>
           </div>
           </div>{/* end RIGHT col */}

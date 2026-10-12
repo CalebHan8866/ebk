@@ -14,6 +14,8 @@ interface UserProfile {
   gamesPlayed: number
   winStreak: number
   maxWinStreak: number
+  firstPickWins: number
+  firstPickGames: number
   unlockedBadges: string
   unlockedEmotes: string
   unlockedMilestones: string
@@ -115,7 +117,7 @@ export default function ProfilePage() {
           {/* Stats row */}
           <div className="bg-[#0A0A0A] rounded-xl p-5">
             <h2 className="text-gray-400 text-xs uppercase tracking-widest mb-4">Career Stats</h2>
-            <div className="grid grid-cols-3 sm:grid-cols-7 gap-3 text-center">
+            <div className="grid grid-cols-3 sm:grid-cols-7 gap-3 text-center mb-4">
               <div>
                 <div className="text-3xl font-black text-green-400">{user.wins}</div>
                 <div className="text-gray-500 text-xs mt-0.5">W</div>
@@ -145,6 +147,17 @@ export default function ProfilePage() {
                 <div className="text-gray-500 text-xs mt-0.5">Win%</div>
               </div>
             </div>
+            {user.firstPickGames > 0 && (
+              <div className="border-t border-white/5 pt-3 mt-1">
+                <div className="flex items-center justify-between">
+                  <div className="text-gray-500 text-xs uppercase tracking-wide">First Pick Advantage</div>
+                  <div className="text-right">
+                    <span className="text-white font-black text-sm">{user.firstPickWins}W / {user.firstPickGames}G</span>
+                    <span className="text-gray-400 text-xs ml-2">({user.firstPickGames > 0 ? ((user.firstPickWins / user.firstPickGames) * 100).toFixed(0) : 0}% win rate when picking first)</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

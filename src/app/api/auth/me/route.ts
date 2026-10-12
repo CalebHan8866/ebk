@@ -11,6 +11,6 @@ export async function GET() {
   if (!token) return NextResponse.json({ user: null })
   const payload = await verifyToken(token)
   if (!payload) return NextResponse.json({ user: null })
-  const user = await prisma.user.findUnique({ where: { id: payload.userId }, select: { id: true, username: true, email: true, wins: true, losses: true, draws: true, createdAt: true, gamesPlayed: true, winStreak: true, maxWinStreak: true, unlockedBadges: true, unlockedEmotes: true, unlockedMilestones: true, equippedBadge: true, equippedBadges: true, equippedEmote: true } })
+  const user = await prisma.user.findUnique({ where: { id: payload.userId }, select: { id: true, username: true, email: true, wins: true, losses: true, draws: true, createdAt: true, gamesPlayed: true, winStreak: true, maxWinStreak: true, firstPickWins: true, firstPickGames: true, unlockedBadges: true, unlockedEmotes: true, unlockedMilestones: true, equippedBadge: true, equippedBadges: true, equippedEmote: true } })
   return NextResponse.json({ user })
 }
