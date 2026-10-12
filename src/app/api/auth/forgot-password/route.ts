@@ -25,7 +25,8 @@ export async function POST(request: NextRequest) {
       data: { resetToken: token, resetTokenExpiry: expiry },
     })
 
-    await sendPasswordResetEmail(email, user.username, token)
+    // Fire and forget — don't block the response waiting for email
+    sendPasswordResetEmail(email, user.username, token).catch(err => console.error('Email error:', err))
 
     return NextResponse.json({ message: 'If that email exists, a reset link has been sent.' })
   } catch (e) {

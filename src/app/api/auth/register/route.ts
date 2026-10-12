@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
       data: { username, email, password: hashed, verificationToken, emailVerified: false }
     })
 
-    await sendVerificationEmail(email, username, verificationToken)
+    // Fire and forget — don't block the response waiting for email
+    sendVerificationEmail(email, username, verificationToken).catch(err => console.error('Email error:', err))
 
     return NextResponse.json({ message: 'Account created! Check your email to verify your account.' })
   } catch (e) {
