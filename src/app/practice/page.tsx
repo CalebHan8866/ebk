@@ -48,24 +48,53 @@ function getRequiredPositions(teamMode: TeamMode): string[] {
   return [...starters, ...bench]
 }
 
-// Greedy: fill each starter slot with best EBK player that can play it,
-// then fill bench with highest remaining. Good approximation of optimal.
-function getBestPossibleTeam(players: Player[], requiredSlots: string[]): Player[] {
-  const sorted = [...players].sort((a, b) => b.ebkScore - a.ebkScore)
-  const result: Player[] = []
+// Best possible given the exact teams that were spun during this draft session.
+// For each pick turn i, only players from spunTeams[i] were available.
+// Greedily assign the highest-EBK eligible player from each spin to the best open slot.
+function getBestPossibleFromSpins(
+  players: Player[],
+  requiredSlots: string[],
+  spunTeams: string[],
+): number {
   const usedIds = new Set<number>()
-  // Starter slots
-  for (let i = 0; i < Math.min(5, requiredSlots.length); i++) {
-    const pos = requiredSlots[i]
-    const best = sorted.find(p => !usedIds.has(p.id) && p.positions.split(',').includes(pos))
-    if (best) { result.push(best); usedIds.add(best.id) }
+  const filledSlots = new Set<number>()
+  let total = 0
+
+  for (let turn = 0; turn < spunTeams.length && turn < requiredSlots.length; turn++) {
+    const team = spunTeams[turn]
+    const pool = players
+      .filter(p => getCurrentTeam(p.team) === team && !usedIds.has(p.id))
+      .sort((a, b) => b.ebkScore - a.ebkScore)
+
+    // Try to place the best player from this team into the best open slot
+    let placed = false
+    for (const p of pool) {
+      const positions = p.positions.split(',')
+      // Prefer a matching starter slot first
+      for (let j = 0; j < Math.min(5, requiredSlots.length); j++) {
+        if (!filledSlots.has(j) && positions.includes(requiredSlots[j])) {
+          total += p.ebkScore
+          usedIds.add(p.id)
+          filledSlots.add(j)
+          placed = true
+          break
+        }
+      }
+      if (placed) break
+      // Fall back to any open bench slot
+      for (let j = 5; j < requiredSlots.length; j++) {
+        if (!filledSlots.has(j)) {
+          total += p.ebkScore
+          usedIds.add(p.id)
+          filledSlots.add(j)
+          placed = true
+          break
+        }
+      }
+      if (placed) break
+    }
   }
-  // Bench slots
-  for (let i = 5; i < requiredSlots.length; i++) {
-    const best = sorted.find(p => !usedIds.has(p.id))
-    if (best) { result.push(best); usedIds.add(best.id) }
-  }
-  return result
+  return total
 }
 
 function getGrade(pct: number): { grade: string; label: string; color: string } {
@@ -93,6 +122,7 @@ function PracticeContent() {
   const [filterPos, setFilterPos] = useState('ALL')
   const [searchQuery, setSearchQuery] = useState('')
   const [statMode, setStatMode] = useState('games_played')
+  const [spunTeamsHistory, setSpunTeamsHistory] = useState<string[]>([])
 
   // Spinner
   const [spunTeam, setSpunTeam] = useState<string | null>(null)
@@ -157,6 +187,7 @@ function PracticeContent() {
           setSpunTeam(target)
           setIsSpinning(false)
           setSpinDisplay(target)
+          setSpunTeamsHistory(prev => [...prev, target])
           // Shuffle team's players once — stable for this pick turn
           const pool = afterPlayers.filter(p => getCurrentTeam(p.team) === target)
           setShuffledIds([...pool].sort(() => Math.random() - 0.5).map(p => p.id))
@@ -569,7 +600,7 @@ function PracticeContent() {
     apg: pickedPlayers.reduce((s, p) => s + p.careerAPG, 0),
   }
   const totalEBK = pickedPlayers.reduce((s, p) => s + p.ebkScore, 0)
-  const bestEBK = getBestPossibleTeam(players, requiredSlots).reduce((s, p) => s + p.ebkScore, 0)
+  const bestEBK = getBestPossibleFromSpins(players, requiredSlots, spunTeamsHistory)
   const pct = bestEBK > 0 ? (totalEBK / bestEBK) * 100 : 0
   const { grade, label: gradeLabel, color: gradeColor } = getGrade(pct)
 
@@ -668,7 +699,7 @@ function PracticeContent() {
         </div>
 
         <div className="flex gap-3">
-          <button onClick={() => { setPicks([]); setScreen('draft') }}
+          <button onClick={() => { setPicks([]); setSpunTeamsHistory([]); setScreen('draft') }}
             className="flex-1 bg-[#111827] hover:bg-[#1e2d45] text-white font-black py-3 rounded-xl transition-colors border border-gray-700">
             Draft Again
           </button>
