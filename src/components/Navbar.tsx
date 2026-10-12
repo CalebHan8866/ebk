@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { BADGES } from '@/lib/accessories'
+import { resetSocket } from '@/lib/socket'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -15,6 +16,7 @@ export default function Navbar() {
 
   async function handleLogout() {
     await logout()
+    resetSocket() // drop old auth cookie from socket; next connection picks up cleared cookie
     router.push('/')
     router.refresh()
   }
