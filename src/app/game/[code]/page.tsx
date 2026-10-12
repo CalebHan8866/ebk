@@ -671,7 +671,7 @@ function GameContent() {
 
         {/* Turn Banner */}
         <div className={`rounded-xl p-3 mb-4 text-center font-bold ${isMyTurn ? 'bg-orange-600/20 border border-orange-500 text-orange-400' : 'bg-gray-800/40 border border-gray-700 text-gray-400'}`}>
-          {isMyTurn ? 'YOUR PICK' : `${currentPicker === 'host' ? room.hostName : room.guestName}&apos;s pick...`}
+          {isMyTurn ? 'YOUR PICK' : `${currentPicker === 'host' ? room.hostName : room.guestName}'s pick...`}
         </div>
 
         {/* Mobile: teams side by side on top. Desktop: 4-col grid */}
