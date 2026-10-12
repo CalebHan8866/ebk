@@ -208,76 +208,26 @@ function generateFacts(p: Player): Fact[] {
   }
 
   // ── Fact 3: Fun real-world equivalent (rotated by player ID) ────────────────
+  // min = minimum earnings needed to show a non-zero/meaningful number
   const comparisons = [
-    () => {
-      const n = Math.floor(earnings / 320_000)
-      return { emoji: '🏎️', headline: `${n.toLocaleString()} Ferraris`, body: `${name}'s career earnings could buy ${n.toLocaleString()} Ferrari 488s at ~$320K each — enough to fill ${Math.ceil(n / 6)} dealerships bumper to bumper.`, gradient: 'from-red-950 to-[#111]', accent: 'text-red-400', min: 5 }
-    },
-    () => {
-      const n = Math.floor(earnings / 1_500_000)
-      return { emoji: '🏠', headline: `${n.toLocaleString()} houses`, body: `At the average U.S. home price of ~$1.5M, ${name} could have bought ${n.toLocaleString()} houses outright — no mortgage, no haggling.`, gradient: 'from-emerald-950 to-[#111]', accent: 'text-emerald-400', min: 3 }
-    },
-    () => {
-      const n = Math.floor(earnings / 90_000_000)
-      return { emoji: '🚀', headline: `${n} trips to space`, body: `A seat on a SpaceX private mission runs ~$90M. ${name}'s career earnings could have funded ${n} round trips to orbit — just for fun.`, gradient: 'from-indigo-950 to-[#111]', accent: 'text-indigo-400', min: 1 }
-    },
-    () => {
-      const n = Math.round(earnings / 6)
-      return { emoji: '🍔', headline: `${n.toLocaleString()} Big Macs`, body: `At $6 each, ${name}'s NBA paycheck buys ${n.toLocaleString()} Big Macs — roughly one for every person in ${earnings > 500_000_000 ? 'Canada' : 'a mid-sized city'}.`, gradient: 'from-yellow-950 to-[#111]', accent: 'text-yellow-400', min: 100_000 }
-    },
-    () => {
-      const n = Math.floor(earnings / 250_000)
-      return { emoji: '🎰', headline: `${n.toLocaleString()} Vegas weekends`, body: `A baller Vegas weekend runs ~$250K once you factor in the suite, bottles, and gambling. ${name} could've done that ${n.toLocaleString()} times over.`, gradient: 'from-violet-950 to-[#111]', accent: 'text-violet-400', min: 3 }
-    },
-    () => {
-      const n = Math.floor(earnings / 18_000_000)
-      return { emoji: '⚽', headline: `${n} Premier League players`, body: `The average Premier League salary is ~$18M/year. ${name}'s NBA career total could fund ${n} of those players for a full season.`, gradient: 'from-green-950 to-[#111]', accent: 'text-green-400', min: 1 }
-    },
-    () => {
-      const n = Math.floor(earnings / 400)
-      return { emoji: '🎟️', headline: `${n.toLocaleString()} NBA tickets`, body: `At ~$400 average per game, ${name}'s career earnings could buy ${n.toLocaleString()} NBA tickets — enough to attend every game for the next ${Math.ceil(n / 82)} seasons straight.`, gradient: 'from-orange-950 to-[#111]', accent: 'text-orange-400', min: 1000 }
-    },
-    () => {
-      const n = Math.floor(earnings / 100_000)
-      return { emoji: '🎓', headline: `${n.toLocaleString()} college degrees`, body: `A four-year degree at a top U.S. university runs ~$100K. ${name} could have personally paid full tuition for ${n.toLocaleString()} students.`, gradient: 'from-sky-950 to-[#111]', accent: 'text-sky-400', min: 10 }
-    },
-    () => {
-      const n = Math.floor(earnings / 500)
-      return { emoji: '👟', headline: `${n.toLocaleString()} pairs of Jordans`, body: `A new Air Jordan 1 retails around $500. ${name} could've stacked ${n.toLocaleString()} pairs — that's a sneaker wall taller than most buildings.`, gradient: 'from-rose-950 to-[#111]', accent: 'text-rose-400', min: 1000 }
-    },
-    () => {
-      const n = Math.floor(earnings / 800_000_000)
-      if (n < 1) {
-        const pct = ((earnings / 800_000_000) * 100).toFixed(1)
-        return { emoji: '🌉', headline: `${pct}% of the Golden Gate Bridge`, body: `The Golden Gate Bridge cost ~$800M to build in today's dollars. ${name}'s career earnings would cover ${pct}% of construction — almost enough to get started.`, gradient: 'from-orange-950 to-[#111]', accent: 'text-orange-400', min: 0 }
-      }
-      return { emoji: '🌉', headline: `${n} Golden Gate Bridges`, body: `The Golden Gate Bridge cost ~$800M to build in today's dollars. ${name}'s career earnings could have funded ${n} of them, from scratch.`, gradient: 'from-orange-950 to-[#111]', accent: 'text-orange-400', min: 0 }
-    },
-    () => {
-      const n = Math.floor(earnings / 35_000)
-      return { emoji: '🚗', headline: `${n.toLocaleString()} average cars`, body: `The average new car in North America costs ~$35K. ${name}'s NBA money could buy ${n.toLocaleString()} of them — one for every resident of a small town.`, gradient: 'from-slate-950 to-[#111]', accent: 'text-slate-400', min: 10 }
-    },
-    () => {
-      const n = Math.floor(earnings / 1_200)
-      return { emoji: '✈️', headline: `${n.toLocaleString()} round-trip flights`, body: `A business-class round trip from New York to London runs ~$1,200. ${name} could've flown that route ${n.toLocaleString()} times — that's crossing the Atlantic ${Math.round(n / 365)} times a day for a year.`, gradient: 'from-cyan-950 to-[#111]', accent: 'text-cyan-400', min: 1000 }
-    },
-    () => {
-      const n = Math.round(earnings / 10)
-      return { emoji: '☕', headline: `${n.toLocaleString()} coffees`, body: `At $10 a latte, ${name}'s career earnings could fuel ${n.toLocaleString()} coffee runs. That's enough caffeine to keep an entire city wired for years.`, gradient: 'from-amber-950 to-[#111]', accent: 'text-amber-400', min: 100_000 }
-    },
+    { min: 1_600_000,   fn: () => { const n = Math.floor(earnings / 320_000);    return { emoji: '🏎️', headline: `${n.toLocaleString()} luxury sports cars`,   body: `At ~$320K a pop, ${name}'s career earnings could buy ${n.toLocaleString()} luxury sports cars — enough to fill ${Math.ceil(n / 6)} dealerships bumper to bumper.`, gradient: 'from-red-950 to-[#111]', accent: 'text-red-400' } } },
+    { min: 4_500_000,   fn: () => { const n = Math.floor(earnings / 1_500_000);  return { emoji: '🏠', headline: `${n.toLocaleString()} houses`,                body: `At the average North American home price of ~$1.5M, ${name} could have bought ${n.toLocaleString()} houses outright — no mortgage, no haggling.`, gradient: 'from-emerald-950 to-[#111]', accent: 'text-emerald-400' } } },
+    { min: 90_000_000,  fn: () => { const n = Math.floor(earnings / 90_000_000); return { emoji: '🚀', headline: `${n} trip${n !== 1 ? 's' : ''} to space`,      body: `A seat on a private space mission runs ~$90M. ${name}'s career earnings could have funded ${n} round trip${n !== 1 ? 's' : ''} to orbit — just for fun.`, gradient: 'from-indigo-950 to-[#111]', accent: 'text-indigo-400' } } },
+    { min: 600_000,     fn: () => { const n = Math.round(earnings / 6);          return { emoji: '🍔', headline: `${n.toLocaleString()} burgers`,               body: `At $6 each, ${name}'s NBA paycheck buys ${n.toLocaleString()} fast-food burgers — roughly one for every person in ${earnings > 500_000_000 ? 'Canada' : 'a mid-sized city'}.`, gradient: 'from-yellow-950 to-[#111]', accent: 'text-yellow-400' } } },
+    { min: 750_000,     fn: () => { const n = Math.floor(earnings / 250_000);    return { emoji: '🎰', headline: `${n.toLocaleString()} Vegas weekends`,         body: `A baller Vegas weekend runs ~$250K once you factor in the suite, bottles, and gambling. ${name} could've done that ${n.toLocaleString()} times over.`, gradient: 'from-violet-950 to-[#111]', accent: 'text-violet-400' } } },
+    { min: 18_000_000,  fn: () => { const n = Math.floor(earnings / 18_000_000); return { emoji: '⚽', headline: `${n} top soccer salaries`,                    body: `The average top European soccer league salary is ~$18M/year. ${name}'s NBA career total could fund ${n} of those players for a full season.`, gradient: 'from-green-950 to-[#111]', accent: 'text-green-400' } } },
+    { min: 400_000,     fn: () => { const n = Math.floor(earnings / 400);        return { emoji: '🎟️', headline: `${n.toLocaleString()} NBA tickets`,           body: `At ~$400 average per game, ${name}'s career earnings could buy ${n.toLocaleString()} NBA tickets — enough to attend every game for ${Math.ceil(n / 82)} seasons straight.`, gradient: 'from-orange-950 to-[#111]', accent: 'text-orange-400' } } },
+    { min: 1_000_000,   fn: () => { const n = Math.floor(earnings / 100_000);    return { emoji: '🎓', headline: `${n.toLocaleString()} college tuitions`,       body: `A four-year degree at a top U.S. university runs ~$100K. ${name} could have personally paid full tuition for ${n.toLocaleString()} students.`, gradient: 'from-sky-950 to-[#111]', accent: 'text-sky-400' } } },
+    { min: 500_000,     fn: () => { const n = Math.floor(earnings / 500);        return { emoji: '👟', headline: `${n.toLocaleString()} premium sneakers`,       body: `A new premium sneaker retails around $500. ${name} could've stacked ${n.toLocaleString()} pairs — a sneaker wall taller than most buildings.`, gradient: 'from-rose-950 to-[#111]', accent: 'text-rose-400' } } },
+    { min: 1,           fn: () => { const n = Math.floor(earnings / 800_000_000); const pct = ((earnings / 800_000_000) * 100).toFixed(1); return n >= 1 ? { emoji: '🌉', headline: `${n} Golden Gate Bridges`, body: `The Golden Gate Bridge cost ~$800M in today's dollars. ${name}'s career earnings could have funded ${n} of them from scratch.`, gradient: 'from-orange-950 to-[#111]', accent: 'text-orange-400' } : { emoji: '🌉', headline: `${pct}% of the Golden Gate Bridge`, body: `The Golden Gate Bridge cost ~$800M in today's dollars. ${name}'s career earnings would cover ${pct}% of construction.`, gradient: 'from-orange-950 to-[#111]', accent: 'text-orange-400' } } },
+    { min: 350_000,     fn: () => { const n = Math.floor(earnings / 35_000);     return { emoji: '🚗', headline: `${n.toLocaleString()} new cars`,               body: `The average new car in North America costs ~$35K. ${name}'s NBA money could buy ${n.toLocaleString()} of them — one for every resident of a small town.`, gradient: 'from-slate-950 to-[#111]', accent: 'text-slate-400' } } },
+    { min: 1_200_000,   fn: () => { const n = Math.floor(earnings / 1_200);      return { emoji: '✈️', headline: `${n.toLocaleString()} business-class flights`, body: `A business-class round trip from New York to London runs ~$1,200. ${name} could've flown that route ${n.toLocaleString()} times — crossing the Atlantic ${Math.round(n / 365)} times a day for a year.`, gradient: 'from-cyan-950 to-[#111]', accent: 'text-cyan-400' } } },
+    { min: 1_000_000,   fn: () => { const n = Math.round(earnings / 10);         return { emoji: '☕', headline: `${n.toLocaleString()} coffees`,                body: `At $10 a coffee, ${name}'s career earnings could fuel ${n.toLocaleString()} coffee runs. That's enough caffeine to keep an entire city wired for years.`, gradient: 'from-amber-950 to-[#111]', accent: 'text-amber-400' } } },
   ]
 
-  // Pick a comparison using player ID for variety; skip any that don't meet min threshold
-  const validComparisons = comparisons.filter(fn => {
-    const c = fn()
-    if ('min' in c) {
-      if (c.min === 0) return true
-      const n = Math.floor(earnings / (earnings / Math.max(1, c.min)))
-      return earnings >= c.min
-    }
-    return true
-  })
-  const chosen = validComparisons[(p.id * 3) % validComparisons.length]()
+  // Only include comparisons where earnings meet the minimum threshold
+  const validComparisons = comparisons.filter(c => earnings >= c.min)
+  const chosen = validComparisons[(p.id * 3) % validComparisons.length].fn()
   facts.push({
     emoji: chosen.emoji,
     headline: chosen.headline,
