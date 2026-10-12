@@ -3,6 +3,7 @@ import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
+import { resetSocket } from '@/lib/socket'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -27,6 +28,7 @@ function LoginForm() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Login failed'); return }
       setUser(data.user)
+      resetSocket() // force fresh connection so server reads the new auth cookie
       router.push('/lobby')
     } catch {
       setError('Something went wrong')
