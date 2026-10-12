@@ -202,6 +202,7 @@ function PracticeContent() {
     .map(id => players.find(p => p.id === id))
     .filter((p): p is Player => {
       if (!p) return false
+      if (difficulty === 'ebk' && !searchQuery) return false
       if (takenIds.has(p.id)) return false
       // Starter slots: hide player only if ALL their positions are already used
       if (isStarterSlot && p.positions.split(',').every(pos => usedStarterPositions.has(pos))) return false
@@ -512,7 +513,9 @@ function PracticeContent() {
                       {pos}
                     </button>
                   ))}
-                  <span className="ml-auto text-xs text-gray-500 self-center">{filteredPlayers.length} players</span>
+                  <span className="ml-auto text-xs text-gray-500 self-center">
+                    {difficulty === 'ebk' && !searchQuery ? 'search to find players' : `${filteredPlayers.length} players`}
+                  </span>
                 </div>
 
                 {/* Stat mode selector (casual only) */}

@@ -726,6 +726,7 @@ function GameContent() {
     .map(id => players.find(p => p.id === id))
     .filter((p): p is Player => {
       if (!p) return false
+      if (room?.difficulty === 'ebk' && !searchQuery) return false
       if (takenIds.has(p.id)) return false
       // Starter slots: hide only if ALL of the player's positions are used
       if (isStarterSlot && p.positions.split(',').every(pos => usedStarterPositions.has(pos))) return false
@@ -954,7 +955,9 @@ function GameContent() {
                   {pos}
                 </button>
               ))}
-              <span className="ml-auto text-xs text-gray-500 self-center">{filteredPlayers.length} players</span>
+              <span className="ml-auto text-xs text-gray-500 self-center">
+                {room.difficulty === 'ebk' && !searchQuery ? 'search to find players' : `${filteredPlayers.length} players`}
+              </span>
             </div>
 
             {/* Pick Timer Bar */}
