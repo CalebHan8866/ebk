@@ -52,6 +52,8 @@ interface Room {
   currentPickIndex: number
   hostPicks: number[]
   guestPicks: number[]
+  hostPickSlots: string[]
+  guestPickSlots: string[]
   currentGame: number
   hostSeriesScore: number
   guestSeriesScore: number
@@ -125,6 +127,36 @@ function assignToSlots(pickedIds: number[], allPlayers: Player[], requiredSlots:
       if (benchIdx !== -1) { slots[benchIdx] = player; usedSlots.add(benchIdx) }
     }
   }
+  return slots
+}
+
+// Slot-aware version: uses the stored pickSlots arrays from server to place players exactly where chosen.
+function buildSlotsFromPickSlots(
+  pickedIds: number[],
+  pickSlots: string[],
+  allPlayers: Player[],
+  requiredSlots: string[]
+): (Player | null)[] {
+  const slots: (Player | null)[] = requiredSlots.map(() => null)
+  const slotUsage: Record<string, number> = {}
+  pickedIds.forEach((id, i) => {
+    const player = allPlayers.find(p => p.id === id)
+    if (!player) return
+    const slotPos = pickSlots[i]
+    if (!slotPos) return
+    const usedCount = slotUsage[slotPos] || 0
+    let found = 0
+    for (let j = 0; j < requiredSlots.length; j++) {
+      if (requiredSlots[j] === slotPos) {
+        if (found === usedCount) {
+          slots[j] = player
+          slotUsage[slotPos] = usedCount + 1
+          break
+        }
+        found++
+      }
+    }
+  })
   return slots
 }
 
@@ -313,9 +345,9 @@ function GameContent() {
     }).catch(() => {})
   }, [])
 
-  function pickPlayer(playerId: number) {
+  function pickPlayer(playerId: number, slotPos: string) {
     const socket = getSocket()
-    socket.emit('pick-player', { code, playerId })
+    socket.emit('pick-player', { code, playerId, slotPos })
   }
 
   function startNextGame() {
@@ -534,8 +566,14 @@ function GameContent() {
   const spunTeamInfo = spunTeam ? CURRENT_TEAMS.find(t => t.abbr === spunTeam) : null
 
   // Slot-based display for both teams
-  const mySlots = assignToSlots(myPicks, players, requiredSlots)
-  const oppSlots = assignToSlots(oppPicks, players, requiredSlots)
+  const myPickSlots = role === 'host' ? (room.hostPickSlots || []) : (room.guestPickSlots || [])
+  const oppPickSlots = role === 'host' ? (room.guestPickSlots || []) : (room.hostPickSlots || [])
+  const mySlots = myPickSlots.length > 0
+    ? buildSlotsFromPickSlots(myPicks, myPickSlots, players, requiredSlots)
+    : assignToSlots(myPicks, players, requiredSlots)
+  const oppSlots = oppPickSlots.length > 0
+    ? buildSlotsFromPickSlots(oppPicks, oppPickSlots, players, requiredSlots)
+    : assignToSlots(oppPicks, players, requiredSlots)
 
   // Track consumed slot positions by slot label (not player's primary position)
   const usedStarterPositions = new Set(
@@ -563,7 +601,9 @@ function GameContent() {
     const validSlots = getValidSlots(player)
     // If only one valid slot (or no bench available), pick immediately
     if (validSlots.size === 1) {
-      pickPlayer(playerId)
+      const slotIdx = [...validSlots][0]
+      const slotPos = requiredSlots[slotIdx]
+      pickPlayer(playerId, slotPos)
       setSelectedPlayerId(null)
     } else if (validSlots.size === 0) {
       return
@@ -577,7 +617,8 @@ function GameContent() {
     if (!selectedPlayer || !isMyTurn) return
     const validSlots = getValidSlots(selectedPlayer)
     if (!validSlots.has(slotIndex)) return
-    pickPlayer(selectedPlayer.id)
+    const slotPos = requiredSlots[slotIndex]
+    pickPlayer(selectedPlayer.id, slotPos)
     setSelectedPlayerId(null)
   }
 

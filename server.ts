@@ -72,40 +72,12 @@ function getRequiredPositions(teamMode: TeamMode): string[] {
 
 function getPickerUsedPositions(room: Room): { usedPositions: Set<string>; remainingBenchSlots: number } {
   const picker = room.draftOrder[room.currentPickIndex]
-  const pickerPicks = picker === 'host' ? room.hostPicks : room.guestPicks
-  const slots = getRequiredPositions(room.teamMode)
-
-  // Simulate slot assignment for already-picked players
-  // (same greedy logic as assignToSlots on the client)
-  const usedSlotIndices = new Set<number>()
-
-  for (const id of pickerPicks) {
-    const player = allPlayers.find(p => p.id === id)
-    if (!player) continue
-    const playerPositions = player.positions.split(',')
-
-    // Try the first starter slot whose position label matches
-    let placed = false
-    for (const pos of playerPositions) {
-      const idx = slots.findIndex((s, i) => i < 5 && s === pos && !usedSlotIndices.has(i))
-      if (idx !== -1) { usedSlotIndices.add(idx); placed = true; break }
-    }
-    // Fall back to the first available bench slot
-    if (!placed) {
-      const idx = slots.findIndex((s, i) => s === 'BENCH' && !usedSlotIndices.has(i))
-      if (idx !== -1) usedSlotIndices.add(idx)
-    }
-  }
-
-  // Which starter position labels are actually consumed?
-  const usedPositions = new Set(slots.slice(0, 5).filter((_, i) => usedSlotIndices.has(i)))
-
-  // How many bench slots are still open?
-  const totalBench = slots.filter(s => s === 'BENCH').length
-  const usedBench = [...usedSlotIndices].filter(i => i >= 5).length
-  const remainingBenchSlots = totalBench - usedBench
-
-  return { usedPositions, remainingBenchSlots }
+  const pickerSlots = picker === 'host' ? room.hostPickSlots : room.guestPickSlots
+  const starterPositions = new Set(['PG', 'SG', 'SF', 'PF', 'C'])
+  const usedPositions = new Set(pickerSlots.filter(s => starterPositions.has(s)))
+  const benchUsed = pickerSlots.filter(s => s === 'BENCH').length
+  const totalBench = TEAM_SIZES[room.teamMode] - 5
+  return { usedPositions, remainingBenchSlots: totalBench - benchUsed }
 }
 
 function spinTeam(room: Room): string {
@@ -160,6 +132,8 @@ interface Room {
   currentPickIndex: number
   hostPicks: number[]
   guestPicks: number[]
+  hostPickSlots: string[]
+  guestPickSlots: string[]
   currentGame: number
   hostSeriesScore: number
   guestSeriesScore: number
@@ -384,7 +358,7 @@ function calculateResult(room: Room): GameResult {
   return { game: room.currentGame, statMode, hostTotal, guestTotal, winner }
 }
 
-function autoPickPlayer(room: Room): number | null {
+function autoPickPlayer(room: Room): { playerId: number; slotPos: string } | null {
   const takenIds = new Set([...room.hostPicks, ...room.guestPicks])
   const { usedPositions, remainingBenchSlots } = getPickerUsedPositions(room)
   const starterSlotOpen = usedPositions.size < 5
@@ -407,7 +381,26 @@ function autoPickPlayer(room: Room): number | null {
   }
   const statMode = getStatModeForGame(room.currentGame)
   available.sort((a, b) => getStatForMode(a, statMode) - getStatForMode(b, statMode))
-  return available[0].id
+  const chosenPlayer = available[0]
+  // Determine slot using greedy algo (reuse already-computed usedPositions/remainingBenchSlots)
+  const starterOpen = usedPositions.size < 5
+  const playerPositions = chosenPlayer.positions.split(',')
+  let slotPos = 'BENCH'
+  if (starterOpen) {
+    for (const pos of playerPositions) {
+      if (!usedPositions.has(pos) && ['PG', 'SG', 'SF', 'PF', 'C'].includes(pos)) {
+        slotPos = pos
+        break
+      }
+    }
+  }
+  if (slotPos === 'BENCH' && remainingBenchSlots <= 0) {
+    // fallback: force into first open starter slot if no bench left
+    for (const pos of playerPositions) {
+      if (['PG', 'SG', 'SF', 'PF', 'C'].includes(pos)) { slotPos = pos; break }
+    }
+  }
+  return { playerId: chosenPlayer.id, slotPos }
 }
 
 function startPickTimer(io: SocketServer, room: Room) {
@@ -428,11 +421,12 @@ function startPickTimer(io: SocketServer, room: Room) {
     if (!currentRoom || currentRoom.status !== 'drafting') return
 
     const picker = currentRoom.draftOrder[currentRoom.currentPickIndex]
-    const pickedId = autoPickPlayer(currentRoom)
-    if (pickedId === null) return
+    const autoPick = autoPickPlayer(currentRoom)
+    if (autoPick === null) return
+    const { playerId: pickedId, slotPos: pickedSlotPos } = autoPick
 
-    if (picker === 'host') currentRoom.hostPicks.push(pickedId)
-    else currentRoom.guestPicks.push(pickedId)
+    if (picker === 'host') { currentRoom.hostPicks.push(pickedId); currentRoom.hostPickSlots.push(pickedSlotPos) }
+    else { currentRoom.guestPicks.push(pickedId); currentRoom.guestPickSlots.push(pickedSlotPos) }
 
     // Track consecutive timeouts
     const timeouts = consecutiveTimeouts.get(code) || { host: 0, guest: 0 }
@@ -516,6 +510,8 @@ function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
     currentPickIndex: 0,
     hostPicks: [],
     guestPicks: [],
+    hostPickSlots: [],
+    guestPickSlots: [],
     currentGame: 1,
     hostSeriesScore: 0,
     guestSeriesScore: 0,
@@ -577,6 +573,8 @@ app.prepare().then(async () => {
         currentPickIndex: 0,
         hostPicks: [],
         guestPicks: [],
+        hostPickSlots: [],
+        guestPickSlots: [],
         currentGame: 1,
         hostSeriesScore: 0,
         guestSeriesScore: 0,
@@ -607,7 +605,7 @@ app.prepare().then(async () => {
       startPickTimer(io, room)
     })
 
-    socket.on('pick-player', ({ code, playerId }: { code: string, playerId: number }) => {
+    socket.on('pick-player', ({ code, playerId, slotPos }: { code: string, playerId: number, slotPos: string }) => {
       const room = rooms.get(code)
       if (!room || room.status !== 'drafting') return
 
@@ -627,18 +625,27 @@ app.prepare().then(async () => {
         }
       }
 
-      // Validate the player can fit in at least one remaining slot
+      // Validate slotPos and slot availability
       const { usedPositions, remainingBenchSlots } = getPickerUsedPositions(room)
-      const player = allPlayers.find(p => p.id === playerId)
-      if (player) {
-        const playerPositions = player.positions.split(',')
-        const starterSlotOpen = usedPositions.size < 5
-        const canFitStarter = starterSlotOpen && playerPositions.some(pos => !usedPositions.has(pos))
-        const canFitBench = remainingBenchSlots > 0
-        if (!canFitStarter && !canFitBench) {
-          socket.emit('pick-error', { message: `All positions for this player are already filled` })
-          return
+      if (!slotPos) {
+        socket.emit('pick-error', { message: 'No slot specified' }); return
+      }
+      const starterPositions = ['PG', 'SG', 'SF', 'PF', 'C']
+      if (slotPos === 'BENCH') {
+        if (remainingBenchSlots <= 0) {
+          socket.emit('pick-error', { message: 'No bench slots remaining' }); return
         }
+      } else if (starterPositions.includes(slotPos)) {
+        const player = allPlayers.find(p => p.id === playerId)
+        const playerPositions = player?.positions.split(',') || []
+        if (!playerPositions.includes(slotPos)) {
+          socket.emit('pick-error', { message: `Player cannot play ${slotPos}` }); return
+        }
+        if (usedPositions.has(slotPos)) {
+          socket.emit('pick-error', { message: `${slotPos} slot already filled` }); return
+        }
+      } else {
+        socket.emit('pick-error', { message: 'Invalid slot' }); return
       }
 
       // Clear pick timer
@@ -651,8 +658,8 @@ app.prepare().then(async () => {
       timeouts[currentPicker] = 0
       consecutiveTimeouts.set(code, timeouts)
 
-      if (currentPicker === 'host') room.hostPicks.push(playerId)
-      else room.guestPicks.push(playerId)
+      if (currentPicker === 'host') { room.hostPicks.push(playerId); room.hostPickSlots.push(slotPos) }
+      else { room.guestPicks.push(playerId); room.guestPickSlots.push(slotPos) }
 
       room.currentPickIndex++
 
@@ -693,6 +700,8 @@ app.prepare().then(async () => {
       room.currentGame++
       room.hostPicks = []
       room.guestPicks = []
+      room.hostPickSlots = []
+      room.guestPickSlots = []
       room.currentPickIndex = 0
       room.currentSpunTeam = null
       room.draftOrder = buildSnakeDraft(TEAM_SIZES[room.teamMode])
