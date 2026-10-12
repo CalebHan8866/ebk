@@ -291,7 +291,7 @@ export default function LobbyPage() {
                 <p className="text-gray-600 text-sm mb-6">An account is required to track your record and join games.</p>
                 <div className="flex gap-3 justify-center">
                   <Link href="/login" className="bg-orange-600 hover:bg-orange-700 text-white font-black px-6 py-3 rounded-xl transition-colors">Sign In</Link>
-                  <Link href="/signup" className="bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-white font-black px-6 py-3 rounded-xl transition-colors">Sign Up</Link>
+                  <Link href="/register" className="bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-white font-black px-6 py-3 rounded-xl transition-colors">Sign Up</Link>
                 </div>
               </div>
             )}
