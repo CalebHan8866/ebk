@@ -40,16 +40,16 @@ export const CURRENT_TEAMS: NBATeam[] = [
 // All historical BBRef abbreviations → current franchise abbreviation
 export const TEAM_LINEAGE: Record<string, string> = {
   // Atlanta Hawks (Tri-Cities → Milwaukee → St. Louis → Atlanta)
-  'ATL': 'ATL', 'STL': 'ATL', 'MHK': 'ATL', 'TCB': 'ATL', 'TRI': 'ATL',
+  'ATL': 'ATL', 'STL': 'ATL', 'MHK': 'ATL', 'TCB': 'ATL', 'TRI': 'ATL', 'MLH': 'ATL',
 
   // Boston Celtics
   'BOS': 'BOS',
 
   // Brooklyn Nets (New York/New Jersey → Brooklyn)
-  'BKN': 'BKN', 'NJN': 'BKN', 'NJA': 'BKN', 'NYN': 'BKN',
+  'BKN': 'BKN', 'NJN': 'BKN', 'NJA': 'BKN', 'NYN': 'BKN', 'BRK': 'BKN',
 
-  // Charlotte Hornets (original Hornets → NOH → Bobcats → Hornets)
-  'CHA': 'CHA', 'CHH': 'CHA', 'CHB': 'CHA',
+  // Charlotte Hornets (original Hornets → NOH → Bobcats → Hornets rebrand)
+  'CHA': 'CHA', 'CHH': 'CHA', 'CHB': 'CHA', 'CHO': 'CHA',
 
   // Chicago Bulls
   'CHI': 'CHI',

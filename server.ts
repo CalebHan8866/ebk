@@ -28,10 +28,10 @@ const CURRENT_TEAM_ABBRS = [
 ]
 
 const TEAM_LINEAGE: Record<string, string> = {
-  'ATL':'ATL','STL':'ATL','MHK':'ATL','TCB':'ATL','TRI':'ATL',
+  'ATL':'ATL','STL':'ATL','MHK':'ATL','TCB':'ATL','TRI':'ATL','MLH':'ATL',
   'BOS':'BOS',
-  'BKN':'BKN','NJN':'BKN','NJA':'BKN','NYN':'BKN',
-  'CHA':'CHA','CHH':'CHA','CHB':'CHA',
+  'BKN':'BKN','NJN':'BKN','NJA':'BKN','NYN':'BKN','BRK':'BKN',
+  'CHA':'CHA','CHH':'CHA','CHB':'CHA','CHO':'CHA',
   'CHI':'CHI',
   'CLE':'CLE',
   'DAL':'DAL',
