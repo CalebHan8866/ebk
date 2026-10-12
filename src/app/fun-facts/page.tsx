@@ -21,19 +21,32 @@ interface Player {
 const CURRENT_YEAR = 2024
 
 const EVENTS = [
-  { year: 1347, desc: 'the Black Plague (1347)',            emoji: '💀' },
-  { year: 1492, desc: "Columbus's voyage (1492)",           emoji: '⛵' },
-  { year: 1607, desc: 'Jamestown being founded (1607)',     emoji: '🏴' },
-  { year: 1776, desc: 'U.S. independence (1776)',           emoji: '🗽' },
-  { year: 1865, desc: 'the Civil War ending (1865)',        emoji: '⚔️' },
-  { year: 1903, desc: 'the first airplane (1903)',          emoji: '✈️' },
-  { year: 1929, desc: 'the Great Depression (1929)',        emoji: '📉' },
-  { year: 1945, desc: 'WWII ending (1945)',                 emoji: '🌍' },
-  { year: 1969, desc: 'the Moon landing (1969)',            emoji: '🌕' },
-  { year: 1989, desc: 'the Berlin Wall falling (1989)',     emoji: '🧱' },
-  { year: 2001, desc: '9/11 (2001)',                        emoji: '🗼' },
-  { year: 2007, desc: 'the first iPhone (2007)',            emoji: '📱' },
-  { year: 2020, desc: 'COVID-19 (2020)',                    emoji: '🦠' },
+  { year: 1347, desc: 'the Black Plague (1347)',                 emoji: '💀' },
+  { year: 1492, desc: "Columbus's voyage to America (1492)",     emoji: '⛵' },
+  { year: 1522, desc: "Magellan's circumnavigation (1522)",      emoji: '🌐' },
+  { year: 1607, desc: 'Jamestown being founded (1607)',          emoji: '🏴' },
+  { year: 1687, desc: "Newton publishing his laws (1687)",       emoji: '🍎' },
+  { year: 1776, desc: 'U.S. independence (1776)',                emoji: '🗽' },
+  { year: 1789, desc: 'the French Revolution (1789)',            emoji: '🥖' },
+  { year: 1865, desc: 'the Civil War ending (1865)',             emoji: '⚔️' },
+  { year: 1886, desc: 'the Statue of Liberty being built (1886)',emoji: '🗽' },
+  { year: 1903, desc: 'the Wright Brothers\' first flight (1903)',emoji: '✈️' },
+  { year: 1912, desc: 'the Titanic sinking (1912)',              emoji: '🚢' },
+  { year: 1929, desc: 'the Great Depression starting (1929)',    emoji: '📉' },
+  { year: 1945, desc: 'WWII ending (1945)',                      emoji: '🌍' },
+  { year: 1953, desc: 'Everest being first climbed (1953)',      emoji: '🏔️' },
+  { year: 1963, desc: 'the JFK assassination (1963)',            emoji: '🕊️' },
+  { year: 1969, desc: 'the Moon landing (1969)',                 emoji: '🌕' },
+  { year: 1989, desc: 'the Berlin Wall falling (1989)',          emoji: '🧱' },
+  { year: 1991, desc: 'the Soviet Union collapsing (1991)',      emoji: '🛑' },
+  { year: 1997, desc: 'the first Harry Potter book (1997)',      emoji: '🧙' },
+  { year: 2001, desc: '9/11 (2001)',                             emoji: '🗼' },
+  { year: 2004, desc: 'Facebook launching (2004)',               emoji: '💻' },
+  { year: 2007, desc: 'the first iPhone launching (2007)',       emoji: '📱' },
+  { year: 2008, desc: 'the Great Recession (2008)',              emoji: '🏦' },
+  { year: 2012, desc: 'the Mayan apocalypse not happening (2012)',emoji: '🌎' },
+  { year: 2016, desc: 'the Chicago Cubs winning the World Series (2016)', emoji: '⚾' },
+  { year: 2020, desc: 'COVID-19 (2020)',                         emoji: '🦠' },
 ]
 
 function estimateCareerEarnings(p: Player): number {
@@ -92,15 +105,16 @@ function generateFacts(p: Player): Fact[] {
   const facts: Fact[] = []
 
   // ── Fact 1: Historical event savings comparison ─────────────────────────────
-  // Find event where saving $X/year since then = earnings.
-  // Aim for $X in range $3K–$80K/year for maximum "wow".
-  let ev = EVENTS.find(e => {
+  // Collect all events where saving $X/year since then would match earnings,
+  // with $X in a relatable range. Use player ID to pick one → every player
+  // gets a different event even at similar earnings levels.
+  const candidates = EVENTS.filter(e => {
     const yrs = CURRENT_YEAR - e.year
     const perYr = earnings / yrs
-    return perYr >= 3_000 && perYr <= 80_000
+    return perYr >= 1_500 && perYr <= 120_000
   })
-  // Fallback: oldest event
-  if (!ev) ev = earnings > 100_000_000 ? EVENTS[0] : EVENTS[EVENTS.length - 2]
+  const pool = candidates.length > 0 ? candidates : (earnings > 100_000_000 ? EVENTS.slice(0, 5) : EVENTS.slice(-5))
+  const ev = pool[p.id % pool.length]
 
   const evYears = CURRENT_YEAR - ev.year
   const perYearNeeded = Math.round(earnings / evYears)
@@ -209,10 +223,13 @@ export default function FunFactsPage() {
     fetch('/api/players')
       .then(r => r.json())
       .then((data: Player[]) => {
-        const sorted = (data as Player[]).sort(
-          (a, b) => estimateCareerEarnings(b) - estimateCareerEarnings(a)
-        )
-        setPlayers(sorted)
+        // Shuffle so niche/unexpected players surface alongside stars
+        const arr = data as Player[]
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1))
+          ;[arr[i], arr[j]] = [arr[j], arr[i]]
+        }
+        setPlayers(arr)
         setLoading(false)
       })
       .catch(() => setLoading(false))
