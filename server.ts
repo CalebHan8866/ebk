@@ -539,8 +539,13 @@ function startPickTimer(io: SocketServer, room: Room) {
       const loser = picker
       const winner = picker === 'host' ? 'guest' : 'host'
       currentRoom.status = 'complete'
-      currentRoom.hostSeriesScore = winner === 'host' ? 1 : 0
-      currentRoom.guestSeriesScore = winner === 'guest' ? 1 : 0
+      // Give the winner enough series wins to clearly win the series; preserve prior game wins
+      const winsNeeded = Math.ceil(currentRoom.series / 2)
+      if (winner === 'host') {
+        currentRoom.hostSeriesScore = Math.max(currentRoom.hostSeriesScore, winsNeeded)
+      } else {
+        currentRoom.guestSeriesScore = Math.max(currentRoom.guestSeriesScore, winsNeeded)
+      }
       pickTimers.delete(code)
 
       if (currentRoom.source === 'online') {

@@ -65,6 +65,7 @@ export default function LobbyPage() {
   const [guestReady, setGuestReady] = useState(false)
   const [countdown, setCountdown] = useState(60)
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const selfDeclinedRef = useRef(false)
 
   // create form
   const [showCreate, setShowCreate] = useState(false)
@@ -148,7 +149,9 @@ export default function LobbyPage() {
       setOnlineState('idle')
       setMatchInfo(null)
       setMyListingCode(null)
-      setError(reason)
+      // Don't show an error if this player was the one who declined
+      if (!selfDeclinedRef.current) setError(reason)
+      selfDeclinedRef.current = false
     }
 
     socket.on('listings-updated', handleListingsUpdated)
@@ -207,6 +210,7 @@ export default function LobbyPage() {
   }
 
   function handleDecline() {
+    selfDeclinedRef.current = true
     getSocket().emit('decline-match', { code: matchCode })
     setOnlineState('idle')
     setMatchInfo(null)
