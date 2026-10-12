@@ -129,6 +129,7 @@ function yearsAgo(year: number): number {
 
 function eligibleEvents(earnings: number) {
   return EVENTS.filter(e => {
+    if (e.year >= 1950) return false          // must be a truly historical event
     const perYr = earnings / yearsAgo(e.year)
     return perYr >= 100_000 && perYr <= 1_000_000
   })
