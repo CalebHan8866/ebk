@@ -28,6 +28,7 @@ model User {
   unlockedMilestones String   @default("[]")
   jamesonCurryGames  Int      @default(0)
   equippedBadge     String    @default("")
+  equippedBadges    String    @default("[]")
   equippedEmote     String    @default("")
   createdAt         DateTime  @default(now())
 }

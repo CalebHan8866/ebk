@@ -8,13 +8,19 @@ import { BADGES } from '@/lib/accessories'
 export default function Navbar() {
   const { user, logout } = useAuth()
   const router = useRouter()
-  const [equippedBadgeId, setEquippedBadgeId] = useState<string>('')
+  const [equippedBadgeIds, setEquippedBadgeIds] = useState<string[]>([])
 
   useEffect(() => {
-    if (!user) { setEquippedBadgeId(''); return }
+    if (!user) { setEquippedBadgeIds([]); return }
     fetch('/api/auth/me')
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.user?.equippedBadge) setEquippedBadgeId(d.user.equippedBadge) })
+      .then(d => {
+        if (d?.user?.equippedBadges) {
+          try { setEquippedBadgeIds(JSON.parse(d.user.equippedBadges)) } catch { setEquippedBadgeIds([]) }
+        } else if (d?.user?.equippedBadge) {
+          setEquippedBadgeIds([d.user.equippedBadge])
+        }
+      })
   }, [user])
 
   async function handleLogout() {
@@ -23,7 +29,9 @@ export default function Navbar() {
     router.refresh()
   }
 
-  const equippedBadge = equippedBadgeId ? BADGES.find(b => b.id === equippedBadgeId) : null
+  const equippedBadgeObjects = equippedBadgeIds
+    .map(id => BADGES.find(b => b.id === id))
+    .filter(Boolean) as typeof BADGES
 
   return (
     <nav className="bg-[#111827] border-b border-orange-500/20">
@@ -36,18 +44,18 @@ export default function Navbar() {
           <Link href="/lobby" className="text-gray-300 hover:text-orange-400 text-sm font-semibold transition-colors">Play</Link>
           {user ? (
             <>
-              <Link href="/profile" className="flex items-center gap-2 text-gray-300 hover:text-orange-400 text-sm font-semibold">
+              <Link href="/profile" className="flex items-center gap-1.5 text-gray-300 hover:text-orange-400 text-sm font-semibold">
                 <span>{user.username}</span>
-                {equippedBadge && (
-                  <span className={[
+                {equippedBadgeObjects.map(badge => (
+                  <span key={badge.id} className={[
                     'inline-block text-[10px] font-black tracking-wider px-1.5 py-0.5 rounded border',
-                    equippedBadge.bgClass,
-                    equippedBadge.textClass,
-                    equippedBadge.borderClass,
-                  ].join(' ')}>
-                    {equippedBadge.label}
+                    badge.bgClass,
+                    badge.textClass,
+                    badge.borderClass,
+                  ].join(' ')} title={badge.name}>
+                    {badge.icon}
                   </span>
-                )}
+                ))}
                 <span className="text-gray-500 text-xs">{user.wins}-{user.losses}-{user.draws}</span>
               </Link>
               <button onClick={handleLogout} className="text-xs bg-orange-600 hover:bg-orange-700 px-3 py-1.5 rounded font-semibold transition-colors">

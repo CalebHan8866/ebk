@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
-    select: { unlockedBadges: true, unlockedEmotes: true },
+    select: { unlockedBadges: true, unlockedEmotes: true, equippedBadges: true },
   })
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
@@ -35,7 +35,28 @@ export async function POST(req: NextRequest) {
     if (!unlocked.includes(id)) {
       return NextResponse.json({ error: 'Badge not unlocked' }, { status: 403 })
     }
-    await prisma.user.update({ where: { id: payload.userId }, data: { equippedBadge: id } })
+
+    let equipped: string[] = []
+    try { equipped = JSON.parse(user.equippedBadges || '[]') } catch { equipped = [] }
+
+    if (equipped.includes(id)) {
+      // Toggle off
+      equipped = equipped.filter(b => b !== id)
+    } else if (equipped.length < 3) {
+      // Add if under max
+      equipped = [...equipped, id]
+    } else {
+      // Already at 3 — replace the oldest (first)
+      equipped = [...equipped.slice(1), id]
+    }
+
+    await prisma.user.update({
+      where: { id: payload.userId },
+      data: {
+        equippedBadges: JSON.stringify(equipped),
+        equippedBadge: equipped[0] ?? '',  // keep single-badge field in sync for navbar
+      },
+    })
   } else {
     let unlocked: string[] = []
     try { unlocked = JSON.parse(user.unlockedEmotes) } catch { unlocked = [] }

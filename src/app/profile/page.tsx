@@ -18,6 +18,7 @@ interface UserProfile {
   unlockedEmotes: string
   unlockedMilestones: string
   equippedBadge: string
+  equippedBadges: string
   equippedEmote: string
   createdAt: string
 }
@@ -25,7 +26,7 @@ interface UserProfile {
 export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [equippedBadge, setEquippedBadge] = useState('')
+  const [equippedBadges, setEquippedBadges] = useState<string[]>([])
   const [equippedEmote, setEquippedEmote] = useState('')
   const router = useRouter()
 
@@ -38,7 +39,7 @@ export default function ProfilePage() {
       .then(d => {
         if (d?.user) {
           setUser(d.user)
-          setEquippedBadge(d.user.equippedBadge ?? '')
+          try { setEquippedBadges(JSON.parse(d.user.equippedBadges || '[]')) } catch { setEquippedBadges([]) }
           setEquippedEmote(d.user.equippedEmote ?? '')
         } else {
           router.push('/login')
@@ -48,9 +49,16 @@ export default function ProfilePage() {
   }, [router])
 
   async function equipItem(type: 'badge' | 'emote', id: string) {
-    // optimistic update
-    if (type === 'badge') setEquippedBadge(id)
-    else setEquippedEmote(id)
+    if (type === 'badge') {
+      // Optimistic toggle
+      setEquippedBadges(prev => {
+        if (prev.includes(id)) return prev.filter(b => b !== id)
+        if (prev.length < 3) return [...prev, id]
+        return [...prev.slice(1), id]
+      })
+    } else {
+      setEquippedEmote(id)
+    }
 
     const res = await fetch('/api/accessories/equip', {
       method: 'POST',
@@ -59,8 +67,11 @@ export default function ProfilePage() {
     })
     if (!res.ok) {
       // revert on failure
-      if (type === 'badge') setEquippedBadge(user?.equippedBadge ?? '')
-      else setEquippedEmote(user?.equippedEmote ?? '')
+      if (type === 'badge') {
+        try { setEquippedBadges(JSON.parse(user?.equippedBadges || '[]')) } catch { setEquippedBadges([]) }
+      } else {
+        setEquippedEmote(user?.equippedEmote ?? '')
+      }
     }
   }
 
@@ -139,62 +150,73 @@ export default function ProfilePage() {
 
         {/* Badges */}
         <div className="bg-[#101010] rounded-2xl p-6">
-          <h2 className="font-display text-xl text-white tracking-wider mb-1">Badges</h2>
-          <p className="text-gray-500 text-xs mb-5">Earn badges by hitting milestones. Equip one to display next to your name.</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {BADGES.map(badge => {
-              const unlocked = unlockedBadgeIds.includes(badge.id)
-              const isEquipped = equippedBadge === badge.id
+          <div className="flex items-baseline justify-between mb-1">
+            <h2 className="font-display text-xl text-white tracking-wider">Badges</h2>
+            <span className="text-gray-600 text-xs">{unlockedBadgeIds.length} / {BADGES.length} unlocked</span>
+          </div>
+          <p className="text-gray-500 text-xs mb-4">Unlock badges by hitting milestones. Tap to equip up to 3.</p>
 
-              let req = ''
-              if (badge.winsRequired) req = `${badge.winsRequired} wins`
-              else if (badge.gamesRequired) req = `${badge.gamesRequired} game${badge.gamesRequired > 1 ? 's' : ''} played`
-              else if (badge.streakRequired) req = `${badge.streakRequired}-win streak`
-
+          {/* Equipped badge slots */}
+          <div className="flex gap-2 mb-5">
+            {[0, 1, 2].map(slot => {
+              const badgeId = equippedBadges[slot]
+              const badge = badgeId ? BADGES.find(b => b.id === badgeId) : null
               return (
-                <button
-                  key={badge.id}
-                  disabled={!unlocked}
-                  onClick={() => unlocked && equipItem('badge', badge.id)}
-                  className={[
-                    'relative rounded-xl p-3 text-left border transition-all',
-                    unlocked
-                      ? 'cursor-pointer hover:brightness-110'
-                      : 'cursor-default opacity-40',
-                    isEquipped
-                      ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-[#101010]'
-                      : '',
-                    badge.bgClass,
-                    badge.borderClass,
-                  ].join(' ')}
-                >
-                  {isEquipped && (
-                    <span className="absolute top-2 right-2 text-[9px] font-bold text-orange-400 uppercase tracking-wider">
-                      Equipped
-                    </span>
+                <div key={slot} className={[
+                  'flex-1 rounded-xl border-2 border-dashed h-16 flex flex-col items-center justify-center transition-all',
+                  badge ? `${badge.bgClass} ${badge.borderClass} border-solid` : 'border-gray-800 bg-[#0A0A0A]',
+                ].join(' ')}>
+                  {badge ? (
+                    <>
+                      <span className="text-xl leading-none">{badge.icon}</span>
+                      <span className={`text-[10px] font-black mt-1 ${badge.textClass}`}>{badge.label}</span>
+                    </>
+                  ) : (
+                    <span className="text-gray-700 text-xs">slot {slot + 1}</span>
                   )}
-                  {!unlocked && (
-                    <span className="absolute top-2 right-2 text-[10px] text-gray-600">
-                      [locked]
-                    </span>
-                  )}
-                  <span className={[
-                    'inline-block text-[11px] font-black tracking-wider px-1.5 py-0.5 rounded border mb-2',
-                    badge.bgClass, badge.textClass, badge.borderClass,
-                  ].join(' ')}>
-                    {badge.label}
-                  </span>
-                  <div className={`text-sm font-bold ${unlocked ? 'text-white' : 'text-gray-500'}`}>
-                    {badge.name}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-0.5">{badge.description}</div>
-                  {!unlocked && req && (
-                    <div className="text-[10px] text-gray-600 mt-1">Req: {req}</div>
-                  )}
-                </button>
+                </div>
               )
             })}
           </div>
+
+          {unlockedBadgeIds.length === 0 ? (
+            <p className="text-gray-600 text-sm text-center py-4">Play games to unlock badges</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {BADGES.filter(badge => unlockedBadgeIds.includes(badge.id)).map(badge => {
+                const isEquipped = equippedBadges.includes(badge.id)
+                return (
+                  <button
+                    key={badge.id}
+                    onClick={() => equipItem('badge', badge.id)}
+                    className={[
+                      'relative rounded-xl p-3 text-left border transition-all cursor-pointer hover:brightness-110',
+                      isEquipped ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-[#101010]' : '',
+                      badge.bgClass,
+                      badge.borderClass,
+                    ].join(' ')}
+                  >
+                    {isEquipped && (
+                      <span className="absolute top-1.5 right-2 text-[9px] font-bold text-orange-400 uppercase tracking-wider">
+                        ✓ on
+                      </span>
+                    )}
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xl leading-none">{badge.icon}</span>
+                      <span className={[
+                        'text-[11px] font-black tracking-wider px-1.5 py-0.5 rounded border',
+                        badge.bgClass, badge.textClass, badge.borderClass,
+                      ].join(' ')}>
+                        {badge.label}
+                      </span>
+                    </div>
+                    <div className="text-sm font-bold text-white">{badge.name}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{badge.description}</div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Emotes */}
