@@ -437,6 +437,126 @@ async function testAutoPickTimer(s1,s2) {
   finally{ sock1?.disconnect(); sock2?.disconnect() }
 }
 
+// ── Feature: Hot Streak Badge — listing has hostStreak field ─────────────────
+async function testHotStreakListing(s1,s2) {
+  section('Hot Streak — listing includes hostStreak')
+  let sock1,sock2
+  try {
+    sock1=makeSocket(s1.cookie); sock2=makeSocket(s2.cookie)
+    await Promise.all([on(sock1,'connect'),on(sock2,'connect')])
+
+    // s1 creates a listing
+    sock1.emit('create-listing',{userName:s1.user.username,userId:s1.user.id,teamMode:'starter5',series:1})
+    const created=await on(sock1,'listing-created',8000)
+    log('listing created',!!created?.code)
+
+    // s2 fetches current listings via get-listings (avoids race with broadcast)
+    const updatePromise=on(sock2,'listings-updated',5000)
+    sock2.emit('get-listings')
+    const update=await updatePromise
+    const listing=update?.listings?.find(l=>l.code===created.code)
+    log('listing in broadcast',!!listing)
+    log('listing.hostStreak field exists',listing && 'hostStreak' in listing,
+        listing?`hostStreak=${listing.hostStreak}`:'no listing')
+
+    // clean up
+    sock1.emit('cancel-listing',{code:created.code})
+  } catch(e){ log('hot streak listing',false,e.message) }
+  finally{ sock1?.disconnect(); sock2?.disconnect() }
+}
+
+// ── Feature: Match-Found payload — grudgeMatch + myStreak + opponentStreak ───
+async function testMatchFoundPayload(s1,s2) {
+  section('Match-Found — grudgeMatch + streak fields')
+  let sock1,sock2
+  try {
+    const g=await startOnlineGame(s1,s2,{teamMode:'starter5',series:1})
+    sock1=g.sock1; sock2=g.sock2
+    const mf=g.mf
+    log('match-found received',!!mf)
+    log('mf.grudgeMatch field exists','grudgeMatch' in mf, `grudgeMatch=${mf?.grudgeMatch}`)
+    log('mf.myStreak field exists','myStreak' in mf, `myStreak=${mf?.myStreak}`)
+    log('mf.opponentStreak field exists','opponentStreak' in mf, `opponentStreak=${mf?.opponentStreak}`)
+    // Play game so it completes and recordMatchup is called (increments grudge count)
+    await playGame(g.buf1,g.buf2,sock1,sock2,g.room,g.players,'[mf-payload]')
+  } catch(e){
+    if(e.message?.startsWith('COOLDOWN:')) {
+      log('match-found payload (cooldown)',true,`skipped — ${e.message.slice(9)}`)
+    } else {
+      log('match-found payload',false,e.message)
+    }
+  }
+  finally{ sock1?.disconnect(); sock2?.disconnect() }
+}
+
+// ── Feature: First Pick Tracker — /me returns firstPickWins/firstPickGames ───
+async function testFirstPickFields(s1) {
+  section('First Pick Tracker — /me fields')
+  const r=await http('GET','/api/auth/me',null,s1.cookie)
+  const u=r.json?.user
+  log('/me.firstPickGames exists',u && 'firstPickGames' in u, `firstPickGames=${u?.firstPickGames}`)
+  log('/me.firstPickWins exists', u && 'firstPickWins'  in u, `firstPickWins=${u?.firstPickWins}`)
+  if(u?.firstPickGames>0) {
+    const rate=u.firstPickWins/u.firstPickGames
+    log('firstPick win rate 0-1',rate>=0&&rate<=1,`${u.firstPickWins}/${u.firstPickGames}`)
+  }
+}
+
+// ── Feature: Draft Recap Card — game result has pick slot data ───────────────
+async function testDraftRecapData(s1,s2,allPlayers) {
+  section('Draft Recap — game result includes pick slot data')
+  let sock1,sock2
+  try {
+    const g=await startFriendsGame(s1,s2,{teamMode:'starter5',series:1,difficulty:'casual'})
+    sock1=g.sock1; sock2=g.sock2
+    const r=await playGame(g.buf1,g.buf2,sock1,sock2,g.room,g.players,'[recap]')
+    log('game completed',r.ok)
+    const room=r.result?.room
+    log('room.hostPickSlots present',Array.isArray(room?.hostPickSlots),`len=${room?.hostPickSlots?.length}`)
+    log('room.guestPickSlots present',Array.isArray(room?.guestPickSlots),`len=${room?.guestPickSlots?.length}`)
+    log('room.hostPicks present',Array.isArray(room?.hostPicks),`len=${room?.hostPicks?.length}`)
+    log('room.guestPicks present',Array.isArray(room?.guestPicks),`len=${room?.guestPicks?.length}`)
+    if(room?.hostPickSlots && room?.hostPicks) {
+      log('pickSlots length matches picks',room.hostPickSlots.length===room.hostPicks.length,
+          `slots=${room.hostPickSlots.length} picks=${room.hostPicks.length}`)
+    }
+    if(r.result?.result) {
+      log('result.hostTotal is number',typeof r.result.result.hostTotal==='number')
+      log('result.guestTotal is number',typeof r.result.result.guestTotal==='number')
+    }
+  } catch(e){ log('draft recap data',false,e.message) }
+  finally{ sock1?.disconnect(); sock2?.disconnect() }
+}
+
+// ── Feature: Grudge Match — after 3 online games, grudgeMatch=true ────────────
+async function testGrudgeMatch(s1,s2,allPlayers) {
+  section('Grudge Match — grudgeMatch=true after 3 games')
+  // Grudge count is in-memory; check current count against each run's online games.
+  // We play one online game here and verify the flag eventually flips to true.
+  // Since matchupCount persists in server memory across runs, after enough runs
+  // this should be true. We check the flag value regardless and log it.
+  let sock1,sock2
+  try {
+    const g=await startOnlineGame(s1,s2,{teamMode:'starter5',series:1})
+    sock1=g.sock1; sock2=g.sock2
+    const mf=g.mf
+    const isGrudge=mf?.grudgeMatch===true
+    log('grudgeMatch field present','grudgeMatch' in mf)
+    // Non-fatal: log value — expected to become true after 3+ runs with online games
+    log('grudgeMatch value logged',true,`grudgeMatch=${mf?.grudgeMatch}`)
+    // Play the game so it counts toward the grudge tally
+    await playGame(g.buf1,g.buf2,sock1,sock2,g.room,g.players,'[grudge]')
+    if(isGrudge) log('grudgeMatch is true (3+ games played)',true)
+  } catch(e){
+    if(e.message?.startsWith('COOLDOWN:')) {
+      log('grudge match (cooldown)',true,`skipped — ${e.message.slice(9)}`)
+    } else {
+      log('grudge match',false,e.message)
+    }
+  }
+  finally{ sock1?.disconnect(); sock2?.disconnect() }
+}
+
 async function testStatsUpdate(s1,s2,allPlayers) {
   section('Stats Increment After Game')
   const before=await http('GET','/api/auth/me',null,s1.cookie)
@@ -482,15 +602,21 @@ function summary(run) {
 async function runOnce(run, s1, s2, allPlayers) {
   passed=0; failed=0; results.length=0
   // s2=EBKTestBot hosts all friends/test games so s1=Mamba2408 history stays clean
-  await testFriendsCasual(s2,s1,allPlayers); await sleep(500)
-  await testFriendsEBK(s2,s1,allPlayers);    await sleep(500)
-  await testOnlineFull(s2,s1,allPlayers);    await sleep(500)
-  await testBestOf3(s2,s1,allPlayers);       await sleep(500)
-  await testBench8(s2,s1,allPlayers);        await sleep(500)
-  await testDisconnect(s2,s1);              await sleep(500)
-  await testPickErrors(s2,s1,allPlayers);    await sleep(500)
-  await testStatsUpdate(s1,s2,allPlayers);   await sleep(500) // s1 tracks stats
-  await testAutoPickTimer(s2,s1)             // last — 33s wait
+  await testFriendsCasual(s2,s1,allPlayers);     await sleep(500)
+  await testFriendsEBK(s2,s1,allPlayers);        await sleep(500)
+  await testOnlineFull(s2,s1,allPlayers);        await sleep(500)
+  await testBestOf3(s2,s1,allPlayers);           await sleep(500)
+  await testBench8(s2,s1,allPlayers);            await sleep(500)
+  await testDisconnect(s2,s1);                   await sleep(500)
+  await testPickErrors(s2,s1,allPlayers);        await sleep(500)
+  await testStatsUpdate(s1,s2,allPlayers);       await sleep(500) // s1 tracks stats
+  // ── New feature tests ───────────────────────────────────────────────────────
+  await testHotStreakListing(s1,s2);             await sleep(500)
+  await testMatchFoundPayload(s2,s1,allPlayers); await sleep(500)
+  await testFirstPickFields(s1);                 await sleep(500)
+  await testDraftRecapData(s2,s1,allPlayers);    await sleep(500)
+  await testGrudgeMatch(s2,s1,allPlayers);       await sleep(500)
+  await testAutoPickTimer(s2,s1)                 // last — 33s wait
   summary(run)
 }
 

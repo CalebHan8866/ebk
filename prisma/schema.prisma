@@ -33,6 +33,22 @@ model User {
   equippedBadges    String    @default("[]")
   equippedEmote     String    @default("")
   createdAt         DateTime  @default(now())
+  gameRecords       GameRecord[]
+}
+
+model GameRecord {
+  id             String   @id @default(cuid())
+  userId         String
+  opponentName   String
+  opponentId     String?
+  result         String   // 'win' | 'loss' | 'draw'
+  mySeriesScore  Int
+  oppSeriesScore Int
+  teamMode       String
+  series         Int
+  source         String   // 'online' | 'friends'
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id])
 }
 
 model Player {

@@ -250,6 +250,12 @@ export default function LobbyPage() {
         <div className="text-center mb-8">
           <h1 className="font-display text-6xl text-orange-500 leading-none">EBK</h1>
           <p className="text-gray-600 text-xs tracking-widest uppercase mt-1">Elite Ball Knowledge</p>
+          <div className="flex items-center justify-center gap-4 mt-3">
+            <Link href="/leaderboard" className="text-gray-500 hover:text-orange-400 text-xs font-bold transition-colors">Leaderboard</Link>
+            <span className="text-gray-700 text-xs">·</span>
+            <Link href="/history" className="text-gray-500 hover:text-orange-400 text-xs font-bold transition-colors">My History</Link>
+            {user && <><span className="text-gray-700 text-xs">·</span><Link href="/profile" className="text-gray-500 hover:text-orange-400 text-xs font-bold transition-colors">Profile</Link></>}
+          </div>
         </div>
 
         {error && (

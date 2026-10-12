@@ -250,6 +250,39 @@ function getMatchupCount(userId1: string | null, userId2: string | null): number
   return matchupCount.get(userId1)?.get(userId2) || 0
 }
 
+async function saveGameRecords(room: Room, seriesWinner: 'host' | 'guest' | 'draw') {
+  try {
+    const records = []
+    if (room.hostUserId) {
+      records.push({
+        userId: room.hostUserId,
+        opponentName: room.guestName || 'Unknown',
+        opponentId: room.guestUserId ?? undefined,
+        result: seriesWinner === 'host' ? 'win' : seriesWinner === 'draw' ? 'draw' : 'loss',
+        mySeriesScore: room.hostSeriesScore,
+        oppSeriesScore: room.guestSeriesScore,
+        teamMode: room.teamMode,
+        series: room.series,
+        source: room.source,
+      })
+    }
+    if (room.guestUserId) {
+      records.push({
+        userId: room.guestUserId,
+        opponentName: room.hostName,
+        opponentId: room.hostUserId ?? undefined,
+        result: seriesWinner === 'guest' ? 'win' : seriesWinner === 'draw' ? 'draw' : 'loss',
+        mySeriesScore: room.guestSeriesScore,
+        oppSeriesScore: room.hostSeriesScore,
+        teamMode: room.teamMode,
+        series: room.series,
+        source: room.source,
+      })
+    }
+    if (records.length) await prisma.gameRecord.createMany({ data: records })
+  } catch { /* non-critical */ }
+}
+
 function cooldownRemaining(userId1: string | null, userId2: string | null): number {
   if (!userId1 || !userId2) return 0
   if (NOCOOLDOWN_USER_IDS.has(userId1) || NOCOOLDOWN_USER_IDS.has(userId2)) return 0
@@ -488,6 +521,7 @@ function startPickTimer(io: SocketServer, room: Room) {
         recordMatchup(currentRoom.hostUserId, currentRoom.guestUserId)
         if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, winner === 'host', false, 0, true)
         if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, winner === 'guest', false, 0, false)
+        saveGameRecords(currentRoom, winner)
       }
 
       io.to(code).emit('player-disqualified', { room: currentRoom, disqualifiedRole: loser, winner })
@@ -519,6 +553,7 @@ function startPickTimer(io: SocketServer, room: Room) {
           if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, seriesWinner === 'host', seriesWinner === 'draw', currentRoom.hostJCGames, true)
           if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw', currentRoom.guestJCGames, false)
         }
+        saveGameRecords(currentRoom, seriesWinner)
         io.to(code).emit('series-complete', { room: currentRoom, seriesWinner })
       } else {
         io.to(code).emit('game-result', { room: currentRoom, result })
@@ -734,6 +769,7 @@ app.prepare().then(async () => {
             if (room.hostUserId) updateStatsAndUnlock(io, room.hostUserId, room.hostSocketId, seriesWinner === 'host', seriesWinner === 'draw', room.hostJCGames, true)
             if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw', room.guestJCGames, false)
           }
+          saveGameRecords(room, seriesWinner)
           io.to(code).emit('series-complete', { room, seriesWinner })
         } else {
           io.to(code).emit('game-result', { room, result })
