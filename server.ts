@@ -919,6 +919,9 @@ app.prepare().then(async () => {
       // Notify game rooms
       rooms.forEach((room, code) => {
         if (room.hostSocketId === socket.id || room.guestSocketId === socket.id) {
+          // Keep waiting rooms alive — host may navigate to game page (causes brief reconnect)
+          // and guests need to still be able to join
+          if (room.status === 'waiting') return
           const timer = pickTimers.get(code)
           if (timer) clearTimeout(timer)
           pickTimers.delete(code)
