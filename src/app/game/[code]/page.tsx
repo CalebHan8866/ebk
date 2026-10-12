@@ -415,7 +415,10 @@ function GameContent() {
     const isDraw = seriesWinner === 'draw'
     return (
       <div className="min-h-screen bg-[#0A0A0A] px-4 py-8 overflow-y-auto">
-        <div className="max-w-md w-full mx-auto">
+        <div className="max-w-4xl w-full mx-auto">
+          <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
+          {/* LEFT col: header + game-by-game */}
+          <div>
           {/* Result header */}
           <div className="text-center mb-6">
             <div className={`font-display leading-none mb-2 ${iWon ? 'text-orange-500' : isDraw ? 'text-gray-400' : 'text-gray-600'}`}
@@ -480,7 +483,10 @@ function GameContent() {
               </div>
             </div>
           )}
+          </div>{/* end LEFT col */}
 
+          {/* RIGHT col: last game team breakdown */}
+          <div>
           {/* Last game team breakdown */}
           {myPicks.length > 0 && (() => {
             const lastGame = room.gameResults[room.gameResults.length - 1]
@@ -533,8 +539,10 @@ function GameContent() {
               </div>
             )
           })()}
+          </div>{/* end RIGHT col */}
+          </div>{/* end lg:grid */}
 
-          <button onClick={() => router.push('/lobby')} className="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-4 rounded-2xl text-lg transition-colors w-full">
+          <button onClick={() => router.push('/lobby')} className="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-4 rounded-2xl text-lg transition-colors w-full mt-4">
             Play Again
           </button>
         </div>
@@ -556,7 +564,10 @@ function GameContent() {
 
     return (
       <div className="min-h-screen bg-[#0A0A0A] px-4 py-8 overflow-y-auto">
-        <div className="max-w-md w-full mx-auto">
+        <div className="max-w-4xl w-full mx-auto">
+          <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
+          {/* LEFT: header + scores + series */}
+          <div>
           {/* Result header */}
           <div className="text-center mb-4">
             <div className={`font-display leading-none mb-2 ${iWon ? 'text-orange-500' : isDraw ? 'text-gray-400' : 'text-gray-600'}`}
@@ -596,7 +607,23 @@ function GameContent() {
             })}
           </div>
 
-          {/* Your Team Breakdown */}
+          {/* Series score */}
+          {room.series > 1 && (
+            <div className="bg-[#111] rounded-2xl px-4 py-3 mb-4 text-center">
+              <div className="text-gray-600 text-xs uppercase tracking-widest mb-1">Series</div>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                <span className="text-white font-black text-lg truncate max-w-[100px]">{room.hostName}</span>
+                <span className="text-orange-400 font-black text-2xl">{room.hostSeriesScore}</span>
+                <span className="text-gray-600 text-xl">–</span>
+                <span className="text-orange-400 font-black text-2xl">{room.guestSeriesScore}</span>
+                <span className="text-white font-black text-lg truncate max-w-[100px]">{room.guestName}</span>
+              </div>
+            </div>
+          )}
+          </div>{/* end LEFT col */}
+
+          {/* RIGHT col: Your Team Breakdown */}
+          <div>
           <div className="bg-[#111827] rounded-2xl p-4 mb-4">
             <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Your Team</h2>
             <div className="space-y-1.5">
@@ -630,28 +657,16 @@ function GameContent() {
               </span>
             </div>
           </div>
-
-          {/* Series score */}
-          {room.series > 1 && (
-            <div className="bg-[#111] rounded-2xl px-4 py-3 mb-4 text-center">
-              <div className="text-gray-600 text-xs uppercase tracking-widest mb-1">Series</div>
-              <div className="flex items-center justify-center gap-2 flex-wrap">
-                <span className="text-white font-black text-lg truncate max-w-[100px]">{room.hostName}</span>
-                <span className="text-orange-400 font-black text-2xl">{room.hostSeriesScore}</span>
-                <span className="text-gray-600 text-xl">–</span>
-                <span className="text-orange-400 font-black text-2xl">{room.guestSeriesScore}</span>
-                <span className="text-white font-black text-lg truncate max-w-[100px]">{room.guestName}</span>
-              </div>
-            </div>
-          )}
+          </div>{/* end RIGHT col */}
+          </div>{/* end lg:grid */}
 
           {/* CTA */}
           {role === 'host' ? (
-            <button onClick={startNextGame} className="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-4 rounded-2xl text-lg transition-colors w-full">
+            <button onClick={startNextGame} className="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-4 rounded-2xl text-lg transition-colors w-full mt-2">
               Start Game {room.currentGame + 1}
             </button>
           ) : (
-            <div className="bg-[#111] rounded-2xl py-4 text-center text-gray-500 text-sm">
+            <div className="bg-[#111] rounded-2xl py-4 text-center text-gray-500 text-sm mt-2">
               <span className="inline-block w-4 h-4 rounded-full border-2 border-gray-500 border-t-transparent animate-spin mr-2 align-middle"></span>
               Waiting for {room.hostName}...
             </div>
