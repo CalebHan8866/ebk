@@ -2,8 +2,6 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { createToken } from '@/lib/auth'
-import { cookies } from 'next/headers'
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token')
@@ -17,15 +15,5 @@ export async function GET(request: NextRequest) {
     data: { emailVerified: true, verificationToken: null }
   })
 
-  // Auto-login after verification
-  const authToken = await createToken({ userId: user.id, username: user.username })
-  const cookieStore = await cookies()
-  cookieStore.set('ebk-token', authToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7,
-  })
-
-  return NextResponse.redirect(new URL('/verify-email?success=1', request.url))
+  return NextResponse.redirect(new URL('/login?verified=1', request.url))
 }

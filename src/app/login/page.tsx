@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 
@@ -10,6 +10,8 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const justVerified = searchParams.get('verified') === '1'
   const { setUser } = useAuth()
 
   async function handleSubmit(e: React.FormEvent) {
@@ -42,6 +44,7 @@ export default function LoginPage() {
         </div>
         <div className="bg-[#111827] rounded-2xl p-8">
           <h2 className="text-2xl font-bold text-white mb-6">Welcome Back</h2>
+          {justVerified && <div className="bg-green-900/50 border border-green-500 text-green-300 rounded-lg p-3 mb-4 text-sm">Email verified! You can now log in.</div>}
           {error && <div className="bg-red-900/50 border border-red-500 text-red-300 rounded-lg p-3 mb-4 text-sm">{error}</div>}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

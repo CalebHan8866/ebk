@@ -635,7 +635,7 @@ app.prepare().then(async () => {
   })
 
   const io = new SocketServer(httpServer, {
-    cors: { origin: '*', methods: ['GET', 'POST'] },
+    cors: { origin: process.env.APP_URL || 'http://localhost:3000', methods: ['GET', 'POST'] },
     path: '/socket.io',
   })
 
@@ -645,6 +645,8 @@ app.prepare().then(async () => {
     socket.on('create-room', ({ teamMode, series, difficulty, userName, userId }: {
       teamMode: TeamMode, series: SeriesLength, difficulty: Difficulty, userName: string, userId: string | null
     }) => {
+      if (!['starter5', 'bench8', 'full12'].includes(teamMode)) return
+      if (![1, 3, 5].includes(series)) return
       userName = (userName ?? '').trim().slice(0, 20) || 'Player'
       let code = generateCode()
       while (rooms.has(code)) code = generateCode()
@@ -712,6 +714,9 @@ app.prepare().then(async () => {
 
       if ((currentPicker === 'host' && !isHost) || (currentPicker === 'guest' && !isGuest)) return
       if (room.hostPicks.includes(playerId) || room.guestPicks.includes(playerId)) return
+      if (!allPlayers.find(p => p.id === playerId)) {
+        socket.emit('pick-error', { message: 'Invalid player' }); return
+      }
 
       // Validate spun team constraint
       if (room.currentSpunTeam) {
@@ -868,6 +873,8 @@ app.prepare().then(async () => {
     socket.on('create-listing', async ({ userName, userId, teamMode, series }: {
       userName: string, userId: string, teamMode: TeamMode, series: SeriesLength
     }) => {
+      if (!['starter5', 'bench8', 'full12'].includes(teamMode)) return
+      if (![1, 3, 5].includes(series)) return
       userName = (userName ?? '').trim().slice(0, 20) || 'Player'
       // Remove any stale listing by this socket
       for (const [c, l] of gameListings.entries()) {
@@ -1001,6 +1008,7 @@ app.prepare().then(async () => {
     socket.on('decline-match', ({ code }: { code: string }) => {
       const rr = readyRooms.get(code)
       if (!rr) return
+      if (socket.id !== rr.hostEntry.socketId && socket.id !== rr.guestEntry.socketId) return
       clearTimeout(rr.timer)
       readyRooms.delete(code)
       const isHost = socket.id === rr.hostEntry.socketId

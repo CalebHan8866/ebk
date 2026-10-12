@@ -8,7 +8,7 @@ import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
-    const ip = request.headers.get('x-forwarded-for') ?? 'unknown'
+    const ip = (request.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
     const { success } = rateLimit(`forgot:${ip}`, 5, 60 * 60 * 1000) // 5 attempts per hour per IP
     if (!success) return NextResponse.json({ error: 'Too many requests. Try again in an hour.' }, { status: 429 })
 

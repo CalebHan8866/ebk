@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
-
-const prisma = new PrismaClient()
 
 // In-memory cache — players rarely change (only on deploy)
 let cache: { data: unknown; at: number } | null = null

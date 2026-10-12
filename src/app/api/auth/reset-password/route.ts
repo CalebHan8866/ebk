@@ -7,13 +7,14 @@ import { rateLimit } from '@/lib/ratelimit'
 
 export async function POST(request: NextRequest) {
   try {
-    const ip = request.headers.get('x-forwarded-for') ?? 'unknown'
+    const ip = (request.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
     const { success } = rateLimit(`reset-pw:${ip}`, 10, 60 * 60 * 1000) // 10 attempts per hour per IP
     if (!success) return NextResponse.json({ error: 'Too many attempts. Try again in an hour.' }, { status: 429 })
 
     const { token, password } = await request.json()
     if (!token || !password) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     if (password.length < 6) return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
+    if (password.length > 72) return NextResponse.json({ error: 'Password must be 72 characters or less' }, { status: 400 })
 
     const user = await prisma.user.findFirst({
       where: {

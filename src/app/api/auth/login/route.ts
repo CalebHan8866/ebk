@@ -9,7 +9,7 @@ import { rateLimit } from '@/lib/ratelimit'
 
 export async function POST(request: NextRequest) {
   try {
-    const ip = request.headers.get('x-forwarded-for') ?? 'unknown'
+    const ip = (request.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
     const loadTestSecret = request.headers.get('x-load-test-secret')
     const isLoadTest = !!process.env.DEV_SECRET && loadTestSecret === process.env.DEV_SECRET
     if (!isLoadTest) {
@@ -20,7 +20,12 @@ export async function POST(request: NextRequest) {
     const { email, password } = await request.json()
     const user = await prisma.user.findUnique({ where: { email } })
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    // Always run bcrypt to prevent timing-based email enumeration
+    const DUMMY_HASH = '$2a$12$irrelevant.hash.to.prevent.timing.sidechannel.XXXXXXXXX'
+    const passwordMatch = user
+      ? await bcrypt.compare(password, user.password)
+      : await bcrypt.compare(password, DUMMY_HASH)
+    if (!user || !passwordMatch) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 

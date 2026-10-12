@@ -205,6 +205,11 @@ function GameContent() {
     const handleRoomState = ({ room, players }: { room: Room; players: Player[] }) => {
       playersRef.current = players
       setRoom(room); setPlayers(players)
+      if (room.status === 'complete') {
+        const winner = room.hostSeriesScore > room.guestSeriesScore ? 'host'
+          : room.guestSeriesScore > room.hostSeriesScore ? 'guest' : 'draw'
+        setSeriesWinner(winner)
+      }
     }
     const handleDraftStarted = ({ room, players }: { room: Room; players: Player[] }) => {
       playersRef.current = players
@@ -229,6 +234,8 @@ function GameContent() {
       setCurrentPickerInTimer(picker)
       setPickError(null)
       setSearchQuery('')
+      setFilterPos('ALL')
+      setShuffledIds([]) // clear old team's pool immediately — refilled after spin animation
 
       // Spinner animation: 3 phases (fast → medium → slow → stop)
       if (spinIntervalRef.current) clearInterval(spinIntervalRef.current)
