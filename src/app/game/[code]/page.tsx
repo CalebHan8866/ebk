@@ -897,12 +897,6 @@ function GameContent() {
                   </div>
                 )}
 
-                {selectedPlayer && (
-                  <div className="mb-2 bg-orange-600/10 border border-orange-500 rounded-lg px-3 py-2 text-xs text-orange-300 flex items-center justify-between">
-                    <span><span className="font-black text-orange-400">{selectedPlayer.firstName} {selectedPlayer.lastName}</span> selected — tap a slot</span>
-                    <button onClick={() => setSelectedPlayerId(null)} className="text-orange-400 hover:text-white ml-2">✕</button>
-                  </div>
-                )}
 
                 {/* Emote bar */}
                 {myEmotes.length > 0 && (
@@ -933,40 +927,60 @@ function GameContent() {
                     const canPick = !isSpinning && spunTeam !== null && !takenIds.has(player.id)
                     const isSelected = selectedPlayerId === player.id
                     const statVal = getStatValue(player, statMode)
+                    const validSlots = canPick ? getValidSlots(player) : new Set<number>()
+                    const hasMultipleSlots = isSelected && validSlots.size > 1
 
                     return (
-                      <button
+                      <div
                         key={player.id}
-                        onClick={() => canPick && selectAndPick(player.id)}
-                        disabled={!canPick}
-                        className={`w-full rounded-xl px-3 py-2.5 flex items-center gap-2 text-left transition-all ${
+                        className={`w-full rounded-xl px-3 py-2.5 text-left transition-all ${
                           isSelected
-                            ? 'bg-orange-600/30 border-2 border-orange-500 cursor-pointer'
+                            ? 'bg-orange-600/30 border-2 border-orange-500'
                             : canPick
                             ? 'bg-[#111827] hover:bg-[#1e2d45] hover:border-orange-500 border-2 border-transparent cursor-pointer'
-                            : 'bg-[#0D0D0D] border-2 border-transparent cursor-default opacity-50'
+                            : 'bg-[#0D0D0D] border-2 border-transparent opacity-50'
                         }`}
                       >
-                        <div className="flex-1 min-w-0">
-                          <div className="text-white font-bold text-sm truncate">{player.firstName} {player.lastName}</div>
-                          <div className="text-gray-500 text-xs truncate">{player.team} · {player.yearFrom}–{player.yearTo}</div>
-                        </div>
-                        <div className="flex gap-1 shrink-0">
-                          {playerPositions.map((pos: string) => (
-                            <span key={pos} className="text-xs bg-orange-600/20 text-orange-400 px-1.5 py-0.5 rounded font-bold">{pos}</span>
-                          ))}
-                        </div>
-                        {room.difficulty === 'casual' && (
-                          <div className="text-right shrink-0 min-w-[48px]">
-                            <div className="text-white font-black text-sm">
-                              {statMode === 'games_played' ? statVal : statVal.toFixed(1)}
+                        <button
+                          className="w-full flex items-center gap-2"
+                          onClick={() => canPick && selectAndPick(player.id)}
+                          disabled={!canPick}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="text-white font-bold text-sm truncate">{player.firstName} {player.lastName}</div>
+                            <div className="text-gray-500 text-xs truncate">{player.team} · {player.yearFrom}–{player.yearTo}</div>
+                          </div>
+                          <div className="flex gap-1 shrink-0">
+                            {playerPositions.map((pos: string) => (
+                              <span key={pos} className="text-xs bg-orange-600/20 text-orange-400 px-1.5 py-0.5 rounded font-bold">{pos}</span>
+                            ))}
+                          </div>
+                          {room.difficulty === 'casual' && (
+                            <div className="text-right shrink-0 min-w-[48px]">
+                              <div className="text-white font-black text-sm">
+                                {statMode === 'games_played' ? statVal : statVal.toFixed(1)}
+                              </div>
+                              <div className="text-gray-500 text-xs">
+                                {statMode === 'games_played' ? 'GP' : statMode.toUpperCase()}
+                              </div>
                             </div>
-                            <div className="text-gray-500 text-xs">
-                              {statMode === 'games_played' ? 'GP' : statMode.toUpperCase()}
-                            </div>
+                          )}
+                        </button>
+                        {hasMultipleSlots && (
+                          <div className="flex gap-2 mt-2 flex-wrap" onClick={e => e.stopPropagation()}>
+                            <span className="text-orange-300 text-xs self-center">Pick slot:</span>
+                            {[...validSlots].map(slotIdx => (
+                              <button
+                                key={slotIdx}
+                                onClick={() => pickIntoSlot(slotIdx)}
+                                className="bg-orange-600 hover:bg-orange-500 text-white text-xs font-black px-3 py-1 rounded-lg transition-colors"
+                              >
+                                {requiredSlots[slotIdx] === 'BENCH' ? 'BENCH' : requiredSlots[slotIdx]}
+                              </button>
+                            ))}
                           </div>
                         )}
-                      </button>
+                      </div>
                     )
                   })}
                 </div>
