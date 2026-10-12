@@ -624,9 +624,74 @@ function GameContent() {
           {isMyTurn ? 'YOUR PICK' : `${currentPicker === 'host' ? room.hostName : room.guestName}&apos;s pick...`}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* My Team */}
-          <div className="bg-[#111827] rounded-2xl p-4">
+        {/* Mobile: teams side by side on top. Desktop: 4-col grid */}
+
+        {/* Teams row — always visible, compact on mobile */}
+        <div className="grid grid-cols-2 gap-2 mb-4 lg:hidden">
+          {/* My Team (mobile) */}
+          <div className="bg-[#111827] rounded-2xl p-3">
+            <div className="text-orange-400 font-black text-xs mb-2 truncate">
+              {myName2} <span className="text-gray-500 font-normal">({myPicks.length}/{teamSize})</span>
+            </div>
+            <div className="space-y-1">
+              {requiredSlots.map((slotPos, i) => {
+                const pickedPlayer = mySlots[i]
+                const isBench = slotPos === 'BENCH'
+                const displayLabel = isBench ? 'BN' : slotPos
+                const validSlots = selectedPlayer ? getValidSlots(selectedPlayer) : new Set<number>()
+                const isValidTarget = isMyTurn && selectedPlayer !== null && validSlots.has(i) && pickedPlayer === null
+                const isBlocked = isMyTurn && selectedPlayer !== null && !validSlots.has(i) && pickedPlayer === null
+                return (
+                  <div
+                    key={i}
+                    onClick={() => isValidTarget ? pickIntoSlot(i) : undefined}
+                    className={`rounded px-2 py-1 text-xs flex items-center gap-1.5 transition-all ${
+                      isValidTarget
+                        ? 'bg-orange-600/20 border border-orange-500 cursor-pointer'
+                        : isBlocked
+                        ? 'bg-[#0A0A0A] border border-dashed border-gray-800 opacity-30'
+                        : pickedPlayer
+                        ? 'bg-[#0A0A0A]'
+                        : 'bg-[#0A0A0A] border border-dashed border-gray-700'
+                    }`}
+                  >
+                    <span className={`font-bold w-6 shrink-0 text-[10px] ${isBench ? 'text-gray-600' : 'text-orange-400'}`}>{displayLabel}</span>
+                    <span className={`truncate ${pickedPlayer ? 'text-white' : isValidTarget ? 'text-orange-300' : 'text-gray-600'}`}>
+                      {pickedPlayer ? pickedPlayer.lastName : isValidTarget ? 'tap' : '—'}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Opponent Team (mobile) */}
+          <div className="bg-[#111827] rounded-2xl p-3">
+            <div className="text-blue-400 font-black text-xs mb-2 truncate">
+              {oppName} <span className="text-gray-500 font-normal">({oppPicks.length}/{teamSize})</span>
+            </div>
+            <div className="space-y-1">
+              {requiredSlots.map((slotPos, i) => {
+                const pickedPlayer = oppSlots[i]
+                const isBench = slotPos === 'BENCH'
+                const displayLabel = isBench ? 'BN' : slotPos
+                return (
+                  <div key={i} className={`rounded px-2 py-1 text-xs flex items-center gap-1.5 bg-[#0A0A0A] ${!pickedPlayer ? 'border border-dashed border-gray-700' : ''}`}>
+                    <span className={`font-bold w-6 shrink-0 text-[10px] ${isBench ? 'text-gray-600' : 'text-blue-400'}`}>{displayLabel}</span>
+                    <span className={`truncate ${pickedPlayer ? 'text-white' : 'text-gray-600'}`}>
+                      {pickedPlayer ? pickedPlayer.lastName : '—'}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Player pool (mobile: full width, desktop: inside 4-col grid) */}
+        <div className="lg:grid lg:grid-cols-4 lg:gap-4">
+          {/* My Team (desktop only) */}
+          <div className="hidden lg:block bg-[#111827] rounded-2xl p-4">
             <h3 className="text-white font-black text-sm mb-3">
               {myName2} <span className="text-gray-500 font-normal">({myPicks.length}/{teamSize})</span>
             </h3>
@@ -652,9 +717,7 @@ function GameContent() {
                         : 'bg-[#0A0A0A] border border-dashed border-gray-700'
                     }`}
                   >
-                    <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-600' : 'text-orange-400'}`}>
-                      {displayLabel}
-                    </span>
+                    <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-600' : 'text-orange-400'}`}>{displayLabel}</span>
                     {pickedPlayer ? (
                       <span className="text-white truncate">{pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-gray-500">({pickedPlayer.team})</span></span>
                     ) : (
@@ -680,7 +743,7 @@ function GameContent() {
               }`}>
                 {spinDisplay}
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 {isSpinning ? (
                   <div>
                     <div className="text-yellow-400 font-black text-sm">Spinning...</div>
@@ -688,8 +751,8 @@ function GameContent() {
                   </div>
                 ) : spunTeam && spunTeamInfo ? (
                   <div>
-                    <div className="text-white font-black text-sm">{spunTeamInfo.city} {spunTeamInfo.name}</div>
-                    <div className="text-gray-400 text-xs">{filteredPlayers.length} available · Pick from this team only</div>
+                    <div className="text-white font-black text-sm truncate">{spunTeamInfo.city} {spunTeamInfo.name}</div>
+                    <div className="text-gray-400 text-xs">{filteredPlayers.length} available</div>
                   </div>
                 ) : (
                   <div className="text-gray-500 text-sm">Waiting for spin...</div>
@@ -771,8 +834,8 @@ function GameContent() {
             )}
 
             {isSpinning && (
-              <div className="flex items-center justify-center h-24 rounded-xl bg-yellow-900/10 border border-yellow-600/30 mb-3">
-                <p className="text-yellow-400 font-bold text-sm animate-pulse">🔒 Locked — waiting for spin to finish...</p>
+              <div className="flex items-center justify-center h-16 rounded-xl bg-yellow-900/10 border border-yellow-600/30 mb-3">
+                <p className="text-yellow-400 font-bold text-sm animate-pulse">Locked — waiting for spin...</p>
               </div>
             )}
 
@@ -806,7 +869,7 @@ function GameContent() {
               </div>
             )}
 
-            <div className="space-y-1.5 max-h-[60vh] overflow-y-auto pr-1">
+            <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1">
               {filteredPlayers.map(player => {
                 const playerPositions = player.positions.split(',')
                 const canPick = isMyTurn && !isSpinning && spunTeam !== null && !takenIds.has(player.id)
@@ -818,7 +881,7 @@ function GameContent() {
                     key={player.id}
                     onClick={() => canPick && selectAndPick(player.id)}
                     disabled={!canPick}
-                    className={`w-full rounded-xl px-4 py-3 flex items-center gap-3 text-left transition-all ${
+                    className={`w-full rounded-xl px-3 py-2.5 flex items-center gap-2 text-left transition-all ${
                       isSelected
                         ? 'bg-orange-600/30 border-2 border-orange-500 cursor-pointer'
                         : canPick
@@ -828,7 +891,7 @@ function GameContent() {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="text-white font-bold text-sm truncate">{player.firstName} {player.lastName}</div>
-                      <div className="text-gray-500 text-xs">{player.team} · {player.yearFrom}–{player.yearTo}</div>
+                      <div className="text-gray-500 text-xs truncate">{player.team} · {player.yearFrom}–{player.yearTo}</div>
                     </div>
                     <div className="flex gap-1 shrink-0">
                       {playerPositions.map((pos: string) => (
@@ -836,7 +899,7 @@ function GameContent() {
                       ))}
                     </div>
                     {room.difficulty === 'casual' && (
-                      <div className="text-right shrink-0 min-w-[56px]">
+                      <div className="text-right shrink-0 min-w-[48px]">
                         <div className="text-white font-black text-sm">
                           {statMode === 'games_played' ? statVal : statVal.toFixed(1)}
                         </div>
@@ -851,8 +914,8 @@ function GameContent() {
             </div>
           </div>
 
-          {/* Opponent Team */}
-          <div className="bg-[#111827] rounded-2xl p-4">
+          {/* Opponent Team (desktop only) */}
+          <div className="hidden lg:block bg-[#111827] rounded-2xl p-4">
             <h3 className="text-white font-black text-sm mb-3">
               {oppName} <span className="text-gray-500 font-normal">({oppPicks.length}/{teamSize})</span>
             </h3>
@@ -863,9 +926,7 @@ function GameContent() {
                 const displayLabel = isBench ? 'BN' : slotPos
                 return (
                   <div key={i} className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 bg-[#0A0A0A] ${!pickedPlayer ? 'border border-dashed border-gray-700' : ''}`}>
-                    <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-600' : 'text-blue-400'}`}>
-                      {displayLabel}
-                    </span>
+                    <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-600' : 'text-blue-400'}`}>{displayLabel}</span>
                     {pickedPlayer ? (
                       <span className="text-white truncate">{pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-gray-500">({pickedPlayer.team})</span></span>
                     ) : (
