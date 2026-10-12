@@ -4,10 +4,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { sendVerificationEmail } from '@/lib/email'
+import { rateLimit } from '@/lib/ratelimit'
 import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for') ?? 'unknown'
+    const { success } = rateLimit(`register:${ip}`, 5, 60 * 60 * 1000) // 5 signups per hour per IP
+    if (!success) return NextResponse.json({ error: 'Too many signup attempts. Try again in an hour.' }, { status: 429 })
+
     const { username, email, password } = await request.json()
     if (!username || !email || !password) return NextResponse.json({ error: 'All fields required' }, { status: 400 })
     if (password.length < 6) return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
