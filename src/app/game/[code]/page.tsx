@@ -373,21 +373,21 @@ function GameContent() {
     const iWon = seriesWinner === role
     const isDraw = seriesWinner === 'draw'
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4 py-10">
-        <div className="max-w-md w-full">
+      <div className="min-h-screen bg-[#0A0A0A] px-4 py-8 overflow-y-auto">
+        <div className="max-w-md w-full mx-auto">
           {/* Result header */}
-          <div className="text-center mb-8">
-            <div className={`font-display leading-none mb-3 ${iWon ? 'text-orange-500' : isDraw ? 'text-gray-400' : 'text-gray-600'}`}
-              style={{ fontSize: 'clamp(5rem, 20vw, 8rem)' }}>
+          <div className="text-center mb-6">
+            <div className={`font-display leading-none mb-2 ${iWon ? 'text-orange-500' : isDraw ? 'text-gray-400' : 'text-gray-600'}`}
+              style={{ fontSize: 'clamp(4rem, 18vw, 7rem)' }}>
               {iWon ? 'W' : isDraw ? 'DRAW' : 'L'}
             </div>
-            <div className="text-white font-black text-xl mb-2">
+            <div className="text-white font-black text-lg mb-1">
               {iWon ? 'Series Win' : isDraw ? 'Series Draw' : 'Series Loss'}
             </div>
-            <div className="text-orange-400 font-black text-3xl tracking-tight">
+            <div className="text-orange-400 font-black text-2xl tracking-tight">
               {room.hostSeriesScore} <span className="text-gray-600">–</span> {room.guestSeriesScore}
             </div>
-            <div className="text-gray-500 text-sm mt-1">{room.hostName} vs {room.guestName}</div>
+            <div className="text-gray-500 text-xs mt-1 truncate">{room.hostName} vs {room.guestName}</div>
           </div>
 
           {timeoutWarning && (
@@ -398,8 +398,8 @@ function GameContent() {
 
           {/* Unlock toast */}
           {unlockedToast && unlockedToast.length > 0 && (
-            <div className="bg-orange-900/30 border border-orange-500 rounded-2xl px-5 py-4 mb-4">
-              <div className="text-orange-400 font-black text-sm mb-2 uppercase tracking-widest">Unlocked!</div>
+            <div className="bg-orange-900/30 border border-orange-500 rounded-2xl px-4 py-3 mb-4">
+              <div className="text-orange-400 font-black text-xs mb-2 uppercase tracking-widest">Unlocked!</div>
               <div className="space-y-1">
                 {unlockedToast.map((item, i) => (
                   <div key={i} className="text-white text-sm font-semibold">
@@ -413,8 +413,8 @@ function GameContent() {
 
           {/* Game-by-game breakdown */}
           {room.gameResults.length > 0 && (
-            <div className="bg-[#111] rounded-3xl p-5 mb-5">
-              <div className="text-gray-600 text-xs uppercase tracking-widest mb-4">Game by Game</div>
+            <div className="bg-[#111] rounded-3xl p-4 mb-4">
+              <div className="text-gray-600 text-xs uppercase tracking-widest mb-3">Game by Game</div>
               <div className="space-y-2">
                 {room.gameResults.map(r => {
                   const myTotal = role === 'host' ? r.hostTotal : r.guestTotal
@@ -422,15 +422,15 @@ function GameContent() {
                   const gameWon = r.winner === role
                   const gameDraw = r.winner === 'draw'
                   return (
-                    <div key={r.game} className="flex items-center bg-[#0A0A0A] rounded-2xl px-4 py-3 gap-3">
-                      <div className="w-14 shrink-0 text-gray-600 text-xs font-bold">G{r.game}</div>
+                    <div key={r.game} className="flex items-center bg-[#0A0A0A] rounded-2xl px-3 py-2.5 gap-2">
+                      <div className="w-10 shrink-0 text-gray-600 text-xs font-bold">G{r.game}</div>
                       <div className="flex-1 min-w-0">
                         <div className="text-white font-black text-sm">
                           {formatStat(myTotal, r.statMode)} <span className="text-gray-600">–</span> {formatStat(oppTotal, r.statMode)}
                         </div>
                         <div className="text-gray-600 text-xs truncate">{STAT_LABELS[r.statMode]}</div>
                       </div>
-                      <div className={`font-display text-lg leading-none shrink-0 ${gameWon ? 'text-green-400' : gameDraw ? 'text-yellow-400' : 'text-red-500'}`}>
+                      <div className={`font-display text-base leading-none shrink-0 ${gameWon ? 'text-green-400' : gameDraw ? 'text-yellow-400' : 'text-red-500'}`}>
                         {gameWon ? 'W' : gameDraw ? 'D' : 'L'}
                       </div>
                     </div>
@@ -456,49 +456,52 @@ function GameContent() {
     const isDraw = lastResult.winner === 'draw'
 
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4 py-10">
-        <div className="max-w-md w-full">
+      <div className="min-h-screen bg-[#0A0A0A] px-4 py-8 overflow-y-auto">
+        <div className="max-w-md w-full mx-auto">
           {/* Result header */}
-          <div className="text-center mb-8">
-            <div className={`font-display leading-none mb-3 ${iWon ? 'text-orange-500' : isDraw ? 'text-gray-400' : 'text-gray-600'}`}
-              style={{ fontSize: 'clamp(5rem, 20vw, 8rem)' }}>
+          <div className="text-center mb-6">
+            <div className={`font-display leading-none mb-2 ${iWon ? 'text-orange-500' : isDraw ? 'text-gray-400' : 'text-gray-600'}`}
+              style={{ fontSize: 'clamp(4rem, 18vw, 7rem)' }}>
               {iWon ? 'W' : isDraw ? 'D' : 'L'}
             </div>
-            <div className="text-white font-black text-xl">
+            <div className="text-white font-black text-lg">
               {iWon ? `Game ${lastResult.game} — You Win` : isDraw ? `Game ${lastResult.game} — Draw` : `Game ${lastResult.game} — You Lose`}
             </div>
             <div className="text-gray-500 text-sm mt-1">{STAT_LABELS[lastResult.statMode]}</div>
           </div>
 
           {/* Score cards */}
-          <div className="grid grid-cols-2 gap-3 mb-5">
+          <div className="grid grid-cols-2 gap-3 mb-4">
             {([{ name: myName2, total: myTotal, isMe: true }, { name: oppName, total: oppTotal, isMe: false }] as const).map(side => {
               const isWinner = (side.isMe && iWon) || (!side.isMe && !iWon && !isDraw)
               return (
-                <div key={side.name} className={`rounded-3xl p-6 text-center transition-all ${
+                <div key={side.name} className={`rounded-2xl p-4 text-center transition-all ${
                   isWinner
                     ? 'bg-green-900/20 border-2 border-green-500'
                     : isDraw
                     ? 'bg-[#111] border-2 border-gray-700'
                     : 'bg-[#0D0D0D] border-2 border-[#1a1a1a]'
                 }`}>
-                  <div className="text-gray-500 text-xs uppercase tracking-widest mb-3 truncate">{side.name}</div>
-                  <div className={`font-display text-5xl leading-none mb-1 ${isWinner ? 'text-green-400' : 'text-white'}`}>
+                  <div className="text-gray-500 text-xs uppercase tracking-widest mb-2 truncate">{side.name}</div>
+                  <div className={`font-display leading-none mb-1 ${isWinner ? 'text-green-400' : 'text-white'}`}
+                    style={{ fontSize: 'clamp(2rem, 10vw, 3rem)' }}>
                     {formatStat(side.total, lastResult.statMode)}
                   </div>
-                  <div className="text-gray-600 text-xs">{getStatUnit(lastResult.statMode)}</div>
+                  <div className="text-gray-600 text-xs leading-tight">{getStatUnit(lastResult.statMode)}</div>
                 </div>
               )
             })}
           </div>
 
           {/* Series score */}
-          <div className="bg-[#111] rounded-2xl px-6 py-4 mb-6 text-center">
+          <div className="bg-[#111] rounded-2xl px-4 py-3 mb-4 text-center">
             <div className="text-gray-600 text-xs uppercase tracking-widest mb-1">Series</div>
-            <div className="text-white font-black text-2xl tracking-tight">
-              {room.hostName} <span className="text-orange-400">{room.hostSeriesScore}</span>
-              <span className="text-gray-600 mx-3">–</span>
-              <span className="text-orange-400">{room.guestSeriesScore}</span> {room.guestName}
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <span className="text-white font-black text-lg truncate max-w-[100px]">{room.hostName}</span>
+              <span className="text-orange-400 font-black text-2xl">{room.hostSeriesScore}</span>
+              <span className="text-gray-600 text-xl">–</span>
+              <span className="text-orange-400 font-black text-2xl">{room.guestSeriesScore}</span>
+              <span className="text-white font-black text-lg truncate max-w-[100px]">{room.guestName}</span>
             </div>
           </div>
 
