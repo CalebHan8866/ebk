@@ -228,6 +228,7 @@ function GameContent() {
       setPickTimeLeft(duration)
       setCurrentPickerInTimer(picker)
       setPickError(null)
+      setSearchQuery('')
 
       // Spinner animation: 3 phases (fast → medium → slow → stop)
       if (spinIntervalRef.current) clearInterval(spinIntervalRef.current)
