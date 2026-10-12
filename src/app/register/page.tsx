@@ -39,9 +39,11 @@ export default function RegisterPage() {
           <p className="text-gray-400 mb-4">
             We sent a verification link to <span className="text-orange-400">{email}</span>.
           </p>
-          <p className="text-gray-500 text-sm mb-8">
-            In development mode, the link is printed in the <strong className="text-gray-300">server terminal</strong> — check your terminal window where <code className="text-orange-400">npm run dev</code> is running.
-          </p>
+          {process.env.NODE_ENV === 'development' && (
+            <p className="text-gray-500 text-sm mb-8">
+              Dev mode: link is in the <strong className="text-gray-300">server terminal</strong>.
+            </p>
+          )}
           <Link href="/login" className="text-orange-400 hover:text-orange-300 font-semibold">
             Go to Login
           </Link>
