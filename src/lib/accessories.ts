@@ -1,8 +1,11 @@
+// Twemoji CDN — full-color illustrated SVGs of each object
+const tw = (cp: string) => `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${cp}.svg`
+
 export interface Badge {
   id: string
   name: string
   label: string
-  icon: string
+  icon: string   // Twemoji SVG URL
   description: string
   bgClass: string
   textClass: string
@@ -34,7 +37,7 @@ export const BADGES: Badge[] = [
     id: 'bench',
     name: 'Bench Warmer',
     label: 'BENCH',
-    icon: '🪑',
+    icon: tw('1fa91'),   // 🪑 bench / chair
     description: 'Play your first game',
     bgClass: 'bg-gray-800',
     textClass: 'text-gray-400',
@@ -45,7 +48,7 @@ export const BADGES: Badge[] = [
     id: 'rotation',
     name: 'Rotation',
     label: 'ROT',
-    icon: '🔄',
+    icon: tw('1f504'),   // 🔄 arrows
     description: 'Win 25 games',
     bgClass: 'bg-blue-900/50',
     textClass: 'text-blue-400',
@@ -56,7 +59,7 @@ export const BADGES: Badge[] = [
     id: 'starter',
     name: 'Starter',
     label: 'START',
-    icon: '⭐',
+    icon: tw('2b50'),    // ⭐ star
     description: 'Win 75 games',
     bgClass: 'bg-green-900/50',
     textClass: 'text-green-400',
@@ -67,7 +70,7 @@ export const BADGES: Badge[] = [
     id: 'allstar',
     name: 'All-Star',
     label: 'ALL-STAR',
-    icon: '🌟',
+    icon: tw('1f31f'),   // 🌟 glowing star
     description: 'Win 200 games',
     bgClass: 'bg-yellow-900/50',
     textClass: 'text-yellow-400',
@@ -78,7 +81,7 @@ export const BADGES: Badge[] = [
     id: 'mvp',
     name: 'MVP',
     label: 'MVP',
-    icon: '🏆',
+    icon: tw('1f3c6'),   // 🏆 trophy
     description: 'Win 500 games',
     bgClass: 'bg-orange-900/50',
     textClass: 'text-orange-400',
@@ -89,7 +92,7 @@ export const BADGES: Badge[] = [
     id: 'goat',
     name: 'GOAT',
     label: 'GOAT',
-    icon: '🐐',
+    icon: tw('1f410'),   // 🐐 goat
     description: 'Win 1,000 games',
     bgClass: 'bg-purple-900/50',
     textClass: 'text-purple-400',
@@ -100,7 +103,7 @@ export const BADGES: Badge[] = [
     id: 'hot',
     name: 'Hot Streak',
     label: 'HOT',
-    icon: '🔥',
+    icon: tw('1f525'),   // 🔥 fire
     description: 'Win 5 in a row',
     bgClass: 'bg-red-900/50',
     textClass: 'text-red-400',
@@ -111,7 +114,7 @@ export const BADGES: Badge[] = [
     id: 'locked_in',
     name: 'Locked In',
     label: '10x',
-    icon: '💎',
+    icon: tw('1f48e'),   // 💎 gem / diamond
     description: 'Win 10 in a row',
     bgClass: 'bg-white/10',
     textClass: 'text-white',
@@ -122,7 +125,7 @@ export const BADGES: Badge[] = [
     id: 'jc_25',
     name: 'JC Curious',
     label: 'JC',
-    icon: '🏀',
+    icon: tw('1f3c0'),   // 🏀 basketball
     description: 'Draft Jameson Curry in 25 games',
     bgClass: 'bg-amber-900/50',
     textClass: 'text-amber-400',
@@ -133,7 +136,7 @@ export const BADGES: Badge[] = [
     id: 'jc_50',
     name: 'JC Fan',
     label: 'JC ★',
-    icon: '🎯',
+    icon: tw('1f3af'),   // 🎯 bullseye
     description: 'Draft Jameson Curry in 50 games',
     bgClass: 'bg-amber-800/50',
     textClass: 'text-amber-300',
@@ -144,7 +147,7 @@ export const BADGES: Badge[] = [
     id: 'jc_100',
     name: 'JC Loyalist',
     label: 'JC ★★',
-    icon: '👑',
+    icon: tw('1f451'),   // 👑 crown
     description: 'Draft Jameson Curry in 100 games',
     bgClass: 'bg-yellow-900/50',
     textClass: 'text-yellow-300',
@@ -155,7 +158,7 @@ export const BADGES: Badge[] = [
     id: 'jc_500',
     name: 'JAMESON',
     label: 'JAMESON',
-    icon: '🌊',
+    icon: tw('1f30a'),   // 🌊 wave
     description: 'Draft Jameson Curry in 500 games',
     bgClass: 'bg-gradient-to-br from-amber-900/60 to-orange-900/60',
     textClass: 'text-amber-200',

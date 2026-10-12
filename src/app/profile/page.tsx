@@ -150,11 +150,8 @@ export default function ProfilePage() {
 
         {/* Badges */}
         <div className="bg-[#101010] rounded-2xl p-6">
-          <div className="flex items-baseline justify-between mb-1">
-            <h2 className="font-display text-xl text-white tracking-wider">Badges</h2>
-            <span className="text-gray-600 text-xs">{unlockedBadgeIds.length} / {BADGES.length} unlocked</span>
-          </div>
-          <p className="text-gray-500 text-xs mb-4">Unlock badges by hitting milestones. Tap to equip up to 3.</p>
+          <h2 className="font-display text-xl text-white tracking-wider mb-1">Badges</h2>
+          <p className="text-gray-500 text-xs mb-4">Badges are a mystery — keep playing to discover them. Tap to equip up to 3.</p>
 
           {/* Equipped badge slots */}
           <div className="flex gap-2 mb-5">
@@ -163,13 +160,13 @@ export default function ProfilePage() {
               const badge = badgeId ? BADGES.find(b => b.id === badgeId) : null
               return (
                 <div key={slot} className={[
-                  'flex-1 rounded-xl border-2 border-dashed h-16 flex flex-col items-center justify-center transition-all',
+                  'flex-1 rounded-xl border-2 border-dashed h-20 flex flex-col items-center justify-center transition-all',
                   badge ? `${badge.bgClass} ${badge.borderClass} border-solid` : 'border-gray-800 bg-[#0A0A0A]',
                 ].join(' ')}>
                   {badge ? (
                     <>
-                      <span className="text-xl leading-none">{badge.icon}</span>
-                      <span className={`text-[10px] font-black mt-1 ${badge.textClass}`}>{badge.label}</span>
+                      <img src={badge.icon} alt={badge.name} className="w-8 h-8 mb-1" />
+                      <span className={`text-[10px] font-black ${badge.textClass}`}>{badge.label}</span>
                     </>
                   ) : (
                     <span className="text-gray-700 text-xs">slot {slot + 1}</span>
@@ -180,7 +177,10 @@ export default function ProfilePage() {
           </div>
 
           {unlockedBadgeIds.length === 0 ? (
-            <p className="text-gray-600 text-sm text-center py-4">Play games to unlock badges</p>
+            <div className="text-center py-6">
+              <div className="text-4xl mb-2">🔒</div>
+              <p className="text-gray-600 text-sm">No badges yet — keep playing</p>
+            </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {BADGES.filter(badge => unlockedBadgeIds.includes(badge.id)).map(badge => {
@@ -190,27 +190,19 @@ export default function ProfilePage() {
                     key={badge.id}
                     onClick={() => equipItem('badge', badge.id)}
                     className={[
-                      'relative rounded-xl p-3 text-left border transition-all cursor-pointer hover:brightness-110',
+                      'relative rounded-xl p-4 text-left border transition-all cursor-pointer hover:brightness-110',
                       isEquipped ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-[#101010]' : '',
                       badge.bgClass,
                       badge.borderClass,
                     ].join(' ')}
                   >
                     {isEquipped && (
-                      <span className="absolute top-1.5 right-2 text-[9px] font-bold text-orange-400 uppercase tracking-wider">
-                        ✓ on
+                      <span className="absolute top-2 right-2 text-[9px] font-bold text-orange-400 uppercase tracking-wider">
+                        ✓ equipped
                       </span>
                     )}
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xl leading-none">{badge.icon}</span>
-                      <span className={[
-                        'text-[11px] font-black tracking-wider px-1.5 py-0.5 rounded border',
-                        badge.bgClass, badge.textClass, badge.borderClass,
-                      ].join(' ')}>
-                        {badge.label}
-                      </span>
-                    </div>
-                    <div className="text-sm font-bold text-white">{badge.name}</div>
+                    <img src={badge.icon} alt={badge.name} className="w-10 h-10 mb-2" />
+                    <div className="text-sm font-black text-white">{badge.name}</div>
                     <div className="text-xs text-gray-500 mt-0.5">{badge.description}</div>
                   </button>
                 )

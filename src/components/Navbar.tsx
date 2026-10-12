@@ -48,12 +48,10 @@ export default function Navbar() {
                 <span>{user.username}</span>
                 {equippedBadgeObjects.map(badge => (
                   <span key={badge.id} className={[
-                    'inline-block text-[10px] font-black tracking-wider px-1.5 py-0.5 rounded border',
-                    badge.bgClass,
-                    badge.textClass,
-                    badge.borderClass,
+                    'inline-flex items-center justify-center w-5 h-5 rounded border',
+                    badge.bgClass, badge.borderClass,
                   ].join(' ')} title={badge.name}>
-                    {badge.icon}
+                    <img src={badge.icon} alt={badge.name} className="w-3.5 h-3.5" />
                   </span>
                 ))}
                 <span className="text-gray-500 text-xs">{user.wins}-{user.losses}-{user.draws}</span>
