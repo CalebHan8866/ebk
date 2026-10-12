@@ -506,7 +506,7 @@ export default function FunFactsPage() {
                           </button>
                           <button
                             onClick={nextFact}
-                            className="flex-1 bg-white text-black font-black py-2.5 rounded-xl transition-colors text-base tracking-wide hover:bg-gray-100 active:bg-gray-200"
+                            className="flex-1 bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-400 hover:to-orange-300 text-white font-black py-2.5 rounded-xl transition-all text-sm tracking-wide shadow-md shadow-orange-900/50"
                           >
                             Next perspective →
                           </button>
