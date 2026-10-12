@@ -6,7 +6,17 @@ import { AuthProvider } from '@/context/AuthContext'
 
 export const metadata: Metadata = {
   title: 'EBK - Elite Ball Knowledge',
-  description: 'Live head-to-head NBA draft game',
+  description: 'Live head-to-head NBA draft game. Draft the worst career stats to win.',
+  icons: {
+    icon: '/ebk-favicon.svg',
+    apple: '/ebk-logo.svg',
+  },
+  openGraph: {
+    title: 'EBK - Elite Ball Knowledge',
+    description: 'Live head-to-head NBA draft game. Draft the worst career stats to win.',
+    images: [{ url: '/ebk-logo.svg', width: 400, height: 400 }],
+    type: 'website',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
