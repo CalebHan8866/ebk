@@ -1,42 +1,20 @@
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 
-function getTransporter() {
-  // Resend SMTP (preferred): just set RESEND_API_KEY
-  const resendKey = process.env.RESEND_API_KEY
-  if (resendKey) {
-    return nodemailer.createTransport({
-      host: 'smtp.resend.com',
-      port: 465,
-      secure: true,
-      auth: { user: 'resend', pass: resendKey },
-    })
-  }
-
-  // Generic SMTP fallback (Gmail, etc.)
-  const host = process.env.SMTP_HOST
-  const user = process.env.SMTP_USER
-  const pass = process.env.SMTP_PASS
-  if (host && user && pass) {
-    const port = parseInt(process.env.SMTP_PORT || '587')
-    return nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: { user, pass },
-    })
-  }
-
-  return null // dev mode: log to console
+function getResend() {
+  const key = process.env.RESEND_API_KEY
+  if (key) return new Resend(key)
+  return null
 }
+
+const FROM = process.env.FROM_EMAIL || 'noreply@eliteballknowledge.ca'
 
 export async function sendVerificationEmail(email: string, username: string, token: string) {
   const appUrl = process.env.APP_URL || 'http://localhost:3000'
   const verifyUrl = `${appUrl}/api/auth/verify?token=${token}`
 
-  const transporter = getTransporter()
+  const resend = getResend()
 
-  if (!transporter) {
-    // Dev mode: log the link instead of sending email
+  if (!resend) {
     console.log('\n─────────────────────────────────────────')
     console.log(`📧 VERIFY EMAIL for ${username} (${email})`)
     console.log(`   ${verifyUrl}`)
@@ -44,8 +22,8 @@ export async function sendVerificationEmail(email: string, username: string, tok
     return
   }
 
-  await transporter.sendMail({
-    from: `"EBK" <${process.env.FROM_EMAIL || 'noreply@eliteballknowledge.ca'}>`,
+  await resend.emails.send({
+    from: `EBK <${FROM}>`,
     to: email,
     subject: 'Verify your EBK account',
     html: `
@@ -71,9 +49,9 @@ export async function sendPasswordResetEmail(email: string, username: string, to
   const appUrl = process.env.APP_URL || 'http://localhost:3000'
   const resetUrl = `${appUrl}/reset-password?token=${token}`
 
-  const transporter = getTransporter()
+  const resend = getResend()
 
-  if (!transporter) {
+  if (!resend) {
     console.log('\n─────────────────────────────────────────')
     console.log(`🔑 RESET PASSWORD for ${username} (${email})`)
     console.log(`   ${resetUrl}`)
@@ -81,8 +59,8 @@ export async function sendPasswordResetEmail(email: string, username: string, to
     return
   }
 
-  await transporter.sendMail({
-    from: `"EBK" <${process.env.FROM_EMAIL || 'noreply@eliteballknowledge.ca'}>`,
+  await resend.emails.send({
+    from: `EBK <${FROM}>`,
     to: email,
     subject: 'Reset your EBK password',
     html: `
@@ -96,7 +74,7 @@ export async function sendPasswordResetEmail(email: string, username: string, to
         <a href="${resetUrl}" style="display:inline-block;background:#EA580C;color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">
           Reset Password
         </a>
-        <p style="color:#4B5563;font-size:12px;margin-top:28px">If you didn&apos;t request this, ignore this email.</p>
+        <p style="color:#4B5563;font-size:12px;margin-top:28px">If you didn't request this, ignore this email.</p>
         <p style="color:#4B5563;font-size:12px;margin-top:8px;word-break:break-all">
           Or copy this link: ${resetUrl}
         </p>
