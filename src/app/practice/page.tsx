@@ -702,7 +702,7 @@ function PracticeContent() {
         </div>
 
         <div className="flex gap-3">
-          <button onClick={() => { setPicks([]); setSpunTeamsHistory([]); setScreen('draft') }}
+          <button onClick={() => { setPicks(Array(TEAM_SIZES[teamMode]).fill(null)); setSpunTeamsHistory([]); setScreen('draft') }}
             className="flex-1 bg-[#111827] hover:bg-[#1e2d45] text-white font-black py-3 rounded-xl transition-colors border border-gray-700">
             Draft Again
           </button>
