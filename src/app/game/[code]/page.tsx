@@ -106,17 +106,24 @@ function getRequiredPositions(teamMode: TeamMode): string[] {
   return [...starters, ...bench]
 }
 
-// Map a flat list of picked player IDs to their correct position slots for display
+// Map a flat list of picked player IDs to their correct position slots for display.
+// Must match the server's getPickerUsedPositions algorithm exactly (uses all positions, not just primary).
 function assignToSlots(pickedIds: number[], allPlayers: Player[], requiredSlots: string[]): (Player | null)[] {
   const slots: (Player | null)[] = requiredSlots.map(() => null)
   const usedSlots = new Set<number>()
   for (const id of pickedIds) {
     const player = allPlayers.find(p => p.id === id)
     if (!player) continue
-    const posSlot = requiredSlots.findIndex((s, i) => s === player.position && !usedSlots.has(i))
-    if (posSlot !== -1) { slots[posSlot] = player; usedSlots.add(posSlot); continue }
-    const benchSlot = requiredSlots.findIndex((s, i) => s === 'BENCH' && !usedSlots.has(i))
-    if (benchSlot !== -1) { slots[benchSlot] = player; usedSlots.add(benchSlot) }
+    const playerPositions = player.positions.split(',')
+    let placed = false
+    for (const pos of playerPositions) {
+      const idx = requiredSlots.findIndex((s, i) => i < 5 && s === pos && !usedSlots.has(i))
+      if (idx !== -1) { slots[idx] = player; usedSlots.add(idx); placed = true; break }
+    }
+    if (!placed) {
+      const benchIdx = requiredSlots.findIndex((s, i) => s === 'BENCH' && !usedSlots.has(i))
+      if (benchIdx !== -1) { slots[benchIdx] = player; usedSlots.add(benchIdx) }
+    }
   }
   return slots
 }
