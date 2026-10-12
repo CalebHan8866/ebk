@@ -222,6 +222,10 @@ const JAMESON_CURRY_ID = 71
 // ─── Cooldown helpers ────────────────────────────────────────────────────────
 
 const COOLDOWN_MS = 30 * 60 * 1000
+// Comma-separated user IDs that bypass the rematch cooldown (for automated testing)
+const NOCOOLDOWN_USER_IDS = new Set(
+  (process.env.NOCOOLDOWN_USER_IDS || '').split(',').filter(Boolean)
+)
 
 function recordMatchup(userId1: string | null, userId2: string | null) {
   if (!userId1 || !userId2) return
@@ -234,6 +238,7 @@ function recordMatchup(userId1: string | null, userId2: string | null) {
 
 function cooldownRemaining(userId1: string | null, userId2: string | null): number {
   if (!userId1 || !userId2) return 0
+  if (NOCOOLDOWN_USER_IDS.has(userId1) || NOCOOLDOWN_USER_IDS.has(userId2)) return 0
   const last = recentMatchups.get(userId1)?.get(userId2)
   if (!last) return 0
   return Math.max(0, COOLDOWN_MS - (Date.now() - last))
