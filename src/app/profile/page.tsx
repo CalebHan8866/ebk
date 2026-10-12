@@ -32,7 +32,7 @@ export default function ProfilePage() {
   const [equippedBadges, setEquippedBadges] = useState<string[]>([])
   const [equippedEmote, setEquippedEmote] = useState('')
   const router = useRouter()
-  const { setUser: setAuthUser } = useAuth()
+  const { setUser: setAuthUser, user: authUser } = useAuth()
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -82,7 +82,7 @@ export default function ProfilePage() {
             : ids.length < 3 ? [...ids, id] : [...ids.slice(1), id]
           const newEquippedBadges = JSON.stringify(updated)
           // Sync to AuthContext so Navbar badge display updates immediately
-          setAuthUser(a => a ? { ...a, equippedBadges: newEquippedBadges } : a)
+          if (authUser) setAuthUser({ ...authUser, equippedBadges: newEquippedBadges })
           return { ...u, equippedBadges: newEquippedBadges }
         })
       } else {
