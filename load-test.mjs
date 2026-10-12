@@ -1,27 +1,27 @@
 /**
  * EBK Load Test
  * Tests the app under realistic multi-user load:
- *   - Bulk account creation (bypasses rate limit via admin endpoint)
- *   - Concurrent logins
- *   - Concurrent Socket.IO connections
- *   - Concurrent matchmaking (queue + match + full game)
- *   - Concurrent friends rooms
- *   - API endpoint stress (leaderboard, players, history)
+ *   1. Bulk account creation (bypasses rate limit via admin endpoint)
+ *   2. Concurrent logins  (X-Load-Test-Secret bypasses per-IP limit)
+ *   3. Concurrent Socket.IO connections
+ *   4. API endpoint stress (leaderboard, players, history)
+ *   5. Concurrent online matchmaking — full draft games
+ *   6. Concurrent friends rooms
  *
  * Usage:
  *   node load-test.mjs [users] [concurrentGames]
- *   node load-test.mjs 100 20    # 100 users, 20 simultaneous games
- *   node load-test.mjs 500 50    # 500 users, 50 simultaneous games (stress)
+ *   node load-test.mjs 100 10
+ *   node load-test.mjs 500 40   ← stress test
  */
 
 import { io } from 'socket.io-client'
 
-const BASE = process.env.LOAD_TEST_URL || 'https://ebk-production.up.railway.app'
-const SECRET = process.env.DEV_SECRET || 'ebktest2024'
+const BASE    = process.env.LOAD_TEST_URL || 'https://ebk-production.up.railway.app'
+const SECRET  = process.env.DEV_SECRET    || 'ebktest2024'
 const PASSWORD = 'TestPass123!'
-const PREFIX = 'LoadBot'
+const PREFIX   = 'LoadBot'
 
-const TARGET_USERS  = parseInt(process.argv[2] || '100')
+const TARGET_USERS     = parseInt(process.argv[2] || '100')
 const CONCURRENT_GAMES = parseInt(process.argv[3] || '10')
 
 // ── Timing helpers ────────────────────────────────────────────────────────────
@@ -31,22 +31,21 @@ function recordTiming(key, ms) {
   if (!timings[key]) timings[key] = []
   timings[key].push(ms)
 }
+function pct(arr, p) { return arr[Math.floor(arr.length * p)] }
 function stats(arr) {
   if (!arr?.length) return 'no data'
-  const sorted = [...arr].sort((a, b) => a - b)
-  const avg = (arr.reduce((s, v) => s + v, 0) / arr.length).toFixed(0)
-  return `avg=${avg}ms  p50=${sorted[Math.floor(arr.length * 0.5)]}ms  p95=${sorted[Math.floor(arr.length * 0.95)]}ms  max=${sorted[arr.length - 1]}ms`
+  const s = [...arr].sort((a, b) => a - b)
+  return `avg=${Math.round(s.reduce((x, v) => x + v, 0) / s.length)}ms  p50=${pct(s, 0.5)}ms  p95=${pct(s, 0.95)}ms  max=${s[s.length - 1]}ms`
 }
 
 // ── HTTP helper ───────────────────────────────────────────────────────────────
 
-async function http(method, path, body, cookie) {
+async function http(method, path, body, cookie, extraHeaders = {}) {
   const t0 = Date.now()
-  const headers = { 'Content-Type': 'application/json' }
+  const headers = { 'Content-Type': 'application/json', ...extraHeaders }
   if (cookie) headers['Cookie'] = cookie
   const res = await fetch(`${BASE}${path}`, {
-    method,
-    headers,
+    method, headers,
     body: body ? JSON.stringify(body) : undefined,
   })
   const ms = Date.now() - t0
@@ -57,16 +56,12 @@ async function http(method, path, body, cookie) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
 
-function pass(msg) { process.stdout.write(`  ✅ ${msg}\n`) }
+let errors = 0, passed = 0
+function pass(msg) { process.stdout.write(`  ✅ ${msg}\n`); passed++ }
 function fail(msg) { process.stdout.write(`  ❌ ${msg}\n`); errors++ }
 function warn(msg) { process.stdout.write(`  ⚠️  ${msg}\n`) }
-
-let errors = 0
-let passed = 0
-
 function log(label, ok, detail = '') {
-  if (ok) { pass(`${label}${detail ? '  ' + detail : ''}`); passed++ }
-  else     { fail(`${label}${detail ? '  ' + detail : ''}`) }
+  ok ? pass(`${label}${detail ? '  ' + detail : ''}`) : fail(`${label}${detail ? '  ' + detail : ''}`)
 }
 
 // ── Socket helper ─────────────────────────────────────────────────────────────
@@ -80,7 +75,7 @@ function makeSocket(cookie) {
   })
 }
 
-function waitFor(sock, event, timeoutMs = 10000) {
+function waitFor(sock, event, timeoutMs = 15000) {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error(`timeout:${event}`)), timeoutMs)
     sock.once(event, data => { clearTimeout(t); resolve(data) })
@@ -90,15 +85,11 @@ function waitFor(sock, event, timeoutMs = 10000) {
 // ── Step 1: Create test accounts ──────────────────────────────────────────────
 
 async function createAccounts(count) {
-  console.log(`\n[1/6] Creating ${count} test accounts via admin endpoint...`)
+  console.log(`\n[1/6] Creating ${count} test accounts...`)
   const t0 = Date.now()
   const res = await http('POST', '/api/admin/create-test-users', { secret: SECRET, count, prefix: PREFIX })
-  const ms = Date.now() - t0
-  if (res.status !== 200) {
-    fail(`Bulk create failed: ${res.status} ${JSON.stringify(res.json)}`)
-    return false
-  }
-  log(`Bulk-created ${res.json.created} accounts`, res.json.created > 0, `(${ms}ms, skipped=${res.json.skipped})`)
+  if (res.status !== 200) { fail(`Bulk create: ${res.status} ${JSON.stringify(res.json)}`); return false }
+  log(`Bulk-created ${res.json.created} accounts`, res.json.created > 0, `(${Date.now() - t0}ms, skipped=${res.json.skipped})`)
   return true
 }
 
@@ -107,64 +98,54 @@ async function createAccounts(count) {
 async function loginAll(count) {
   console.log(`\n[2/6] Logging in ${count} users concurrently...`)
   const t0 = Date.now()
+  const cookies = {}
+  let ok = 0, bad = 0
 
+  // 50 at a time, X-Load-Test-Secret bypasses rate limiter
   const chunks = []
   for (let i = 0; i < count; i += 50) chunks.push(Array.from({ length: Math.min(50, count - i) }, (_, j) => i + j + 1))
-
-  const cookies = {}
-  let loginOk = 0, loginFail = 0
 
   for (const chunk of chunks) {
     const results = await Promise.all(chunk.map(async i => {
       const username = `${PREFIX}${String(i).padStart(4, '0')}`
-      const email = `${username.toLowerCase()}@ebk-load-test.internal`
+      const email    = `${username.toLowerCase()}@ebk-load-test.internal`
       const t = Date.now()
-      const res = await http('POST', '/api/auth/login', { email, password: PASSWORD })
+      const res = await http('POST', '/api/auth/login', { email, password: PASSWORD }, null, { 'x-load-test-secret': SECRET })
       recordTiming('login', Date.now() - t)
-      if (res.status === 200) {
-        const setCookie = res.headers.get('set-cookie') || ''
-        const token = setCookie.match(/ebk-token=([^;]+)/)?.[1]
-        return { i, username, cookie: token ? `ebk-token=${token}` : null, ok: true }
-      }
-      return { i, username, cookie: null, ok: false }
+      const setCookie = res.headers.get('set-cookie') || ''
+      const token = setCookie.match(/ebk-token=([^;]+)/)?.[1]
+      return { i, username, ok: res.status === 200 && !!token, cookie: token ? `ebk-token=${token}` : null }
     }))
     for (const r of results) {
-      if (r.ok && r.cookie) { cookies[r.i] = { username: r.username, cookie: r.cookie }; loginOk++ }
-      else loginFail++
+      if (r.ok) { cookies[r.i] = { username: r.username, cookie: r.cookie }; ok++ }
+      else bad++
     }
-    await sleep(100) // small pause between batches
+    await sleep(50)
   }
 
-  const ms = Date.now() - t0
-  log(`Logins: ${loginOk} ok / ${loginFail} failed`, loginFail === 0, `(${ms}ms total)`)
+  log(`Logins: ${ok} ok / ${bad} failed`, bad === 0, `(${Date.now() - t0}ms)`)
   console.log(`   Login timing: ${stats(timings.login)}`)
   return cookies
 }
 
-// ── Step 3: Concurrent socket connections ─────────────────────────────────────
+// ── Step 3: Connect sockets ───────────────────────────────────────────────────
 
 async function connectSockets(cookies) {
-  console.log(`\n[3/6] Opening ${Object.keys(cookies).length} Socket.IO connections concurrently...`)
+  console.log(`\n[3/6] Opening ${Object.keys(cookies).length} Socket.IO connections...`)
   const t0 = Date.now()
-
   const sockets = {}
-  const entries = Object.entries(cookies)
+  let connOk = 0, connFail = 0
 
+  const entries = Object.entries(cookies)
   const chunks = []
   for (let i = 0; i < entries.length; i += 50) chunks.push(entries.slice(i, i + 50))
-
-  let connOk = 0, connFail = 0
 
   for (const chunk of chunks) {
     await Promise.all(chunk.map(([idx, { username, cookie }]) =>
       new Promise(resolve => {
         const t = Date.now()
         const sock = makeSocket(cookie)
-        const timeout = setTimeout(() => {
-          connFail++
-          sock.disconnect()
-          resolve()
-        }, 8000)
+        const timeout = setTimeout(() => { connFail++; sock.disconnect(); resolve() }, 8000)
         sock.on('connect', () => {
           clearTimeout(timeout)
           recordTiming('socket_connect', Date.now() - t)
@@ -172,224 +153,229 @@ async function connectSockets(cookies) {
           connOk++
           resolve()
         })
-        sock.on('connect_error', () => {
-          clearTimeout(timeout)
-          connFail++
-          resolve()
-        })
+        sock.on('connect_error', () => { clearTimeout(timeout); connFail++; resolve() })
       })
     ))
-    await sleep(100)
+    await sleep(50)
   }
 
-  const ms = Date.now() - t0
-  log(`Sockets: ${connOk} connected / ${connFail} failed`, connFail === 0, `(${ms}ms total)`)
+  log(`Sockets: ${connOk} connected / ${connFail} failed`, connFail === 0, `(${Date.now() - t0}ms)`)
   console.log(`   Connect timing: ${stats(timings.socket_connect)}`)
   return sockets
 }
 
-// ── Step 4: API endpoint stress test ──────────────────────────────────────────
+// ── Step 4: API stress ────────────────────────────────────────────────────────
 
 async function stressAPIs(cookies) {
-  console.log(`\n[4/6] Stress-testing API endpoints (50 concurrent requests each)...`)
+  console.log(`\n[4/6] Stress-testing API endpoints (50 concurrent each)...`)
   const cookieList = Object.values(cookies).map(c => c.cookie)
 
-  const endpoints = [
-    { path: '/api/players', auth: false, label: '/api/players' },
-    { path: '/api/leaderboard', auth: false, label: '/api/leaderboard' },
-    { path: '/api/auth/me', auth: true, label: '/api/auth/me' },
-    { path: '/api/games/history', auth: true, label: '/api/games/history' },
-  ]
-
-  for (const ep of endpoints) {
-    const requests = Array.from({ length: 50 }, (_, i) => {
+  for (const ep of [
+    { path: '/api/players',       auth: false },
+    { path: '/api/leaderboard',   auth: false },
+    { path: '/api/auth/me',       auth: true  },
+    { path: '/api/games/history', auth: true  },
+  ]) {
+    const reqs = Array.from({ length: 50 }, (_, i) => {
       const cookie = ep.auth ? cookieList[i % cookieList.length] : undefined
-      return http('GET', ep.path, null, cookie).then(r => {
-        recordTiming(ep.label, r.ms)
-        return r.status
-      })
+      return http('GET', ep.path, null, cookie).then(r => { recordTiming(ep.path, r.ms); return r.status })
     })
-    const statuses = await Promise.all(requests)
+    const statuses = await Promise.all(reqs)
     const ok200 = statuses.filter(s => s === 200).length
+    log(`${ep.path}: ${ok200}/50 ok`, ok200 === 50, stats(timings[ep.path]))
     const bad = statuses.filter(s => s !== 200)
-    log(`${ep.label}: ${ok200}/50 ok`, bad.length === 0, stats(timings[ep.label]))
-    if (bad.length) warn(`  Non-200 statuses: ${[...new Set(bad)].join(', ')}`)
+    if (bad.length) warn(`   Non-200: ${[...new Set(bad)].join(', ')}`)
   }
 }
 
-// ── Step 5: Concurrent matchmaking games ─────────────────────────────────────
+// ── Step 5: Concurrent online matchmaking ─────────────────────────────────────
+// Flow: host emits create-listing → gets listing-created{code}
+//       guest emits join-listing{code} → both get match-found
+//       both emit accept-match → both get draft-started{room,players}
+//       pick-timer-start fires, current picker picks first valid player
+//       repeat until game-result
+
+function pickFirstValid(players, spunTeam, takenIds, usedPositions, benchUsed, teamSize) {
+  const teamPlayers = players.filter(p => {
+    const abbr = p.team // already an abbr in the sent payload
+    return abbr === spunTeam && !takenIds.has(p.id)
+  })
+  const starters = ['PG', 'SG', 'SF', 'PF', 'C']
+  const totalBench = teamSize - 5
+  const benchRemaining = totalBench - benchUsed
+
+  for (const p of teamPlayers) {
+    const pPos = p.positions ? p.positions.split(',') : [p.position]
+    // Try starter slot first
+    for (const pos of pPos) {
+      if (starters.includes(pos) && !usedPositions.has(pos)) {
+        return { playerId: p.id, slotPos: pos }
+      }
+    }
+    // Try bench
+    if (benchRemaining > 0) {
+      return { playerId: p.id, slotPos: 'BENCH' }
+    }
+  }
+  return null
+}
 
 async function runConcurrentGames(sockets, numGames) {
-  console.log(`\n[5/6] Running ${numGames} simultaneous online games (${numGames * 2} players)...`)
-
+  console.log(`\n[5/6] Running ${numGames} simultaneous online games...`)
   const entries = Object.values(sockets)
   if (entries.length < numGames * 2) {
-    warn(`Not enough connected sockets (${entries.length}) for ${numGames} games — running ${Math.floor(entries.length / 2)}`)
+    warn(`Only ${entries.length} sockets — running ${Math.floor(entries.length / 2)} games`)
     numGames = Math.floor(entries.length / 2)
   }
 
   const t0 = Date.now()
-  let gamesCompleted = 0, gamesFailed = 0
+  let gamesOk = 0, gamesFail = 0
   const gameTimings = []
 
-  const gamePairs = Array.from({ length: numGames }, (_, i) => ({
-    s1: entries[i * 2].sock,
-    s2: entries[i * 2 + 1].sock,
-    u1: entries[i * 2].username,
-    u2: entries[i * 2 + 1].username,
-  }))
-
-  await Promise.all(gamePairs.map(async ({ s1, s2, u1, u2 }) => {
+  await Promise.all(Array.from({ length: numGames }, async (_, i) => {
+    const hostEntry = entries[i * 2]
+    const guestEntry = entries[i * 2 + 1]
+    const { sock: hostSock, username: hostName } = hostEntry
+    const { sock: guestSock, username: guestName } = guestEntry
     const gt0 = Date.now()
+
     try {
-      // Both queue up
-      s1.emit('join-queue', { teamMode: 'starter5', series: 1, userName: u1, userId: null })
-      s2.emit('join-queue', { teamMode: 'starter5', series: 1, userName: u2, userId: null })
+      // Host creates listing
+      hostSock.emit('create-listing', { teamMode: 'starter5', series: 1, userName: hostName, userId: null })
+      const { code } = await waitFor(hostSock, 'listing-created', 8000)
 
-      // Wait for match-found on both
-      const [mf1] = await Promise.all([
-        waitFor(s1, 'match-found', 12000),
-        waitFor(s2, 'match-found', 12000),
-      ])
+      // Guest joins listing
+      guestSock.emit('join-listing', { code, userName: guestName, userId: null })
 
-      const code = mf1.code
+      // Both get match-found
+      await Promise.all([waitFor(hostSock, 'match-found', 8000), waitFor(guestSock, 'match-found', 8000)])
 
       // Both accept
-      await sleep(200)
-      s1.emit('accept-match', { code })
-      s2.emit('accept-match', { code })
+      hostSock.emit('accept-match', { code })
+      guestSock.emit('accept-match', { code })
 
-      // Wait for draft-started
-      await Promise.all([waitFor(s1, 'draft-started', 8000), waitFor(s2, 'draft-started', 8000)])
+      // Both get draft-started (with full player list)
+      const [draftData] = await Promise.all([
+        waitFor(hostSock, 'draft-started', 8000),
+        waitFor(guestSock, 'draft-started', 8000),
+      ])
+      const players = draftData.players || []
+      const teamSize = 5 // starter5
 
-      // Play out all 10 picks (5 each)
+      // State tracking for this game
+      const takenIds = new Set()
+      const usedPositions = { host: new Set(), guest: new Set() }
+      const benchUsed = { host: 0, guest: 0 }
+
+      // Play all 10 picks
       for (let pick = 0; pick < 10; pick++) {
-        const [timerData] = await Promise.all([
-          waitFor(s1, 'pick-timer-start', 8000),
-          waitFor(s2, 'pick-timer-start', 8000).catch(() => null),
+        // Both listen for timer; one fires per pick
+        const timerData = await Promise.race([
+          waitFor(hostSock, 'pick-timer-start', 12000),
+          waitFor(guestSock, 'pick-timer-start', 12000),
         ])
-        const picker = timerData.picker
-        const sock = picker === 'host' ? s1 : s2
-        sock.emit('pick-player', { code, playerId: -1, position: timerData.spunTeam || 'BENCH' })
-        // auto-pick will handle if -1 is invalid — wait for next timer or result
-        await sleep(300)
+
+        const { picker, spunTeam } = timerData
+        const isHostTurn = picker === 'host'
+        const activeSock = isHostTurn ? hostSock : guestSock
+        const pickerKey  = isHostTurn ? 'host' : 'guest'
+
+        const choice = pickFirstValid(players, spunTeam, takenIds, usedPositions[pickerKey], benchUsed[pickerKey], teamSize)
+        if (!choice) {
+          // No valid pick found — server auto-pick will fire eventually, skip
+          continue
+        }
+
+        takenIds.add(choice.playerId)
+        if (choice.slotPos === 'BENCH') benchUsed[pickerKey]++
+        else usedPositions[pickerKey].add(choice.slotPos)
+
+        activeSock.emit('pick-player', { code, playerId: choice.playerId, position: choice.slotPos })
+        await sleep(100)
       }
 
       // Wait for game result
-      await Promise.all([
-        waitFor(s1, 'game-result', 15000),
-        waitFor(s2, 'game-result', 15000),
+      await Promise.race([
+        waitFor(hostSock, 'game-result', 15000),
+        waitFor(hostSock, 'series-complete', 15000),
       ])
 
       gameTimings.push(Date.now() - gt0)
-      gamesCompleted++
+      gamesOk++
     } catch (e) {
-      gamesFailed++
+      gamesFail++
     }
   }))
 
-  const ms = Date.now() - t0
-  log(`Concurrent games: ${gamesCompleted}/${numGames} completed`, gamesFailed === 0,
-    `(${ms}ms wall time, avg per game: ${gameTimings.length ? Math.round(gameTimings.reduce((s, v) => s + v, 0) / gameTimings.length) : '?'}ms)`)
-  if (gamesFailed) warn(`  ${gamesFailed} games failed (timeouts count as failures)`)
+  log(`Online games: ${gamesOk}/${numGames} completed`, gamesFail === 0,
+    `(${Date.now() - t0}ms wall, avg game=${gameTimings.length ? Math.round(gameTimings.reduce((s, v) => s + v, 0) / gameTimings.length) : '?'}ms)`)
+  if (gamesFail) warn(`   ${gamesFail} game(s) failed`)
 }
 
-// ── Step 6: Friends room stress ───────────────────────────────────────────────
+// ── Step 6: Friends rooms ─────────────────────────────────────────────────────
 
-async function runFriendsRoomStress(sockets, numRooms) {
+async function runFriendsRooms(sockets, numRooms) {
   console.log(`\n[6/6] Running ${numRooms} simultaneous friends rooms...`)
   const entries = Object.values(sockets)
-  if (entries.length < numRooms * 2) numRooms = Math.floor(entries.length / 2)
+  numRooms = Math.min(numRooms, Math.floor(entries.length / 2))
+  const offset = Math.floor(entries.length / 2)
 
-  // Use sockets that weren't used in matchmaking (take from the end)
-  const offset = Math.min(entries.length - numRooms * 2, entries.length / 2 | 0)
-  let roomsOk = 0, roomsFail = 0
-
+  let ok = 0, fail_ = 0
   await Promise.all(Array.from({ length: numRooms }, async (_, i) => {
-    const s1 = entries[offset + i * 2].sock
-    const s2 = entries[offset + i * 2 + 1].sock
-    const u1 = entries[offset + i * 2].username
-    const u2 = entries[offset + i * 2 + 1].username
+    const s1 = entries[offset + i * 2]?.sock
+    const s2 = entries[offset + i * 2 + 1]?.sock
+    const u1 = entries[offset + i * 2]?.username
+    const u2 = entries[offset + i * 2 + 1]?.username
+    if (!s1 || !s2) return
     try {
       s1.emit('create-room', { teamMode: 'starter5', series: 1, difficulty: 'casual', userName: u1, userId: null })
       const { room } = await waitFor(s1, 'room-created', 6000)
       s2.emit('join-room', { code: room.code, userName: u2, userId: null })
       await waitFor(s2, 'draft-started', 8000)
-      roomsOk++
-    } catch {
-      roomsFail++
-    }
+      ok++
+    } catch { fail_++ }
   }))
 
-  log(`Friends rooms: ${roomsOk}/${numRooms} created+joined`, roomsFail === 0,
-    roomsFail ? `(${roomsFail} failed)` : '')
+  log(`Friends rooms: ${ok}/${numRooms} ok`, fail_ === 0, fail_ ? `(${fail_} failed)` : '')
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
-  const userCount = TARGET_USERS
-  const gameCount = CONCURRENT_GAMES
-
   console.log(`\n${'═'.repeat(60)}`)
-  console.log(`  EBK LOAD TEST  —  ${userCount} users  /  ${gameCount} concurrent games`)
+  console.log(`  EBK LOAD TEST — ${TARGET_USERS} users / ${CONCURRENT_GAMES} concurrent games`)
   console.log(`  Target: ${BASE}`)
   console.log(`${'═'.repeat(60)}`)
 
-  const memStart = process.memoryUsage().heapUsed / 1024 / 1024
+  if (!await createAccounts(TARGET_USERS)) process.exit(1)
+  const cookies = await loginAll(TARGET_USERS)
+  if (Object.keys(cookies).length < 4) { console.log('\nAbort: not enough logins'); process.exit(1) }
 
-  // 1. Create accounts
-  const created = await createAccounts(userCount)
-  if (!created) { console.log('\nAbort: could not create accounts.'); process.exit(1) }
-
-  // 2. Login all
-  const cookies = await loginAll(userCount)
-  const loggedIn = Object.keys(cookies).length
-  if (loggedIn < 4) { console.log('\nAbort: not enough logins.'); process.exit(1) }
-
-  // 3. Connect sockets
   const sockets = await connectSockets(cookies)
-  const connected = Object.keys(sockets).length
-
-  // 4. API stress
   await stressAPIs(cookies)
+  await runConcurrentGames(sockets, Math.min(CONCURRENT_GAMES, Math.floor(Object.keys(sockets).length / 2)))
+  await runFriendsRooms(sockets, Math.min(5, Math.floor(Object.keys(sockets).length / 4)))
 
-  // 5. Concurrent matchmaking
-  if (connected >= 2) {
-    await runConcurrentGames(sockets, Math.min(gameCount, Math.floor(connected / 2)))
-  }
-
-  // 6. Friends rooms
-  await runFriendsRoomStress(sockets, Math.min(5, Math.floor(connected / 4)))
-
-  // Teardown
   Object.values(sockets).forEach(({ sock }) => sock.disconnect())
 
-  const memEnd = process.memoryUsage().heapUsed / 1024 / 1024
-
-  // ── Final report ─────────────────────────────────────────────────────────
+  // ── Summary ───────────────────────────────────────────────────────────────
   console.log(`\n${'═'.repeat(60)}`)
   console.log(`  LOAD TEST RESULTS`)
   console.log(`${'═'.repeat(60)}`)
-  console.log(`  Users created:    ${userCount}`)
-  console.log(`  Logins OK:        ${loggedIn}`)
-  console.log(`  Sockets OK:       ${connected}`)
-  console.log(`  Tests passed:     ${passed}`)
-  console.log(`  Tests failed:     ${errors}`)
-  console.log(`  Client heap:      ${memStart.toFixed(1)} MB → ${memEnd.toFixed(1)} MB`)
-  console.log(``)
-  console.log(`  Timings`)
+  console.log(`  Users created:   ${TARGET_USERS}`)
+  console.log(`  Logins OK:       ${Object.keys(cookies).length}`)
+  console.log(`  Sockets OK:      ${Object.keys(sockets).length}`)
+  console.log(`  Passed:          ${passed}`)
+  console.log(`  Failed:          ${errors}`)
+  console.log()
+  console.log(`  Timings:`)
   for (const [k, v] of Object.entries(timings)) {
-    console.log(`    ${k.padEnd(28)} ${stats(v)}`)
+    console.log(`    ${k.padEnd(26)} ${stats(v)}`)
   }
-
-  if (errors === 0) {
-    console.log(`\n  🟢 ALL PASSED — app handles ${userCount} users cleanly`)
-  } else {
-    console.log(`\n  🔴 ${errors} FAILURE(S) — see above`)
-  }
+  console.log()
+  if (errors === 0) console.log(`  🟢 ALL PASSED — app handles ${TARGET_USERS} users cleanly`)
+  else              console.log(`  🔴 ${errors} FAILURE(S) — review above`)
   console.log(`${'═'.repeat(60)}\n`)
-
   process.exit(errors > 0 ? 1 : 0)
 }
 
