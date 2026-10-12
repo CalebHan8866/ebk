@@ -123,6 +123,17 @@ function estimateCareerEarnings(p: Player): number {
   return Math.round(baseAnnual * star * careerYears)
 }
 
+function yearsAgo(year: number): number {
+  return year < 0 ? CURRENT_YEAR + Math.abs(year) + 1 : CURRENT_YEAR - year
+}
+
+function eligibleEvents(earnings: number) {
+  return EVENTS.filter(e => {
+    const perYr = earnings / yearsAgo(e.year)
+    return perYr >= 100_000 && perYr <= 1_000_000
+  })
+}
+
 function fmt(n: number): string {
   if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(2)}B`
   if (n >= 1_000_000)     return `$${(n / 1_000_000).toFixed(1)}M`
@@ -147,27 +158,12 @@ function generateFacts(p: Player): Fact[] {
   const name = `${p.firstName} ${p.lastName}`
   const facts: Fact[] = []
 
-  // ── Fact 1: Historical event savings comparison ─────────────────────────────
-  // Collect all events where saving $X/year since then would match earnings,
-  // with $X in a relatable range. Use player ID to pick one → every player
-  // gets a different event even at similar earnings levels.
-  // Find events where the implied yearly income is plausibly human-scale.
-  // We sort ALL events by how close their per-year amount is to a median salary
-  // (~$60K), then take the 6 closest — player ID picks one for variety.
-  // This guarantees we always pick the "most realistic" event, never a recent
-  // one that yields a per-year figure in the millions.
-  const TARGET_SALARY = 60_000
-  const eventsWithDiff = EVENTS.map(e => {
-    // For BC years (negative), add 1 to avoid the "year 0" gap
-    const yrsAgo = e.year < 0 ? CURRENT_YEAR + Math.abs(e.year) + 1 : CURRENT_YEAR - e.year
-    const perYr = earnings / yrsAgo
-    return { ...e, perYr, diff: Math.abs(perYr - TARGET_SALARY) }
-  }).sort((a, b) => a.diff - b.diff)
-  const pool = eventsWithDiff.slice(0, 6)
-  const ev = pool[p.id % pool.length]
-
-  const evYears = ev.year < 0 ? CURRENT_YEAR + Math.abs(ev.year) + 1 : CURRENT_YEAR - ev.year
-  const perYearNeeded = Math.round(earnings / evYears)
+  // ── Fact 1: Historical event comparison ($100K–$1M/yr range) ──────────────
+  // Pick from events where the implied yearly income is $100K–$1M.
+  // Player ID is used as a tiebreaker so adjacent players get different events.
+  const candidates = eligibleEvents(earnings)
+  const ev = candidates[p.id % candidates.length]
+  const perYearNeeded = Math.round(earnings / yearsAgo(ev.year))
 
   facts.push({
     emoji: ev.emoji,
@@ -273,13 +269,16 @@ export default function FunFactsPage() {
     fetch('/api/players')
       .then(r => r.json())
       .then((data: Player[]) => {
-        // Shuffle so niche/unexpected players surface alongside stars
-        const arr = data as Player[]
-        for (let i = arr.length - 1; i > 0; i--) {
+        // Keep only players whose earnings produce a $100K–$1M/yr comparison
+        const eligible = (data as Player[]).filter(p =>
+          eligibleEvents(estimateCareerEarnings(p)).length > 0
+        )
+        // Shuffle so niche players surface alongside stars
+        for (let i = eligible.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1))
-          ;[arr[i], arr[j]] = [arr[j], arr[i]]
+          ;[eligible[i], eligible[j]] = [eligible[j], eligible[i]]
         }
-        setPlayers(arr)
+        setPlayers(eligible)
         setLoading(false)
       })
       .catch(() => setLoading(false))
