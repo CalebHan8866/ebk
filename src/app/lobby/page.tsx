@@ -53,7 +53,7 @@ function seriesLabel(s: SeriesLength) { return s === 1 ? '1 Game' : `Best of ${s
 
 export default function LobbyPage() {
   const [mainTab, setMainTab] = useState<'online' | 'friends'>('online')
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
 
   // ── Online state ──────────────────────────────────────────────────────────
   const [onlineState, setOnlineState] = useState<OnlineState>('idle')
@@ -81,6 +81,8 @@ export default function LobbyPage() {
   const [error, setError] = useState('')
   const [listingError, setListingError] = useState('')
   const [loading, setLoading] = useState(false)
+  const userNameRef = useRef(userName)
+  useEffect(() => { userNameRef.current = userName }, [userName])
 
   const router = useRouter()
 
@@ -137,7 +139,7 @@ export default function LobbyPage() {
       if (countdownRef.current) clearInterval(countdownRef.current)
       const s = getSocket()
       const role = room.hostSocketId === s.id ? 'host' : 'guest'
-      const name = user?.username || userName || 'Player'
+      const name = user?.username || userNameRef.current || 'Player'
       router.push(`/game/${room.code}?role=${role}&name=${encodeURIComponent(name)}`)
     }
 
@@ -172,7 +174,7 @@ export default function LobbyPage() {
       socket.off('match-cancelled', handleMatchCancelled)
       if (countdownRef.current) clearInterval(countdownRef.current)
     }
-  }, [router, user, userName])
+  }, [router, user])
 
   function handlePostGame() {
     if (!user) return
@@ -215,11 +217,16 @@ export default function LobbyPage() {
     setError('')
     setLoading(true)
     const socket = getSocket()
-    const timeout = setTimeout(() => { setError('No response from server — try refreshing'); setLoading(false) }, 8000)
-    socket.once('room-created', ({ room }: { room: { code: string } }) => {
+    const onCreated = ({ room }: { room: { code: string } }) => {
       clearTimeout(timeout)
       router.push(`/game/${room.code}?role=host&name=${encodeURIComponent(userName.trim())}`)
-    })
+    }
+    const timeout = setTimeout(() => {
+      socket.off('room-created', onCreated)
+      setError('No response from server — try refreshing')
+      setLoading(false)
+    }, 8000)
+    socket.once('room-created', onCreated)
     socket.emit('create-room', { teamMode, series, difficulty, userName: userName.trim() })
   }
 
@@ -229,15 +236,27 @@ export default function LobbyPage() {
     setError('')
     setLoading(true)
     const socket = getSocket()
-    const timeout = setTimeout(() => { setError('No response from server — try refreshing'); setLoading(false) }, 8000)
-    socket.once('room-error', ({ message }: { message: string }) => { clearTimeout(timeout); setError(message); setLoading(false) })
-    socket.once('draft-started', ({ room }: { room: { code: string; hostSocketId: string } }) => {
+    const onError = ({ message }: { message: string }) => {
       clearTimeout(timeout)
+      socket.off('draft-started', onStarted)
+      setError(message); setLoading(false)
+    }
+    const onStarted = ({ room }: { room: { code: string; hostSocketId: string } }) => {
+      clearTimeout(timeout)
+      socket.off('room-error', onError)
       const s = getSocket()
       const guestRole = room.hostSocketId === s.id ? 'host' : 'guest'
       const name = user?.username || userName.trim() || 'Player'
       router.push(`/game/${room.code}?role=${guestRole}&name=${encodeURIComponent(name)}`)
-    })
+    }
+    const timeout = setTimeout(() => {
+      socket.off('room-error', onError)
+      socket.off('draft-started', onStarted)
+      setError('No response from server — try refreshing')
+      setLoading(false)
+    }, 8000)
+    socket.once('room-error', onError)
+    socket.once('draft-started', onStarted)
     socket.emit('join-room', { code: joinCode.trim().toUpperCase(), userName: userName.trim() })
   }
 
@@ -253,6 +272,8 @@ export default function LobbyPage() {
             <Link href="/leaderboard" className="text-gray-500 hover:text-orange-400 text-xs font-bold transition-colors">Leaderboard</Link>
             <span className="text-gray-700 text-xs">·</span>
             <Link href="/history" className="text-gray-500 hover:text-orange-400 text-xs font-bold transition-colors">My History</Link>
+            <span className="text-gray-700 text-xs">·</span>
+            <Link href="/higher-lower" className="text-gray-500 hover:text-orange-400 text-xs font-bold transition-colors">Higher/Lower</Link>
             {user && <><span className="text-gray-700 text-xs">·</span><Link href="/profile" className="text-gray-500 hover:text-orange-400 text-xs font-bold transition-colors">Profile</Link></>}
           </div>
         </div>
@@ -297,7 +318,7 @@ export default function LobbyPage() {
           <div className="bg-[#101010] border border-white/5 rounded-xl overflow-hidden">
 
             {/* Login gate */}
-            {!user && (
+            {!authLoading && !user && (
               <div className="p-6 text-center py-8">
                 <div className="text-white font-black text-lg mb-2">Sign in to play online</div>
                 <p className="text-gray-600 text-sm mb-6">An account is required to track your record and join games.</p>

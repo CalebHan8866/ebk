@@ -218,12 +218,18 @@ const pickTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const pickTimerStartedAt = new Map<string, number>()
 const consecutiveTimeouts = new Map<string, { host: number; guest: number }>()
 const emoteLastSent = new Map<string, number>() // socketId → timestamp
+const pendingListingCreate = new Set<string>() // socketId → in-flight guard
 // cooldown: userId → Map(opponentId → timestamp of last game end)
 const recentMatchups = new Map<string, Map<string, number>>()
 // grudge: userId → Map(opponentId → total games played together)
 const matchupCount = new Map<string, Map<string, number>>()
 let allPlayers: PlayerData[] = []
-const JAMESON_CURRY_ID = 71
+// Seed DB uses id=71; after scrape-bbref runs it gets a hash-based ID — resolve dynamically.
+let JAMESON_CURRY_ID = 71
+function refreshJCId() {
+  const jc = allPlayers.find(p => p.firstName === 'Jameson' && p.lastName === 'Curry')
+  if (jc) JAMESON_CURRY_ID = jc.id
+}
 
 // ─── Cooldown helpers ────────────────────────────────────────────────────────
 
@@ -381,11 +387,16 @@ async function updateStatsAndUnlock(
   } catch { /* non-critical */ }
 }
 
-function scheduleRoomCleanup(code: string) {
+function scheduleRoomCleanup(code: string, ioRef?: SocketServer) {
   setTimeout(() => {
+    const t = pickTimers.get(code)
+    if (t) clearTimeout(t)
+    pickTimers.delete(code)
     rooms.delete(code)
     pickTimerStartedAt.delete(code)
     consecutiveTimeouts.delete(code)
+    // Evict all remaining Socket.IO room members so the code can be safely reused
+    if (ioRef) ioRef.in(code).socketsLeave(code)
   }, 60_000) // 60s grace — lets clients receive final event before room disappears
 }
 
@@ -481,7 +492,9 @@ function autoPickPlayer(room: Room): { playerId: number; slotPos: string } | nul
   if (slotPos === 'BENCH' && remainingBenchSlots <= 0) {
     // fallback: force into first open starter slot if no bench left
     for (const pos of playerPositions) {
-      if (['PG', 'SG', 'SF', 'PF', 'C'].includes(pos)) { slotPos = pos; break }
+      if (['PG', 'SG', 'SF', 'PF', 'C'].includes(pos) && !usedPositions.has(pos)) {
+        slotPos = pos; break
+      }
     }
   }
   return { playerId: chosenPlayer.id, slotPos }
@@ -508,6 +521,8 @@ function startPickTimer(io: SocketServer, room: Room) {
     const autoPick = autoPickPlayer(currentRoom)
     if (autoPick === null) return
     const { playerId: pickedId, slotPos: pickedSlotPos } = autoPick
+    // Guard against duplicate picks (shouldn't happen, but be safe)
+    if (currentRoom.hostPicks.includes(pickedId) || currentRoom.guestPicks.includes(pickedId)) return
 
     if (picker === 'host') { currentRoom.hostPicks.push(pickedId); currentRoom.hostPickSlots.push(pickedSlotPos) }
     else { currentRoom.guestPicks.push(pickedId); currentRoom.guestPickSlots.push(pickedSlotPos) }
@@ -536,7 +551,7 @@ function startPickTimer(io: SocketServer, room: Room) {
       }
 
       io.to(code).emit('player-disqualified', { room: currentRoom, disqualifiedRole: loser, winner })
-      scheduleRoomCleanup(code)
+      scheduleRoomCleanup(code, io)
       return
     }
 
@@ -567,7 +582,7 @@ function startPickTimer(io: SocketServer, room: Room) {
         }
         saveGameRecords(currentRoom, seriesWinner)
         io.to(code).emit('series-complete', { room: currentRoom, seriesWinner })
-        scheduleRoomCleanup(code)
+        scheduleRoomCleanup(code, io)
       } else {
         io.to(code).emit('game-result', { room: currentRoom, result })
       }
@@ -595,7 +610,7 @@ function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
     guestName: rr.guestEntry.userName,
     teamMode: rr.hostEntry.teamMode,
     series: rr.hostEntry.series,
-    difficulty: 'ebk',
+    difficulty: rr.hostEntry.difficulty,
     source: 'online',
     status: 'drafting',
     draftOrder: buildSnakeDraft(teamSize),
@@ -629,6 +644,34 @@ function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
 app.prepare().then(async () => {
   // Load players from DB
   allPlayers = await prisma.player.findMany()
+  refreshJCId()
+  console.log(`Loaded ${allPlayers.length} players from DB`)
+
+  // Refresh player data periodically (scrape-bbref runs in background after startup)
+  // Use 5-min interval — scrape takes ~10 min, so this picks up new players quickly
+  setInterval(async () => {
+    try {
+      const fresh = await prisma.player.findMany()
+      if (fresh.length !== allPlayers.length) {
+        console.log(`Player data refreshed: ${allPlayers.length} → ${fresh.length}`)
+      }
+      allPlayers = fresh
+      refreshJCId()
+    } catch (e) {
+      console.error('Failed to refresh player data:', e)
+    }
+  }, 5 * 60 * 1000)
+
+  // Prune stale cooldown entries every hour to prevent unbounded memory growth
+  setInterval(() => {
+    const now = Date.now()
+    for (const [userId, opponents] of recentMatchups.entries()) {
+      for (const [opponentId, ts] of opponents.entries()) {
+        if (now - ts > COOLDOWN_MS) opponents.delete(opponentId)
+      }
+      if (opponents.size === 0) recentMatchups.delete(userId)
+    }
+  }, 60 * 60 * 1000)
 
   const httpServer = createServer((req, res) => {
     const parsedUrl = parse(req.url!, true)
@@ -659,6 +702,7 @@ app.prepare().then(async () => {
     }) => {
       if (!['starter5', 'bench8', 'full12'].includes(teamMode)) return
       if (![1, 3, 5].includes(series)) return
+      if (allPlayers.length === 0) { socket.emit('room-error', { message: 'Server is still loading player data. Please try again in a minute.' }); return }
       userName = (userName ?? '').trim().slice(0, 20) || 'Player'
       const userId = socket.data.userId as string | null
       let code = generateCode()
@@ -805,7 +849,7 @@ app.prepare().then(async () => {
           }
           saveGameRecords(room, seriesWinner)
           io.to(code).emit('series-complete', { room, seriesWinner })
-          scheduleRoomCleanup(code)
+          scheduleRoomCleanup(code, io)
         } else {
           io.to(code).emit('game-result', { room, result })
         }
@@ -818,7 +862,7 @@ app.prepare().then(async () => {
     socket.on('next-game', ({ code }: { code: string }) => {
       const room = rooms.get(code)
       if (!room || room.status !== 'result') return
-      if (socket.id !== room.hostSocketId && socket.id !== room.guestSocketId) return
+      if (socket.id !== room.hostSocketId) return // only host can start next game
 
       room.currentGame++
       room.hostPicks = []
@@ -890,8 +934,11 @@ app.prepare().then(async () => {
     }) => {
       if (!['starter5', 'bench8', 'full12'].includes(teamMode)) return
       if (![1, 3, 5].includes(series)) return
+      if (pendingListingCreate.has(socket.id)) return // prevent double-fire race
+      pendingListingCreate.add(socket.id)
       userName = (userName ?? '').trim().slice(0, 20) || 'Player'
       const userId = socket.data.userId as string | null
+      if (!userId) { pendingListingCreate.delete(socket.id); socket.emit('listing-error', { message: 'Must be signed in to post a game' }); return }
       // Remove any stale listing by this socket
       for (const [c, l] of gameListings.entries()) {
         if (l.hostSocketId === socket.id) {
@@ -927,6 +974,7 @@ app.prepare().then(async () => {
       }, 10 * 60 * 1000)
       listingTimers.set(code, expireTimer)
 
+      pendingListingCreate.delete(socket.id)
       socket.emit('listing-created', { code })
       io.emit('listings-updated', { listings: Array.from(gameListings.values()) })
     })
@@ -945,6 +993,7 @@ app.prepare().then(async () => {
     }) => {
       userName = (userName ?? '').trim().slice(0, 20) || 'Player'
       const userId = socket.data.userId as string | null
+      if (!userId) { socket.emit('listing-error', { message: 'Must be signed in to join a game' }); return }
       const listing = gameListings.get(code)
       if (!listing) {
         socket.emit('listing-error', { message: 'Game no longer available' })
@@ -1088,13 +1137,21 @@ app.prepare().then(async () => {
           // Keep waiting rooms alive — host may navigate to game page (causes brief reconnect)
           // and guests need to still be able to join
           if (room.status === 'waiting') return
+          // Don't fire partner-disconnected for completed series — player may disconnect
+          // on the win screen while the 30s cleanup timer is still running
+          if (room.status === 'complete') return
           const timer = pickTimers.get(code)
           if (timer) clearTimeout(timer)
           pickTimers.delete(code)
           io.to(code).emit('partner-disconnected')
-          rooms.delete(code)
+          // Enforce cooldown so disconnecting players can't immediately rematch
+          if (room.source === 'online') recordMatchup(room.hostUserId, room.guestUserId)
+          // scheduleRoomCleanup cleans up consecutiveTimeouts/pickTimerStartedAt/rooms
+          scheduleRoomCleanup(code, io)
         }
       })
+
+      pendingListingCreate.delete(socket.id)
     })
   })
 

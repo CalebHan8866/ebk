@@ -1,27 +1,17 @@
 'use client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { BADGES } from '@/lib/accessories'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
   const router = useRouter()
-  const [equippedBadgeIds, setEquippedBadgeIds] = useState<string[]>([])
 
-  useEffect(() => {
-    if (!user) { setEquippedBadgeIds([]); return }
-    fetch('/api/auth/me')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d?.user?.equippedBadges) {
-          try { setEquippedBadgeIds(JSON.parse(d.user.equippedBadges)) } catch { setEquippedBadgeIds([]) }
-        } else if (d?.user?.equippedBadge) {
-          setEquippedBadgeIds([d.user.equippedBadge])
-        }
-      })
-  }, [user])
+  let equippedBadgeIds: string[] = []
+  if (user?.equippedBadges) {
+    try { equippedBadgeIds = JSON.parse(user.equippedBadges) } catch {}
+  }
 
   async function handleLogout() {
     await logout()

@@ -1,0 +1,412 @@
+'use client'
+import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
+import { useAuth } from '@/context/AuthContext'
+import { BADGES } from '@/lib/accessories'
+
+interface Player {
+  id: number
+  firstName: string
+  lastName: string
+  team: string
+  position: string
+  careerGames: number
+  careerPPG: number
+  careerRPG: number
+  careerAPG: number
+  ebkScore: number
+}
+
+type GameScreen = 'loading' | 'playing' | 'revealing' | 'gameover' | 'complete'
+type ClaimStatus = 'pending' | 'unlocked' | 'already' | 'failed' | null
+
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const a = [...arr]
+  let s = seed
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (Math.imul(s ^ (s >>> 17), 1664525) + 1013904223) | 0
+    const j = Math.abs(s) % (i + 1)
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+const TOTAL_PLAYERS = 67
+
+export default function HigherLowerPage() {
+  const { user } = useAuth()
+  const [sequence, setSequence] = useState<Player[]>([])
+  const [idx, setIdx] = useState(0)
+  const [screen, setScreen] = useState<GameScreen>('loading')
+  const [streak, setStreak] = useState(0)
+  const [bestStreak, setBestStreak] = useState(0)
+  const [lastCorrect, setLastCorrect] = useState<boolean | null>(null)
+  const [lastTied, setLastTied] = useState(false)
+  const [unlockedBadge, setUnlockedBadge] = useState<{ id: string; name: string } | null>(null)
+  const [claimStatus, setClaimStatus] = useState<ClaimStatus>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    const saved = typeof window !== 'undefined' ? parseInt(localStorage.getItem('hl_best') || '0') : 0
+    setBestStreak(saved)
+
+    fetch('/api/players')
+      .then(r => r.json())
+      .then((all: Player[]) => {
+        const filtered = all.filter(p => p.careerGames >= 80 && p.ebkScore >= 5 && p.ebkScore <= 88)
+        const byGames = [...filtered].sort((a, b) => b.careerGames - a.careerGames).slice(0, 200)
+        const shuffled = seededShuffle(byGames, 7777)
+        setSequence(shuffled.slice(0, TOTAL_PLAYERS))
+        setScreen('playing')
+      })
+      .catch(() => setScreen('playing'))
+  }, [])
+
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
+
+  async function tryUnlock(milestone: string) {
+    if (!user) return
+    const isGauntlet = milestone === 'hl_gauntlet'
+    if (isGauntlet) setClaimStatus('pending')
+    try {
+      const res = await fetch('/api/higher-lower/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ milestone }),
+      })
+      if (!res.ok) {
+        if (isGauntlet) setClaimStatus('failed')
+        return
+      }
+      const data = await res.json()
+      if (data.unlocked) {
+        const badge = BADGES.find(b => b.id === milestone)
+        if (badge) {
+          setUnlockedBadge({ id: badge.id, name: badge.name })
+          if (isGauntlet) {
+            setClaimStatus('unlocked')
+            // Don't auto-clear on the completion screen
+          } else {
+            setTimeout(() => setUnlockedBadge(null), 5000)
+          }
+        }
+      } else if (data.alreadyUnlocked) {
+        if (isGauntlet) setClaimStatus('already')
+      }
+    } catch {
+      if (isGauntlet) setClaimStatus('failed')
+    }
+  }
+
+  function guess(direction: 'higher' | 'lower') {
+    if (screen !== 'playing' || sequence.length < 2 || idx >= sequence.length - 1) return
+    if (timerRef.current) clearTimeout(timerRef.current)
+
+    const current = sequence[idx]
+    const challenger = sequence[idx + 1]
+
+    // Treat exact ties as correct regardless of direction
+    const tied = challenger.ebkScore === current.ebkScore
+    const actualDir = challenger.ebkScore > current.ebkScore ? 'higher' : 'lower'
+    const correct = tied || direction === actualDir
+
+    setLastCorrect(correct)
+    setLastTied(tied)
+    setScreen('revealing')
+
+    if (correct) {
+      const newStreak = streak + 1
+      setStreak(newStreak)
+
+      if (newStreak > bestStreak) {
+        setBestStreak(newStreak)
+        if (typeof window !== 'undefined') localStorage.setItem('hl_best', String(newStreak))
+      }
+
+      if (newStreak === 10) tryUnlock('hl_10')
+      if (newStreak === 25) tryUnlock('hl_25')
+
+      timerRef.current = setTimeout(() => {
+        const nextIdx = idx + 1
+        if (nextIdx >= sequence.length - 1) {
+          tryUnlock('hl_gauntlet')
+          setScreen('complete')
+        } else {
+          setIdx(nextIdx)
+          setLastCorrect(null)
+          setLastTied(false)
+          setScreen('playing')
+        }
+      }, 1300)
+    } else {
+      timerRef.current = setTimeout(() => {
+        setScreen('gameover')
+      }, 1600)
+    }
+  }
+
+  function restart() {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    setIdx(0)
+    setStreak(0)
+    setLastCorrect(null)
+    setLastTied(false)
+    setUnlockedBadge(null)
+    setClaimStatus(null)
+    setScreen('playing')
+  }
+
+  if (screen === 'loading') {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+      </div>
+    )
+  }
+
+  const totalComparisons = sequence.length > 1 ? sequence.length - 1 : 66
+  const current = sequence[idx]
+  const challenger = sequence[idx + 1]
+
+  if (screen === 'gameover') {
+    const correctDir = challenger && current
+      ? (challenger.ebkScore > current.ebkScore ? 'HIGHER' : challenger.ebkScore < current.ebkScore ? 'LOWER' : 'THE SAME')
+      : ''
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
+        <div className="max-w-md w-full text-center">
+          <div className="text-6xl mb-4">💀</div>
+          <h1 className="font-display text-5xl text-white leading-none mb-3">Game Over</h1>
+          {current && challenger && (
+            <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+              <span className="text-white font-bold">{challenger.firstName} {challenger.lastName}</span>
+              {' '}had{' '}
+              <span className="text-orange-400 font-bold">{correctDir} EBK</span>
+              {' '}than {current.firstName} {current.lastName}
+              <br />
+              <span className="text-gray-700 text-xs">
+                ({current.firstName} {current.lastName}: {current.ebkScore.toFixed(1)} · {challenger.firstName} {challenger.lastName}: {challenger.ebkScore.toFixed(1)})
+              </span>
+            </p>
+          )}
+          <div className="bg-[#111] border border-white/10 rounded-2xl p-6 mb-6 grid grid-cols-2 gap-6">
+            <div>
+              <div className="text-4xl font-black text-orange-400">{streak}</div>
+              <div className="text-gray-500 text-xs mt-1 uppercase tracking-wide">This Run</div>
+            </div>
+            <div>
+              <div className="text-4xl font-black text-yellow-400">{bestStreak}</div>
+              <div className="text-gray-500 text-xs mt-1 uppercase tracking-wide">Personal Best</div>
+            </div>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button onClick={restart} className="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-3 rounded-xl transition-colors">
+              Try Again
+            </button>
+            <Link href="/lobby" className="bg-[#111] hover:bg-[#1a1a1a] border border-white/10 text-white font-black px-6 py-3 rounded-xl transition-colors">
+              Lobby
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (screen === 'complete') {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
+        <div className="max-w-md w-full text-center">
+          {claimStatus === 'unlocked' && unlockedBadge && (
+            <div className="mb-6 bg-yellow-900/30 border border-yellow-500/50 rounded-2xl px-6 py-4">
+              <div className="text-yellow-500 text-xs font-black uppercase tracking-widest mb-1">Badge Unlocked</div>
+              <div className="text-white font-black text-xl">{unlockedBadge.name}</div>
+            </div>
+          )}
+          <div className="text-7xl mb-4">⚡</div>
+          <h1 className="font-display text-5xl text-orange-500 leading-none mb-2">The Gauntlet</h1>
+          <p className="text-gray-400 mb-1">You ran the whole {totalComparisons}-question gauntlet.</p>
+          {!user && <p className="text-gray-600 text-sm mb-6">Log in to claim the one-of-a-kind badge.</p>}
+          {user && claimStatus === 'pending' && <p className="text-gray-600 text-sm mb-6">Claiming your badge...</p>}
+          {user && claimStatus === 'already' && <p className="text-gray-500 text-sm mb-6">You&apos;ve already earned this badge.</p>}
+          {user && claimStatus === 'failed' && <p className="text-red-700 text-sm mb-6">Couldn&apos;t claim badge — try refreshing.</p>}
+          {user && claimStatus === null && <p className="text-gray-600 text-sm mb-6">Claiming your badge...</p>}
+          <div className="bg-[#111] border border-orange-500/30 rounded-2xl p-6 mb-6">
+            <div className="text-5xl font-black text-orange-400 leading-none">{streak}</div>
+            <div className="text-gray-500 text-xs mt-2 uppercase tracking-wide">Final Streak</div>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button onClick={restart} className="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-3 rounded-xl transition-colors">
+              Play Again
+            </button>
+            <Link href="/lobby" className="bg-[#111] hover:bg-[#1a1a1a] border border-white/10 text-white font-black px-6 py-3 rounded-xl transition-colors">
+              Lobby
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!current || !challenger) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="text-gray-500">No players available</div>
+      </div>
+    )
+  }
+
+  const progressPct = Math.min(100, (streak / totalComparisons) * 100)
+  const badge10Pct = (10 / totalComparisons) * 100
+  const badge25Pct = (25 / totalComparisons) * 100
+  const isRevealing = screen === 'revealing'
+  const isTie = isRevealing && lastTied
+
+  return (
+    <div className="min-h-screen bg-[#0A0A0A] px-4 py-8">
+      {unlockedBadge && (
+        <div className="fixed top-4 right-4 z-50 bg-yellow-900/95 border border-yellow-500 rounded-2xl px-5 py-4 shadow-2xl max-w-[220px]">
+          <div className="text-yellow-500 text-[10px] font-black uppercase tracking-widest mb-1">Badge Unlocked!</div>
+          <div className="text-white font-black text-base leading-tight">{unlockedBadge.name}</div>
+        </div>
+      )}
+
+      <div className="max-w-2xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <Link href="/lobby" className="text-gray-500 hover:text-white text-sm transition-colors">← Lobby</Link>
+          <h1 className="font-display text-2xl text-orange-500 leading-none">Higher or Lower</h1>
+          <div className="text-gray-600 text-xs tabular-nums">{idx + 1} / {totalComparisons}</div>
+        </div>
+
+        {/* Streak bar */}
+        <div className="bg-[#111] border border-white/5 rounded-2xl p-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-white font-black text-3xl leading-none tabular-nums">{streak}</span>
+              <span className="text-gray-600 text-sm">streak</span>
+              {streak >= 3 && <span className="text-lg">🔥</span>}
+            </div>
+            <div className="text-right">
+              <span className="text-gray-600 text-xs">Best: </span>
+              <span className="text-white font-black text-sm">{bestStreak}</span>
+              {!user && <div className="text-gray-700 text-[10px]">log in to save badges</div>}
+            </div>
+          </div>
+
+          <div className="relative h-3 bg-[#0A0A0A] rounded-full mb-6">
+            <div
+              className="absolute h-full rounded-full bg-gradient-to-r from-orange-700 to-orange-400 transition-all duration-500"
+              style={{ width: `${progressPct}%` }}
+            />
+            <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center"
+                 style={{ left: `${badge10Pct}%` }}>
+              <div className={`w-3.5 h-3.5 rounded-full border-2 transition-colors ${streak >= 10 ? 'bg-cyan-400 border-cyan-300' : 'bg-[#1a1a1a] border-gray-700'}`} />
+              <span className="absolute top-5 text-[9px] text-gray-600 whitespace-nowrap">10</span>
+            </div>
+            <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center"
+                 style={{ left: `${badge25Pct}%` }}>
+              <div className={`w-3.5 h-3.5 rounded-full border-2 transition-colors ${streak >= 25 ? 'bg-indigo-400 border-indigo-300' : 'bg-[#1a1a1a] border-gray-700'}`} />
+              <span className="absolute top-5 text-[9px] text-indigo-600 whitespace-nowrap">25</span>
+            </div>
+            <div className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center" style={{ right: 0 }}>
+              <div className={`w-3.5 h-3.5 rounded-full border-2 transition-colors ${streak >= totalComparisons ? 'bg-yellow-400 border-yellow-200' : 'bg-[#1a1a1a] border-gray-700'}`} />
+              <span className="absolute top-5 right-0 text-[9px] text-yellow-600 whitespace-nowrap">⚡</span>
+            </div>
+          </div>
+
+          <div className="flex justify-between text-[10px] text-gray-700">
+            <span>Stat Nerd @ 10</span>
+            <span className="text-indigo-800">EBK Savant @ 25</span>
+            <span className="text-yellow-800">The Gauntlet ⚡</span>
+          </div>
+        </div>
+
+        <p className="text-center text-gray-600 text-xs mb-4">
+          Does <span className="text-white font-bold">{challenger.firstName} {challenger.lastName}</span> have a{' '}
+          <span className="text-orange-400">higher or lower EBK</span> than{' '}
+          <span className="text-white font-bold">{current.firstName} {current.lastName}</span>?
+          <span className="text-gray-700 ml-2">(lower EBK = bigger career)</span>
+        </p>
+
+        {/* Cards */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="bg-[#111] border border-white/10 rounded-2xl p-5">
+            <div className="text-[10px] text-gray-600 uppercase tracking-widest font-black mb-3">Current</div>
+            <div className="font-black text-white text-base leading-tight mb-0.5">{current.firstName} {current.lastName}</div>
+            <div className="text-gray-600 text-xs mb-4">{current.team} · {current.position}</div>
+            <div className="text-gray-600 text-xs space-y-0.5 mb-4">
+              <div>{current.careerGames} GP</div>
+              <div>{current.careerPPG.toFixed(1)} PPG · {current.careerRPG.toFixed(1)} RPG · {current.careerAPG.toFixed(1)} APG</div>
+            </div>
+            <div className="bg-[#0A0A0A] rounded-xl px-3 py-2.5 text-center">
+              <div className="text-orange-400 font-black text-2xl leading-none">{current.ebkScore.toFixed(1)}</div>
+              <div className="text-gray-700 text-[10px] mt-0.5">EBK Score</div>
+            </div>
+          </div>
+
+          <div className={[
+            'rounded-2xl p-5 border-2 transition-colors duration-300',
+            isRevealing && lastCorrect  ? 'bg-green-900/15 border-green-500'  : '',
+            isRevealing && !lastCorrect ? 'bg-red-900/15 border-red-500'      : '',
+            !isRevealing                ? 'bg-[#111] border-white/10'         : '',
+          ].join(' ')}>
+            <div className="text-[10px] text-gray-600 uppercase tracking-widest font-black mb-3">Challenger</div>
+            <div className="font-black text-white text-base leading-tight mb-0.5">{challenger.firstName} {challenger.lastName}</div>
+            <div className="text-gray-600 text-xs mb-4">{challenger.team} · {challenger.position}</div>
+            {isRevealing ? (
+              <>
+                <div className="text-gray-600 text-xs space-y-0.5 mb-4">
+                  <div>{challenger.careerGames} GP</div>
+                  <div>{challenger.careerPPG.toFixed(1)} PPG · {challenger.careerRPG.toFixed(1)} RPG · {challenger.careerAPG.toFixed(1)} APG</div>
+                </div>
+                <div className={`rounded-xl px-3 py-2.5 text-center ${isTie ? 'bg-yellow-900/40' : lastCorrect ? 'bg-green-900/40' : 'bg-red-900/40'}`}>
+                  <div className={`font-black text-2xl leading-none ${isTie ? 'text-yellow-400' : lastCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                    {challenger.ebkScore.toFixed(1)}
+                  </div>
+                  <div className={`text-[10px] mt-0.5 ${isTie ? 'text-yellow-600' : lastCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                    {isTie ? '~ Tie!' : lastCorrect ? '✓ Correct' : '✗ Wrong'}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-gray-800 text-xs space-y-0.5 mb-4">
+                  <div>??? GP</div>
+                  <div>??.? PPG · ??.? RPG · ??.? APG</div>
+                </div>
+                <div className="bg-[#0A0A0A] rounded-xl px-3 py-2.5 text-center">
+                  <div className="text-gray-700 font-black text-2xl leading-none">???</div>
+                  <div className="text-gray-800 text-[10px] mt-0.5">EBK Score</div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {!isRevealing && (
+          <div className="grid grid-cols-2 gap-4">
+            <button onClick={() => guess('lower')}
+              className="bg-[#111] hover:bg-blue-950/60 border border-blue-500/20 hover:border-blue-500 text-white font-black py-5 rounded-2xl transition-all">
+              <div className="text-blue-400 text-2xl mb-1">▼</div>
+              <div className="text-base">LOWER EBK</div>
+              <div className="text-gray-600 text-[10px] mt-0.5">bigger career</div>
+            </button>
+            <button onClick={() => guess('higher')}
+              className="bg-[#111] hover:bg-red-950/60 border border-red-500/20 hover:border-red-500 text-white font-black py-5 rounded-2xl transition-all">
+              <div className="text-red-400 text-2xl mb-1">▲</div>
+              <div className="text-base">HIGHER EBK</div>
+              <div className="text-gray-600 text-[10px] mt-0.5">smaller career</div>
+            </button>
+          </div>
+        )}
+
+        {isRevealing && (
+          <div className="flex items-center justify-center h-[88px]">
+            <span className={`font-black text-2xl ${isTie ? 'text-yellow-400' : lastCorrect ? 'text-green-400' : 'text-red-400'}`}>
+              {isTie ? '~ Tie — Free Pass!' : lastCorrect ? '✓  Correct!' : '✗  Wrong!'}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

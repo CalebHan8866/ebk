@@ -14,6 +14,8 @@ export interface Badge {
   gamesRequired?: number
   streakRequired?: number
   jamesonCurryRequired?: number
+  hlStreakRequired?: number
+  hlComplete?: boolean
 }
 
 export interface Emote {
@@ -164,6 +166,39 @@ export const BADGES: Badge[] = [
     textClass: 'text-amber-200',
     borderClass: 'border-amber-400',
     jamesonCurryRequired: 500,
+  },
+  {
+    id: 'hl_10',
+    name: 'Stat Nerd',
+    label: 'NERD',
+    icon: tw('1f4ca'),
+    description: 'Get 10 correct in a row in Higher or Lower',
+    bgClass: 'bg-cyan-900/50',
+    textClass: 'text-cyan-400',
+    borderClass: 'border-cyan-600',
+    hlStreakRequired: 10,
+  },
+  {
+    id: 'hl_25',
+    name: 'EBK Savant',
+    label: 'SAVANT',
+    icon: tw('1f9e0'),
+    description: 'Get 25 correct in a row in Higher or Lower',
+    bgClass: 'bg-indigo-900/50',
+    textClass: 'text-indigo-400',
+    borderClass: 'border-indigo-500',
+    hlStreakRequired: 25,
+  },
+  {
+    id: 'hl_gauntlet',
+    name: 'The Gauntlet',
+    label: 'GAUNTLET',
+    icon: tw('26a1'),
+    description: 'Complete the entire Higher or Lower sequence without a single wrong answer',
+    bgClass: 'bg-gradient-to-br from-yellow-900/60 to-orange-900/60',
+    textClass: 'text-yellow-300',
+    borderClass: 'border-yellow-500',
+    hlComplete: true,
   },
 ]
 

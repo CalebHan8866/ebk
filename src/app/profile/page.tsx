@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { BADGES, EMOTES, MILESTONES } from '@/lib/accessories'
+import { useAuth } from '@/context/AuthContext'
 
 interface UserProfile {
   id: string
@@ -31,6 +32,7 @@ export default function ProfilePage() {
   const [equippedBadges, setEquippedBadges] = useState<string[]>([])
   const [equippedEmote, setEquippedEmote] = useState('')
   const router = useRouter()
+  const { setUser: setAuthUser } = useAuth()
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -48,6 +50,7 @@ export default function ProfilePage() {
         }
         setLoading(false)
       })
+      .catch(() => { router.push('/login') })
   }, [router])
 
   async function equipItem(type: 'badge' | 'emote', id: string) {
@@ -67,8 +70,26 @@ export default function ProfilePage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type, id }),
     })
-    if (!res.ok) {
-      // revert on failure
+    if (res.ok) {
+      // Sync user state so subsequent reverts have the correct baseline.
+      // Must recompute from user.equippedBadges (server baseline) not the stale closure.
+      if (type === 'badge') {
+        setUser(u => {
+          if (!u) return u
+          let ids: string[] = []
+          try { ids = JSON.parse(u.equippedBadges || '[]') } catch { ids = [] }
+          const updated = ids.includes(id) ? ids.filter(b => b !== id)
+            : ids.length < 3 ? [...ids, id] : [...ids.slice(1), id]
+          const newEquippedBadges = JSON.stringify(updated)
+          // Sync to AuthContext so Navbar badge display updates immediately
+          setAuthUser(a => a ? { ...a, equippedBadges: newEquippedBadges } : a)
+          return { ...u, equippedBadges: newEquippedBadges }
+        })
+      } else {
+        setUser(u => u ? { ...u, equippedEmote: id } : u)
+      }
+    } else {
+      // Revert on failure
       if (type === 'badge') {
         try { setEquippedBadges(JSON.parse(user?.equippedBadges || '[]')) } catch { setEquippedBadges([]) }
       } else {
@@ -84,7 +105,7 @@ export default function ProfilePage() {
       </div>
     )
   }
-  if (!user) return null
+  if (!user) { router.push('/login'); return null }
 
   const total = user.wins + user.losses + user.draws
   const winPct = total > 0 ? ((user.wins / total) * 100).toFixed(1) : '0.0'
@@ -177,10 +198,13 @@ export default function ProfilePage() {
                   badge ? `${badge.bgClass} ${badge.borderClass} border-solid` : 'border-gray-800 bg-[#0A0A0A]',
                 ].join(' ')}>
                   {badge ? (
-                    <>
-                      <img src={badge.icon} alt={badge.name} className="w-8 h-8 mb-1" />
-                      <span className={`text-[10px] font-black ${badge.textClass}`}>{badge.label}</span>
-                    </>
+                    <div className="relative group flex flex-col items-center">
+                      <img src={badge.icon} alt={badge.name} className="w-8 h-8" />
+                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[160px] rounded-lg bg-gray-900 border border-gray-700 px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                        <div className="text-white text-xs font-black mb-0.5">{badge.name}</div>
+                        <div className="text-gray-400 text-[11px] leading-snug">{badge.description}</div>
+                      </div>
+                    </div>
                   ) : (
                     <span className="text-gray-700 text-xs">slot {slot + 1}</span>
                   )}
@@ -195,7 +219,7 @@ export default function ProfilePage() {
               <p className="text-gray-600 text-sm">No badges yet — keep playing</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="flex flex-wrap gap-2">
               {BADGES.filter(badge => unlockedBadgeIds.includes(badge.id)).map(badge => {
                 const isEquipped = equippedBadges.includes(badge.id)
                 return (
@@ -203,20 +227,19 @@ export default function ProfilePage() {
                     key={badge.id}
                     onClick={() => equipItem('badge', badge.id)}
                     className={[
-                      'relative rounded-xl p-4 text-left border transition-all cursor-pointer hover:brightness-110',
+                      'relative group rounded-xl p-2.5 border transition-all cursor-pointer hover:brightness-110',
                       isEquipped ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-[#101010]' : '',
                       badge.bgClass,
                       badge.borderClass,
                     ].join(' ')}
                   >
-                    {isEquipped && (
-                      <span className="absolute top-2 right-2 text-[9px] font-bold text-orange-400 uppercase tracking-wider">
-                        ✓ equipped
-                      </span>
-                    )}
-                    <img src={badge.icon} alt={badge.name} className="w-10 h-10 mb-2" />
-                    <div className="text-sm font-black text-white">{badge.name}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">{badge.description}</div>
+                    <img src={badge.icon} alt={badge.name} className="w-8 h-8" />
+                    {/* Tooltip */}
+                    <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] rounded-lg bg-gray-900 border border-gray-700 px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                      <div className="text-white text-xs font-black mb-0.5">{badge.name}</div>
+                      <div className="text-gray-400 text-[11px] leading-snug">{badge.description}</div>
+                      {isEquipped && <div className="text-orange-400 text-[10px] font-bold mt-1">✓ equipped</div>}
+                    </div>
                   </button>
                 )
               })}

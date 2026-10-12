@@ -8,6 +8,7 @@ interface AuthUser {
   wins: number
   losses: number
   draws: number
+  equippedBadges?: string
 }
 
 interface AuthContextType {
