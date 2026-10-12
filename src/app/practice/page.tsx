@@ -128,7 +128,7 @@ function PracticeContent() {
   const [spunTeam, setSpunTeam] = useState<string | null>(null)
   const [isSpinning, setIsSpinning] = useState(false)
   const [spinDisplay, setSpinDisplay] = useState('?')
-  const spinRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const spinRefs = useRef<ReturnType<typeof setTimeout>[]>([])
   const [shuffledIds, setShuffledIds] = useState<number[]>([])
 
   // Load players when entering draft
@@ -140,6 +140,14 @@ function PracticeContent() {
       .then((data: Player[]) => { setPlayers(data); setLoadingPlayers(false); triggerSpin(data, []) })
       .catch(() => setLoadingPlayers(false))
   }, [screen, players.length])
+
+  // Clean up any pending spin timers on unmount
+  useEffect(() => {
+    return () => {
+      spinRefs.current.forEach(id => clearTimeout(id))
+      spinRefs.current = []
+    }
+  }, [])
 
   const teamSize = TEAM_SIZES[teamMode]
   const requiredSlots = getRequiredPositions(teamMode)
@@ -154,6 +162,10 @@ function PracticeContent() {
   const remainingStarterPositions = ['PG', 'SG', 'SF', 'PF', 'C'].filter(p => !usedStarterPositions.has(p))
 
   function triggerSpin(afterPlayers: Player[], currentPicks: (number | null)[]) {
+    // Cancel any in-progress spin before starting a new one
+    spinRefs.current.forEach(id => clearInterval(id))
+    spinRefs.current = []
+
     const takenNow = new Set(currentPicks.filter((id): id is number => id !== null))
     const isNextStarter = currentPicks.slice(0, 5).some(id => id === null)
     // Which slot positions are consumed in current picks
@@ -176,13 +188,16 @@ function PracticeContent() {
     const rnd = () => allAbbrs[Math.floor(Math.random() * allAbbrs.length)]
 
     const p1 = setInterval(() => setSpinDisplay(rnd()), 80)
-    setTimeout(() => {
+    spinRefs.current.push(p1)
+    const t1 = setTimeout(() => {
       clearInterval(p1)
       const p2 = setInterval(() => setSpinDisplay(rnd()), 160)
-      setTimeout(() => {
+      spinRefs.current.push(p2)
+      const t2 = setTimeout(() => {
         clearInterval(p2)
         const p3 = setInterval(() => setSpinDisplay(rnd()), 320)
-        setTimeout(() => {
+        spinRefs.current.push(p3)
+        const t3 = setTimeout(() => {
           clearInterval(p3)
           setSpunTeam(target)
           setIsSpinning(false)
@@ -191,9 +206,13 @@ function PracticeContent() {
           // Shuffle team's players once — stable for this pick turn
           const pool = afterPlayers.filter(p => getCurrentTeam(p.team) === target)
           setShuffledIds([...pool].sort(() => Math.random() - 0.5).map(p => p.id))
+          spinRefs.current = []
         }, 640)
+        spinRefs.current.push(t3)
       }, 800)
+      spinRefs.current.push(t2)
     }, 1200)
+    spinRefs.current.push(t1)
   }
 
   const spunTeamInfo = spunTeam ? CURRENT_TEAMS.find(t => t.abbr === spunTeam) : null
@@ -260,6 +279,8 @@ function PracticeContent() {
   }
 
   function reset() {
+    spinRefs.current.forEach(id => clearInterval(id)); spinRefs.current = []
+    setIsSpinning(false); setSpunTeam(null)
     setPicks([])
     setFilterPos('ALL')
     setSearchQuery('')
