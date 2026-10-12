@@ -363,6 +363,8 @@ function GameContent() {
       if (pickTimerRef.current) clearInterval(pickTimerRef.current)
       if (spinIntervalRef.current) clearInterval(spinIntervalRef.current)
       if (emoteTimerRef.current) clearTimeout(emoteTimerRef.current)
+      spinRefs.current.forEach(id => clearTimeout(id))
+      spinRefs.current = []
     }
   }, [code, role])
 
