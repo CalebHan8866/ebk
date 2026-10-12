@@ -48,6 +48,35 @@ function getRequiredPositions(teamMode: TeamMode): string[] {
   return [...starters, ...bench]
 }
 
+// Greedy: fill each starter slot with best EBK player that can play it,
+// then fill bench with highest remaining. Good approximation of optimal.
+function getBestPossibleTeam(players: Player[], requiredSlots: string[]): Player[] {
+  const sorted = [...players].sort((a, b) => b.ebkScore - a.ebkScore)
+  const result: Player[] = []
+  const usedIds = new Set<number>()
+  // Starter slots
+  for (let i = 0; i < Math.min(5, requiredSlots.length); i++) {
+    const pos = requiredSlots[i]
+    const best = sorted.find(p => !usedIds.has(p.id) && p.positions.split(',').includes(pos))
+    if (best) { result.push(best); usedIds.add(best.id) }
+  }
+  // Bench slots
+  for (let i = 5; i < requiredSlots.length; i++) {
+    const best = sorted.find(p => !usedIds.has(p.id))
+    if (best) { result.push(best); usedIds.add(best.id) }
+  }
+  return result
+}
+
+function getGrade(pct: number): { grade: string; label: string; color: string } {
+  if (pct >= 95) return { grade: 'S', label: 'Perfect',       color: 'text-purple-400' }
+  if (pct >= 85) return { grade: 'A', label: 'Great',         color: 'text-green-400'  }
+  if (pct >= 70) return { grade: 'B', label: 'Good',          color: 'text-blue-400'   }
+  if (pct >= 55) return { grade: 'C', label: 'Average',       color: 'text-yellow-400' }
+  if (pct >= 40) return { grade: 'D', label: 'Below Average', color: 'text-orange-400' }
+  return              { grade: 'F', label: 'Rough Draft',   color: 'text-red-400'    }
+}
+
 function PracticeContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -540,21 +569,52 @@ function PracticeContent() {
     apg: pickedPlayers.reduce((s, p) => s + p.careerAPG, 0),
   }
   const totalEBK = pickedPlayers.reduce((s, p) => s + p.ebkScore, 0)
+  const bestTeam = getBestPossibleTeam(players, requiredSlots)
+  const bestEBK = bestTeam.reduce((s, p) => s + p.ebkScore, 0)
+  const pct = bestEBK > 0 ? (totalEBK / bestEBK) * 100 : 0
+  const { grade, label: gradeLabel, color: gradeColor } = getGrade(pct)
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] py-10 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="font-display text-5xl text-white leading-none">Your Team</h1>
-          <p className="text-gray-500 text-sm mt-2">
-            {teamMode === 'starter5' ? 'Starter 5' : teamMode === 'bench8' ? 'Bench 8' : 'Full 12'} ·{' '}
-            {difficulty === 'casual' ? 'Casual' : 'EBK'}
-          </p>
+
+        {/* EBK Score + Grade */}
+        <div className="bg-[#111827] rounded-2xl p-6 mb-5 text-center">
+          <div className="text-gray-400 text-xs uppercase tracking-widest mb-3">EBK Score</div>
+          <div className={`font-display leading-none mb-1 ${gradeColor}`} style={{ fontSize: 'clamp(5rem, 22vw, 8rem)' }}>
+            {grade}
+          </div>
+          <div className={`font-black text-lg mb-4 ${gradeColor}`}>{gradeLabel}</div>
+
+          {/* Score bar */}
+          <div className="bg-[#0A0A0A] rounded-xl p-4 mb-3">
+            <div className="flex justify-between text-xs text-gray-500 mb-2">
+              <span>Your EBK</span>
+              <span>Best Possible</span>
+            </div>
+            <div className="w-full bg-gray-800 rounded-full h-3 mb-2 overflow-hidden">
+              <div
+                className={`h-3 rounded-full transition-all ${
+                  pct >= 85 ? 'bg-green-500' : pct >= 70 ? 'bg-blue-500' : pct >= 55 ? 'bg-yellow-500' : pct >= 40 ? 'bg-orange-500' : 'bg-red-500'
+                }`}
+                style={{ width: `${Math.min(pct, 100)}%` }}
+              />
+            </div>
+            <div className="flex justify-between items-baseline">
+              <span className={`font-black text-2xl ${gradeColor}`}>{totalEBK.toFixed(1)}</span>
+              <span className="text-gray-600 text-xs">{pct.toFixed(1)}% of optimal</span>
+              <span className="font-black text-2xl text-gray-400">{bestEBK.toFixed(1)}</span>
+            </div>
+          </div>
+
+          <div className="text-gray-600 text-xs">
+            EBK score = career stats weighted by impact · higher is better
+          </div>
         </div>
 
         {/* Roster */}
         <div className="bg-[#111827] rounded-2xl p-4 mb-5">
-          <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Roster</h2>
+          <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Your Roster</h2>
           <div className="space-y-2">
             {requiredSlots.map((slotPos, i) => {
               const p = pickedPlayers[i]
@@ -566,13 +626,11 @@ function PracticeContent() {
                       {slotPos === 'BENCH' ? 'BN' : slotPos}
                     </span>
                     <span className="text-white text-sm font-bold truncate flex-1">{p.firstName} {p.lastName}</span>
-                    {difficulty === 'casual' && (
-                      <span className={`text-xs font-black shrink-0 ${
-                        p.ebkScore >= 80 ? 'text-green-400' :
-                        p.ebkScore >= 60 ? 'text-yellow-400' :
-                        p.ebkScore >= 40 ? 'text-orange-400' : 'text-red-400'
-                      }`}>{p.ebkScore}</span>
-                    )}
+                    <span className={`text-xs font-black shrink-0 ${
+                      p.ebkScore >= 80 ? 'text-green-400' :
+                      p.ebkScore >= 60 ? 'text-yellow-400' :
+                      p.ebkScore >= 40 ? 'text-orange-400' : 'text-red-400'
+                    }`}>{p.ebkScore.toFixed(1)}</span>
                   </div>
                   <div className="flex items-center gap-2 pl-9 flex-wrap">
                     <span className="text-gray-600 text-xs">{p.team} · {p.yearFrom}–{p.yearTo}</span>
@@ -585,6 +643,41 @@ function PracticeContent() {
                     <span className="text-gray-700 text-xs">·</span>
                     <span className="text-gray-400 text-xs">{p.careerAPG.toFixed(1)}A</span>
                   </div>
+                </div>
+              )
+            })}
+          </div>
+          <div className="mt-3 border-t border-gray-800 pt-3 flex justify-between items-center px-1">
+            <span className="text-gray-500 text-xs uppercase tracking-wide">Team EBK Total</span>
+            <span className={`font-black text-lg ${gradeColor}`}>{totalEBK.toFixed(1)}</span>
+          </div>
+        </div>
+
+        {/* Best possible team */}
+        <div className="bg-[#111827] rounded-2xl p-4 mb-5">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-gray-400 text-xs uppercase tracking-wide">Best Possible Roster</h2>
+            <span className="text-gray-600 text-xs">EBK {bestEBK.toFixed(1)}</span>
+          </div>
+          <div className="space-y-1.5">
+            {requiredSlots.map((slotPos, i) => {
+              const p = bestTeam[i]
+              if (!p) return null
+              const isPicked = pickedPlayers.some(pp => pp.id === p.id)
+              return (
+                <div key={i} className={`rounded-lg px-3 py-2 flex items-center gap-2 ${isPicked ? 'bg-green-900/20' : 'bg-[#0A0A0A]'}`}>
+                  <span className={`font-bold text-xs w-7 shrink-0 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-orange-400'}`}>
+                    {slotPos === 'BENCH' ? 'BN' : slotPos}
+                  </span>
+                  <span className={`text-sm font-bold flex-1 truncate ${isPicked ? 'text-green-400' : 'text-gray-400'}`}>
+                    {p.firstName} {p.lastName}
+                    {isPicked && <span className="text-green-600 text-xs font-normal ml-1">✓ you got them</span>}
+                  </span>
+                  <span className={`text-xs font-black shrink-0 ${
+                    p.ebkScore >= 80 ? 'text-green-400' :
+                    p.ebkScore >= 60 ? 'text-yellow-400' :
+                    p.ebkScore >= 40 ? 'text-orange-400' : 'text-red-400'
+                  }`}>{p.ebkScore.toFixed(1)}</span>
                 </div>
               )
             })}
@@ -604,18 +697,6 @@ function PracticeContent() {
               </div>
             ))}
           </div>
-          {difficulty === 'casual' && (
-            <div className="mt-3 bg-[#0A0A0A] rounded-xl p-4 text-center">
-              <div className="text-gray-500 text-xs mb-1">Total EBK Score</div>
-              <div className={`font-black text-2xl ${
-                totalEBK / teamSize >= 70 ? 'text-green-400' :
-                totalEBK / teamSize >= 50 ? 'text-yellow-400' :
-                totalEBK / teamSize >= 30 ? 'text-orange-400' : 'text-red-400'
-              }`}>
-                {totalEBK.toFixed(1)} <span className="text-sm font-normal text-gray-500">(avg {(totalEBK / teamSize).toFixed(1)})</span>
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="flex gap-3">
