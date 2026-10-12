@@ -47,6 +47,28 @@ const PATCHES: PatchPlayer[] = [
     careerGames: 54, careerPPG: 28.4, careerRPG: 8.9, careerAPG: 7.3,
     yearFrom: 2025, yearTo: 2025,
   },
+
+  // ── Matthew Dellavedova (MIL) ────────────────────────────────────────────────
+  // Hash collision: stableId(dellavedova-slug, MIL) == stableId(rayjon-tucker-slug, PHI)
+  // PHI scraped after MIL so Tucker survived; Dellavedova's MIL career entry is missing.
+  {
+    id: 9_000_003,
+    firstName: 'Matthew', lastName: 'Dellavedova',
+    team: 'MIL', position: 'PG', positions: 'PG',
+    careerGames: 199, careerPPG: 5.7, careerRPG: 2.8, careerAPG: 3.3,
+    yearFrom: 2015, yearTo: 2019,
+  },
+
+  // ── Paul Reed (PHI) ──────────────────────────────────────────────────────────
+  // Hash collision: stableId(paul-reed-slug, PHI) == stableId(filipowski-slug, UTA)
+  // UTA scraped after PHI so Filipowski survived; Paul Reed's PHI career entry is missing.
+  {
+    id: 9_000_004,
+    firstName: 'Paul', lastName: 'Reed',
+    team: 'PHI', position: 'PF', positions: 'PF,C',
+    careerGames: 222, careerPPG: 7.5, careerRPG: 5.0, careerAPG: 0.9,
+    yearFrom: 2021, yearTo: 2024,
+  },
 ]
 
 async function main() {
