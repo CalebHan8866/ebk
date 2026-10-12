@@ -4,6 +4,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import { getSocket } from '@/lib/socket'
 import { CURRENT_TEAMS, getCurrentTeam } from '@/lib/teams'
 import { EMOTES } from '@/lib/accessories'
+import { useAuth } from '@/context/AuthContext'
 
 type TeamMode = 'starter5' | 'bench8' | 'full12'
 
@@ -124,6 +125,7 @@ function GameContent() {
   const params = useParams()
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { refreshUser } = useAuth()
   const code = (params.code as string).toUpperCase()
   const role = (searchParams.get('role') as 'host' | 'guest') || 'host'
   const myName = searchParams.get('name') || 'You'
@@ -171,10 +173,10 @@ function GameContent() {
     }
     const handleRoomUpdated = ({ room }: { room: Room }) => { setRoom(room) }
     const handleGameResult = ({ room, result }: { room: Room; result: GameResult }) => {
-      setRoom(room); setLastResult(result)
+      setRoom(room); setLastResult(result); refreshUser()
     }
     const handleSeriesComplete = ({ room, seriesWinner }: { room: Room; seriesWinner: 'host' | 'guest' | 'draw' }) => {
-      setRoom(room); setSeriesWinner(seriesWinner)
+      setRoom(room); setSeriesWinner(seriesWinner); refreshUser()
     }
     const handlePartnerDisconnected = () => { setDisconnected(true) }
     const handleRoomError = ({ message }: { message: string }) => {
@@ -833,85 +835,95 @@ function GameContent() {
               </div>
             )}
 
-            {isSpinning && (
-              <div className="flex items-center justify-center h-16 rounded-xl bg-yellow-900/10 border border-yellow-600/30 mb-3">
-                <p className="text-yellow-400 font-bold text-sm animate-pulse">Locked — waiting for spin...</p>
+            {!isMyTurn ? (
+              <div className="flex flex-col items-center justify-center h-64 rounded-2xl bg-[#111827] border border-gray-700">
+                <div className="w-8 h-8 rounded-full border-2 border-gray-500 border-t-transparent animate-spin mb-4"></div>
+                <div className="text-white font-black text-lg">{oppName} is picking...</div>
+                <div className="text-gray-500 text-sm mt-1">Hang tight</div>
               </div>
-            )}
+            ) : (
+              <>
+                {isSpinning && (
+                  <div className="flex items-center justify-center h-16 rounded-xl bg-yellow-900/10 border border-yellow-600/30 mb-3">
+                    <p className="text-yellow-400 font-bold text-sm animate-pulse">Locked — waiting for spin...</p>
+                  </div>
+                )}
 
-            {selectedPlayer && isMyTurn && (
-              <div className="mb-2 bg-orange-600/10 border border-orange-500 rounded-lg px-3 py-2 text-xs text-orange-300 flex items-center justify-between">
-                <span><span className="font-black text-orange-400">{selectedPlayer.firstName} {selectedPlayer.lastName}</span> selected — tap a slot</span>
-                <button onClick={() => setSelectedPlayerId(null)} className="text-orange-400 hover:text-white ml-2">✕</button>
-              </div>
-            )}
+                {selectedPlayer && (
+                  <div className="mb-2 bg-orange-600/10 border border-orange-500 rounded-lg px-3 py-2 text-xs text-orange-300 flex items-center justify-between">
+                    <span><span className="font-black text-orange-400">{selectedPlayer.firstName} {selectedPlayer.lastName}</span> selected — tap a slot</span>
+                    <button onClick={() => setSelectedPlayerId(null)} className="text-orange-400 hover:text-white ml-2">✕</button>
+                  </div>
+                )}
 
-            {/* Emote bar */}
-            {myEmotes.length > 0 && (
-              <div className="flex gap-2 mb-3 flex-wrap">
-                {myEmotes.map(emoteId => {
-                  const emote = EMOTES.find(e => e.id === emoteId)
-                  if (!emote) return null
-                  return (
-                    <button
-                      key={emoteId}
-                      onClick={() => {
-                        const socket = getSocket()
-                        socket.emit('use-emote', { code, emoteText: emote.text })
-                      }}
-                      className="bg-[#1a1a2e] hover:bg-[#252540] border border-gray-700 hover:border-orange-500 text-white text-sm px-3 py-1.5 rounded-xl transition-all font-medium"
-                      title={emote.label}
-                    >
-                      {emote.text}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
+                {/* Emote bar */}
+                {myEmotes.length > 0 && (
+                  <div className="flex gap-2 mb-3 flex-wrap">
+                    {myEmotes.map(emoteId => {
+                      const emote = EMOTES.find(e => e.id === emoteId)
+                      if (!emote) return null
+                      return (
+                        <button
+                          key={emoteId}
+                          onClick={() => {
+                            const socket = getSocket()
+                            socket.emit('use-emote', { code, emoteText: emote.text })
+                          }}
+                          className="bg-[#1a1a2e] hover:bg-[#252540] border border-gray-700 hover:border-orange-500 text-white text-sm px-3 py-1.5 rounded-xl transition-all font-medium"
+                          title={emote.label}
+                        >
+                          {emote.text}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
 
-            <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1">
-              {filteredPlayers.map(player => {
-                const playerPositions = player.positions.split(',')
-                const canPick = isMyTurn && !isSpinning && spunTeam !== null && !takenIds.has(player.id)
-                const isSelected = selectedPlayerId === player.id
-                const statVal = getStatValue(player, statMode)
+                <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1">
+                  {filteredPlayers.map(player => {
+                    const playerPositions = player.positions.split(',')
+                    const canPick = !isSpinning && spunTeam !== null && !takenIds.has(player.id)
+                    const isSelected = selectedPlayerId === player.id
+                    const statVal = getStatValue(player, statMode)
 
-                return (
-                  <button
-                    key={player.id}
-                    onClick={() => canPick && selectAndPick(player.id)}
-                    disabled={!canPick}
-                    className={`w-full rounded-xl px-3 py-2.5 flex items-center gap-2 text-left transition-all ${
-                      isSelected
-                        ? 'bg-orange-600/30 border-2 border-orange-500 cursor-pointer'
-                        : canPick
-                        ? 'bg-[#111827] hover:bg-[#1e2d45] hover:border-orange-500 border-2 border-transparent cursor-pointer'
-                        : 'bg-[#0D0D0D] border-2 border-transparent cursor-default opacity-50'
-                    }`}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="text-white font-bold text-sm truncate">{player.firstName} {player.lastName}</div>
-                      <div className="text-gray-500 text-xs truncate">{player.team} · {player.yearFrom}–{player.yearTo}</div>
-                    </div>
-                    <div className="flex gap-1 shrink-0">
-                      {playerPositions.map((pos: string) => (
-                        <span key={pos} className="text-xs bg-orange-600/20 text-orange-400 px-1.5 py-0.5 rounded font-bold">{pos}</span>
-                      ))}
-                    </div>
-                    {room.difficulty === 'casual' && (
-                      <div className="text-right shrink-0 min-w-[48px]">
-                        <div className="text-white font-black text-sm">
-                          {statMode === 'games_played' ? statVal : statVal.toFixed(1)}
+                    return (
+                      <button
+                        key={player.id}
+                        onClick={() => canPick && selectAndPick(player.id)}
+                        disabled={!canPick}
+                        className={`w-full rounded-xl px-3 py-2.5 flex items-center gap-2 text-left transition-all ${
+                          isSelected
+                            ? 'bg-orange-600/30 border-2 border-orange-500 cursor-pointer'
+                            : canPick
+                            ? 'bg-[#111827] hover:bg-[#1e2d45] hover:border-orange-500 border-2 border-transparent cursor-pointer'
+                            : 'bg-[#0D0D0D] border-2 border-transparent cursor-default opacity-50'
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="text-white font-bold text-sm truncate">{player.firstName} {player.lastName}</div>
+                          <div className="text-gray-500 text-xs truncate">{player.team} · {player.yearFrom}–{player.yearTo}</div>
                         </div>
-                        <div className="text-gray-500 text-xs">
-                          {statMode === 'games_played' ? 'GP' : statMode.toUpperCase()}
+                        <div className="flex gap-1 shrink-0">
+                          {playerPositions.map((pos: string) => (
+                            <span key={pos} className="text-xs bg-orange-600/20 text-orange-400 px-1.5 py-0.5 rounded font-bold">{pos}</span>
+                          ))}
                         </div>
-                      </div>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
+                        {room.difficulty === 'casual' && (
+                          <div className="text-right shrink-0 min-w-[48px]">
+                            <div className="text-white font-black text-sm">
+                              {statMode === 'games_played' ? statVal : statVal.toFixed(1)}
+                            </div>
+                            <div className="text-gray-500 text-xs">
+                              {statMode === 'games_played' ? 'GP' : statMode.toUpperCase()}
+                            </div>
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Opponent Team (desktop only) */}

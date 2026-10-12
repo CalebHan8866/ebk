@@ -15,6 +15,7 @@ interface AuthContextType {
   loading: boolean
   setUser: (user: AuthUser | null) => void
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -22,6 +23,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   setUser: () => {},
   logout: async () => {},
+  refreshUser: async () => {},
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -43,8 +45,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
+  async function refreshUser() {
+    const data = await fetch('/api/auth/me').then(r => r.ok ? r.json() : null).catch(() => null)
+    if (data?.user) setUser(data.user)
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, setUser, logout }}>
+    <AuthContext.Provider value={{ user, loading, setUser, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )
