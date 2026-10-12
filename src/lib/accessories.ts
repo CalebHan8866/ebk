@@ -9,6 +9,7 @@ export interface Badge {
   winsRequired?: number
   gamesRequired?: number
   streakRequired?: number
+  jamesonCurryRequired?: number
 }
 
 export interface Emote {
@@ -107,6 +108,46 @@ export const BADGES: Badge[] = [
     textClass: 'text-white',
     borderClass: 'border-white/30',
     streakRequired: 10,
+  },
+  {
+    id: 'jc_25',
+    name: 'JC Curious',
+    label: 'JC',
+    description: 'Draft Jameson Curry in 25 games',
+    bgClass: 'bg-amber-900/50',
+    textClass: 'text-amber-400',
+    borderClass: 'border-amber-700',
+    jamesonCurryRequired: 25,
+  },
+  {
+    id: 'jc_50',
+    name: 'JC Fan',
+    label: 'JC ★',
+    description: 'Draft Jameson Curry in 50 games',
+    bgClass: 'bg-amber-800/50',
+    textClass: 'text-amber-300',
+    borderClass: 'border-amber-500',
+    jamesonCurryRequired: 50,
+  },
+  {
+    id: 'jc_100',
+    name: 'JC Loyalist',
+    label: 'JC ★★',
+    description: 'Draft Jameson Curry in 100 games',
+    bgClass: 'bg-yellow-900/50',
+    textClass: 'text-yellow-300',
+    borderClass: 'border-yellow-500',
+    jamesonCurryRequired: 100,
+  },
+  {
+    id: 'jc_500',
+    name: 'JAMESON',
+    label: 'JAMESON',
+    description: 'Draft Jameson Curry in 500 games',
+    bgClass: 'bg-gradient-to-br from-amber-900/60 to-orange-900/60',
+    textClass: 'text-amber-200',
+    borderClass: 'border-amber-400',
+    jamesonCurryRequired: 500,
   },
 ]
 

@@ -72,6 +72,7 @@ const players = [
   { id: 68, firstName: 'Carmelo', lastName: 'Anthony', team: 'Retired', position: 'SF', positions: ['SF','PF','SG'], careerGames: 1260, careerPPG: 22.5, careerRPG: 6.3, careerAPG: 2.9 },
   { id: 69, firstName: 'Tony', lastName: 'Parker', team: 'Retired', position: 'PG', positions: ['PG'], careerGames: 1254, careerPPG: 15.5, careerRPG: 2.7, careerAPG: 5.6 },
   { id: 70, firstName: 'Manu', lastName: 'Ginobili', team: 'Retired', position: 'SG', positions: ['SG','SF','PG'], careerGames: 1057, careerPPG: 13.3, careerRPG: 3.5, careerAPG: 3.8 },
+  { id: 71, firstName: 'Jameson', lastName: 'Curry', team: 'Retired', position: 'PG', positions: ['PG','SG'], careerGames: 78, careerPPG: 3.3, careerRPG: 0.9, careerAPG: 1.1 },
 ]
 
 async function main() {

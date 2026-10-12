@@ -139,6 +139,8 @@ interface Room {
   guestSeriesScore: number
   gameResults: GameResult[]
   currentSpunTeam: string | null
+  hostJCGames: number
+  guestJCGames: number
 }
 
 interface PlayerData {
@@ -204,6 +206,7 @@ const consecutiveTimeouts = new Map<string, { host: number; guest: number }>()
 // cooldown: userId → Map(opponentId → timestamp of last game end)
 const recentMatchups = new Map<string, Map<string, number>>()
 let allPlayers: PlayerData[] = []
+const JAMESON_CURRY_ID = 71
 
 // ─── Cooldown helpers ────────────────────────────────────────────────────────
 
@@ -233,23 +236,26 @@ async function updateStatsAndUnlock(
   socketId: string,
   won: boolean,
   isDraw: boolean,
+  jcGamesThisSeries: number = 0,
 ) {
   try {
-    // Update wins/losses/draws/gamesPlayed/winStreak atomically
+    // Update wins/losses/draws/gamesPlayed/winStreak/jamesonCurryGames atomically
     await prisma.user.update({
       where: { id: userId },
       data: {
-        wins:        won    ? { increment: 1 } : undefined,
-        losses:      !won && !isDraw ? { increment: 1 } : undefined,
-        draws:       isDraw ? { increment: 1 } : undefined,
-        gamesPlayed: { increment: 1 },
-        winStreak:   won    ? { increment: 1 } : { set: 0 },
+        wins:              won    ? { increment: 1 } : undefined,
+        losses:            !won && !isDraw ? { increment: 1 } : undefined,
+        draws:             isDraw ? { increment: 1 } : undefined,
+        gamesPlayed:       { increment: 1 },
+        winStreak:         won    ? { increment: 1 } : { set: 0 },
+        jamesonCurryGames: jcGamesThisSeries > 0 ? { increment: jcGamesThisSeries } : undefined,
       },
     })
 
     const u = await prisma.user.findUnique({
       where: { id: userId },
       select: { wins: true, gamesPlayed: true, winStreak: true, maxWinStreak: true,
+                jamesonCurryGames: true,
                 unlockedBadges: true, unlockedEmotes: true, unlockedMilestones: true },
     })
     if (!u) return
@@ -260,7 +266,7 @@ async function updateStatsAndUnlock(
     }
     const effectiveMaxStreak = Math.max(u.maxWinStreak, u.winStreak)
 
-    const stats = { wins: u.wins, gamesPlayed: u.gamesPlayed, winStreak: u.winStreak, maxWinStreak: effectiveMaxStreak }
+    const stats = { wins: u.wins, gamesPlayed: u.gamesPlayed, winStreak: u.winStreak, maxWinStreak: effectiveMaxStreak, jcGames: u.jamesonCurryGames }
     const curBadges:     string[] = JSON.parse(u.unlockedBadges     || '[]')
     const curEmotes:     string[] = JSON.parse(u.unlockedEmotes     || '[]')
     const curMilestones: string[] = JSON.parse(u.unlockedMilestones || '[]')
@@ -272,9 +278,10 @@ async function updateStatsAndUnlock(
 
     for (const b of BADGES) {
       if (curBadges.includes(b.id)) continue
-      const ok = (b.winsRequired     !== undefined && stats.wins             >= b.winsRequired)
-              || (b.gamesRequired    !== undefined && stats.gamesPlayed      >= b.gamesRequired)
-              || (b.streakRequired   !== undefined && stats.maxWinStreak     >= b.streakRequired)
+      const ok = (b.winsRequired          !== undefined && stats.wins        >= b.winsRequired)
+              || (b.gamesRequired         !== undefined && stats.gamesPlayed >= b.gamesRequired)
+              || (b.streakRequired        !== undefined && stats.maxWinStreak >= b.streakRequired)
+              || (b.jamesonCurryRequired  !== undefined && stats.jcGames     >= b.jamesonCurryRequired)
       if (ok) { newBadges.push(b.id); newlyUnlocked.push({ type: 'badge', id: b.id, name: b.name }) }
     }
     for (const e of EMOTES) {
@@ -446,8 +453,8 @@ function startPickTimer(io: SocketServer, room: Room) {
 
       if (currentRoom.source === 'online') {
         recordMatchup(currentRoom.hostUserId, currentRoom.guestUserId)
-        if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, winner === 'host', false)
-        if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, winner === 'guest', false)
+        if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, winner === 'host', false, 0)
+        if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, winner === 'guest', false, 0)
       }
 
       io.to(code).emit('player-disqualified', { room: currentRoom, disqualifiedRole: loser, winner })
@@ -464,6 +471,9 @@ function startPickTimer(io: SocketServer, room: Room) {
       if (result.winner === 'host') currentRoom.hostSeriesScore++
       else if (result.winner === 'guest') currentRoom.guestSeriesScore++
 
+      if (currentRoom.hostPicks.includes(JAMESON_CURRY_ID)) currentRoom.hostJCGames++
+      if (currentRoom.guestPicks.includes(JAMESON_CURRY_ID)) currentRoom.guestJCGames++
+
       const winsNeeded = Math.ceil(currentRoom.series / 2)
       const seriesDone = currentRoom.hostSeriesScore >= winsNeeded || currentRoom.guestSeriesScore >= winsNeeded || currentRoom.currentGame >= currentRoom.series
       currentRoom.status = seriesDone ? 'complete' : 'result'
@@ -473,8 +483,8 @@ function startPickTimer(io: SocketServer, room: Room) {
         const seriesWinner = currentRoom.hostSeriesScore > currentRoom.guestSeriesScore ? 'host' : currentRoom.guestSeriesScore > currentRoom.hostSeriesScore ? 'guest' : 'draw'
         if (currentRoom.source === 'online') {
           recordMatchup(currentRoom.hostUserId, currentRoom.guestUserId)
-          if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, seriesWinner === 'host', seriesWinner === 'draw')
-          if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw')
+          if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, seriesWinner === 'host', seriesWinner === 'draw', currentRoom.hostJCGames)
+          if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw', currentRoom.guestJCGames)
         }
         io.to(code).emit('series-complete', { room: currentRoom, seriesWinner })
       } else {
@@ -517,6 +527,8 @@ function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
     guestSeriesScore: 0,
     gameResults: [],
     currentSpunTeam: null,
+    hostJCGames: 0,
+    guestJCGames: 0,
   }
   rooms.set(code, room)
   consecutiveTimeouts.set(code, { host: 0, guest: 0 })
@@ -580,6 +592,8 @@ app.prepare().then(async () => {
         guestSeriesScore: 0,
         gameResults: [],
         currentSpunTeam: null,
+        hostJCGames: 0,
+        guestJCGames: 0,
       }
       rooms.set(code, room)
       socket.join(code)
@@ -672,6 +686,10 @@ app.prepare().then(async () => {
         if (result.winner === 'host') room.hostSeriesScore++
         else if (result.winner === 'guest') room.guestSeriesScore++
 
+        // Track Jameson Curry drafts per game across the series
+        if (room.hostPicks.includes(JAMESON_CURRY_ID)) room.hostJCGames++
+        if (room.guestPicks.includes(JAMESON_CURRY_ID)) room.guestJCGames++
+
         const winsNeeded = Math.ceil(room.series / 2)
         const seriesDone = room.hostSeriesScore >= winsNeeded || room.guestSeriesScore >= winsNeeded || room.currentGame >= room.series
         room.status = seriesDone ? 'complete' : 'result'
@@ -680,8 +698,8 @@ app.prepare().then(async () => {
           const seriesWinner = room.hostSeriesScore > room.guestSeriesScore ? 'host' : room.guestSeriesScore > room.hostSeriesScore ? 'guest' : 'draw'
           if (room.source === 'online') {
             recordMatchup(room.hostUserId, room.guestUserId)
-            if (room.hostUserId) updateStatsAndUnlock(io, room.hostUserId, room.hostSocketId, seriesWinner === 'host', seriesWinner === 'draw')
-            if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw')
+            if (room.hostUserId) updateStatsAndUnlock(io, room.hostUserId, room.hostSocketId, seriesWinner === 'host', seriesWinner === 'draw', room.hostJCGames)
+            if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw', room.guestJCGames)
           }
           io.to(code).emit('series-complete', { room, seriesWinner })
         } else {
