@@ -14,8 +14,8 @@ model User {
   email             String    @unique
   password          String
   emailVerified     Boolean   @default(false)
-  verificationToken String?
-  resetToken        String?
+  verificationToken String?  @unique
+  resetToken        String?  @unique
   resetTokenExpiry  DateTime?
   wins              Int       @default(0)
   losses            Int       @default(0)
@@ -49,6 +49,8 @@ model GameRecord {
   source         String   // 'online' | 'friends'
   createdAt      DateTime @default(now())
   user           User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 model Player {
