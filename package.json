@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "ts-node --project tsconfig.server.json server.ts",
-    "build": "prisma db push --accept-data-loss || true && prisma generate && next build",
+    "build": "prisma db push --accept-data-loss || true && prisma generate && ts-node --project tsconfig.seed.json scripts/patch-missing-players.ts || true && ts-node --project tsconfig.seed.json scripts/update-season.ts 2025 || true && ts-node --project tsconfig.seed.json scripts/update-season.ts 2026 || true && next build",
     "start": "NODE_ENV=production ts-node --project tsconfig.server.json server.ts",
     "db:push": "prisma db push",
     "db:seed": "ts-node --project tsconfig.seed.json prisma/seed.ts",

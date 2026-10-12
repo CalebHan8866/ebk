@@ -790,9 +790,12 @@ function GameContent() {
       if (isStarterSlot && p.positions.split(',').every(pos => usedStarterPositions.has(pos))) return false
       if (filterPos !== 'ALL' && !p.positions.split(',').includes(filterPos)) return false
       if (searchQuery) {
-        const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        const q = normalize(searchQuery)
-        if (!normalize(`${p.firstName} ${p.lastName}`).includes(q) && !normalize(p.team).includes(q)) return false
+        const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        const q = norm(searchQuery)
+        const currentAbbr = getCurrentTeam(p.team)
+        const teamEntry = CURRENT_TEAMS.find(t => t.abbr === currentAbbr)
+        const teamSearchStr = norm([p.team, currentAbbr, teamEntry?.name ?? '', teamEntry?.city ?? ''].join(' '))
+        if (!norm(`${p.firstName} ${p.lastName}`).includes(q) && !teamSearchStr.includes(q)) return false
       }
       return true
     })
