@@ -9,6 +9,7 @@ COPY prisma ./prisma/
 
 RUN npm install
 
+ARG CACHEBUST=1
 COPY . .
 
 RUN npx prisma generate
