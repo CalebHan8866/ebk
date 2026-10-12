@@ -223,7 +223,7 @@ function GameContent() {
       setSelectedPlayerId(null)
       setPickError(null)
       if (pickTimerRef.current) { clearInterval(pickTimerRef.current); pickTimerRef.current = null }
-      spinRefs.current.forEach(id => clearInterval(id))
+      spinRefs.current.forEach(id => { clearInterval(id); clearTimeout(id) })
       spinRefs.current = []
       spinIntervalRef.current = null
     }
@@ -252,7 +252,7 @@ function GameContent() {
 
       // Spinner animation: 3 phases (fast → medium → slow → stop)
       // Cancel ALL pending spin timers from any previous turn
-      spinRefs.current.forEach(id => clearInterval(id))
+      spinRefs.current.forEach(id => { clearInterval(id); clearTimeout(id) })
       spinRefs.current = []
       spinIntervalRef.current = null
       setSpunTeam(null)
@@ -321,7 +321,7 @@ function GameContent() {
 
     const handlePlayerDisqualified = ({ disqualifiedRole, winner, room: r }: { disqualifiedRole: 'host' | 'guest'; winner: 'host' | 'guest'; room: Room }) => {
       if (pickTimerRef.current) { clearInterval(pickTimerRef.current); pickTimerRef.current = null }
-      spinRefs.current.forEach(id => clearInterval(id)); spinRefs.current = []; spinIntervalRef.current = null
+      spinRefs.current.forEach(id => { clearInterval(id); clearTimeout(id) }); spinRefs.current = []; spinIntervalRef.current = null
       setIsSpinning(false); setSpunTeam(null)
       setCurrentPickerInTimer(null)
       setRoom(r)
@@ -363,7 +363,7 @@ function GameContent() {
       if (pickTimerRef.current) clearInterval(pickTimerRef.current)
       if (spinIntervalRef.current) clearInterval(spinIntervalRef.current)
       if (emoteTimerRef.current) clearTimeout(emoteTimerRef.current)
-      spinRefs.current.forEach(id => clearTimeout(id))
+      spinRefs.current.forEach(id => { clearTimeout(id); clearInterval(id) })
       spinRefs.current = []
     }
   }, [code, role])
