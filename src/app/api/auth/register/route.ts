@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { sendVerificationEmail } from '@/lib/email'
 import { rateLimit } from '@/lib/ratelimit'
+import { containsProfanity } from '@/lib/profanity'
 import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
@@ -19,6 +20,7 @@ export async function POST(request: NextRequest) {
     if (username.length < 3) return NextResponse.json({ error: 'Username must be at least 3 characters' }, { status: 400 })
     if (username.length > 20) return NextResponse.json({ error: 'Username must be 20 characters or less' }, { status: 400 })
     if (!/^[a-zA-Z0-9_]+$/.test(username)) return NextResponse.json({ error: 'Username can only contain letters, numbers, and underscores' }, { status: 400 })
+    if (containsProfanity(username)) return NextResponse.json({ error: 'Username contains disallowed words' }, { status: 400 })
 
     const existing = await prisma.user.findFirst({ where: { OR: [{ email }, { username }] } })
     if (existing) return NextResponse.json({ error: 'Username or email already taken' }, { status: 409 })
