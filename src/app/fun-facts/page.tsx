@@ -546,31 +546,31 @@ export default function FunFactsPage() {
 
                       {/* Fact nav dots + prev/next */}
                       <div className="mt-5" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2 mb-3">
                           <button
                             onClick={prevFact}
-                            className="text-gray-500 hover:text-white text-sm px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                            className="bg-white/10 hover:bg-white/20 text-white font-black px-4 py-2.5 rounded-xl transition-colors text-base"
                           >
-                            ‹ prev
+                            ←
                           </button>
-                          <div className="flex items-center gap-2">
-                            {facts.map((_, i) => (
-                              <button
-                                key={i}
-                                onClick={e => { e.stopPropagation(); setFactIndex(i) }}
-                                className={`rounded-full transition-all ${i === factIndex ? 'w-4 h-2 bg-white' : 'w-2 h-2 bg-gray-700 hover:bg-gray-500'}`}
-                              />
-                            ))}
-                          </div>
                           <button
                             onClick={nextFact}
-                            className="text-gray-500 hover:text-white text-sm px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                            className="flex-1 bg-white text-black font-black py-2.5 rounded-xl transition-colors text-base tracking-wide hover:bg-gray-100 active:bg-gray-200"
                           >
-                            next ›
+                            Next perspective →
                           </button>
                         </div>
-                        <div className="text-center">
-                          <span className="text-gray-700 text-[11px]">tap card to flip back</span>
+                        <div className="flex items-center justify-center gap-2">
+                          {facts.map((_, i) => (
+                            <button
+                              key={i}
+                              onClick={e => { e.stopPropagation(); setFactIndex(i) }}
+                              className={`rounded-full transition-all ${i === factIndex ? 'w-4 h-2 bg-white' : 'w-2 h-2 bg-white/30 hover:bg-white/50'}`}
+                            />
+                          ))}
+                        </div>
+                        <div className="text-center mt-2">
+                          <span className="text-white/30 text-[11px]">tap card to flip back</span>
                         </div>
                       </div>
                     </>
@@ -583,13 +583,13 @@ export default function FunFactsPage() {
             <div className="flex items-center gap-3 mt-5">
               <button
                 onClick={prevPlayer}
-                className="flex-1 bg-[#1a1a1a] border border-white/10 text-gray-400 hover:text-white font-black py-4 rounded-2xl transition-colors text-base"
+                className="flex-1 bg-[#111] border border-white/5 text-gray-400 hover:text-white font-black py-3 rounded-2xl transition-colors text-sm"
               >
                 ← Prev
               </button>
               <button
                 onClick={nextPlayer}
-                className="flex-[2] bg-orange-600 hover:bg-orange-500 active:bg-orange-700 text-white font-black py-4 rounded-2xl transition-colors text-lg tracking-wide shadow-lg shadow-orange-900/40"
+                className="flex-1 bg-[#111] border border-white/5 text-gray-400 hover:text-white font-black py-3 rounded-2xl transition-colors text-sm"
               >
                 Next →
               </button>
