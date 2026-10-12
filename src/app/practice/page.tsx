@@ -144,7 +144,7 @@ function PracticeContent() {
   // Clean up any pending spin timers on unmount
   useEffect(() => {
     return () => {
-      spinRefs.current.forEach(id => clearTimeout(id))
+      spinRefs.current.forEach(id => { clearTimeout(id); clearInterval(id) })
       spinRefs.current = []
     }
   }, [])
@@ -163,7 +163,7 @@ function PracticeContent() {
 
   function triggerSpin(afterPlayers: Player[], currentPicks: (number | null)[]) {
     // Cancel any in-progress spin before starting a new one
-    spinRefs.current.forEach(id => clearInterval(id))
+    spinRefs.current.forEach(id => { clearInterval(id); clearTimeout(id) })
     spinRefs.current = []
 
     const takenNow = new Set(currentPicks.filter((id): id is number => id !== null))
