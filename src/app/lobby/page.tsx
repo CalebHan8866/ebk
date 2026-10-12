@@ -180,7 +180,6 @@ export default function LobbyPage() {
     const socket = getSocket()
     socket.emit('create-listing', {
       userName: user.username,
-      userId: user.id,
       teamMode: createTeamMode,
       series: createSeries,
     })
@@ -198,7 +197,7 @@ export default function LobbyPage() {
     if (!user) return
     setListingError('')
     const socket = getSocket()
-    socket.emit('join-listing', { code, userName: user.username, userId: user.id })
+    socket.emit('join-listing', { code, userName: user.username })
   }
 
   function handleAccept() {
@@ -221,7 +220,7 @@ export default function LobbyPage() {
       clearTimeout(timeout)
       router.push(`/game/${room.code}?role=host&name=${encodeURIComponent(userName.trim())}`)
     })
-    socket.emit('create-room', { teamMode, series, difficulty, userName: userName.trim(), userId: user?.id || null })
+    socket.emit('create-room', { teamMode, series, difficulty, userName: userName.trim() })
   }
 
   function handleJoin() {
@@ -239,7 +238,7 @@ export default function LobbyPage() {
       const name = user?.username || userName.trim() || 'Player'
       router.push(`/game/${room.code}?role=${guestRole}&name=${encodeURIComponent(name)}`)
     })
-    socket.emit('join-room', { code: joinCode.trim().toUpperCase(), userName: userName.trim(), userId: user?.id || null })
+    socket.emit('join-room', { code: joinCode.trim().toUpperCase(), userName: userName.trim() })
   }
 
   const displayName = user?.username || userName

@@ -639,15 +639,27 @@ app.prepare().then(async () => {
     path: '/socket.io',
   })
 
+  // Verify JWT from httpOnly cookie on every connection — no client changes needed
+  io.use(async (socket, next) => {
+    const cookieHeader = socket.handshake.headers.cookie || ''
+    const match = cookieHeader.match(/(?:^|;\s*)ebk-token=([^;]+)/)
+    const token = match ? decodeURIComponent(match[1]) : null
+    const payload = token ? await verifyToken(token) : null
+    socket.data.userId = payload?.userId ?? null
+    socket.data.username = payload?.username ?? null
+    next()
+  })
+
   io.on('connection', (socket) => {
     console.log('connected:', socket.id)
 
-    socket.on('create-room', ({ teamMode, series, difficulty, userName, userId }: {
-      teamMode: TeamMode, series: SeriesLength, difficulty: Difficulty, userName: string, userId: string | null
+    socket.on('create-room', ({ teamMode, series, difficulty, userName }: {
+      teamMode: TeamMode, series: SeriesLength, difficulty: Difficulty, userName: string
     }) => {
       if (!['starter5', 'bench8', 'full12'].includes(teamMode)) return
       if (![1, 3, 5].includes(series)) return
       userName = (userName ?? '').trim().slice(0, 20) || 'Player'
+      const userId = socket.data.userId as string | null
       let code = generateCode()
       while (rooms.has(code)) code = generateCode()
 
@@ -684,10 +696,11 @@ app.prepare().then(async () => {
       socket.emit('room-created', { room, players: allPlayers })
     })
 
-    socket.on('join-room', ({ code, userName, userId }: {
-      code: string, userName: string, userId: string | null
+    socket.on('join-room', ({ code, userName }: {
+      code: string, userName: string
     }) => {
       userName = (userName ?? '').trim().slice(0, 20) || 'Player'
+      const userId = socket.data.userId as string | null
       const room = rooms.get(code.toUpperCase())
       if (!room) { socket.emit('room-error', { message: 'Room not found' }); return }
       if (room.guestSocketId) { socket.emit('room-error', { message: 'Room is full' }); return }
@@ -824,7 +837,8 @@ app.prepare().then(async () => {
       startPickTimer(io, room)
     })
 
-    socket.on('get-room', ({ code, role, userId }: { code: string; role: 'host' | 'guest'; userId?: string | null }) => {
+    socket.on('get-room', ({ code, role }: { code: string; role: 'host' | 'guest' }) => {
+      const userId = socket.data.userId as string | null
       const room = rooms.get(code)
       if (!room) {
         socket.emit('room-error', { message: 'Room not found or expired' })
@@ -870,12 +884,13 @@ app.prepare().then(async () => {
       socket.emit('listings-updated', { listings: Array.from(gameListings.values()) })
     })
 
-    socket.on('create-listing', async ({ userName, userId, teamMode, series }: {
-      userName: string, userId: string, teamMode: TeamMode, series: SeriesLength
+    socket.on('create-listing', async ({ userName, teamMode, series }: {
+      userName: string, teamMode: TeamMode, series: SeriesLength
     }) => {
       if (!['starter5', 'bench8', 'full12'].includes(teamMode)) return
       if (![1, 3, 5].includes(series)) return
       userName = (userName ?? '').trim().slice(0, 20) || 'Player'
+      const userId = socket.data.userId as string | null
       // Remove any stale listing by this socket
       for (const [c, l] of gameListings.entries()) {
         if (l.hostSocketId === socket.id) {
@@ -924,10 +939,11 @@ app.prepare().then(async () => {
       io.emit('listings-updated', { listings: Array.from(gameListings.values()) })
     })
 
-    socket.on('join-listing', async ({ code, userName, userId }: {
-      code: string, userName: string, userId: string
+    socket.on('join-listing', async ({ code, userName }: {
+      code: string, userName: string
     }) => {
       userName = (userName ?? '').trim().slice(0, 20) || 'Player'
+      const userId = socket.data.userId as string | null
       const listing = gameListings.get(code)
       if (!listing) {
         socket.emit('listing-error', { message: 'Game no longer available' })
