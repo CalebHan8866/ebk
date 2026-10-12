@@ -177,6 +177,7 @@ function GameContent() {
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null)
   const [lastResult, setLastResult] = useState<GameResult | null>(null)
   const [disconnected, setDisconnected] = useState(false)
+  const [disconnectReason, setDisconnectReason] = useState<string | null>(null)
   // Emotes & accessories
   const [opponentEmote, setOpponentEmote] = useState<string | null>(null)
   const [unlockedToast, setUnlockedToast] = useState<{ type: string; name: string }[] | null>(null)
@@ -195,7 +196,8 @@ function GameContent() {
   const [isSpinning, setIsSpinning] = useState(false)
   const [spinDisplay, setSpinDisplay] = useState<string>('?')
   const [pickError, setPickError] = useState<string | null>(null)
-  const spinIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const spinIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null) // kept for compat
+  const spinRefs = useRef<ReturnType<typeof setTimeout>[]>([])
   // Stable shuffle order — set once per spin, never re-sorted mid-turn
   const [shuffledIds, setShuffledIds] = useState<number[]>([])
 
@@ -214,17 +216,28 @@ function GameContent() {
     const handleDraftStarted = ({ room, players }: { room: Room; players: Player[] }) => {
       playersRef.current = players
       setRoom(room); setPlayers(players); setLastResult(null); setSearchQuery('')
+      // Reset spinner/pick state from previous game in series
+      setIsSpinning(false)
+      setSpunTeam(null)
+      setShuffledIds([])
+      setSelectedPlayerId(null)
+      setPickError(null)
+      if (pickTimerRef.current) { clearInterval(pickTimerRef.current); pickTimerRef.current = null }
+      spinRefs.current.forEach(id => clearInterval(id))
+      spinRefs.current = []
+      spinIntervalRef.current = null
     }
-    const handleRoomUpdated = ({ room }: { room: Room }) => { setRoom(room) }
+    const handleRoomUpdated = ({ room }: { room: Room }) => { setRoom(room); setSelectedPlayerId(null) }
     const handleGameResult = ({ room, result }: { room: Room; result: GameResult }) => {
-      setRoom(room); setLastResult(result); refreshUser()
+      setRoom(room); setLastResult(result); setCurrentPickerInTimer(null); refreshUser()
     }
     const handleSeriesComplete = ({ room, seriesWinner }: { room: Room; seriesWinner: 'host' | 'guest' | 'draw' }) => {
-      setRoom(room); setSeriesWinner(seriesWinner); refreshUser()
+      setRoom(room); setSeriesWinner(seriesWinner); setCurrentPickerInTimer(null); refreshUser()
     }
-    const handlePartnerDisconnected = () => { setDisconnected(true) }
+    const handlePartnerDisconnected = () => { setDisconnected(true); setDisconnectReason(null) }
     const handleRoomError = ({ message }: { message: string }) => {
       setDisconnected(true)
+      setDisconnectReason(message)
       console.error('Room error:', message)
     }
 
@@ -238,7 +251,10 @@ function GameContent() {
       setShuffledIds([]) // clear old team's pool immediately — refilled after spin animation
 
       // Spinner animation: 3 phases (fast → medium → slow → stop)
-      if (spinIntervalRef.current) clearInterval(spinIntervalRef.current)
+      // Cancel ALL pending spin timers from any previous turn
+      spinRefs.current.forEach(id => clearInterval(id))
+      spinRefs.current = []
+      spinIntervalRef.current = null
       setSpunTeam(null)
       setIsSpinning(true)
       setSpinDisplay('?')
@@ -246,12 +262,15 @@ function GameContent() {
       const rnd = () => allAbbrs[Math.floor(Math.random() * allAbbrs.length)]
 
       const p1 = setInterval(() => setSpinDisplay(rnd()), 80)
+      spinRefs.current.push(p1)
       const t1 = setTimeout(() => {
         clearInterval(p1)
         const p2 = setInterval(() => setSpinDisplay(rnd()), 160)
+        spinRefs.current.push(p2)
         const t2 = setTimeout(() => {
           clearInterval(p2)
           const p3 = setInterval(() => setSpinDisplay(rnd()), 320)
+          spinRefs.current.push(p3)
           const t3 = setTimeout(() => {
             clearInterval(p3)
             setSpunTeam(team)
@@ -260,10 +279,13 @@ function GameContent() {
             // Shuffle the team's players once, stable for this entire pick turn
             const pool = playersRef.current.filter(p => getCurrentTeam(p.team) === team)
             setShuffledIds([...pool].sort(() => Math.random() - 0.5).map(p => p.id))
+            spinRefs.current = []
           }, 640)
-          spinIntervalRef.current = t3 as unknown as ReturnType<typeof setInterval>
+          spinRefs.current.push(t3)
         }, 800)
+        spinRefs.current.push(t2)
       }, 1200)
+      spinRefs.current.push(t1)
 
       pickTimerRef.current = setInterval(() => {
         setPickTimeLeft(t => {
@@ -299,6 +321,9 @@ function GameContent() {
 
     const handlePlayerDisqualified = ({ disqualifiedRole, winner, room: r }: { disqualifiedRole: 'host' | 'guest'; winner: 'host' | 'guest'; room: Room }) => {
       if (pickTimerRef.current) { clearInterval(pickTimerRef.current); pickTimerRef.current = null }
+      spinRefs.current.forEach(id => clearInterval(id)); spinRefs.current = []; spinIntervalRef.current = null
+      setIsSpinning(false); setSpunTeam(null)
+      setCurrentPickerInTimer(null)
       setRoom(r)
       setSeriesWinner(winner)
       setTimeoutWarning(disqualifiedRole === role ? 'You were disqualified for 2 consecutive timeouts' : 'Opponent disqualified for 2 consecutive timeouts')
@@ -367,8 +392,10 @@ function GameContent() {
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center text-center px-4">
         <div>
-          <h2 className="text-2xl font-black text-white mb-2">Opponent Disconnected</h2>
-          <p className="text-gray-400 mb-6">The connection was lost.</p>
+          <h2 className="text-2xl font-black text-white mb-2">
+            {disconnectReason ? 'Room Error' : 'Opponent Disconnected'}
+          </h2>
+          <p className="text-gray-400 mb-6">{disconnectReason ?? 'The connection was lost.'}</p>
           <button onClick={() => router.push('/lobby')} className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-6 py-3 rounded-xl">Back to Lobby</button>
         </div>
       </div>
@@ -579,11 +606,13 @@ function GameContent() {
   }
 
   // Game result (between games in series)
-  if (room.status === 'result' && lastResult) {
-    const myTotal = role === 'host' ? lastResult.hostTotal : lastResult.guestTotal
-    const oppTotal = role === 'host' ? lastResult.guestTotal : lastResult.hostTotal
-    const iWon = lastResult.winner === role
-    const isDraw = lastResult.winner === 'draw'
+  // On reconnect lastResult is null — derive it from room.gameResults
+  const effectiveLastResult = lastResult ?? (room.gameResults.length > 0 ? room.gameResults[room.gameResults.length - 1] : null)
+  if (room.status === 'result' && effectiveLastResult) {
+    const myTotal = role === 'host' ? effectiveLastResult.hostTotal : effectiveLastResult.guestTotal
+    const oppTotal = role === 'host' ? effectiveLastResult.guestTotal : effectiveLastResult.hostTotal
+    const iWon = effectiveLastResult.winner === role
+    const isDraw = effectiveLastResult.winner === 'draw'
 
     const myPickSlotsResult = role === 'host' ? (room.hostPickSlots || []) : (room.guestPickSlots || [])
     const mySlotsResult = myPickSlotsResult.length > 0
@@ -607,14 +636,14 @@ function GameContent() {
               {iWon ? 'W' : isDraw ? 'D' : 'L'}
             </div>
             <div className="text-white font-black text-lg">
-              {iWon ? `Game ${lastResult.game} — You Win` : isDraw ? `Game ${lastResult.game} — Draw` : `Game ${lastResult.game} — You Lose`}
+              {iWon ? `Game ${effectiveLastResult.game} — You Win` : isDraw ? `Game ${effectiveLastResult.game} — Draw` : `Game ${effectiveLastResult.game} — You Lose`}
             </div>
           </div>
 
           {/* Stat explanation */}
           <div className="bg-[#111827] rounded-xl px-4 py-2.5 mb-4 text-center">
-            <div className="text-gray-300 text-sm">Lower total <span className="text-orange-400 font-black">{STAT_LABELS[lastResult.statMode]}</span> wins</div>
-            <div className="text-gray-600 text-xs mt-0.5">Add up every player&apos;s career {lastResult.statMode === 'games_played' ? 'games played' : lastResult.statMode.toUpperCase()} — lowest team total takes the game</div>
+            <div className="text-gray-300 text-sm">Lower total <span className="text-orange-400 font-black">{STAT_LABELS[effectiveLastResult.statMode]}</span> wins</div>
+            <div className="text-gray-600 text-xs mt-0.5">Add up every player&apos;s career {effectiveLastResult.statMode === 'games_played' ? 'games played' : effectiveLastResult.statMode.toUpperCase()} — lowest team total takes the game</div>
           </div>
 
           {/* Score cards */}
@@ -630,9 +659,9 @@ function GameContent() {
                   <div className="text-gray-500 text-xs uppercase tracking-widest mb-2 truncate">{side.name}</div>
                   <div className={`font-display leading-none mb-1 ${isWinner ? 'text-green-400' : 'text-white'}`}
                     style={{ fontSize: 'clamp(2rem, 10vw, 3rem)' }}>
-                    {formatStat(side.total, lastResult.statMode)}
+                    {formatStat(side.total, effectiveLastResult.statMode)}
                   </div>
-                  <div className="text-gray-600 text-xs leading-tight">{getStatUnit(lastResult.statMode)}</div>
+                  <div className="text-gray-600 text-xs leading-tight">{getStatUnit(effectiveLastResult.statMode)}</div>
                   {isWinner && !isDraw && <div className="text-green-400 text-xs font-black mt-1">LOWER ✓</div>}
                 </div>
               )
@@ -657,7 +686,7 @@ function GameContent() {
           {/* RIGHT col: Draft Recap */}
           <div>
           <div className="bg-[#111827] rounded-2xl p-4 mb-4">
-            <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Draft Recap — Game {lastResult.game}</h2>
+            <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Draft Recap — Game {effectiveLastResult.game}</h2>
             <div className="grid grid-cols-2 gap-2">
               {/* My team */}
               <div>
@@ -668,19 +697,19 @@ function GameContent() {
                   {requiredSlots.map((slotPos, i) => {
                     const p = mySlotsResult[i]
                     if (!p) return null
-                    const val = getStatValue(p, lastResult.statMode)
+                    const val = getStatValue(p, effectiveLastResult.statMode)
                     return (
                       <div key={i} className="bg-[#0A0A0A] rounded px-2 py-1.5 flex items-center justify-between gap-1">
                         <div className="min-w-0">
                           <span className={`text-[10px] font-bold mr-1 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-orange-400'}`}>{slotPos === 'BENCH' ? 'BN' : slotPos}</span>
                           <span className="text-white text-xs font-semibold truncate">{p.lastName}</span>
                         </div>
-                        <span className={`text-xs font-black shrink-0 ${iWon ? 'text-green-400' : 'text-gray-300'}`}>{formatStat(val, lastResult.statMode)}</span>
+                        <span className={`text-xs font-black shrink-0 ${iWon ? 'text-green-400' : 'text-gray-300'}`}>{formatStat(val, effectiveLastResult.statMode)}</span>
                       </div>
                     )
                   })}
                 </div>
-                <div className={`mt-2 text-center text-sm font-black border-t border-gray-800 pt-2 ${iWon ? 'text-green-400' : isDraw ? 'text-gray-400' : 'text-white'}`}>{formatStat(myTotal, lastResult.statMode)}</div>
+                <div className={`mt-2 text-center text-sm font-black border-t border-gray-800 pt-2 ${iWon ? 'text-green-400' : isDraw ? 'text-gray-400' : 'text-white'}`}>{formatStat(myTotal, effectiveLastResult.statMode)}</div>
               </div>
               {/* Opponent team */}
               <div>
@@ -691,19 +720,19 @@ function GameContent() {
                   {requiredSlots.map((slotPos, i) => {
                     const p = oppSlotsResult[i]
                     if (!p) return null
-                    const val = getStatValue(p, lastResult.statMode)
+                    const val = getStatValue(p, effectiveLastResult.statMode)
                     return (
                       <div key={i} className="bg-[#0A0A0A] rounded px-2 py-1.5 flex items-center justify-between gap-1">
                         <div className="min-w-0">
                           <span className={`text-[10px] font-bold mr-1 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-orange-400'}`}>{slotPos === 'BENCH' ? 'BN' : slotPos}</span>
                           <span className="text-white text-xs font-semibold truncate">{p.lastName}</span>
                         </div>
-                        <span className={`text-xs font-black shrink-0 ${!iWon && !isDraw ? 'text-green-400' : 'text-gray-300'}`}>{formatStat(val, lastResult.statMode)}</span>
+                        <span className={`text-xs font-black shrink-0 ${!iWon && !isDraw ? 'text-green-400' : 'text-gray-300'}`}>{formatStat(val, effectiveLastResult.statMode)}</span>
                       </div>
                     )
                   })}
                 </div>
-                <div className={`mt-2 text-center text-sm font-black border-t border-gray-800 pt-2 ${!iWon && !isDraw ? 'text-green-400' : isDraw ? 'text-gray-400' : 'text-white'}`}>{formatStat(oppTotal, lastResult.statMode)}</div>
+                <div className={`mt-2 text-center text-sm font-black border-t border-gray-800 pt-2 ${!iWon && !isDraw ? 'text-green-400' : isDraw ? 'text-gray-400' : 'text-white'}`}>{formatStat(oppTotal, effectiveLastResult.statMode)}</div>
               </div>
             </div>
           </div>
@@ -743,7 +772,7 @@ function GameContent() {
   const usedStarterPositions = new Set(
     requiredSlots.slice(0, 5).filter((_, i) => mySlots[i] !== null)
   )
-  const isStarterSlot = myPicks.length < 5
+  const isStarterSlot = usedStarterPositions.size < 5
   const remainingStarterPositions = ['PG', 'SG', 'SF', 'PF', 'C'].filter(p => !usedStarterPositions.has(p))
 
   const selectedPlayer = selectedPlayerId !== null ? players.find(p => p.id === selectedPlayerId) ?? null : null
