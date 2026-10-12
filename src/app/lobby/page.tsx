@@ -223,14 +223,23 @@ export default function LobbyPage() {
     const socket = getSocket()
     const onCreated = ({ room }: { room: { code: string } }) => {
       clearTimeout(timeout)
+      socket.off('room-error', onCreateError)
       router.push(`/game/${room.code}?role=host&name=${encodeURIComponent(userName.trim())}`)
+    }
+    const onCreateError = ({ message }: { message: string }) => {
+      clearTimeout(timeout)
+      socket.off('room-created', onCreated)
+      setError(message)
+      setLoading(false)
     }
     const timeout = setTimeout(() => {
       socket.off('room-created', onCreated)
+      socket.off('room-error', onCreateError)
       setError('No response from server — try refreshing')
       setLoading(false)
     }, 8000)
     socket.once('room-created', onCreated)
+    socket.once('room-error', onCreateError)
     socket.emit('create-room', { teamMode, series, difficulty, userName: userName.trim() })
   }
 
