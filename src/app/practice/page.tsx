@@ -286,63 +286,105 @@ function PracticeContent() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-              {/* My Team */}
-              <div className="bg-[#111827] rounded-2xl p-4">
-                <h3 className="text-white font-black text-sm mb-3">
-                  Your Team <span className="text-gray-500 font-normal">({picks.length}/{teamSize})</span>
-                </h3>
-                <div className="space-y-1.5">
-                  {requiredSlots.map((slotPos, i) => {
-                    const pickedId = picks[i]
-                    const pickedPlayer = (pickedId !== null && pickedId !== undefined) ? players.find(p => p.id === pickedId) ?? null : null
-                    const isBench = slotPos === 'BENCH'
-                    const displayLabel = isBench ? 'BN' : slotPos
-                    const validSlots = selectedPlayer ? getValidSlots(selectedPlayer) : new Set<number>()
-                    const isValidTarget = selectedPlayer !== null && validSlots.has(i) && pickedPlayer === null
-                    const isBlocked = selectedPlayer !== null && !validSlots.has(i) && pickedPlayer === null
-                    return (
-                      <div
-                        key={i}
-                        onClick={() => isValidTarget ? placeInSlot(i) : undefined}
-                        className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 transition-all ${
-                          isValidTarget
-                            ? 'bg-orange-600/20 border border-orange-500 cursor-pointer hover:bg-orange-600/40'
-                            : isBlocked
-                            ? 'bg-[#0A0A0A] border border-dashed border-gray-800 opacity-30'
-                            : pickedPlayer
-                            ? 'bg-[#0A0A0A]'
-                            : 'bg-[#0A0A0A] border border-dashed border-gray-700'
-                        }`}
-                      >
-                        <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-600' : isValidTarget ? 'text-orange-400' : 'text-orange-400'}`}>
-                          {displayLabel}
-                        </span>
-                        {pickedPlayer ? (
-                          <span className="text-white truncate flex-1">
-                            {pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-gray-500">({pickedPlayer.team})</span>
-                          </span>
-                        ) : (
-                          <span className={isValidTarget ? 'text-orange-300' : 'text-gray-600'}>
-                            {isValidTarget ? 'tap to place' : 'empty'}
-                          </span>
-                        )}
-                        {pickedPlayer && (
-                          <button onClick={e => { e.stopPropagation(); unpick(i) }} className="text-gray-600 hover:text-red-400 text-xs shrink-0">✕</button>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-
-                {isDone && (
-                  <button
-                    onClick={() => setScreen('result')}
-                    className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-black py-2.5 rounded-xl text-sm transition-colors">
-                    See Results →
-                  </button>
-                )}
+            <>
+            {/* Mobile: compact team strip on top */}
+          <div className="lg:hidden mb-4">
+            <div className="bg-[#111827] rounded-2xl p-3">
+              <div className="text-orange-400 font-black text-xs mb-2">
+                Your Team <span className="text-gray-500 font-normal">({filledCount}/{teamSize})</span>
               </div>
+              <div className="grid grid-cols-2 gap-1">
+                {requiredSlots.map((slotPos, i) => {
+                  const pickedId = picks[i]
+                  const pickedPlayer = (pickedId !== null && pickedId !== undefined) ? players.find(p => p.id === pickedId) ?? null : null
+                  const isBench = slotPos === 'BENCH'
+                  const validSlots = selectedPlayer ? getValidSlots(selectedPlayer) : new Set<number>()
+                  const isValidTarget = selectedPlayer !== null && validSlots.has(i) && pickedPlayer === null
+                  return (
+                    <div
+                      key={i}
+                      onClick={() => isValidTarget ? placeInSlot(i) : undefined}
+                      className={`rounded px-2 py-1 text-xs flex items-center gap-1.5 transition-all ${
+                        isValidTarget
+                          ? 'bg-orange-600/20 border border-orange-500 cursor-pointer'
+                          : pickedPlayer
+                          ? 'bg-[#0A0A0A]'
+                          : 'bg-[#0A0A0A] border border-dashed border-gray-700'
+                      }`}
+                    >
+                      <span className={`font-bold w-6 shrink-0 text-[10px] ${isBench ? 'text-gray-600' : 'text-orange-400'}`}>
+                        {isBench ? 'BN' : slotPos}
+                      </span>
+                      <span className={`truncate flex-1 ${pickedPlayer ? 'text-white' : isValidTarget ? 'text-orange-300' : 'text-gray-600'}`}>
+                        {pickedPlayer ? pickedPlayer.lastName : isValidTarget ? 'tap' : '—'}
+                      </span>
+                      {pickedPlayer && (
+                        <button onClick={e => { e.stopPropagation(); unpick(i) }} className="text-gray-600 hover:text-red-400 text-[10px] shrink-0">✕</button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              {isDone && (
+                <button onClick={() => setScreen('result')} className="w-full mt-3 bg-green-600 hover:bg-green-700 text-white font-black py-2 rounded-xl text-sm transition-colors">
+                  See Results →
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="lg:grid lg:grid-cols-4 lg:gap-4">
+            {/* My Team (desktop only) */}
+            <div className="hidden lg:block bg-[#111827] rounded-2xl p-4">
+              <h3 className="text-white font-black text-sm mb-3">
+                Your Team <span className="text-gray-500 font-normal">({filledCount}/{teamSize})</span>
+              </h3>
+              <div className="space-y-1.5">
+                {requiredSlots.map((slotPos, i) => {
+                  const pickedId = picks[i]
+                  const pickedPlayer = (pickedId !== null && pickedId !== undefined) ? players.find(p => p.id === pickedId) ?? null : null
+                  const isBench = slotPos === 'BENCH'
+                  const displayLabel = isBench ? 'BN' : slotPos
+                  const validSlots = selectedPlayer ? getValidSlots(selectedPlayer) : new Set<number>()
+                  const isValidTarget = selectedPlayer !== null && validSlots.has(i) && pickedPlayer === null
+                  const isBlocked = selectedPlayer !== null && !validSlots.has(i) && pickedPlayer === null
+                  return (
+                    <div
+                      key={i}
+                      onClick={() => isValidTarget ? placeInSlot(i) : undefined}
+                      className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 transition-all ${
+                        isValidTarget
+                          ? 'bg-orange-600/20 border border-orange-500 cursor-pointer hover:bg-orange-600/40'
+                          : isBlocked
+                          ? 'bg-[#0A0A0A] border border-dashed border-gray-800 opacity-30'
+                          : pickedPlayer
+                          ? 'bg-[#0A0A0A]'
+                          : 'bg-[#0A0A0A] border border-dashed border-gray-700'
+                      }`}
+                    >
+                      <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-600' : 'text-orange-400'}`}>{displayLabel}</span>
+                      {pickedPlayer ? (
+                        <span className="text-white truncate flex-1">
+                          {pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-gray-500">({pickedPlayer.team})</span>
+                        </span>
+                      ) : (
+                        <span className={isValidTarget ? 'text-orange-300' : 'text-gray-600'}>
+                          {isValidTarget ? 'tap to place' : 'empty'}
+                        </span>
+                      )}
+                      {pickedPlayer && (
+                        <button onClick={e => { e.stopPropagation(); unpick(i) }} className="text-gray-600 hover:text-red-400 text-xs shrink-0">✕</button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              {isDone && (
+                <button onClick={() => setScreen('result')} className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-black py-2.5 rounded-xl text-sm transition-colors">
+                  See Results →
+                </button>
+              )}
+            </div>
 
               {/* Player Pool */}
               <div className="lg:col-span-3">
@@ -482,6 +524,7 @@ function PracticeContent() {
                 </div>
               </div>
             </div>
+          </>
           )}
         </div>
       </div>
@@ -510,39 +553,38 @@ function PracticeContent() {
         </div>
 
         {/* Roster */}
-        <div className="bg-[#111827] rounded-2xl p-5 mb-5">
+        <div className="bg-[#111827] rounded-2xl p-4 mb-5">
           <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Roster</h2>
           <div className="space-y-2">
             {requiredSlots.map((slotPos, i) => {
               const p = pickedPlayers[i]
               if (!p) return null
               return (
-                <div key={i} className="flex items-center gap-3 bg-[#0A0A0A] rounded-lg px-4 py-2.5">
-                  <span className={`font-bold text-xs w-8 shrink-0 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-orange-400'}`}>
-                    {slotPos === 'BENCH' ? 'BN' : slotPos}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-white text-sm font-bold">{p.firstName} {p.lastName}</span>
-                    <span className="text-gray-500 text-xs ml-2">({p.team}) {p.yearFrom}–{p.yearTo}</span>
+                <div key={i} className="bg-[#0A0A0A] rounded-lg px-3 py-2.5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`font-bold text-xs w-7 shrink-0 ${slotPos === 'BENCH' ? 'text-gray-600' : 'text-orange-400'}`}>
+                      {slotPos === 'BENCH' ? 'BN' : slotPos}
+                    </span>
+                    <span className="text-white text-sm font-bold truncate flex-1">{p.firstName} {p.lastName}</span>
+                    {difficulty === 'casual' && (
+                      <span className={`text-xs font-black shrink-0 ${
+                        p.ebkScore >= 80 ? 'text-green-400' :
+                        p.ebkScore >= 60 ? 'text-yellow-400' :
+                        p.ebkScore >= 40 ? 'text-orange-400' : 'text-red-400'
+                      }`}>{p.ebkScore}</span>
+                    )}
                   </div>
-                  <div className="text-right text-xs text-gray-400 shrink-0">
-                    <span>{p.careerGames}GP</span>
-                    <span className="mx-1.5 text-gray-700">·</span>
-                    <span>{p.careerMPG.toFixed(1)}MP</span>
-                    <span className="mx-1.5 text-gray-700">·</span>
-                    <span>{p.careerPPG.toFixed(1)}P</span>
-                    <span className="mx-1.5 text-gray-700">·</span>
-                    <span>{p.careerRPG.toFixed(1)}R</span>
-                    <span className="mx-1.5 text-gray-700">·</span>
-                    <span>{p.careerAPG.toFixed(1)}A</span>
+                  <div className="flex items-center gap-2 pl-9 flex-wrap">
+                    <span className="text-gray-600 text-xs">{p.team} · {p.yearFrom}–{p.yearTo}</span>
+                    <span className="text-gray-700 text-xs">·</span>
+                    <span className="text-gray-400 text-xs">{p.careerGames}GP</span>
+                    <span className="text-gray-700 text-xs">·</span>
+                    <span className="text-gray-400 text-xs">{p.careerPPG.toFixed(1)}P</span>
+                    <span className="text-gray-700 text-xs">·</span>
+                    <span className="text-gray-400 text-xs">{p.careerRPG.toFixed(1)}R</span>
+                    <span className="text-gray-700 text-xs">·</span>
+                    <span className="text-gray-400 text-xs">{p.careerAPG.toFixed(1)}A</span>
                   </div>
-                  {difficulty === 'casual' && (
-                    <div className={`text-xs font-black shrink-0 w-12 text-right ${
-                      p.ebkScore >= 80 ? 'text-green-400' :
-                      p.ebkScore >= 60 ? 'text-yellow-400' :
-                      p.ebkScore >= 40 ? 'text-orange-400' : 'text-red-400'
-                    }`}>{p.ebkScore}</div>
-                  )}
                 </div>
               )
             })}
