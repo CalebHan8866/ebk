@@ -601,7 +601,7 @@ function GameContent() {
     const validSlots = getValidSlots(player)
     // If only one valid slot (or no bench available), pick immediately
     if (validSlots.size === 1) {
-      const slotIdx = [...validSlots][0]
+      const slotIdx = Array.from(validSlots)[0]
       const slotPos = requiredSlots[slotIdx]
       pickPlayer(playerId, slotPos)
       setSelectedPlayerId(null)
@@ -969,7 +969,7 @@ function GameContent() {
                         {hasMultipleSlots && (
                           <div className="flex gap-2 mt-2 flex-wrap" onClick={e => e.stopPropagation()}>
                             <span className="text-orange-300 text-xs self-center">Pick slot:</span>
-                            {[...validSlots].map(slotIdx => (
+                            {Array.from(validSlots).map(slotIdx => (
                               <button
                                 key={slotIdx}
                                 onClick={() => pickIntoSlot(slotIdx)}
