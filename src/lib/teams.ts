@@ -131,8 +131,12 @@ export const TEAM_LINEAGE: Record<string, string> = {
   'CHZ': 'WAS', // Chicago Zephyrs → became Baltimore/Washington
 }
 
-export function getCurrentTeam(historicalAbbr: string): string {
-  return TEAM_LINEAGE[historicalAbbr] || historicalAbbr
+export function getCurrentTeam(teamStr: string): string {
+  if (TEAM_LINEAGE[teamStr]) return TEAM_LINEAGE[teamStr]
+  // Handle full team names stored in DB (e.g. "Lakers" → "LAL")
+  const byName = CURRENT_TEAMS.find(t => t.name === teamStr)
+  if (byName) return byName.abbr
+  return teamStr
 }
 
 export function getTeamName(abbr: string): string {

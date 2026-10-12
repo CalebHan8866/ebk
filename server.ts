@@ -59,8 +59,19 @@ const TEAM_LINEAGE: Record<string, string> = {
   'WAS':'WAS','WSB':'WAS','CAP':'WAS','BAL':'WAS','BLB':'WAS','CHZ':'WAS',
 }
 
-function getCurrentTeam(abbr: string): string {
-  return TEAM_LINEAGE[abbr] || abbr
+const CURRENT_TEAM_NAMES: Record<string, string> = {
+  'Hawks':'ATL','Celtics':'BOS','Nets':'BKN','Hornets':'CHA','Bulls':'CHI',
+  'Cavaliers':'CLE','Mavericks':'DAL','Nuggets':'DEN','Pistons':'DET','Warriors':'GSW',
+  'Rockets':'HOU','Pacers':'IND','Clippers':'LAC','Lakers':'LAL','Grizzlies':'MEM',
+  'Heat':'MIA','Bucks':'MIL','Timberwolves':'MIN','Pelicans':'NOP','Knicks':'NYK',
+  'Thunder':'OKC','Magic':'ORL','76ers':'PHI','Suns':'PHX','Trail Blazers':'POR',
+  'Kings':'SAC','Spurs':'SAS','Raptors':'TOR','Jazz':'UTA','Wizards':'WAS',
+}
+
+function getCurrentTeam(teamStr: string): string {
+  if (TEAM_LINEAGE[teamStr]) return TEAM_LINEAGE[teamStr]
+  if (CURRENT_TEAM_NAMES[teamStr]) return CURRENT_TEAM_NAMES[teamStr]
+  return teamStr
 }
 
 function getRequiredPositions(teamMode: TeamMode): string[] {
