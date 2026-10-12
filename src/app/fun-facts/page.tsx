@@ -146,7 +146,7 @@ function generateFacts(p: Player): Fact[] {
   const candidates = EVENTS.filter(e => {
     const yrs = CURRENT_YEAR - e.year
     const perYr = earnings / yrs
-    return perYr >= 1_500 && perYr <= 120_000
+    return perYr >= 30_000 && perYr <= 100_000
   })
   const pool = candidates.length > 0 ? candidates : (earnings > 100_000_000 ? EVENTS.slice(0, 5) : EVENTS.slice(-5))
   const ev = pool[p.id % pool.length]
@@ -157,7 +157,7 @@ function generateFacts(p: Player): Fact[] {
   facts.push({
     emoji: ev.emoji,
     headline: `Since ${ev.desc}`,
-    body: `If you'd saved ${fmt(perYearNeeded)} every single year since ${ev.desc}, you still wouldn't have matched ${name}'s estimated career earnings of ${fmt(earnings)}.`,
+    body: `If you made ${fmt(perYearNeeded)} every single year since ${ev.desc}, you still wouldn't have matched ${name}'s estimated career earnings of ${fmt(earnings)}.`,
     gradient: 'from-orange-950 to-[#111]',
     accent: 'text-orange-400',
   })
