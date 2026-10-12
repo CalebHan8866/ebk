@@ -5,7 +5,16 @@ export const dynamic = 'force-dynamic'
 
 const prisma = new PrismaClient()
 
+// In-memory cache — players rarely change (only on deploy)
+let cache: { data: unknown; at: number } | null = null
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
 export async function GET() {
+  const now = Date.now()
+  if (cache && now - cache.at < CACHE_TTL) {
+    return NextResponse.json(cache.data)
+  }
   const players = await prisma.player.findMany()
+  cache = { data: players, at: now }
   return NextResponse.json(players)
 }

@@ -164,7 +164,7 @@ function GameContent() {
   const params = useParams()
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { refreshUser } = useAuth()
+  const { refreshUser, user } = useAuth()
   const code = (params.code as string).toUpperCase()
   const role = (searchParams.get('role') as 'host' | 'guest') || 'host'
   const myName = searchParams.get('name') || 'You'
@@ -312,7 +312,7 @@ function GameContent() {
     socket.on('accessories-unlocked', handleAccessoriesUnlocked)
 
     // Request current room state from server
-    socket.emit('get-room', { code, role })
+    socket.emit('get-room', { code, role, userId: user?.id ?? null })
 
     return () => {
       socket.off('room-state', handleRoomState)
@@ -332,7 +332,7 @@ function GameContent() {
       if (spinIntervalRef.current) clearInterval(spinIntervalRef.current)
       if (emoteTimerRef.current) clearTimeout(emoteTimerRef.current)
     }
-  }, [code, role])
+  }, [code, role, user?.id])
 
   // Load user's unlocked emotes
   useEffect(() => {

@@ -214,6 +214,7 @@ const readyRooms = new Map<string, ReadyRoom>()
 const gameListings = new Map<string, GameListing>()
 const listingTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const pickTimers = new Map<string, ReturnType<typeof setTimeout>>()
+const pickTimerStartedAt = new Map<string, number>()
 const consecutiveTimeouts = new Map<string, { host: number; guest: number }>()
 // cooldown: userId → Map(opponentId → timestamp of last game end)
 const recentMatchups = new Map<string, Map<string, number>>()
@@ -378,6 +379,14 @@ async function updateStatsAndUnlock(
   } catch { /* non-critical */ }
 }
 
+function scheduleRoomCleanup(code: string) {
+  setTimeout(() => {
+    rooms.delete(code)
+    pickTimerStartedAt.delete(code)
+    consecutiveTimeouts.delete(code)
+  }, 60_000) // 60s grace — lets clients receive final event before room disappears
+}
+
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   let code = ''
@@ -525,6 +534,7 @@ function startPickTimer(io: SocketServer, room: Room) {
       }
 
       io.to(code).emit('player-disqualified', { room: currentRoom, disqualifiedRole: loser, winner })
+      scheduleRoomCleanup(code)
       return
     }
 
@@ -555,6 +565,7 @@ function startPickTimer(io: SocketServer, room: Room) {
         }
         saveGameRecords(currentRoom, seriesWinner)
         io.to(code).emit('series-complete', { room: currentRoom, seriesWinner })
+        scheduleRoomCleanup(code)
       } else {
         io.to(code).emit('game-result', { room: currentRoom, result })
       }
@@ -565,6 +576,7 @@ function startPickTimer(io: SocketServer, room: Room) {
   }, 30000)
 
   pickTimers.set(code, timer)
+  pickTimerStartedAt.set(code, Date.now())
   io.to(code).emit('pick-timer-start', { picker: currentPicker, duration: 30, spunTeam })
 }
 
@@ -771,6 +783,7 @@ app.prepare().then(async () => {
           }
           saveGameRecords(room, seriesWinner)
           io.to(code).emit('series-complete', { room, seriesWinner })
+          scheduleRoomCleanup(code)
         } else {
           io.to(code).emit('game-result', { room, result })
         }
@@ -802,17 +815,30 @@ app.prepare().then(async () => {
       startPickTimer(io, room)
     })
 
-    socket.on('get-room', ({ code, role }: { code: string; role: 'host' | 'guest' }) => {
+    socket.on('get-room', ({ code, role, userId }: { code: string; role: 'host' | 'guest'; userId?: string | null }) => {
       const room = rooms.get(code)
       if (!room) {
         socket.emit('room-error', { message: 'Room not found or expired' })
         return
       }
 
-      // Re-associate socket ID in case of reconnect/refresh
+      // Re-associate socket ID in case of reconnect/refresh.
+      // Security: only allow takeover if the original socket is gone OR the userId matches.
       if (role === 'host') {
+        const origConnected = io.sockets.sockets.has(room.hostSocketId)
+        const isLegit = !room.hostUserId || userId === room.hostUserId
+        if (origConnected && socket.id !== room.hostSocketId && !isLegit) {
+          socket.emit('room-error', { message: 'Unauthorized' })
+          return
+        }
         room.hostSocketId = socket.id
       } else if (role === 'guest') {
+        const origConnected = !!room.guestSocketId && io.sockets.sockets.has(room.guestSocketId)
+        const isLegit = !room.guestUserId || userId === room.guestUserId
+        if (origConnected && socket.id !== room.guestSocketId && !isLegit) {
+          socket.emit('room-error', { message: 'Unauthorized' })
+          return
+        }
         room.guestSocketId = socket.id
       }
 
@@ -820,9 +846,12 @@ app.prepare().then(async () => {
       socket.emit('room-state', { room, players: allPlayers })
 
       if (room.status === 'drafting') {
-        // Re-emit timer start for the current picker so rejoining client syncs
+        // Re-emit timer with accurate remaining duration so rejoining client syncs
         const currentPicker = room.draftOrder[room.currentPickIndex]
-        socket.emit('pick-timer-start', { picker: currentPicker, duration: 30, spunTeam: room.currentSpunTeam })
+        const startedAt = pickTimerStartedAt.get(code) ?? Date.now()
+        const elapsed = Math.floor((Date.now() - startedAt) / 1000)
+        const remaining = Math.max(2, 30 - elapsed)
+        socket.emit('pick-timer-start', { picker: currentPicker, duration: remaining, spunTeam: room.currentSpunTeam })
       }
     })
 
