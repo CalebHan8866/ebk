@@ -519,7 +519,13 @@ function startPickTimer(io: SocketServer, room: Room) {
 
     const picker = currentRoom.draftOrder[currentRoom.currentPickIndex]
     const autoPick = autoPickPlayer(currentRoom)
-    if (autoPick === null) return
+    if (autoPick === null) {
+      // No eligible players — this shouldn't happen in practice but clean up to avoid
+      // leaving the room stuck in 'drafting' with no timer running
+      pickTimers.delete(code)
+      scheduleRoomCleanup(code, io)
+      return
+    }
     const { playerId: pickedId, slotPos: pickedSlotPos } = autoPick
     // Guard against duplicate picks (shouldn't happen, but be safe)
     if (currentRoom.hostPicks.includes(pickedId) || currentRoom.guestPicks.includes(pickedId)) return
@@ -974,6 +980,12 @@ app.prepare().then(async () => {
         if (u) { hostRecord.wins = u.wins; hostRecord.losses = u.losses; hostRecord.draws = u.draws; hostStreak = u.winStreak }
       }
 
+      // Guard: if the socket disconnected while we were awaiting Prisma, don't create a ghost listing
+      if (!io.sockets.sockets.has(socket.id)) {
+        pendingListingCreate.delete(socket.id)
+        return
+      }
+
       let code = generateCode()
       while (rooms.has(code) || readyRooms.has(code) || gameListings.has(code)) code = generateCode()
 
@@ -1043,6 +1055,12 @@ app.prepare().then(async () => {
       const guestBadge = guestUser?.equippedBadge || ''
       const guestStreak = guestUser?.winStreak || 0
       const grudgeMatch = getMatchupCount(listing.hostUserId, userId) >= 3
+
+      // Guard: if the host socket disconnected while we were awaiting Prisma, notify the joiner
+      if (!io.sockets.sockets.has(listing.hostSocketId)) {
+        socket.emit('listing-error', { message: 'Game no longer available' })
+        return
+      }
 
       const hostEntry: QueueEntry = {
         socketId: listing.hostSocketId, userId: listing.hostUserId, userName: listing.hostName,
