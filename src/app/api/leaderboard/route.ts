@@ -4,7 +4,8 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
-let cache: { data: unknown; at: number } | null = null
+interface CacheEntry { data: unknown; at: number }
+const cache = new Map<string, CacheEntry>()
 const CACHE_TTL = 30 * 1000 // 30 seconds
 
 export async function GET(request: NextRequest) {
@@ -15,10 +16,11 @@ export async function GET(request: NextRequest) {
   const token = cookieStore.get('ebk-token')?.value
   const payload = token ? await verifyToken(token) : null
 
-  // Only use cache for unauthenticated requests (or when same user)
+  // Cache per userId (or 'anon') so each user's rank data is cached independently
   const cacheKey = payload?.userId ?? 'anon'
-  if (cache && now - cache.at < CACHE_TTL && (cache as any).key === cacheKey) {
-    return NextResponse.json(cache.data)
+  const cached = cache.get(cacheKey)
+  if (cached && now - cached.at < CACHE_TTL) {
+    return NextResponse.json(cached.data)
   }
 
   const users = await prisma.user.findMany({
@@ -64,6 +66,6 @@ export async function GET(request: NextRequest) {
   }
 
   const result = { users, totalPlayers, me }
-  cache = { data: result, at: now, key: cacheKey } as any
+  cache.set(cacheKey, { data: result, at: now })
   return NextResponse.json(result)
 }
