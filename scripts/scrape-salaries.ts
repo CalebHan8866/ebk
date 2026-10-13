@@ -146,13 +146,18 @@ async function main() {
         if (!globalNameToHref.has(name)) globalNameToHref.set(name, href)
       })
       console.log(`${map.size} players  (${globalNameToHref.size} total)`)
-      await sleep(2000)
+      await sleep(4000)
     }
-    // Save cache so future runs skip Phase 1
-    const cacheObj: Record<string, string> = {}
-    globalNameToHref.forEach((href, name) => { cacheObj[name] = href })
-    fs.writeFileSync(HREF_CACHE_FILE, JSON.stringify(cacheObj))
-    console.log(`  Cache saved to ${HREF_CACHE_FILE}`)
+    // Only save cache if we got a meaningful number of players (guard against 429 wipeouts)
+    if (globalNameToHref.size > 1000) {
+      const cacheObj: Record<string, string> = {}
+      globalNameToHref.forEach((href, name) => { cacheObj[name] = href })
+      fs.writeFileSync(HREF_CACHE_FILE, JSON.stringify(cacheObj))
+      console.log(`  Cache saved to ${HREF_CACHE_FILE}`)
+    } else {
+      console.error(`  Phase 1 only found ${globalNameToHref.size} players — likely rate-limited. NOT saving cache. Wait and retry.`)
+      process.exit(1)
+    }
   }
 
   console.log(`Total unique BBRef players: ${globalNameToHref.size}`)

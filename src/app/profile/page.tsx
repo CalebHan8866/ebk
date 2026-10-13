@@ -50,7 +50,7 @@ export default function ProfilePage() {
         }
         setLoading(false)
       })
-      .catch(() => { router.push('/login') })
+      .catch(() => { setLoading(false); router.push('/login') })
   }, [router])
 
   async function equipItem(type: 'badge' | 'emote', id: string) {

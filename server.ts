@@ -716,8 +716,6 @@ app.prepare().then(async () => {
   })
 
   io.on('connection', (socket) => {
-    console.log('connected:', socket.id)
-
     socket.on('create-room', ({ teamMode, series, difficulty, userName }: {
       teamMode: TeamMode, series: SeriesLength, difficulty: Difficulty, userName: string
     }) => {

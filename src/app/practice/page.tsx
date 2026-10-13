@@ -282,6 +282,7 @@ function PracticeContent() {
     spinRefs.current.forEach(id => { clearTimeout(id); clearInterval(id) }); spinRefs.current = []
     setIsSpinning(false); setSpunTeam(null)
     setPicks([])
+    setSpunTeamsHistory([])
     setFilterPos('ALL')
     setSearchQuery('')
     setScreen('setup')
@@ -331,7 +332,7 @@ function PracticeContent() {
             </div>
 
             <button
-              onClick={() => { setPicks(Array(TEAM_SIZES[teamMode]).fill(null)); setScreen('draft') }}
+              onClick={() => { setPicks(Array(TEAM_SIZES[teamMode]).fill(null)); setSpunTeamsHistory([]); setScreen('draft') }}
               className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black py-3 rounded-xl transition-colors text-lg">
               Start Practice
             </button>

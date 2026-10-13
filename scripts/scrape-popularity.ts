@@ -35,16 +35,35 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-/** Search Wikipedia for the best article title for a player */
+/** Check that a Wikipedia article title plausibly belongs to this player.
+ *  Both last name AND first name (or at least 4 chars of it) must appear in
+ *  the title (case-insensitive). This prevents "Dwight Anderson" → "Dwight Howard"
+ *  and "Greg Anderson" → "Greg Oden" false matches. */
+function titleMatchesPlayer(title: string, firstName: string, lastName: string): boolean {
+  const t = title.toLowerCase()
+  const last = lastName.toLowerCase()
+  const first = firstName.toLowerCase()
+  if (!t.includes(last)) return false
+  // Check first name or its first 4 characters appear in the title
+  if (t.includes(first)) return true
+  if (first.length >= 4 && t.includes(first.slice(0, 4))) return true
+  return false
+}
+
+/** Search Wikipedia for the best article title for a player.
+ *  Fetches up to 5 results and returns the first one whose title
+ *  actually contains the player's name. */
 async function searchWikipediaTitle(firstName: string, lastName: string): Promise<string | null> {
   const query = encodeURIComponent(`${firstName} ${lastName} basketball NBA`)
-  const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${query}&format=json&srlimit=1`
+  const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${query}&format=json&srlimit=5`
 
   try {
     const { data } = await axios.get(url, { headers: HEADERS, timeout: 10_000 })
-    const results = data?.query?.search
-    if (!results || results.length === 0) return null
-    return results[0].title as string
+    const results: Array<{ title: string }> = data?.query?.search ?? []
+    for (const result of results) {
+      if (titleMatchesPlayer(result.title, firstName, lastName)) return result.title
+    }
+    return null
   } catch {
     return null
   }

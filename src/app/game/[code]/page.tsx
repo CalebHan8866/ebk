@@ -223,6 +223,7 @@ function GameContent() {
       setShuffledIds([])
       setSelectedPlayerId(null)
       setPickError(null)
+      setCurrentPickerInTimer(null)
       if (pickTimerRef.current) { clearInterval(pickTimerRef.current); pickTimerRef.current = null }
       spinRefs.current.forEach(id => { clearInterval(id); clearTimeout(id) })
       spinRefs.current = []
