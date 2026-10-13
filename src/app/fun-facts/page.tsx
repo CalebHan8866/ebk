@@ -16,6 +16,7 @@ interface Player {
   ebkScore: number
   yearFrom: number
   yearTo: number
+  careerEarnings: number   // real scraped value; 0 = use formula estimate
 }
 
 const CURRENT_YEAR = 2024
@@ -166,7 +167,8 @@ interface Fact {
 }
 
 function generateFacts(p: Player): Fact[] {
-  const earnings = estimateCareerEarnings(p)
+  // Use real scraped earnings when available; fall back to era-based estimate
+  const earnings = p.careerEarnings > 0 ? p.careerEarnings : estimateCareerEarnings(p)
   const name = `${p.firstName} ${p.lastName}`
   const facts: Fact[] = []
 
