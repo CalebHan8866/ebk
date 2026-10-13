@@ -990,6 +990,13 @@ app.prepare().then(async () => {
       while (rooms.has(code) || readyRooms.has(code) || gameListings.has(code)) code = generateCode()
 
       const hostUser = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { equippedBadge: true } }).catch(() => null) : null
+
+      // Second guard: socket may have disconnected during the second Prisma await
+      if (!io.sockets.sockets.has(socket.id)) {
+        pendingListingCreate.delete(socket.id)
+        return
+      }
+
       const listing: GameListing = { code, hostSocketId: socket.id, hostUserId: userId, hostName: userName, hostRecord, hostBadge: hostUser?.equippedBadge || '', hostStreak, teamMode, series }
       gameListings.set(code, listing)
 
