@@ -211,6 +211,7 @@ export default function LobbyPage() {
 
   function handleDecline() {
     selfDeclinedRef.current = true
+    if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null }
     getSocket().emit('decline-match', { code: matchCode })
     setOnlineState('idle')
     setMatchInfo(null)
