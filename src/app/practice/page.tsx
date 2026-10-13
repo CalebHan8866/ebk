@@ -227,8 +227,9 @@ function PracticeContent() {
       if (isStarterSlot && p.positions.split(',').every(pos => usedStarterPositions.has(pos))) return false
       if (filterPos !== 'ALL' && !p.positions.split(',').includes(filterPos)) return false
       if (searchQuery) {
-        const q = searchQuery.toLowerCase()
-        if (!`${p.firstName} ${p.lastName}`.toLowerCase().includes(q) && !p.team.toLowerCase().includes(q)) return false
+        const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        const q = norm(searchQuery)
+        if (!norm(`${p.firstName} ${p.lastName}`).includes(q) && !norm(p.team).includes(q)) return false
       }
       return true
     })
