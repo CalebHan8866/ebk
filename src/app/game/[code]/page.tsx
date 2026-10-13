@@ -250,42 +250,53 @@ function GameContent() {
       setFilterPos('ALL')
       setShuffledIds([]) // clear old team's pool immediately — refilled after spin animation
 
-      // Spinner animation: 3 phases (fast → medium → slow → stop)
       // Cancel ALL pending spin timers from any previous turn
       spinRefs.current.forEach(id => { clearInterval(id); clearTimeout(id) })
       spinRefs.current = []
       spinIntervalRef.current = null
-      setSpunTeam(null)
-      setIsSpinning(true)
-      setSpinDisplay('?')
-      const allAbbrs = CURRENT_TEAMS.map(t => t.abbr)
-      const rnd = () => allAbbrs[Math.floor(Math.random() * allAbbrs.length)]
 
-      const p1 = setInterval(() => setSpinDisplay(rnd()), 80)
-      spinRefs.current.push(p1)
-      const t1 = setTimeout(() => {
-        clearInterval(p1)
-        const p2 = setInterval(() => setSpinDisplay(rnd()), 160)
-        spinRefs.current.push(p2)
-        const t2 = setTimeout(() => {
-          clearInterval(p2)
-          const p3 = setInterval(() => setSpinDisplay(rnd()), 320)
-          spinRefs.current.push(p3)
-          const t3 = setTimeout(() => {
-            clearInterval(p3)
-            setSpunTeam(team)
-            setIsSpinning(false)
-            setSpinDisplay(team)
-            // Shuffle the team's players once, stable for this entire pick turn
-            const pool = playersRef.current.filter(p => getCurrentTeam(p.team) === team)
-            setShuffledIds([...pool].sort(() => Math.random() - 0.5).map(p => p.id))
-            spinRefs.current = []
-          }, 640)
-          spinRefs.current.push(t3)
-        }, 800)
-        spinRefs.current.push(t2)
-      }, 1200)
-      spinRefs.current.push(t1)
+      // On reconnect (duration < 30) skip the animation — show team immediately so the
+      // player can pick before the server timer fires.
+      if (duration < 30) {
+        setSpunTeam(team)
+        setIsSpinning(false)
+        setSpinDisplay(team)
+        const pool = playersRef.current.filter(p => getCurrentTeam(p.team) === team)
+        setShuffledIds([...pool].sort(() => Math.random() - 0.5).map(p => p.id))
+      } else {
+        // Spinner animation: 3 phases (fast → medium → slow → stop)
+        setSpunTeam(null)
+        setIsSpinning(true)
+        setSpinDisplay('?')
+        const allAbbrs = CURRENT_TEAMS.map(t => t.abbr)
+        const rnd = () => allAbbrs[Math.floor(Math.random() * allAbbrs.length)]
+
+        const p1 = setInterval(() => setSpinDisplay(rnd()), 80)
+        spinRefs.current.push(p1)
+        const t1 = setTimeout(() => {
+          clearInterval(p1)
+          const p2 = setInterval(() => setSpinDisplay(rnd()), 160)
+          spinRefs.current.push(p2)
+          const t2 = setTimeout(() => {
+            clearInterval(p2)
+            const p3 = setInterval(() => setSpinDisplay(rnd()), 320)
+            spinRefs.current.push(p3)
+            const t3 = setTimeout(() => {
+              clearInterval(p3)
+              setSpunTeam(team)
+              setIsSpinning(false)
+              setSpinDisplay(team)
+              // Shuffle the team's players once, stable for this entire pick turn
+              const pool = playersRef.current.filter(p => getCurrentTeam(p.team) === team)
+              setShuffledIds([...pool].sort(() => Math.random() - 0.5).map(p => p.id))
+              spinRefs.current = []
+            }, 640)
+            spinRefs.current.push(t3)
+          }, 800)
+          spinRefs.current.push(t2)
+        }, 1200)
+        spinRefs.current.push(t1)
+      }
 
       pickTimerRef.current = setInterval(() => {
         setPickTimeLeft(t => {
