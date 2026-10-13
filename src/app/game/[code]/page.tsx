@@ -326,6 +326,11 @@ function GameContent() {
 
     const handlePickTimeout = ({ picker, pickedId, consecutive }: { picker: 'host' | 'guest'; pickedId: number; consecutive: number }) => {
       if (pickTimerRef.current) { clearInterval(pickTimerRef.current); pickTimerRef.current = null }
+      // Stop any in-progress spin animation — the next pick-timer-start will start a fresh spin
+      spinRefs.current.forEach(id => { clearInterval(id); clearTimeout(id) })
+      spinRefs.current = []
+      spinIntervalRef.current = null
+      setIsSpinning(false)
       const p = playersRef.current.find(pl => pl.id === pickedId)
       const name = p ? `${p.firstName} ${p.lastName}` : 'a player'
       setTimeoutWarning(`⏱ ${picker === role ? 'You' : 'Opponent'} timed out — auto-picked ${name}${consecutive >= 2 ? ' (2nd timeout!)' : ''}`)
