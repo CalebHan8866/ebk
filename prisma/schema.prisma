@@ -74,4 +74,5 @@ model Player {
   ebkApgScore Float   @default(0)
   ebkMpgScore   Float   @default(0)
   careerEarnings Float   @default(0)   // real scraped career earnings (0 = not yet scraped / pre-salary-era)
+  wikiViews      Float   @default(0)   // total Wikipedia pageviews (0 = not yet fetched)
 }
