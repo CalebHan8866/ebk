@@ -12,7 +12,9 @@ export async function POST(request: NextRequest) {
     if (!success) return NextResponse.json({ error: 'Too many attempts. Try again in an hour.' }, { status: 429 })
 
     const { token, password } = await request.json()
-    if (!token || !password) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+    if (!token || !password || typeof token !== 'string' || typeof password !== 'string') {
+      return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+    }
     if (password.length < 6) return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
     if (password.length > 72) return NextResponse.json({ error: 'Password must be 72 characters or less' }, { status: 400 })
 

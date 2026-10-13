@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
   if (!process.env.DEV_SECRET || secret !== process.env.DEV_SECRET) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
-  await prisma.user.update({ where: { email }, data: { emailVerified: true } })
+  const result = await prisma.user.updateMany({ where: { email }, data: { emailVerified: true } })
+  if (result.count === 0) return NextResponse.json({ error: 'User not found' }, { status: 404 })
   return NextResponse.json({ ok: true })
 }

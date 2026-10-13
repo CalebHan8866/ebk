@@ -15,7 +15,9 @@ export async function POST(request: NextRequest) {
     if (!success) return NextResponse.json({ error: 'Too many signup attempts. Try again in an hour.' }, { status: 429 })
 
     const { username, email, password } = await request.json()
-    if (!username || !email || !password) return NextResponse.json({ error: 'All fields required' }, { status: 400 })
+    if (!username || !email || !password || typeof username !== 'string' || typeof email !== 'string' || typeof password !== 'string') {
+      return NextResponse.json({ error: 'All fields required' }, { status: 400 })
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: 'Invalid email address' }, { status: 400 })
     if (password.length < 6) return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
     if (password.length > 72) return NextResponse.json({ error: 'Password must be 72 characters or less' }, { status: 400 })

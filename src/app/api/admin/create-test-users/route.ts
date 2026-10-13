@@ -6,7 +6,9 @@ import bcrypt from 'bcryptjs'
 // Bulk-creates test users for load testing. Requires DEV_SECRET.
 // POST { secret, count, prefix }
 export async function POST(request: NextRequest) {
-  const { secret, count = 50, prefix = 'LoadBot' } = await request.json()
+  let body: { secret?: string; count?: number; prefix?: string }
+  try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid body' }, { status: 400 }) }
+  const { secret, count = 50, prefix = 'LoadBot' } = body
   if (!process.env.DEV_SECRET || secret !== process.env.DEV_SECRET) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
@@ -36,7 +38,9 @@ export async function POST(request: NextRequest) {
 
 // DELETE — wipe all load test accounts
 export async function DELETE(request: NextRequest) {
-  const { secret, prefix = 'LoadBot' } = await request.json()
+  let body: { secret?: string; prefix?: string }
+  try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid body' }, { status: 400 }) }
+  const { secret } = body
   if (!process.env.DEV_SECRET || secret !== process.env.DEV_SECRET) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }

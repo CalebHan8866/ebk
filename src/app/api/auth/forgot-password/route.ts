@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     if (!success) return NextResponse.json({ error: 'Too many requests. Try again in an hour.' }, { status: 429 })
 
     const { email } = await request.json()
-    if (!email) return NextResponse.json({ error: 'Email required' }, { status: 400 })
+    if (!email || typeof email !== 'string') return NextResponse.json({ error: 'Email required' }, { status: 400 })
 
     const user = await prisma.user.findUnique({ where: { email } })
 
