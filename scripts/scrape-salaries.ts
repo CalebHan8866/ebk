@@ -91,19 +91,32 @@ async function fetchAlphabetIndex(letter: string): Promise<Map<string, string>> 
 
 async function fetchCareerEarnings(href: string): Promise<number> {
   const url = `https://www.basketball-reference.com${href}`
-  try {
-    const { data } = await axios.get<string>(url, { headers: HEADERS, timeout: 20_000 })
-    const expanded = expandComments(data)
-    // Salary values are stored in csk attribute: csk="4018920"
-    let total = 0
-    let m: RegExpExecArray | null
-    const re = /data-stat="salary"[^>]+csk="(\d+)"/g
-    while ((m = re.exec(expanded)) !== null) total += parseInt(m[1], 10)
-    return total
-  } catch (err: any) {
-    if (err?.response?.status !== 404) console.error(`  Error ${href}: ${err.message}`)
-    return 0
+  const MAX_RETRIES = 4
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const { data } = await axios.get<string>(url, { headers: HEADERS, timeout: 20_000 })
+      const expanded = expandComments(data)
+      // Salary values are stored in csk attribute: csk="4018920"
+      let total = 0
+      let m: RegExpExecArray | null
+      const re = /data-stat="salary"[^>]+csk="(\d+)"/g
+      while ((m = re.exec(expanded)) !== null) total += parseInt(m[1], 10)
+      return total
+    } catch (err: any) {
+      if (err?.response?.status === 429) {
+        // Rate-limited — wait with exponential backoff before retrying
+        const backoff = Math.min(60_000, 8_000 * Math.pow(2, attempt))
+        process.stdout.write(` [429, retry ${attempt + 1}/${MAX_RETRIES} in ${backoff / 1000}s]`)
+        if (attempt < MAX_RETRIES) {
+          await sleep(backoff)
+          continue
+        }
+      }
+      if (err?.response?.status !== 404) console.error(`  Error ${href}: ${err.message}`)
+      return 0
+    }
   }
+  return 0
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
