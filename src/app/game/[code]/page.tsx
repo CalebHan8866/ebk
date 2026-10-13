@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef, Suspense } from 'react'
+import { useEffect, useState, useRef, useMemo, Suspense } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import { getSocket } from '@/lib/socket'
 import { CURRENT_TEAMS, getCurrentTeam } from '@/lib/teams'
@@ -110,11 +110,11 @@ function getRequiredPositions(teamMode: TeamMode): string[] {
 
 // Map a flat list of picked player IDs to their correct position slots for display.
 // Must match the server's getPickerUsedPositions algorithm exactly (uses all positions, not just primary).
-function assignToSlots(pickedIds: number[], allPlayers: Player[], requiredSlots: string[]): (Player | null)[] {
+function assignToSlots(pickedIds: number[], allPlayers: Map<number, Player>, requiredSlots: string[]): (Player | null)[] {
   const slots: (Player | null)[] = requiredSlots.map(() => null)
   const usedSlots = new Set<number>()
   for (const id of pickedIds) {
-    const player = allPlayers.find(p => p.id === id)
+    const player = allPlayers.get(id)
     if (!player) continue
     const playerPositions = player.positions.split(',')
     let placed = false
@@ -134,13 +134,13 @@ function assignToSlots(pickedIds: number[], allPlayers: Player[], requiredSlots:
 function buildSlotsFromPickSlots(
   pickedIds: number[],
   pickSlots: string[],
-  allPlayers: Player[],
+  allPlayers: Map<number, Player>,
   requiredSlots: string[]
 ): (Player | null)[] {
   const slots: (Player | null)[] = requiredSlots.map(() => null)
   const slotUsage: Record<string, number> = {}
   pickedIds.forEach((id, i) => {
-    const player = allPlayers.find(p => p.id === id)
+    const player = allPlayers.get(id)
     if (!player) return
     const slotPos = pickSlots[i]
     if (!slotPos) return
@@ -171,6 +171,7 @@ function GameContent() {
 
   const [room, setRoom] = useState<Room | null>(null)
   const [players, setPlayers] = useState<Player[]>([])
+  const playerById = useMemo(() => new Map(players.map(p => [p.id, p])), [players])
   const [seriesWinner, setSeriesWinner] = useState<'host' | 'guest' | 'draw' | null>(null)
   const [filterPos, setFilterPos] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
@@ -191,6 +192,7 @@ function GameContent() {
   const [timeoutWarning, setTimeoutWarning] = useState<string | null>(null)
   const pickTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const playersRef = useRef<Player[]>([])
+  const playerByIdRef = useRef<Map<number, Player>>(new Map())
 
   // Spinner state
   const [spunTeam, setSpunTeam] = useState<string | null>(null)
@@ -207,6 +209,7 @@ function GameContent() {
 
     const handleRoomState = ({ room, players }: { room: Room; players: Player[] }) => {
       playersRef.current = players
+      playerByIdRef.current = new Map(players.map(p => [p.id, p]))
       setRoom(room); setPlayers(players)
       if (room.status === 'complete') {
         const winner = room.hostSeriesScore > room.guestSeriesScore ? 'host'
@@ -216,6 +219,7 @@ function GameContent() {
     }
     const handleDraftStarted = ({ room, players }: { room: Room; players: Player[] }) => {
       playersRef.current = players
+      playerByIdRef.current = new Map(players.map(p => [p.id, p]))
       setRoom(room); setPlayers(players); setLastResult(null); setSearchQuery('')
       // Reset spinner/pick state from previous game in series
       setIsSpinning(false)
@@ -332,7 +336,7 @@ function GameContent() {
       spinRefs.current = []
       spinIntervalRef.current = null
       setIsSpinning(false)
-      const p = playersRef.current.find(pl => pl.id === pickedId)
+      const p = playerByIdRef.current.get(pickedId)
       const name = p ? `${p.firstName} ${p.lastName}` : 'a player'
       setTimeoutWarning(`⏱ ${picker === role ? 'You' : 'Opponent'} timed out — auto-picked ${name}${consecutive >= 2 ? ' (2nd timeout!)' : ''}`)
       setTimeout(() => setTimeoutWarning(null), 4000)
@@ -550,12 +554,12 @@ function GameContent() {
             const lastDraw = lastGame.winner === 'draw'
             const myPickSlotsComplete = role === 'host' ? (room.hostPickSlots || []) : (room.guestPickSlots || [])
             const mySlotsComplete = myPickSlotsComplete.length > 0
-              ? buildSlotsFromPickSlots(myPicks, myPickSlotsComplete, players, requiredSlots)
-              : assignToSlots(myPicks, players, requiredSlots)
+              ? buildSlotsFromPickSlots(myPicks, myPickSlotsComplete, playerById, requiredSlots)
+              : assignToSlots(myPicks, playerById, requiredSlots)
             const oppPickSlotsComplete = role === 'host' ? (room.guestPickSlots || []) : (room.hostPickSlots || [])
             const oppSlotsComplete = oppPickSlotsComplete.length > 0
-              ? buildSlotsFromPickSlots(oppPicks, oppPickSlotsComplete, players, requiredSlots)
-              : assignToSlots(oppPicks, players, requiredSlots)
+              ? buildSlotsFromPickSlots(oppPicks, oppPickSlotsComplete, playerById, requiredSlots)
+              : assignToSlots(oppPicks, playerById, requiredSlots)
             const myLastTotal = role === 'host' ? lastGame.hostTotal : lastGame.guestTotal
             const oppLastTotal = role === 'host' ? lastGame.guestTotal : lastGame.hostTotal
             return (
@@ -637,12 +641,12 @@ function GameContent() {
 
     const myPickSlotsResult = role === 'host' ? (room.hostPickSlots || []) : (room.guestPickSlots || [])
     const mySlotsResult = myPickSlotsResult.length > 0
-      ? buildSlotsFromPickSlots(myPicks, myPickSlotsResult, players, requiredSlots)
-      : assignToSlots(myPicks, players, requiredSlots)
+      ? buildSlotsFromPickSlots(myPicks, myPickSlotsResult, playerById, requiredSlots)
+      : assignToSlots(myPicks, playerById, requiredSlots)
     const oppPickSlotsResult = role === 'host' ? (room.guestPickSlots || []) : (room.hostPickSlots || [])
     const oppSlotsResult = oppPickSlotsResult.length > 0
-      ? buildSlotsFromPickSlots(oppPicks, oppPickSlotsResult, players, requiredSlots)
-      : assignToSlots(oppPicks, players, requiredSlots)
+      ? buildSlotsFromPickSlots(oppPicks, oppPickSlotsResult, playerById, requiredSlots)
+      : assignToSlots(oppPicks, playerById, requiredSlots)
 
     return (
       <div className="min-h-screen bg-[#0A0A0A] px-4 py-8 overflow-y-auto">
@@ -783,11 +787,11 @@ function GameContent() {
   const myPickSlots = role === 'host' ? (room.hostPickSlots || []) : (room.guestPickSlots || [])
   const oppPickSlots = role === 'host' ? (room.guestPickSlots || []) : (room.hostPickSlots || [])
   const mySlots = myPickSlots.length > 0
-    ? buildSlotsFromPickSlots(myPicks, myPickSlots, players, requiredSlots)
-    : assignToSlots(myPicks, players, requiredSlots)
+    ? buildSlotsFromPickSlots(myPicks, myPickSlots, playerById, requiredSlots)
+    : assignToSlots(myPicks, playerById, requiredSlots)
   const oppSlots = oppPickSlots.length > 0
-    ? buildSlotsFromPickSlots(oppPicks, oppPickSlots, players, requiredSlots)
-    : assignToSlots(oppPicks, players, requiredSlots)
+    ? buildSlotsFromPickSlots(oppPicks, oppPickSlots, playerById, requiredSlots)
+    : assignToSlots(oppPicks, playerById, requiredSlots)
 
   // Track consumed slot positions by slot label (not player's primary position)
   const usedStarterPositions = new Set(
@@ -796,7 +800,7 @@ function GameContent() {
   const isStarterSlot = usedStarterPositions.size < 5
   const remainingStarterPositions = ['PG', 'SG', 'SF', 'PF', 'C'].filter(p => !usedStarterPositions.has(p))
 
-  const selectedPlayer = selectedPlayerId !== null ? players.find(p => p.id === selectedPlayerId) ?? null : null
+  const selectedPlayer = selectedPlayerId !== null ? playerById.get(selectedPlayerId) ?? null : null
 
   function getValidSlots(player: Player): Set<number> {
     const valid = new Set<number>()
@@ -810,7 +814,7 @@ function GameContent() {
   }
 
   function selectAndPick(playerId: number) {
-    const player = players.find(p => p.id === playerId)
+    const player = playerById.get(playerId)
     if (!player) return
     const validSlots = getValidSlots(player)
     // If only one valid slot (or no bench available), pick immediately
@@ -838,7 +842,7 @@ function GameContent() {
 
   // Build display list from shuffled order; apply search/pos filter on top
   const filteredPlayers = shuffledIds
-    .map(id => players.find(p => p.id === id))
+    .map(id => playerById.get(id))
     .filter((p): p is Player => {
       if (!p) return false
       if (room?.difficulty === 'ebk' && searchQuery.length < 3) return false
