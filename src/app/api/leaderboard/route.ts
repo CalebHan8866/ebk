@@ -66,6 +66,10 @@ export async function GET(request: NextRequest) {
   }
 
   const result = { users, totalPlayers, me }
+  // Prune expired entries before adding new ones to prevent unbounded growth
+  cache.forEach((entry, key) => {
+    if (now - entry.at >= CACHE_TTL) cache.delete(key)
+  })
   cache.set(cacheKey, { data: result, at: now })
   return NextResponse.json(result)
 }

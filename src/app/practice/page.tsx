@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef, Suspense } from 'react'
+import { useState, useEffect, useRef, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CURRENT_TEAMS, getCurrentTeam } from '@/lib/teams'
 
@@ -115,6 +115,7 @@ function PracticeContent() {
   const [difficulty, setDifficulty] = useState<Difficulty>('casual')
 
   const [players, setPlayers] = useState<Player[]>([])
+  const playerById = useMemo(() => new Map(players.map(p => [p.id, p])), [players])
   const [loadingPlayers, setLoadingPlayers] = useState(false)
   // Slot-indexed: picks[i] = player id in slot i, null = empty
   const [picks, setPicks] = useState<(number | null)[]>([])
@@ -218,7 +219,7 @@ function PracticeContent() {
   const spunTeamInfo = spunTeam ? CURRENT_TEAMS.find(t => t.abbr === spunTeam) : null
 
   const filteredPlayers = shuffledIds
-    .map(id => players.find(p => p.id === id))
+    .map(id => playerById.get(id))
     .filter((p): p is Player => {
       if (!p) return false
       if (difficulty === 'ebk' && searchQuery.length < 3) return false
@@ -234,7 +235,7 @@ function PracticeContent() {
       return true
     })
 
-  const selectedPlayer = selectedPlayerId !== null ? players.find(p => p.id === selectedPlayerId) ?? null : null
+  const selectedPlayer = selectedPlayerId !== null ? playerById.get(selectedPlayerId) ?? null : null
 
   // Which slots are valid targets for the selected player
   function getValidSlots(player: Player): Set<number> {
@@ -250,7 +251,7 @@ function PracticeContent() {
 
   function selectPlayer(id: number) {
     if (filledCount >= teamSize) return
-    const player = players.find(p => p.id === id)
+    const player = playerById.get(id)
     if (!player) return
     if (spunTeam && getCurrentTeam(player.team) !== spunTeam) return
     // Toggle: clicking selected player again deselects
@@ -380,7 +381,7 @@ function PracticeContent() {
               <div className="grid grid-cols-2 gap-1">
                 {requiredSlots.map((slotPos, i) => {
                   const pickedId = picks[i]
-                  const pickedPlayer = (pickedId !== null && pickedId !== undefined) ? players.find(p => p.id === pickedId) ?? null : null
+                  const pickedPlayer = (pickedId !== null && pickedId !== undefined) ? playerById.get(pickedId) ?? null : null
                   const isBench = slotPos === 'BENCH'
                   const validSlots = selectedPlayer ? getValidSlots(selectedPlayer) : new Set<number>()
                   const isValidTarget = selectedPlayer !== null && validSlots.has(i) && pickedPlayer === null
@@ -426,7 +427,7 @@ function PracticeContent() {
               <div className="space-y-1.5">
                 {requiredSlots.map((slotPos, i) => {
                   const pickedId = picks[i]
-                  const pickedPlayer = (pickedId !== null && pickedId !== undefined) ? players.find(p => p.id === pickedId) ?? null : null
+                  const pickedPlayer = (pickedId !== null && pickedId !== undefined) ? playerById.get(pickedId) ?? null : null
                   const isBench = slotPos === 'BENCH'
                   const displayLabel = isBench ? 'BN' : slotPos
                   const validSlots = selectedPlayer ? getValidSlots(selectedPlayer) : new Set<number>()
@@ -620,7 +621,7 @@ function PracticeContent() {
   // ── Results ────────────────────────────────────────────────────────────────
   // Use slot-indexed lookup to preserve the slot↔player mapping in the results display.
   // filter(Boolean) after map() would compress nulls and misalign slot labels.
-  const pickedPlayersBySlot = picks.map(id => (id !== null ? players.find(p => p.id === id) ?? null : null))
+  const pickedPlayersBySlot = picks.map(id => (id !== null ? playerById.get(id) ?? null : null))
   const pickedPlayers = pickedPlayersBySlot.filter((p): p is Player => p !== null)
   const totals = {
     games_played: pickedPlayers.reduce((s, p) => s + p.careerGames, 0),
