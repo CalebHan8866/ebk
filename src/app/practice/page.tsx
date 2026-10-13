@@ -616,7 +616,10 @@ function PracticeContent() {
   }
 
   // ── Results ────────────────────────────────────────────────────────────────
-  const pickedPlayers = picks.map(id => players.find(p => p.id === id)!).filter(Boolean)
+  // Use slot-indexed lookup to preserve the slot↔player mapping in the results display.
+  // filter(Boolean) after map() would compress nulls and misalign slot labels.
+  const pickedPlayersBySlot = picks.map(id => (id !== null ? players.find(p => p.id === id) ?? null : null))
+  const pickedPlayers = pickedPlayersBySlot.filter((p): p is Player => p !== null)
   const totals = {
     games_played: pickedPlayers.reduce((s, p) => s + p.careerGames, 0),
     ppg: pickedPlayers.reduce((s, p) => s + p.careerPPG, 0),
@@ -671,7 +674,7 @@ function PracticeContent() {
           <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Your Roster</h2>
           <div className="space-y-2">
             {requiredSlots.map((slotPos, i) => {
-              const p = pickedPlayers[i]
+              const p = pickedPlayersBySlot[i]
               if (!p) return null
               return (
                 <div key={i} className="bg-[#0A0A0A] rounded-lg px-3 py-2.5">

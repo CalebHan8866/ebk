@@ -186,6 +186,7 @@ function GameContent() {
 
   // Pick timer state
   const [pickTimeLeft, setPickTimeLeft] = useState(30)
+  const pickTimerDurationRef = useRef(30) // tracks the initial duration for the progress bar
   const [currentPickerInTimer, setCurrentPickerInTimer] = useState<'host' | 'guest' | null>(null)
   const [timeoutWarning, setTimeoutWarning] = useState<string | null>(null)
   const pickTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -244,6 +245,7 @@ function GameContent() {
     const handlePickTimerStart = ({ picker, duration, spunTeam: team }: { picker: 'host' | 'guest'; duration: number; spunTeam: string }) => {
       if (pickTimerRef.current) clearInterval(pickTimerRef.current)
       setPickTimeLeft(duration)
+      pickTimerDurationRef.current = duration
       setCurrentPickerInTimer(picker)
       setPickError(null)
       setSearchQuery('')
@@ -1083,7 +1085,7 @@ function GameContent() {
                 <div className="w-full bg-gray-800 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full transition-all ${pickTimeLeft <= 5 ? 'bg-red-500' : pickTimeLeft <= 10 ? 'bg-yellow-400' : 'bg-green-500'}`}
-                    style={{ width: `${(pickTimeLeft / 30) * 100}%` }}
+                    style={{ width: `${(pickTimeLeft / pickTimerDurationRef.current) * 100}%` }}
                   />
                 </div>
               </div>

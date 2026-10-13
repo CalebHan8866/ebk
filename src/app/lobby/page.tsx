@@ -252,14 +252,23 @@ export default function LobbyPage() {
     const onError = ({ message }: { message: string }) => {
       clearTimeout(timeout)
       socket.off('room-error', onError)
+      socket.off('draft-started', onJoinSuccess)
       setError(message); setLoading(false)
+    }
+    const onJoinSuccess = () => {
+      clearTimeout(timeout)
+      socket.off('room-error', onError)
+      // handleDraftStarted in the useEffect will handle navigation;
+      // we just need to clean up these one-shot listeners.
     }
     const timeout = setTimeout(() => {
       socket.off('room-error', onError)
+      socket.off('draft-started', onJoinSuccess)
       setError('No response from server — try refreshing')
       setLoading(false)
     }, 8000)
     socket.once('room-error', onError)
+    socket.once('draft-started', onJoinSuccess)
     socket.emit('join-room', { code: joinCode.trim().toUpperCase(), userName: userName.trim() })
   }
 

@@ -604,6 +604,16 @@ function startPickTimer(io: SocketServer, room: Room) {
 
 function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
   const code = rr.code
+  // If either player has disconnected since the ready room was created, abort gracefully
+  const hostConnected = io.sockets.sockets.has(rr.hostEntry.socketId)
+  const guestConnected = io.sockets.sockets.has(rr.guestEntry.socketId)
+  if (!hostConnected || !guestConnected) {
+    const connectedSocketId = hostConnected ? rr.hostEntry.socketId : guestConnected ? rr.guestEntry.socketId : null
+    if (connectedSocketId) {
+      io.to(connectedSocketId).emit('match-cancelled', { reason: 'Opponent disconnected before the game started' })
+    }
+    return
+  }
   const teamSize = TEAM_SIZES[rr.hostEntry.teamMode]
   const room: Room = {
     code,
@@ -770,6 +780,9 @@ app.prepare().then(async () => {
     socket.on('pick-player', ({ code, playerId, slotPos }: { code: string, playerId: number, slotPos: string }) => {
       const room = rooms.get(code)
       if (!room || room.status !== 'drafting') return
+      // Runtime type guards against malformed payloads
+      if (typeof playerId !== 'number' || !Number.isInteger(playerId) || playerId <= 0) return
+      if (typeof code !== 'string' || typeof slotPos !== 'string') return
 
       const currentPicker = room.draftOrder[room.currentPickIndex]
       const isHost = socket.id === room.hostSocketId
@@ -944,9 +957,9 @@ app.prepare().then(async () => {
       userName = (userName ?? '').trim().slice(0, 20) || 'Player'
       const userId = socket.data.userId as string | null
       if (!userId) { pendingListingCreate.delete(socket.id); socket.emit('listing-error', { message: 'Must be signed in to post a game' }); return }
-      // Remove any stale listing by this socket
+      // Remove any stale listing by this socket or by the same user (multi-tab protection)
       for (const [c, l] of gameListings.entries()) {
-        if (l.hostSocketId === socket.id) {
+        if (l.hostSocketId === socket.id || (userId && l.hostUserId === userId)) {
           clearTimeout(listingTimers.get(c))
           listingTimers.delete(c)
           gameListings.delete(c)
@@ -1002,6 +1015,12 @@ app.prepare().then(async () => {
       const listing = gameListings.get(code)
       if (!listing) {
         socket.emit('listing-error', { message: 'Game no longer available' })
+        return
+      }
+
+      // Prevent a user from joining their own listing
+      if (userId === listing.hostUserId) {
+        socket.emit('listing-error', { message: 'You cannot join your own game' })
         return
       }
 
@@ -1145,6 +1164,9 @@ app.prepare().then(async () => {
           // Don't fire partner-disconnected for completed series — player may disconnect
           // on the win screen while the 30s cleanup timer is still running
           if (room.status === 'complete') return
+          // Mark complete immediately to prevent the second player's disconnect handler
+          // from double-emitting partner-disconnected and double-recording the matchup
+          room.status = 'complete'
           const timer = pickTimers.get(code)
           if (timer) clearTimeout(timer)
           pickTimers.delete(code)

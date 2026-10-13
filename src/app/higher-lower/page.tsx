@@ -48,6 +48,7 @@ export default function HigherLowerPage() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const badgeClearRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isMounted = useRef(true)
+  const isGuessingRef = useRef(false) // prevents double-submission on rapid taps
 
   useEffect(() => {
     isMounted.current = true
@@ -116,6 +117,8 @@ export default function HigherLowerPage() {
 
   function guess(direction: 'higher' | 'lower') {
     if (screen !== 'playing' || sequence.length < 2 || idx >= sequence.length - 1) return
+    if (isGuessingRef.current) return // debounce rapid taps
+    isGuessingRef.current = true
     if (timerRef.current) clearTimeout(timerRef.current)
 
     const current = sequence[idx]
@@ -144,6 +147,7 @@ export default function HigherLowerPage() {
 
       timerRef.current = setTimeout(() => {
         if (!isMounted.current) return
+        isGuessingRef.current = false
         const nextIdx = idx + 1
         if (nextIdx >= sequence.length - 1) {
           tryUnlock('hl_gauntlet')
@@ -157,7 +161,9 @@ export default function HigherLowerPage() {
       }, 1300)
     } else {
       timerRef.current = setTimeout(() => {
-        if (isMounted.current) setScreen('gameover')
+        if (!isMounted.current) return
+        isGuessingRef.current = false
+        setScreen('gameover')
       }, 1600)
     }
   }
@@ -165,6 +171,7 @@ export default function HigherLowerPage() {
   function restart() {
     if (timerRef.current) clearTimeout(timerRef.current)
     if (badgeClearRef.current) clearTimeout(badgeClearRef.current)
+    isGuessingRef.current = false
     setIdx(0)
     setStreak(0)
     setLastCorrect(null)
