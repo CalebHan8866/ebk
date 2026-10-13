@@ -66,6 +66,7 @@ export default function LobbyPage() {
   const [countdown, setCountdown] = useState(60)
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const selfDeclinedRef = useRef(false)
+  const listingErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // create form
   const [showCreate, setShowCreate] = useState(false)
@@ -111,7 +112,8 @@ export default function LobbyPage() {
 
     const handleListingError = ({ message }: { message: string }) => {
       setListingError(message)
-      setTimeout(() => setListingError(''), 3000)
+      if (listingErrorTimerRef.current) clearTimeout(listingErrorTimerRef.current)
+      listingErrorTimerRef.current = setTimeout(() => setListingError(''), 3000)
     }
 
     const handleMatchFound = (info: MatchInfo & { opponentTeamMode: TeamMode; opponentSeries: SeriesLength; myTeamMode: TeamMode; mySeries: SeriesLength }) => {
@@ -176,6 +178,7 @@ export default function LobbyPage() {
       socket.off('draft-started', handleDraftStarted)
       socket.off('match-cancelled', handleMatchCancelled)
       if (countdownRef.current) clearInterval(countdownRef.current)
+      if (listingErrorTimerRef.current) clearTimeout(listingErrorTimerRef.current)
     }
   }, [router, user])
 

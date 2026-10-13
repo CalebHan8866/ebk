@@ -184,6 +184,9 @@ function GameContent() {
   const [unlockedToast, setUnlockedToast] = useState<{ type: string; name: string }[] | null>(null)
   const [myEmotes, setMyEmotes] = useState<string[]>([])
   const emoteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pickErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Pick timer state
   const [pickTimeLeft, setPickTimeLeft] = useState(30)
@@ -315,7 +318,8 @@ function GameContent() {
 
     const handlePickError = ({ message }: { message: string }) => {
       setPickError(message)
-      setTimeout(() => setPickError(null), 3000)
+      if (pickErrorTimerRef.current) clearTimeout(pickErrorTimerRef.current)
+      pickErrorTimerRef.current = setTimeout(() => setPickError(null), 3000)
     }
 
     const handleOpponentEmote = ({ emoteText }: { emoteText: string }) => {
@@ -326,7 +330,8 @@ function GameContent() {
 
     const handleAccessoriesUnlocked = ({ items }: { items: { type: string; name: string }[] }) => {
       setUnlockedToast(items)
-      setTimeout(() => setUnlockedToast(null), 6000)
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+      toastTimerRef.current = setTimeout(() => setUnlockedToast(null), 6000)
     }
 
     const handlePickTimeout = ({ picker, pickedId, consecutive }: { picker: 'host' | 'guest'; pickedId: number; consecutive: number }) => {
@@ -339,7 +344,8 @@ function GameContent() {
       const p = playerByIdRef.current.get(pickedId)
       const name = p ? `${p.firstName} ${p.lastName}` : 'a player'
       setTimeoutWarning(`⏱ ${picker === role ? 'You' : 'Opponent'} timed out — auto-picked ${name}${consecutive >= 2 ? ' (2nd timeout!)' : ''}`)
-      setTimeout(() => setTimeoutWarning(null), 4000)
+      if (warningTimerRef.current) clearTimeout(warningTimerRef.current)
+      warningTimerRef.current = setTimeout(() => setTimeoutWarning(null), 4000)
     }
 
     const handlePlayerDisqualified = ({ disqualifiedRole, winner, room: r }: { disqualifiedRole: 'host' | 'guest'; winner: 'host' | 'guest'; room: Room }) => {
@@ -386,6 +392,9 @@ function GameContent() {
       if (pickTimerRef.current) clearInterval(pickTimerRef.current)
       if (spinIntervalRef.current) clearInterval(spinIntervalRef.current)
       if (emoteTimerRef.current) clearTimeout(emoteTimerRef.current)
+      if (pickErrorTimerRef.current) clearTimeout(pickErrorTimerRef.current)
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+      if (warningTimerRef.current) clearTimeout(warningTimerRef.current)
       spinRefs.current.forEach(id => { clearTimeout(id); clearInterval(id) })
       spinRefs.current = []
     }
