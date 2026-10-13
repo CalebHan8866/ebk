@@ -25,7 +25,7 @@ export default function HistoryPage() {
   useEffect(() => {
     fetch('/api/games/history')
       .then(r => { if (r.status === 401) { router.push('/login'); return null } return r.json() })
-      .then(d => { if (d?.records) setRecords(d.records); setLoading(false) })
+      .then(d => { if (!d) return; if (d?.records) setRecords(d.records); setLoading(false) })
       .catch(() => setLoading(false))
   }, [router])
 
