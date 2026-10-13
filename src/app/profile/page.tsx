@@ -325,7 +325,7 @@ export default function ProfilePage() {
                         ? 'bg-green-500/20 border-green-500 text-green-400'
                         : 'bg-gray-800 border-gray-700 text-gray-600'
                     }`}>
-                      {unlocked ? 'V' : 'X'}
+                      {unlocked ? '✓' : '✗'}
                     </span>
                     <div>
                       <div className={`text-sm font-bold ${unlocked ? 'text-white' : 'text-gray-500'}`}>

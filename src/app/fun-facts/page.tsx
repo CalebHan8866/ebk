@@ -169,6 +169,7 @@ interface Fact {
 function generateFacts(p: Player): Fact[] {
   // Use real scraped earnings when available; fall back to era-based estimate
   const earnings = p.careerEarnings > 0 ? p.careerEarnings : estimateCareerEarnings(p)
+  const hasRealEarnings = p.careerEarnings > 0
   const name = `${p.firstName} ${p.lastName}`
   const facts: Fact[] = []
 
@@ -176,13 +177,19 @@ function generateFacts(p: Player): Fact[] {
   // Pick from events where the implied yearly income is $100K–$1M.
   // Player ID is used as a tiebreaker so adjacent players get different events.
   const candidates = eligibleEvents(earnings)
-  const ev = candidates[p.id % candidates.length]
+  // Guard: if no eligible events (very low or very high earner), fall back to the closest match
+  const fallbackEv = EVENTS.reduce((best, e) => {
+    const perYr = earnings / yearsAgo(e.year)
+    const bestPerYr = earnings / yearsAgo(best.year)
+    return Math.abs(Math.log10(perYr) - Math.log10(500_000)) < Math.abs(Math.log10(bestPerYr) - Math.log10(500_000)) ? e : best
+  }, EVENTS[0])
+  const ev = candidates.length > 0 ? candidates[p.id % candidates.length] : fallbackEv
   const perYearNeeded = Math.round(earnings / yearsAgo(ev.year))
 
   facts.push({
     emoji: ev.emoji,
     headline: `Since ${ev.desc}`,
-    body: `If you made ${fmt(perYearNeeded)} every single year since ${ev.desc}, you still wouldn't have matched ${name}'s estimated career earnings of ${fmt(earnings)}.`,
+    body: `If you made ${fmt(perYearNeeded)} every single year since ${ev.desc}, you still wouldn't have matched ${name}'s ${hasRealEarnings ? 'career earnings' : 'estimated career earnings'} of ${fmt(earnings)}.`,
     gradient: 'from-orange-950 to-[#111]',
     accent: 'text-orange-400',
   })
@@ -301,7 +308,12 @@ function generateFacts(p: Player): Fact[] {
 
   // Only include comparisons where earnings meet the minimum threshold
   const validComparisons = comparisons.filter(c => earnings >= c.min)
-  const chosen = validComparisons[(p.id * 3) % validComparisons.length].fn()
+  // Guard: if no thresholds met (very small earner), pick the smallest minimum comparison
+  const fallbackComparisons = comparisons.length > 0
+    ? [comparisons.reduce((a, b) => a.min <= b.min ? a : b)]
+    : []
+  const chosenPool = validComparisons.length > 0 ? validComparisons : fallbackComparisons
+  const chosen = chosenPool[(p.id * 3) % chosenPool.length].fn()
   facts.push({
     emoji: chosen.emoji,
     headline: chosen.headline,
@@ -329,7 +341,7 @@ function generateFacts(p: Player): Fact[] {
     facts.push({
       emoji: '📅',
       headline: `${careerYears}-year career`,
-      body: `${name} played ${careerYears} seasons in the NBA, earning an estimated ${fmt(earnings / careerYears)}/year on average. That's ${fmt(earnings / careerYears / 12)}/month — for playing basketball.`,
+      body: `${name} played ${careerYears} seasons in the NBA, earning ${hasRealEarnings ? '' : 'an estimated '}${fmt(earnings / careerYears)}/year on average. That's ${fmt(earnings / careerYears / 12)}/month — for playing basketball.`,
       gradient: 'from-purple-950 to-[#111]',
       accent: 'text-purple-400',
     })
@@ -516,7 +528,9 @@ export default function FunFactsPage() {
 
                     {/* Career earnings block */}
                     <div className="bg-gradient-to-r from-orange-950/60 to-[#0A0A0A] border border-orange-800/30 rounded-2xl px-4 py-3 mb-4">
-                      <div className="text-gray-500 text-[10px] uppercase tracking-widest mb-0.5">Est. Career Earnings</div>
+                      <div className="text-gray-500 text-[10px] uppercase tracking-widest mb-0.5">
+                        {current.careerEarnings > 0 ? 'Career Earnings' : 'Est. Career Earnings'}
+                      </div>
                       <div className="text-orange-400 font-black text-3xl">{fmt(earnings)}</div>
                     </div>
 
@@ -625,7 +639,9 @@ export default function FunFactsPage() {
 
             {/* Disclaimer */}
             <p className="text-center text-gray-700 text-[11px] mt-4 leading-relaxed px-2">
-              Earnings are estimates based on era and performance — not official salary data.
+              {current?.careerEarnings > 0
+                ? 'Career earnings sourced from real NBA salary records.'
+                : 'Earnings are estimates based on era and performance — not official salary data.'}
             </p>
           </>
         )}
