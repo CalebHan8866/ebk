@@ -124,6 +124,17 @@ function getAllPositions(posSet: Set<string>): string[] {
 function parseName(fullName: string): { firstName: string; lastName: string } {
   const parts = fullName.trim().split(' ')
   if (parts.length === 1) return { firstName: parts[0], lastName: parts[0] }
+
+  // Handle generational suffixes: "Bruce Brown Jr." → firstName="Bruce", lastName="Brown Jr."
+  const SUFFIXES = new Set(['Jr.', 'Sr.', 'II', 'III', 'IV', 'V'])
+  if (parts.length >= 3 && SUFFIXES.has(parts[parts.length - 1])) {
+    // lastName = "Brown Jr.", firstName = "Bruce"
+    return {
+      firstName: parts.slice(0, -2).join(' '),
+      lastName:  parts.slice(-2).join(' '),
+    }
+  }
+
   return { firstName: parts.slice(0, -1).join(' '), lastName: parts[parts.length - 1] }
 }
 
@@ -202,7 +213,13 @@ async function main() {
   // MPG is included to break ties among 1-game players:
   //   someone who played 3 min scores higher than someone who played 38 min.
   // Weights: GP 20% · PPG 25% · MPG 20% · RPG 18% · APG 17%
-  function computePercentileScores(entries: TeamCareer[]) {
+  //
+  // Popularity blending: if wikiViews are populated in the DB (via scrape-popularity.ts),
+  // a popularityScore (direct percentile of wikiViews, 0–100) is blended in:
+  //   finalEbkScore = max(0, statsEbkScore - popularityScore * 0.20)
+  // This penalises culturally famous players who would otherwise score as "niche picks".
+  // wikiViews for each player is looked up from the DB at scrape time.
+  function computePercentileScores(entries: TeamCareer[], wikiViewsMap: Map<string, number>) {
     const N = entries.length
 
     function invertedPct(arr: number[], val: number): number {
@@ -212,26 +229,56 @@ async function main() {
       return parseFloat(((N - 1 - r) / (N - 1) * 100).toFixed(1))
     }
 
+    function directPct(arr: number[], val: number): number {
+      const below = arr.filter(v => v < val).length
+      return parseFloat(((below / Math.max(N - 1, 1)) * 100).toFixed(1))
+    }
+
     const games = entries.map(p => p.totalGames)
     const ppgs  = entries.map(p => p.careerPPG)
     const rpgs  = entries.map(p => p.careerRPG)
     const apgs  = entries.map(p => p.careerAPG)
     const mpgs  = entries.map(p => p.careerMPG)
 
-    return entries.map(p => {
+    // Collect all wikiViews values (0 for players not yet fetched) for percentile calc
+    const views = entries.map(p => wikiViewsMap.get(p.name) ?? 0)
+
+    return entries.map((p, i) => {
       const gpScore  = invertedPct(games, p.totalGames)
       const ppgScore = invertedPct(ppgs,  p.careerPPG)
       const rpgScore = invertedPct(rpgs,  p.careerRPG)
       const apgScore = invertedPct(apgs,  p.careerAPG)
       const mpgScore = invertedPct(mpgs,  p.careerMPG)
-      const ebkScore = parseFloat(
-        (gpScore * 0.20 + ppgScore * 0.25 + mpgScore * 0.20 + rpgScore * 0.18 + apgScore * 0.17).toFixed(1)
+      const statsEbk = gpScore * 0.20 + ppgScore * 0.25 + mpgScore * 0.20 + rpgScore * 0.18 + apgScore * 0.17
+
+      // Popularity blending (only applied when wikiViews data exists)
+      const wikiViews       = views[i]
+      const popularityScore = wikiViews > 0 ? directPct(views.filter(v => v > 0), wikiViews) : 0
+      const ebkScore        = parseFloat(
+        Math.max(0, statsEbk - popularityScore * 0.20).toFixed(1)
       )
-      return { ...p, gpScore, ppgScore, rpgScore, apgScore, mpgScore, ebkScore }
+
+      return { ...p, gpScore, ppgScore, rpgScore, apgScore, mpgScore, ebkScore, wikiViews }
     })
   }
 
-  const scored = computePercentileScores(all)
+  // Load existing wikiViews from DB keyed by player name (best-effort)
+  const wikiViewsMap = new Map<string, number>()
+  try {
+    const existingPlayers = await prisma.player.findMany({
+      select: { firstName: true, lastName: true, wikiViews: true },
+      where:  { wikiViews: { gt: 0 } },
+    })
+    for (const p of existingPlayers) {
+      const key = `${p.firstName} ${p.lastName}`
+      if (!wikiViewsMap.has(key)) wikiViewsMap.set(key, p.wikiViews)
+    }
+    console.log(`Loaded wikiViews for ${wikiViewsMap.size} players from DB.`)
+  } catch {
+    console.log('Could not load wikiViews from DB — popularity blending disabled.')
+  }
+
+  const scored = computePercentileScores(all, wikiViewsMap)
 
   // Wipe and re-insert
   console.log('\nClearing existing player data...')
@@ -277,6 +324,7 @@ async function main() {
           ebkRpgScore: p.rpgScore,
           ebkApgScore: p.apgScore,
           ebkMpgScore: p.mpgScore,
+          wikiViews:   p.wikiViews,
         }
       })
       saved++
