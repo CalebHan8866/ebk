@@ -1,25 +1,24 @@
 /**
  * scrape-salaries.ts
  *
- * Scrapes Spotrac's NBA career earnings rankings
- * (https://www.spotrac.com/nba/rankings/career/) and writes
- * Player.careerEarnings to the Railway PostgreSQL DB.
+ * Two-phase Basketball Reference scraper:
+ *   Phase 1: Fetch the 26 alphabet index pages (/players/a/ … /players/z/)
+ *            to build a normalizedName → href map for all ~5,000 BBRef players.
+ *   Phase 2: For each DB player matched to a href, fetch their individual BBRef
+ *            page, extract the salary table hidden in HTML comments, sum career
+ *            total, and write to Player.careerEarnings.
  *
- * Strategy:
- *   1. Scrape pages 1–MAX_PAGES of https://www.spotrac.com/nba/rankings/career/.
- *   2. Parse player name + career total from the HTML table rows.
- *   3. Normalize names (strip accents/apostrophes, lowercase) and match against DB.
- *   4. Update Player.careerEarnings for every match found.
- *   5. For DB players not matched on Spotrac, leave careerEarnings=0 so the
- *      fun-facts page uses the era-based estimate fallback.
+ * Pre-1985 players are skipped (no meaningful salary data exists).
+ * Players with no BBRef match keep careerEarnings=0 → fun-facts uses formula.
  *
  * Usage:
  *   DATABASE_URL="postgresql://..." npx ts-node --project tsconfig.seed.json scripts/scrape-salaries.ts
  *
  * Env vars:
- *   DATABASE_URL  — postgres connection string (required; .env only has SQLite placeholder)
- *   DRY_RUN       — set to "1" to print matches without writing to DB
- *   MAX_PAGES     — max pages to fetch (default 50; each page lists ~25 players)
+ *   DATABASE_URL  — postgres connection string (required)
+ *   DRY_RUN       — set to "1" to log without writing to DB
+ *   DELAY_MS      — ms between player-page fetches (default 2200)
+ *   START_INDEX   — skip first N matched players (resume a partial run)
  */
 
 import axios from 'axios'
@@ -28,236 +27,194 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-const DRY_RUN   = process.env.DRY_RUN === '1'
-const MAX_PAGES = parseInt(process.env.MAX_PAGES ?? '50', 10) || 50
+const DRY_RUN    = process.env.DRY_RUN    === '1'
+const DELAY_MS   = parseInt(process.env.DELAY_MS   ?? '2200', 10) || 2200
+const START_IDX  = parseInt(process.env.START_INDEX ?? '0',   10) || 0
 
 const HEADERS = {
-  'User-Agent':
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
-    '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml',
   'Accept-Language': 'en-US,en;q=0.9',
-  'Referer': 'https://www.spotrac.com/nba/',
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-/**
- * Normalize a player name for fuzzy matching.
- * Strips accents (é→e, ć→c), apostrophes, lowercases, collapses whitespace.
- */
 function normalizeName(name: string): string {
   return name
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')  // strip combining accent marks
-    .replace(/[''`]/g, '')             // strip apostrophes (O'Neal → ONeal)
-    .replace(/[^a-z ]/g, '')          // remove punctuation, dots, hyphens
+    .replace(/[\u0300-\u036f]/g, '')   // strip accents
+    .replace(/[''`\.]/g, '')            // strip apostrophes/dots
+    .replace(/[^a-z ]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
 }
 
-/**
- * Parse a Spotrac dollar string like "$581,348,328" into raw dollars.
- */
-function parseDollars(s: string): number {
-  const clean = s.replace(/[$,\s]/g, '')
-  const n = parseInt(clean, 10)
-  return isNaN(n) ? 0 : n
+/** Expand HTML comments so hidden BBRef tables become parseable */
+function expandComments(html: string): string {
+  return html.replace(/<!--([\s\S]*?)-->/g, (_, inner) => inner)
 }
 
-interface EarningsRow {
-  name: string
-  earnings: number
-}
+// ── Phase 1: Build name→href map from alphabet index pages ─────────────────
 
-/**
- * Fetch one paginated page of the Spotrac NBA career earnings rankings table.
- * Returns parsed { name, earnings } rows, or [] on 404 / parse failure.
- *
- * Spotrac HTML structure (as of 2024–2025):
- *   <table class="tracker"> or similar table
- *     <tbody>
- *       <tr>
- *         <td class="rank">1</td>
- *         <td class="player"><a href="/nba/...">LeBron James</a></td>
- *         <td class="total">$581,348,328</td>
- *         ...
- *       </tr>
- *     </tbody>
- *
- * If the layout has changed, the fallback selector tries every <a> inside
- * a <td> paired with a <td> that starts with "$".
- */
-async function fetchSpotracPage(page: number): Promise<EarningsRow[]> {
-  const url = page === 1
-    ? 'https://www.spotrac.com/nba/rankings/career/'
-    : `https://www.spotrac.com/nba/rankings/career/page/${page}/`
-
+async function fetchAlphabetIndex(letter: string): Promise<Map<string, string>> {
+  const url = `https://www.basketball-reference.com/players/${letter}/`
+  const nameToHref = new Map<string, string>()
   try {
-    const { data, status } = await axios.get<string>(url, {
-      headers: HEADERS,
-      timeout: 20_000,
-      validateStatus: s => s < 500,
-    })
-
-    if (status === 404 || status === 403) {
-      if (page === 1) console.warn(`  Spotrac returned ${status} — may require login or has changed URL.`)
-      return []
-    }
-
+    const { data } = await axios.get<string>(url, { headers: HEADERS, timeout: 20_000 })
     const $ = cheerio.load(data)
-    const rows: EarningsRow[] = []
-    const seen = new Set<string>()
-
-    // Primary selector: table rows with a player link + dollar cell
-    $('table tr').each((_, tr) => {
-      const $tr = $(tr)
-      const cells = $tr.find('td')
-      if (cells.length < 2) return
-
-      // Find player name (first <a> with an href to /nba/...)
-      const nameLink = $tr.find('a[href*="/nba/"]').first()
-      const name = nameLink.text().trim()
-      if (!name || seen.has(name)) return
-
-      // Find earnings cell — first td whose text starts with "$"
-      let earningsStr = ''
-      cells.each((_, td) => {
-        const t = $(td).text().trim()
-        if (!earningsStr && t.startsWith('$')) earningsStr = t
-      })
-
-      const earnings = parseDollars(earningsStr)
-      if (earnings > 0) {
-        rows.push({ name, earnings })
-        seen.add(name)
+    // Each player is an <a> inside #div_players table
+    $('table#players a, #div_players a').each((_, el) => {
+      const href = $(el).attr('href') || ''
+      const name = $(el).text().trim()
+      if (href.startsWith('/players/') && name) {
+        nameToHref.set(normalizeName(name), href)
       }
     })
-
-    // Fallback: div/span layout (Spotrac sometimes uses JS-rendered tables)
-    if (rows.length === 0) {
-      $('[class*="player-name"], [class*="player_name"]').each((_, el) => {
-        const name = $(el).text().trim()
-        if (!name || seen.has(name)) return
-        // Look for the nearest element containing a dollar amount
-        const container = $(el).closest('tr, [class*="row"]')
-        const earningsEl = container.find('[class*="total"], [class*="earnings"], [class*="salary"]').first()
-        let earningsStr = earningsEl.text().trim()
-        if (!earningsStr) {
-          container.find('td, span, div').each((_, c) => {
-            const t = $(c).text().trim()
-            if (!earningsStr && t.startsWith('$') && t.length > 3) earningsStr = t
-          })
-        }
-        const earnings = parseDollars(earningsStr)
-        if (earnings > 0) { rows.push({ name, earnings }); seen.add(name) }
+    // Fallback: any player link in the page
+    if (nameToHref.size === 0) {
+      $(`a[href^="/players/${letter}/"]`).each((_, el) => {
+        const href = $(el).attr('href') || ''
+        const name = $(el).attr('title') || $(el).text().trim()
+        if (name) nameToHref.set(normalizeName(name), href)
       })
     }
-
-    return rows
   } catch (err: any) {
-    console.error(`  Error fetching page ${page}: ${err.message}`)
-    return []
+    console.error(`  Error fetching /players/${letter}/: ${err.message}`)
+  }
+  return nameToHref
+}
+
+// ── Phase 2: Extract career salary total from individual player page ────────
+
+async function fetchCareerEarnings(href: string): Promise<number> {
+  const url = `https://www.basketball-reference.com${href}`
+  try {
+    const { data } = await axios.get<string>(url, { headers: HEADERS, timeout: 20_000 })
+    const expanded = expandComments(data)
+    // Salary values are stored in csk attribute: csk="4018920"
+    let total = 0
+    let m: RegExpExecArray | null
+    const re = /data-stat="salary"[^>]+csk="(\d+)"/g
+    while ((m = re.exec(expanded)) !== null) total += parseInt(m[1], 10)
+    return total
+  } catch (err: any) {
+    if (err?.response?.status !== 404) console.error(`  Error ${href}: ${err.message}`)
+    return 0
   }
 }
 
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
+// ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('EBK Salary Scraper — Spotrac Career Earnings\n')
-  if (DRY_RUN) console.log('*** DRY RUN — no DB writes ***\n')
+  console.log('EBK Salary Scraper — Basketball Reference (alphabet index → player pages)')
+  if (DRY_RUN) console.log('*** DRY RUN — no DB writes ***')
+  console.log()
 
-  // ── Phase 1: Scrape Spotrac ─────────────────────────────────────────────────
-  const earningsMap = new Map<string, number>()   // normalizedName → career $
+  // ── Phase 1: Scrape all 26 alphabet index pages ───────────────────────────
+  console.log('Phase 1: Building name→href map from alphabet index pages...')
+  const globalNameToHref = new Map<string, string>()
 
-  let totalScraped = 0
-  for (let page = 1; page <= MAX_PAGES; page++) {
-    process.stdout.write(`  Page ${page}... `)
-    const rows = await fetchSpotracPage(page)
-
-    if (rows.length === 0) {
-      console.log('(empty — stopping)')
-      break
-    }
-
-    for (const { name, earnings } of rows) {
-      const norm = normalizeName(name)
-      if (!earningsMap.has(norm) || earningsMap.get(norm)! < earnings) {
-        earningsMap.set(norm, earnings)
-      }
-    }
-
-    totalScraped += rows.length
-    console.log(`${rows.length} rows  (${earningsMap.size} unique so far)`)
-    await sleep(2_000)  // polite delay
+  for (const letter of 'abcdefghijklmnopqrstuvwxyz') {
+    process.stdout.write(`  /players/${letter}/... `)
+    const map = await fetchAlphabetIndex(letter)
+    map.forEach((href, name) => {
+      if (!globalNameToHref.has(name)) globalNameToHref.set(name, href)
+    })
+    console.log(`${map.size} players  (${globalNameToHref.size} total)`)
+    await sleep(1500)
   }
 
-  console.log(`\nTotal unique players from Spotrac: ${earningsMap.size}`)
+  console.log(`\nTotal unique BBRef players: ${globalNameToHref.size}`)
 
-  if (earningsMap.size === 0) {
-    console.log('\nWARNING: No data scraped from Spotrac.')
-    console.log('Spotrac may have changed their layout or requires authentication.')
-    console.log('Inspect https://www.spotrac.com/nba/rankings/career/ manually')
-    console.log('and update the selectors in fetchSpotracPage() if needed.\n')
-    await prisma.$disconnect()
-    return
-  }
-
-  // ── Phase 2: Match DB players ───────────────────────────────────────────────
+  // ── Phase 2: Match DB players ─────────────────────────────────────────────
+  console.log('\nPhase 2: Matching DB players to BBRef hrefs...')
   const dbPlayers = await prisma.player.findMany({
-    select: { id: true, firstName: true, lastName: true, careerEarnings: true },
+    where:  { yearFrom: { gte: 1985 } },
+    select: { id: true, firstName: true, lastName: true, yearFrom: true, yearTo: true, careerEarnings: true },
+    orderBy: [{ yearFrom: 'desc' }, { lastName: 'asc' }],
   })
-  console.log(`DB players total: ${dbPlayers.length}`)
+  console.log(`DB players (yearFrom ≥ 1985): ${dbPlayers.length}`)
 
-  let updated   = 0
-  let alreadyOk = 0
-  let noMatch   = 0
+  // Deduplicate by href — multiple DB entries (same player, different teams)
+  // should all get the same career total, but we only need to fetch once.
+  const hrefToPlayers = new Map<string, typeof dbPlayers>()
+  let noMatch = 0
 
   for (const p of dbPlayers) {
     const norm = normalizeName(`${p.firstName} ${p.lastName}`)
-    const earnings = earningsMap.get(norm) ?? 0
+    const href = globalNameToHref.get(norm)
+    if (!href) { noMatch++; continue }
+    if (!hrefToPlayers.has(href)) hrefToPlayers.set(href, [])
+    hrefToPlayers.get(href)!.push(p)
+  }
 
-    if (earnings <= 0) { noMatch++; continue }
+  const uniqueHrefs = Array.from(hrefToPlayers.keys())
+  console.log(`Matched: ${uniqueHrefs.length} unique players  |  No match: ${noMatch}`)
+  console.log(`Estimated time: ~${Math.round(uniqueHrefs.length * DELAY_MS / 60000)} minutes\n`)
 
-    // Skip if already set to approximately the same value (idempotent)
-    if (p.careerEarnings > 0 && Math.abs(p.careerEarnings - earnings) < 10_000) {
-      alreadyOk++
+  // ── Phase 3: Fetch player pages and update DB ─────────────────────────────
+  console.log('Phase 3: Fetching salary data and updating DB...')
+  let updated  = 0
+  let skipped  = 0
+  let errors   = 0
+
+  for (let i = START_IDX; i < uniqueHrefs.length; i++) {
+    const href    = uniqueHrefs[i]
+    const players = hrefToPlayers.get(href)!
+    const label   = `${players[0].firstName} ${players[0].lastName}`
+
+    process.stdout.write(`[${i + 1}/${uniqueHrefs.length}] ${label}... `)
+
+    // Skip if all already populated
+    if (players.every(p => p.careerEarnings > 0)) {
+      console.log(`already set ($${(players[0].careerEarnings / 1e6).toFixed(1)}M)`)
+      skipped += players.length
       continue
     }
 
-    if (DRY_RUN) {
-      console.log(`  [DRY] ${p.firstName} ${p.lastName}: $${(earnings / 1_000_000).toFixed(1)}M`)
+    const earnings = await fetchCareerEarnings(href)
+
+    if (earnings <= 0) {
+      console.log('no salary data')
+      errors++
     } else {
-      await prisma.player.update({ where: { id: p.id }, data: { careerEarnings: earnings } })
+      const millions = (earnings / 1e6).toFixed(1)
+      console.log(`$${millions}M`)
+
+      if (!DRY_RUN) {
+        // Update ALL DB entries for this player (they share the same career total)
+        for (const p of players) {
+          if (Math.abs(p.careerEarnings - earnings) > 10_000) {
+            await prisma.player.update({ where: { id: p.id }, data: { careerEarnings: earnings } })
+          }
+        }
+      }
+      updated += players.length
     }
-    updated++
+
+    await sleep(DELAY_MS)
   }
 
+  // ── Summary ───────────────────────────────────────────────────────────────
   console.log('\n=== Results ===')
-  console.log(`  Updated:           ${updated}`)
-  console.log(`  Already up-to-date: ${alreadyOk}`)
-  console.log(`  No Spotrac match:   ${noMatch}  (pre-1985 era or name mismatch — estimate fallback used)`)
+  console.log(`  Updated DB entries: ${updated}`)
+  console.log(`  Already populated:  ${skipped}`)
+  console.log(`  No salary data:     ${errors}`)
+  console.log(`  No BBRef match:     ${noMatch}`)
 
-  // ── Phase 3: Spot-check ─────────────────────────────────────────────────────
   if (!DRY_RUN && updated > 0) {
-    console.log('\nSpot-check (top 10 by earnings):')
+    console.log('\nTop 10 career earners in DB:')
     const top = await prisma.player.findMany({
-      where: { careerEarnings: { gt: 0 } },
+      where:   { careerEarnings: { gt: 0 } },
       orderBy: { careerEarnings: 'desc' },
-      take: 10,
-      select: { firstName: true, lastName: true, careerEarnings: true },
+      take:    10,
+      select:  { firstName: true, lastName: true, careerEarnings: true },
     })
     for (const p of top) {
-      console.log(`  ${p.firstName} ${p.lastName}: $${(p.careerEarnings / 1_000_000).toFixed(1)}M`)
+      console.log(`  ${p.firstName} ${p.lastName}: $${(p.careerEarnings / 1e6).toFixed(1)}M`)
     }
   }
 
@@ -266,6 +223,6 @@ async function main() {
 
 main().catch(err => {
   console.error(err)
-  prisma.$disconnect().catch(() => {})
+  prisma.$disconnect()
   process.exit(1)
 })
