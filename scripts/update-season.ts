@@ -279,6 +279,45 @@ async function main() {
   }
 
   console.log(`\nDone! Updated: ${updated}  New: ${saved}  Skipped: ${skipped}`)
+
+  // Recompute EBK percentile scores for all players so new/updated entries are correct
+  console.log('\nRecomputing EBK percentile scores across all players...')
+  const allPlayers = await prisma.player.findMany()
+  const N = allPlayers.length
+  if (N > 0) {
+    const invertedPct = (arr: number[], val: number): number => {
+      const sorted = [...arr].sort((a, b) => a - b)
+      const rank = sorted.findIndex(v => v >= val)
+      const r = rank === -1 ? N - 1 : rank
+      return parseFloat((100 - (r / (N - 1)) * 100).toFixed(1))
+    }
+    const games = allPlayers.map(p => p.careerGames)
+    const ppgs  = allPlayers.map(p => p.careerPPG)
+    const rpgs  = allPlayers.map(p => p.careerRPG)
+    const apgs  = allPlayers.map(p => p.careerAPG)
+    // Use stored careerMPG (set by scrape-bbref.ts); new StatMuse-only players default to 0.
+    const mpgs  = allPlayers.map(p => p.careerMPG)
+
+    let rescored = 0
+    for (const p of allPlayers) {
+      const gpScore  = invertedPct(games, p.careerGames)
+      const ppgScore = invertedPct(ppgs,  p.careerPPG)
+      const rpgScore = invertedPct(rpgs,  p.careerRPG)
+      const apgScore = invertedPct(apgs,  p.careerAPG)
+      const mpgScore = invertedPct(mpgs,  p.careerMPG)
+      // Match scrape-bbref.ts weights: GP 20% · PPG 25% · MPG 20% · RPG 18% · APG 17%
+      const ebkScore = parseFloat((gpScore * 0.20 + ppgScore * 0.25 + mpgScore * 0.20 + rpgScore * 0.18 + apgScore * 0.17).toFixed(1))
+      try {
+        await prisma.player.update({
+          where: { id: p.id },
+          data: { ebkScore, ebkGpScore: gpScore, ebkPpgScore: ppgScore, ebkRpgScore: rpgScore, ebkApgScore: apgScore, ebkMpgScore: mpgScore }
+        })
+        rescored++
+      } catch { /* skip */ }
+    }
+    console.log(`Rescored ${rescored} players.`)
+  }
+
   await prisma.$disconnect()
 }
 

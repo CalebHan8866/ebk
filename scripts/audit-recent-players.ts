@@ -270,8 +270,8 @@ async function main() {
     // Sort by games desc (most impactful first)
     missing.sort((a, b) => b.e.totalGames - a.e.totalGames)
 
-    // ID starts after existing patches
-    let patchId = 9_000_003
+    // ID starts after existing patches (patch-missing-players.ts currently uses up to 9_000_004)
+    let patchId = 9_000_005
 
     const patchEntries: string[] = []
     for (const m of missing) {
