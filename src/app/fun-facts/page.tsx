@@ -351,9 +351,11 @@ export default function FunFactsPage() {
       .then(r => r.json())
       .then((data: Player[]) => {
         // Keep only players whose earnings produce a $100K–$1M/yr comparison
-        const eligible = (data as Player[]).filter(p =>
-          eligibleEvents(estimateCareerEarnings(p)).length > 0
-        )
+        // Use real scraped earnings when available, fall back to estimate (mirrors generateFacts)
+        const eligible = (data as Player[]).filter(p => {
+          const e = p.careerEarnings > 0 ? p.careerEarnings : estimateCareerEarnings(p)
+          return eligibleEvents(e).length > 0
+        })
         // Shuffle so niche players surface alongside stars
         for (let i = eligible.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1))
@@ -419,7 +421,9 @@ export default function FunFactsPage() {
   const current = filtered[cardIndex]
   const facts = current ? generateFacts(current) : []
   const currentFact = facts[factIndex]
-  const earnings = current ? estimateCareerEarnings(current) : 0
+  const earnings = current
+    ? (current.careerEarnings > 0 ? current.careerEarnings : estimateCareerEarnings(current))
+    : 0
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] py-10 px-4">
