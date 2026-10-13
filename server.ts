@@ -224,6 +224,7 @@ const recentMatchups = new Map<string, Map<string, number>>()
 // grudge: userId → Map(opponentId → total games played together)
 const matchupCount = new Map<string, Map<string, number>>()
 let allPlayers: PlayerData[] = []
+let playerById = new Map<number, PlayerData>() // fast O(1) lookup by id
 // Seed DB uses id=71; after scrape-bbref runs it gets a hash-based ID — resolve dynamically.
 let JAMESON_CURRY_ID = 71
 function refreshJCId() {
@@ -441,11 +442,11 @@ function calculateResult(room: Room): GameResult {
   let guestTotal = 0
 
   for (const id of room.hostPicks) {
-    const p = allPlayers.find(pl => pl.id === id)
+    const p = playerById.get(id)
     if (p) hostTotal += getStatForMode(p, statMode)
   }
   for (const id of room.guestPicks) {
-    const p = allPlayers.find(pl => pl.id === id)
+    const p = playerById.get(id)
     if (p) guestTotal += getStatForMode(p, statMode)
   }
 
@@ -665,6 +666,7 @@ function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
 app.prepare().then(async () => {
   // Load players from DB
   allPlayers = await prisma.player.findMany()
+  playerById = new Map(allPlayers.map(p => [p.id, p]))
   refreshJCId()
   console.log(`Loaded ${allPlayers.length} players from DB`)
 
@@ -677,6 +679,7 @@ app.prepare().then(async () => {
         console.log(`Player data refreshed: ${allPlayers.length} → ${fresh.length}`)
       }
       allPlayers = fresh
+      playerById = new Map(fresh.map(p => [p.id, p]))
       refreshJCId()
     } catch (e) {
       console.error('Failed to refresh player data:', e)
@@ -794,14 +797,14 @@ app.prepare().then(async () => {
 
       if ((currentPicker === 'host' && !isHost) || (currentPicker === 'guest' && !isGuest)) return
       if (room.hostPicks.includes(playerId) || room.guestPicks.includes(playerId)) return
-      if (!allPlayers.find(p => p.id === playerId)) {
+      const pickedPlayer = playerById.get(playerId)
+      if (!pickedPlayer) {
         socket.emit('pick-error', { message: 'Invalid player' }); return
       }
 
       // Validate spun team constraint
       if (room.currentSpunTeam) {
-        const player = allPlayers.find(p => p.id === playerId)
-        if (player && getCurrentTeam(player.team) !== room.currentSpunTeam) {
+        if (getCurrentTeam(pickedPlayer.team) !== room.currentSpunTeam) {
           socket.emit('pick-error', { message: `Must pick a ${room.currentSpunTeam} player this turn` })
           return
         }
@@ -818,8 +821,7 @@ app.prepare().then(async () => {
           socket.emit('pick-error', { message: 'No bench slots remaining' }); return
         }
       } else if (starterPositions.includes(slotPos)) {
-        const player = allPlayers.find(p => p.id === playerId)
-        const playerPositions = player?.positions.split(',') || []
+        const playerPositions = pickedPlayer.positions.split(',')
         if (!playerPositions.includes(slotPos)) {
           socket.emit('pick-error', { message: `Player cannot play ${slotPos}` }); return
         }
