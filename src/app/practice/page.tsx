@@ -279,7 +279,7 @@ function PracticeContent() {
   }
 
   function reset() {
-    spinRefs.current.forEach(id => clearInterval(id)); spinRefs.current = []
+    spinRefs.current.forEach(id => { clearTimeout(id); clearInterval(id) }); spinRefs.current = []
     setIsSpinning(false); setSpunTeam(null)
     setPicks([])
     setFilterPos('ALL')
