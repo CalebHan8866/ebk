@@ -381,10 +381,11 @@ export default function FunFactsPage() {
 
   const filtered = useMemo(() => {
     if (!search) return players
-    const q = search.toLowerCase()
+    const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    const q = norm(search)
     return players.filter(p =>
-      `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
-      p.team.toLowerCase().includes(q)
+      norm(`${p.firstName} ${p.lastName}`).includes(q) ||
+      norm(p.team).includes(q)
     )
   }, [players, search])
 
