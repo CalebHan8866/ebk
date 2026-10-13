@@ -119,6 +119,8 @@ async function fetchCareerEarnings(href: string): Promise<number> {
   return 0
 }
 
+const HREF_CACHE_FILE = '/tmp/bbref-href-cache.json'
+
 // ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -126,21 +128,34 @@ async function main() {
   if (DRY_RUN) console.log('*** DRY RUN — no DB writes ***')
   console.log()
 
-  // ── Phase 1: Scrape all 26 alphabet index pages ───────────────────────────
-  console.log('Phase 1: Building name→href map from alphabet index pages...')
+  // ── Phase 1: Build name→href map (use cache if available) ────────────────
   const globalNameToHref = new Map<string, string>()
 
-  for (const letter of 'abcdefghijklmnopqrstuvwxyz') {
-    process.stdout.write(`  /players/${letter}/... `)
-    const map = await fetchAlphabetIndex(letter)
-    map.forEach((href, name) => {
-      if (!globalNameToHref.has(name)) globalNameToHref.set(name, href)
-    })
-    console.log(`${map.size} players  (${globalNameToHref.size} total)`)
-    await sleep(1500)
+  const fs = await import('fs')
+  if (fs.existsSync(HREF_CACHE_FILE)) {
+    console.log(`Phase 1: Loading cached href map from ${HREF_CACHE_FILE}...`)
+    const cached: Record<string, string> = JSON.parse(fs.readFileSync(HREF_CACHE_FILE, 'utf8'))
+    Object.entries(cached).forEach(([name, href]) => globalNameToHref.set(name, href))
+    console.log(`  Loaded ${globalNameToHref.size} entries from cache.\n`)
+  } else {
+    console.log('Phase 1: Building name→href map from alphabet index pages...')
+    for (const letter of 'abcdefghijklmnopqrstuvwxyz') {
+      process.stdout.write(`  /players/${letter}/... `)
+      const map = await fetchAlphabetIndex(letter)
+      map.forEach((href, name) => {
+        if (!globalNameToHref.has(name)) globalNameToHref.set(name, href)
+      })
+      console.log(`${map.size} players  (${globalNameToHref.size} total)`)
+      await sleep(2000)
+    }
+    // Save cache so future runs skip Phase 1
+    const cacheObj: Record<string, string> = {}
+    globalNameToHref.forEach((href, name) => { cacheObj[name] = href })
+    fs.writeFileSync(HREF_CACHE_FILE, JSON.stringify(cacheObj))
+    console.log(`  Cache saved to ${HREF_CACHE_FILE}`)
   }
 
-  console.log(`\nTotal unique BBRef players: ${globalNameToHref.size}`)
+  console.log(`Total unique BBRef players: ${globalNameToHref.size}`)
 
   // ── Phase 2: Match DB players ─────────────────────────────────────────────
   console.log('\nPhase 2: Matching DB players to BBRef hrefs...')
