@@ -168,11 +168,6 @@ interface PlayerData {
   careerAPG: number
   careerMPG: number
   ebkScore: number
-  ebkGpScore: number
-  ebkPpgScore: number
-  ebkRpgScore: number
-  ebkApgScore: number
-  ebkMpgScore: number
   yearFrom: number
   yearTo: number
 }
@@ -665,7 +660,13 @@ function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
 
 app.prepare().then(async () => {
   // Load players from DB
-  allPlayers = await prisma.player.findMany()
+  const playerSelect = {
+    id: true, firstName: true, lastName: true, team: true,
+    position: true, positions: true, careerGames: true,
+    careerPPG: true, careerRPG: true, careerAPG: true, careerMPG: true,
+    ebkScore: true, yearFrom: true, yearTo: true,
+  } as const
+  allPlayers = await prisma.player.findMany({ select: playerSelect })
   playerById = new Map(allPlayers.map(p => [p.id, p]))
   refreshJCId()
   console.log(`Loaded ${allPlayers.length} players from DB`)
@@ -674,7 +675,7 @@ app.prepare().then(async () => {
   // Use 5-min interval — scrape takes ~10 min, so this picks up new players quickly
   setInterval(async () => {
     try {
-      const fresh = await prisma.player.findMany()
+      const fresh = await prisma.player.findMany({ select: playerSelect })
       if (fresh.length !== allPlayers.length) {
         console.log(`Player data refreshed: ${allPlayers.length} → ${fresh.length}`)
       }
