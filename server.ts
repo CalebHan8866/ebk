@@ -983,6 +983,8 @@ app.prepare().then(async () => {
       if (!room) { socket.emit('room-error', { message: 'Room not found' }); return }
       if (room.guestSocketId) { socket.emit('room-error', { message: 'Room is full' }); return }
       if (room.status !== 'waiting') { socket.emit('room-error', { message: 'Game already in progress' }); return }
+      // Prevent a user from playing against themselves (would double-record stats)
+      if (userId && userId === room.hostUserId) { socket.emit('room-error', { message: 'You cannot join your own room' }); return }
 
       room.guestSocketId = socket.id
       room.guestUserId = userId

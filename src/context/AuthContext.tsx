@@ -1,5 +1,6 @@
 'use client'
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { resetSocket } from '@/lib/socket'
 
 interface AuthUser {
   id: string
@@ -8,7 +9,18 @@ interface AuthUser {
   wins: number
   losses: number
   draws: number
-  equippedBadges?: string
+  gamesPlayed: number
+  winStreak: number
+  maxWinStreak: number
+  firstPickWins: number
+  firstPickGames: number
+  unlockedBadges: string
+  unlockedEmotes: string
+  unlockedMilestones: string
+  equippedBadge: string
+  equippedBadges: string
+  equippedEmote: string
+  createdAt: string
 }
 
 interface AuthContextType {
@@ -44,6 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' })
     setUser(null)
+    // Force a new socket connection so the server middleware re-reads the now-cleared
+    // auth cookie. Without this the old socket retains the previous user's identity
+    // for the duration of its connection.
+    resetSocket()
   }
 
   async function refreshUser() {

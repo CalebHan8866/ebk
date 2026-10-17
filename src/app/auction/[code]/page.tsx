@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getSocket } from '@/lib/socket'
@@ -129,8 +129,10 @@ function TimerRing({ timeLeft, maxTime }: { timeLeft: number; maxTime: number })
 export default function AuctionRoomPage() {
   const params = useParams()
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const code = (params?.code as string)?.toUpperCase()
+  // Stable fallback name for unauthenticated users — generated once per mount.
+  const anonNameRef = useRef(`GM-${Math.random().toString(36).substring(2, 5).toUpperCase()}`)
 
   const [auctionState, setAuctionState] = useState<AuctionState | null>(null)
   const [mySocketId, setMySocketId] = useState('')
@@ -143,7 +145,10 @@ export default function AuctionRoomPage() {
   const [tradeTarget, setTradeTarget] = useState<string | null>(null)
   const [selectedToOffer, setSelectedToOffer] = useState<number[]>([])
   const [selectedToRequest, setSelectedToRequest] = useState<number[]>([])
-  const [guestName] = useState(() => user?.username || `GM-${Math.random().toString(36).substring(2, 5).toUpperCase()}`)
+  // If the user is authenticated, always use their username so the server can reliably
+  // re-seat them on reconnect (the server matches by name + userId). For unauthenticated
+  // users, use a ref-stable random name generated once at mount.
+  const guestName = user?.username ?? anonNameRef.current
   const logEndRef = useRef<HTMLDivElement>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -175,16 +180,21 @@ export default function AuctionRoomPage() {
   }, [auctionState?.bidLog])
 
   useEffect(() => {
+    // Capture guestName at effect-run time so the reconnect handler always uses
+    // the name that was registered with the server (avoids stale-closure mismatch).
+    const nameAtMount = guestName
     const socket = getSocket()
     setMySocketId(socket.id || '')
 
-    socket.on('connect', () => {
+    // Named handlers so we can pass them to socket.off() precisely — calling
+    // socket.off('connect') without a reference removes ALL connect listeners.
+    function handleConnect() {
       // Socket reconnected with a new ID — re-seat ourselves in the auction room
       setMySocketId(socket.id || '')
-      socket.emit('auction:get-state', { code, userName: guestName })
-    })
+      socket.emit('auction:get-state', { code, userName: nameAtMount })
+    }
 
-    socket.on('auction:state', (state: AuctionState) => {
+    function handleAuctionState(state: AuctionState) {
       // Keep mySocketId fresh in case of reconnects
       setMySocketId(socket.id || '')
       setAuctionState(state)
@@ -199,21 +209,26 @@ export default function AuctionRoomPage() {
       if (state.tradeDeadline) {
         setTradeTimeLeft(Math.max(0, Math.ceil((state.tradeDeadline - Date.now()) / 1000)))
       }
-    })
+    }
 
-    socket.on('auction:complete', ({ results: r }: { results: AuctionResult[] }) => {
+    function handleAuctionComplete({ results: r }: { results: AuctionResult[] }) {
       setResults(r)
       setPhase('complete')
-    })
+    }
 
-    socket.on('auction:error', ({ message }: { message: string }) => {
+    function handleAuctionError({ message }: { message: string }) {
       setErrorMsg(message)
       setTimeout(() => setErrorMsg(''), 4000)
-    })
+    }
+
+    socket.on('connect', handleConnect)
+    socket.on('auction:state', handleAuctionState)
+    socket.on('auction:complete', handleAuctionComplete)
+    socket.on('auction:error', handleAuctionError)
 
     // Request state on mount — include userName so server can re-seat
     // this socket if we reconnected with a new socketId
-    socket.emit('auction:get-state', { code, userName: guestName })
+    socket.emit('auction:get-state', { code, userName: nameAtMount })
 
     // Redirect to lobby if no state received within 6 seconds (not a participant)
     const loadTimeout = setTimeout(() => {
@@ -221,13 +236,13 @@ export default function AuctionRoomPage() {
     }, 6000)
 
     return () => {
-      socket.off('connect')
-      socket.off('auction:state')
-      socket.off('auction:complete')
-      socket.off('auction:error')
+      socket.off('connect', handleConnect)
+      socket.off('auction:state', handleAuctionState)
+      socket.off('auction:complete', handleAuctionComplete)
+      socket.off('auction:error', handleAuctionError)
       clearTimeout(loadTimeout)
     }
-  }, [code])
+  }, [code, guestName])
 
   const me = auctionState?.participants.find(p => p.socketId === mySocketId)
   const isHost = auctionState && mySocketId === auctionState.participants[0]?.socketId
@@ -647,18 +662,20 @@ export default function AuctionRoomPage() {
 
     return (
       <div className="min-h-screen flex flex-col">
-        {/* Top bar */}
-        <div className="border-b border-white/[0.07] px-4 py-3 flex items-center justify-between">
+        {/* Top bar — sticky war room header */}
+        <div className="war-room-bar">
           <div className="flex items-center gap-3">
-            <span className="font-display text-2xl text-orange-500">WAR ROOM</span>
-            <span className="font-mono text-white/30 text-sm">{code}</span>
+            <span className="font-display text-2xl text-orange-500 tracking-wider">WAR ROOM</span>
+            <span className="font-mono text-white/30 text-sm border border-white/[0.07] bg-white/[0.03] rounded px-2 py-0.5">{code}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span className="text-white/40 text-xs">LIVE</span>
-            <span className="text-white/30 text-xs ml-2">
-              {auctionState.playerIndex + 1} / {auctionState.poolSize}
-            </span>
+          <div className="flex items-center gap-3">
+            <div className="live-banner">
+              <span className="live-dot" />
+              LIVE
+            </div>
+            <div className="text-white/30 text-xs bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1 font-mono">
+              {auctionState.playerIndex + 1}<span className="text-white/15"> / {auctionState.poolSize}</span>
+            </div>
           </div>
         </div>
 
@@ -671,27 +688,31 @@ export default function AuctionRoomPage() {
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-0 overflow-hidden">
           {/* Left: Rosters */}
           <aside className="lg:col-span-1 border-r border-white/[0.07] p-4 overflow-y-auto">
-            <p className="font-display text-sm text-white/40 tracking-widest mb-4">ROSTERS</p>
-            <div className="space-y-4">
+            <p className="text-label tracking-[0.18em] mb-4">Rosters</p>
+            <div className="space-y-3">
               {auctionState.participants.map(p => {
                 const budgetPct = (p.budget / auctionState.totalBudget) * 100
+                const isMe = p.socketId === mySocketId
                 return (
-                  <div key={p.socketId} className={`rounded-xl p-3 ${p.socketId === mySocketId ? 'bg-orange-600/10 border border-orange-500/20' : 'bg-white/[0.03]'}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-6 h-6 rounded-full bg-orange-600/30 flex items-center justify-center text-orange-400 text-xs font-bold">
+                  <div key={p.socketId} className={`gm-card ${isMe ? 'gm-card-me' : 'gm-card-other'}`}>
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black ${isMe ? 'bg-orange-600 text-white' : 'bg-white/[0.08] text-white/60'}`}>
                         {p.name[0]?.toUpperCase()}
                       </div>
-                      <span className="text-white text-xs font-bold truncate flex-1">{p.name}</span>
-                      {p.socketId === mySocketId && <span className="text-orange-400 text-xs">(You)</span>}
+                      <span className={`text-xs font-black truncate flex-1 ${isMe ? 'text-orange-300' : 'text-white'}`}>{p.name}</span>
+                      {isMe && <span className="text-[10px] font-black text-orange-400/70 uppercase tracking-wider shrink-0">You</span>}
                     </div>
                     {/* Budget bar */}
-                    <div className="h-1.5 bg-white/10 rounded-full mb-2">
+                    <div className="budget-bar mb-1.5">
                       <div
-                        className="h-1.5 bg-orange-500 rounded-full transition-all"
+                        className="budget-bar-fill transition-all"
                         style={{ width: `${Math.max(0, budgetPct)}%` }}
                       />
                     </div>
-                    <p className="text-white/40 text-xs mb-2">${p.budget}M · {p.rosterCount}/{auctionState.teamSize} players</p>
+                    <p className="text-white/30 text-[11px] mb-2.5 flex items-center justify-between">
+                      <span className={`font-black ${p.budget < 10 ? 'text-red-400/80' : 'text-white/50'}`}>${p.budget}M</span>
+                      <span>{p.rosterCount}/{auctionState.teamSize} players</span>
+                    </p>
                     <div className="flex flex-wrap gap-1">
                       {p.roster.map(player => player && (
                         <div key={player.id} className="relative group">
@@ -732,47 +753,47 @@ export default function AuctionRoomPage() {
 
             {/* Player card */}
             {cp && (
-              <div className="card-accent w-full max-w-sm p-6 text-center">
-                <div className="flex justify-center mb-3">
+              <div className="card-accent w-full max-w-sm p-6 text-center animate-scale-in">
+                <div className="flex justify-center mb-4">
                   <PosBadge pos={cp.position} />
                 </div>
-                <h2 className="font-display text-4xl md:text-5xl text-white tracking-wider mb-1">
-                  {cp.firstName} {cp.lastName}
+                <h2 className="font-display text-5xl md:text-6xl text-white tracking-wider leading-none mb-2">
+                  {cp.firstName}<br />{cp.lastName}
                 </h2>
-                <p className="text-white/40 text-sm mb-5">
-                  {cp.team} · {cp.yearFrom}–{cp.yearTo}
+                <p className="text-white/30 text-sm mb-6 tracking-wider">
+                  {cp.team} · <span className="text-white/20">{cp.yearFrom}–{cp.yearTo}</span>
                 </p>
-                <div className="grid grid-cols-4 gap-3 mb-5">
+                <div className="grid grid-cols-4 gap-2 mb-5">
                   {[
                     { label: 'GP', value: cp.careerGames },
                     { label: 'PPG', value: cp.careerPPG?.toFixed(1) },
                     { label: 'RPG', value: cp.careerRPG?.toFixed(1) },
                     { label: 'APG', value: cp.careerAPG?.toFixed(1) },
                   ].map(s => (
-                    <div key={s.label} className="bg-white/[0.04] rounded-xl py-3">
-                      <p className="font-display text-xl text-white">{s.value ?? '–'}</p>
-                      <p className="text-white/30 text-xs">{s.label}</p>
+                    <div key={s.label} className="bg-white/[0.04] border border-white/[0.05] rounded-xl py-3">
+                      <p className="font-display text-2xl text-white leading-none">{s.value ?? '–'}</p>
+                      <p className="text-label mt-1">{s.label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="bg-orange-600/10 border border-orange-500/20 rounded-xl py-3">
-                  <span className="text-white/40 text-xs uppercase tracking-widest">EBK Score</span>
-                  <p className="font-display text-3xl text-orange-400">{cp.ebkScore.toFixed(1)}</p>
+                <div className="stat-highlight rounded-xl py-3.5">
+                  <span className="text-label tracking-[0.18em]">EBK Score</span>
+                  <p className="font-display text-4xl text-orange-400 leading-none mt-0.5">{cp.ebkScore.toFixed(1)}</p>
                 </div>
               </div>
             )}
 
             {/* Current bid */}
             <div className="text-center">
-              <p className="font-display text-6xl text-white">
-                {auctionState.currentBid > 0 ? `$${auctionState.currentBid}M` : 'No Bids'}
-              </p>
+              <div className={`bid-hero ${auctionState.currentBid > 0 ? (amLeading ? 'text-orange-400' : 'text-white') : 'text-white/20'}`}>
+                {auctionState.currentBid > 0 ? `$${auctionState.currentBid}M` : '–––'}
+              </div>
               {auctionState.currentBidderName ? (
-                <p className={`text-sm mt-1 font-bold ${amLeading ? 'text-orange-400' : 'text-white/50'}`}>
-                  {amLeading ? 'You are leading' : `Leading: ${auctionState.currentBidderName}`}
+                <p className={`text-sm mt-1 font-black tracking-wide ${amLeading ? 'text-orange-400' : 'text-white/50'}`}>
+                  {amLeading ? 'YOU ARE LEADING' : `Leading: ${auctionState.currentBidderName}`}
                 </p>
               ) : (
-                <p className="text-white/30 text-sm mt-1">No bids yet — be first!</p>
+                <p className="text-white/30 text-sm mt-1 tracking-widest uppercase text-[11px]">No bids yet — be first</p>
               )}
             </div>
 
@@ -782,10 +803,23 @@ export default function AuctionRoomPage() {
             {/* Bid controls */}
             {phase === 'bidding' && (
               <div className="w-full max-w-xs space-y-3">
-                <div className="flex gap-2">
+                {/* Quick-add chips */}
+                <div className="flex gap-2 justify-center">
+                  {[1, 5, 10].map(bump => (
+                    <button
+                      key={bump}
+                      onClick={() => setBidAmount(prev => Math.min(me?.budget ?? prev, prev + bump))}
+                      className="flex-1 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/50 text-xs font-black hover:bg-white/[0.08] hover:text-white/80 transition-all"
+                    >
+                      +{bump}
+                    </button>
+                  ))}
+                </div>
+                {/* Stepper */}
+                <div className="bid-stepper">
                   <button
-                    onClick={() => setBidAmount(prev => Math.max(auctionState.currentBid + 1, prev - 5))}
-                    className="w-10 h-12 bg-white/[0.05] border border-white/10 rounded-xl text-white/60 hover:text-white hover:border-white/30 transition-all font-bold"
+                    className="bid-stepper-btn"
+                    onClick={() => setBidAmount(prev => Math.max(auctionState.currentBid + 1, prev - 1))}
                   >−</button>
                   <input
                     type="number"
@@ -793,18 +827,18 @@ export default function AuctionRoomPage() {
                     min={auctionState.currentBid + 1}
                     max={me?.budget ?? 0}
                     onChange={e => setBidAmount(Math.max(auctionState.currentBid + 1, parseInt(e.target.value) || 1))}
-                    className="input-field text-center font-display text-2xl"
+                    className="bid-stepper-input"
                   />
                   <button
-                    onClick={() => setBidAmount(prev => Math.min(me?.budget ?? prev, prev + 5))}
-                    className="w-10 h-12 bg-white/[0.05] border border-white/10 rounded-xl text-white/60 hover:text-white hover:border-white/30 transition-all font-bold"
+                    className="bid-stepper-btn"
+                    onClick={() => setBidAmount(prev => Math.min(me?.budget ?? prev, prev + 1))}
                   >+</button>
                 </div>
                 <button
                   onClick={handleBid}
                   disabled={!canBid || amLeading}
                   className={`btn-primary w-full text-lg font-display tracking-widest ${
-                    (!canBid || amLeading) ? 'opacity-40 cursor-not-allowed hover:scale-100 hover:shadow-none' : ''
+                    (!canBid || amLeading) ? 'opacity-40 cursor-not-allowed hover:transform-none hover:shadow-none' : ''
                   }`}
                 >
                   {amLeading ? 'Leading Bid' : `Bid $${bidAmount}M`}
@@ -819,7 +853,10 @@ export default function AuctionRoomPage() {
                   Pass
                 </button>
                 {me && (
-                  <p className="text-center text-white/30 text-xs">Budget: ${me.budget}M remaining</p>
+                  <div className="flex items-center justify-between text-xs px-1">
+                    <span className="text-label">Budget</span>
+                    <span className={`font-black ${me.budget < 10 ? 'text-red-400' : 'text-white/60'}`}>${me.budget}M</span>
+                  </div>
                 )}
               </div>
             )}
@@ -877,9 +914,11 @@ export default function AuctionRoomPage() {
     )
   }
 
+  // Catch-all: unexpected phase/state combination — show spinner with escape hatch
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4">
       <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+      <Link href="/auction" className="mt-4 text-white/30 text-xs hover:text-white/60 underline">Back to lobby</Link>
     </div>
   )
 }

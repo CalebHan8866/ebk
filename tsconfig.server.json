@@ -3,7 +3,7 @@
     "lib": ["esnext"],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": false,
+    "strict": true,
     "esModuleInterop": true,
     "module": "commonjs",
     "moduleResolution": "node",

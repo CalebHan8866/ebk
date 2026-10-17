@@ -6,6 +6,16 @@ function getResend() {
   return null
 }
 
+/** Escape HTML special characters to prevent injection in email templates. */
+function escHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 const FROM = process.env.FROM_EMAIL || 'noreply@eliteballknowledge.ca'
 
 export async function sendVerificationEmail(email: string, username: string, token: string) {
@@ -32,7 +42,7 @@ export async function sendVerificationEmail(email: string, username: string, tok
           <span style="color:#F97316;font-size:32px;font-weight:900;letter-spacing:0.05em">EBK</span>
           <p style="color:#6B7280;margin:4px 0 0;font-size:12px;letter-spacing:0.2em;text-transform:uppercase">Elite Ball Knowledge</p>
         </div>
-        <h2 style="color:white;margin:0 0 8px;font-size:20px">Hey ${username}, verify your email</h2>
+        <h2 style="color:white;margin:0 0 8px;font-size:20px">Hey ${escHtml(username)}, verify your email</h2>
         <p style="color:#9CA3AF;margin:0 0 28px;line-height:1.6">Click the button below to confirm your account and start playing.</p>
         <a href="${verifyUrl}" style="display:inline-block;background:#EA580C;color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">
           Verify Email
