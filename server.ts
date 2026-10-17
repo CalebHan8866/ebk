@@ -1004,6 +1004,16 @@ app.prepare().then(async () => {
   })
 
   io.on('connection', (socket) => {
+    // Per-socket error logging
+    socket.on('error', (err) => {
+      console.error('[socket] Socket error:', {
+        socketId: socket.id,
+        userId: socket.data.userId,
+        message: err.message,
+        stack: err.stack,
+      })
+    })
+
     socket.on('create-room', ({ teamMode, series, difficulty, userName }: {
       teamMode: TeamMode, series: SeriesLength, difficulty: Difficulty, userName: string
     }) => {
@@ -1045,6 +1055,8 @@ app.prepare().then(async () => {
       }
       rooms.set(code, room)
       socket.join(code)
+      console.log('[room] created source=friends code=%s host=%s mode=%s series=%d game_rooms=%d',
+        code, room.hostName, room.teamMode, room.series, rooms.size)
       socket.emit('room-created', { room, players: allPlayers })
     })
 
@@ -1207,6 +1219,7 @@ app.prepare().then(async () => {
         const origConnected = io.sockets.sockets.has(room.hostSocketId)
         const isLegit = !room.hostUserId || userId === room.hostUserId
         if (origConnected && socket.id !== room.hostSocketId && !isLegit) {
+          console.warn('[room] Unauthorized host takeover attempt code=%s userId=%s', code, userId)
           socket.emit('room-error', { message: 'Unauthorized' })
           return
         }
@@ -1215,6 +1228,7 @@ app.prepare().then(async () => {
         const origConnected = !!room.guestSocketId && io.sockets.sockets.has(room.guestSocketId)
         const isLegit = !room.guestUserId || userId === room.guestUserId
         if (origConnected && socket.id !== room.guestSocketId && !isLegit) {
+          console.warn('[room] Unauthorized guest takeover attempt code=%s userId=%s', code, userId)
           socket.emit('room-error', { message: 'Unauthorized' })
           return
         }
@@ -1480,6 +1494,8 @@ app.prepare().then(async () => {
       }
       auctionRooms.set(code, room)
       socket.join(`auction:${code}`)
+      console.log('[auction] created code=%s host=%s maxPlayers=%d teamSize=%d auction_rooms=%d',
+        code, socket.data.username ?? 'anon', room.maxPlayers, room.teamSize, auctionRooms.size)
       socket.emit('auction:created', { code })
       broadcastAuctionState(io, room)
     })
