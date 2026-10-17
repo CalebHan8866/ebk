@@ -31,14 +31,14 @@ export default function HistoryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen  flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen  py-10 px-4">
+    <div className="min-h-screen py-10 px-4">
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}
