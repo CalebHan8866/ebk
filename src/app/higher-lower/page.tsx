@@ -48,7 +48,7 @@ export default function HigherLowerPage() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const badgeClearRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isMounted = useRef(true)
-  const isGuessingRef = useRef(false) // prevents double-submission on rapid taps
+  const isGuessingRef = useRef(false)
 
   useEffect(() => {
     isMounted.current = true
@@ -99,7 +99,6 @@ export default function HigherLowerPage() {
           setUnlockedBadge({ id: badge.id, name: badge.name })
           if (isGauntlet) {
             setClaimStatus('unlocked')
-            // Don't auto-clear on the completion screen
           } else {
             if (badgeClearRef.current) clearTimeout(badgeClearRef.current)
             badgeClearRef.current = setTimeout(() => {
@@ -117,14 +116,13 @@ export default function HigherLowerPage() {
 
   function guess(direction: 'higher' | 'lower') {
     if (screen !== 'playing' || sequence.length < 2 || idx >= sequence.length - 1) return
-    if (isGuessingRef.current) return // debounce rapid taps
+    if (isGuessingRef.current) return
     isGuessingRef.current = true
     if (timerRef.current) clearTimeout(timerRef.current)
 
     const current = sequence[idx]
     const challenger = sequence[idx + 1]
 
-    // Treat exact ties as correct regardless of direction
     const tied = challenger.ebkScore === current.ebkScore
     const actualDir = challenger.ebkScore > current.ebkScore ? 'higher' : 'lower'
     const correct = tied || direction === actualDir
@@ -178,7 +176,6 @@ export default function HigherLowerPage() {
     setLastTied(false)
     setUnlockedBadge(null)
     setClaimStatus(null)
-    // Shuffle a fresh sequence with a new random seed
     if (allPlayers.length > 0) {
       const seed = Math.floor(Math.random() * 1_000_000)
       setSequence(seededShuffle(allPlayers, seed).slice(0, TOTAL_PLAYERS))
@@ -198,6 +195,7 @@ export default function HigherLowerPage() {
   const current = sequence[idx]
   const challenger = sequence[idx + 1]
 
+  /* ── GAME OVER ──────────────────────────────────────────────────────────── */
   if (screen === 'gameover') {
     const correctDir = challenger && current
       ? (challenger.ebkScore > current.ebkScore ? 'HIGHER' : challenger.ebkScore < current.ebkScore ? 'LOWER' : 'THE SAME')
@@ -205,7 +203,7 @@ export default function HigherLowerPage() {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
-          <div className="text-6xl mb-4">💀</div>
+          <div className="font-display text-7xl text-red-500/80 leading-none mb-3 select-none">RIP</div>
           <h1 className="font-display text-5xl text-white leading-none mb-3">Game Over</h1>
           {current && challenger && (
             <p className="text-gray-500 text-sm mb-6 leading-relaxed">
@@ -219,21 +217,23 @@ export default function HigherLowerPage() {
               </span>
             </p>
           )}
-          <div className="bg-[#111] border border-white/10 rounded-2xl p-6 mb-6 grid grid-cols-2 gap-6">
+
+          <div className="card-surface p-6 mb-6 grid grid-cols-2 gap-6">
             <div>
-              <div className="text-4xl font-black text-orange-400">{streak}</div>
-              <div className="text-gray-500 text-xs mt-1 uppercase tracking-wide">This Run</div>
+              <div className="font-display text-5xl text-orange-400 leading-none">{streak}</div>
+              <div className="text-label mt-1">This Run</div>
             </div>
             <div>
-              <div className="text-4xl font-black text-yellow-400">{bestStreak}</div>
-              <div className="text-gray-500 text-xs mt-1 uppercase tracking-wide">Personal Best</div>
+              <div className="font-display text-5xl text-yellow-400 leading-none">{bestStreak}</div>
+              <div className="text-label mt-1">Personal Best</div>
             </div>
           </div>
+
           <div className="flex gap-3 justify-center">
-            <button onClick={restart} className="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-3 rounded-xl transition-colors">
+            <button onClick={restart} className="btn-primary">
               Try Again
             </button>
-            <Link href="/lobby" className="bg-[#111] hover:bg-[#1a1a1a] border border-white/10 text-white font-black px-6 py-3 rounded-xl transition-colors">
+            <Link href="/lobby" className="btn-secondary">
               Lobby
             </Link>
           </div>
@@ -242,33 +242,38 @@ export default function HigherLowerPage() {
     )
   }
 
+  /* ── COMPLETE / GAUNTLET ────────────────────────────────────────────────── */
   if (screen === 'complete') {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
           {claimStatus === 'unlocked' && unlockedBadge && (
-            <div className="mb-6 bg-yellow-900/30 border border-yellow-500/50 rounded-2xl px-6 py-4">
+            <div className="mb-6 bg-yellow-900/30 border border-yellow-500/50 rounded-2xl px-6 py-4 animate-slide-up">
               <div className="text-yellow-500 text-xs font-black uppercase tracking-widest mb-1">Badge Unlocked</div>
               <div className="text-white font-black text-xl">{unlockedBadge.name}</div>
             </div>
           )}
-          <div className="text-7xl mb-4">⚡</div>
+
+          <div className="font-display text-7xl text-orange-500 leading-none mb-2 select-none">⚡</div>
           <h1 className="font-display text-5xl text-orange-500 leading-none mb-2">The Gauntlet</h1>
-          <p className="text-gray-400 mb-1">You ran the whole {totalComparisons}-question gauntlet.</p>
+          <p className="text-gray-400 mb-1">You ran the full {totalComparisons}-question gauntlet.</p>
+
           {!user && <p className="text-gray-600 text-sm mb-6">Log in to claim the one-of-a-kind badge.</p>}
           {user && claimStatus === 'pending' && <p className="text-gray-600 text-sm mb-6">Claiming your badge...</p>}
           {user && claimStatus === 'already' && <p className="text-gray-500 text-sm mb-6">You&apos;ve already earned this badge.</p>}
           {user && claimStatus === 'failed' && <p className="text-red-700 text-sm mb-6">Couldn&apos;t claim badge — try refreshing.</p>}
           {user && claimStatus === null && <p className="text-gray-600 text-sm mb-6">Claiming your badge...</p>}
-          <div className="bg-[#111] border border-orange-500/30 rounded-2xl p-6 mb-6">
-            <div className="text-5xl font-black text-orange-400 leading-none">{streak}</div>
-            <div className="text-gray-500 text-xs mt-2 uppercase tracking-wide">Final Streak</div>
+
+          <div className="card-accent p-6 mb-6">
+            <div className="font-display text-6xl text-orange-400 leading-none">{streak}</div>
+            <div className="text-label mt-2">Final Streak</div>
           </div>
+
           <div className="flex gap-3 justify-center">
-            <button onClick={restart} className="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-3 rounded-xl transition-colors">
+            <button onClick={restart} className="btn-primary">
               Play Again
             </button>
-            <Link href="/lobby" className="bg-[#111] hover:bg-[#1a1a1a] border border-white/10 text-white font-black px-6 py-3 rounded-xl transition-colors">
+            <Link href="/lobby" className="btn-secondary">
               Lobby
             </Link>
           </div>
@@ -285,6 +290,7 @@ export default function HigherLowerPage() {
     )
   }
 
+  /* ── PLAYING / REVEALING ────────────────────────────────────────────────── */
   const progressPct = Math.min(100, (streak / totalComparisons) * 100)
   const badge10Pct = (10 / totalComparisons) * 100
   const badge25Pct = (25 / totalComparisons) * 100
@@ -293,14 +299,17 @@ export default function HigherLowerPage() {
 
   return (
     <div className="min-h-screen px-4 py-8">
+      {/* Badge toast */}
       {unlockedBadge && (
-        <div className="fixed top-4 right-4 z-50 bg-yellow-900/95 border border-yellow-500 rounded-2xl px-5 py-4 shadow-2xl max-w-[220px]">
+        <div className="fixed top-4 right-4 z-50 bg-yellow-900/95 border border-yellow-500 rounded-2xl px-5 py-4 shadow-2xl max-w-[220px] animate-slide-up">
           <div className="text-yellow-500 text-[10px] font-black uppercase tracking-widest mb-1">Badge Unlocked!</div>
           <div className="text-white font-black text-base leading-tight">{unlockedBadge.name}</div>
         </div>
       )}
 
       <div className="max-w-2xl mx-auto">
+
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <Link href="/lobby" className="text-gray-500 hover:text-white text-sm transition-colors">← Lobby</Link>
           <h1 className="font-display text-2xl text-orange-500 leading-none">Higher or Lower</h1>
@@ -308,10 +317,10 @@ export default function HigherLowerPage() {
         </div>
 
         {/* Streak bar */}
-        <div className="bg-[#111] border border-white/5 rounded-2xl p-4 mb-6">
+        <div className="card-surface p-4 mb-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="text-white font-black text-3xl leading-none tabular-nums">{streak}</span>
+              <span className="font-display text-4xl text-white leading-none tabular-nums">{streak}</span>
               <span className="text-gray-600 text-sm">streak</span>
               {streak >= 3 && <span className="text-lg">🔥</span>}
             </div>
@@ -322,21 +331,25 @@ export default function HigherLowerPage() {
             </div>
           </div>
 
+          {/* Progress track */}
           <div className="relative h-3 bg-black/40 rounded-full mb-6">
             <div
               className="absolute h-full rounded-full bg-gradient-to-r from-orange-700 to-orange-400 transition-all duration-500"
               style={{ width: `${progressPct}%` }}
             />
+            {/* Milestone: 10 */}
             <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center"
                  style={{ left: `${badge10Pct}%` }}>
               <div className={`w-3.5 h-3.5 rounded-full border-2 transition-colors ${streak >= 10 ? 'bg-cyan-400 border-cyan-300' : 'bg-[#1a1a1a] border-gray-700'}`} />
               <span className="absolute top-5 text-[9px] text-gray-600 whitespace-nowrap">10</span>
             </div>
+            {/* Milestone: 25 */}
             <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center"
                  style={{ left: `${badge25Pct}%` }}>
               <div className={`w-3.5 h-3.5 rounded-full border-2 transition-colors ${streak >= 25 ? 'bg-indigo-400 border-indigo-300' : 'bg-[#1a1a1a] border-gray-700'}`} />
               <span className="absolute top-5 text-[9px] text-indigo-600 whitespace-nowrap">25</span>
             </div>
+            {/* Milestone: Gauntlet */}
             <div className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center" style={{ right: 0 }}>
               <div className={`w-3.5 h-3.5 rounded-full border-2 transition-colors ${streak >= totalComparisons ? 'bg-yellow-400 border-yellow-200' : 'bg-[#1a1a1a] border-gray-700'}`} />
               <span className="absolute top-5 right-0 text-[9px] text-yellow-600 whitespace-nowrap">⚡</span>
@@ -350,38 +363,54 @@ export default function HigherLowerPage() {
           </div>
         </div>
 
-        <p className="text-center text-gray-600 text-xs mb-4">
-          Does <span className="text-white font-bold">{challenger.firstName} {challenger.lastName}</span> have a{' '}
-          <span className="text-orange-400">higher or lower EBK</span> than{' '}
-          <span className="text-white font-bold">{current.firstName} {current.lastName}</span>?
-          <span className="text-gray-700 ml-2">(lower EBK = bigger career)</span>
-        </p>
+        {/* Question — the most important text on the screen */}
+        <div className="text-center mb-5">
+          <p className="text-gray-400 text-sm leading-relaxed">
+            Does{' '}
+            <span className="text-white font-black text-base">{challenger.firstName} {challenger.lastName}</span>
+            {' '}have a{' '}
+            <span className="text-orange-400 font-black">higher</span>
+            {' '}or{' '}
+            <span className="text-blue-400 font-black">lower</span>
+            {' '}EBK score than{' '}
+            <span className="text-white font-black text-base">{current.firstName} {current.lastName}</span>?
+          </p>
+          <p className="text-gray-700 text-[11px] mt-1">Lower EBK = bigger career · Higher EBK = unknown gem</p>
+        </div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-[#111] border border-white/10 rounded-2xl p-5">
-            <div className="text-[10px] text-gray-600 uppercase tracking-widest font-black mb-3">Current</div>
-            <div className="font-black text-white text-base leading-tight mb-0.5">{current.firstName} {current.lastName}</div>
+        {/* Player cards */}
+        <div className="grid grid-cols-2 gap-4 mb-5">
+
+          {/* Current player — always revealed */}
+          <div className="card-stat p-5">
+            <div className="text-label mb-3">Current</div>
+            <div className="font-black text-white text-base leading-tight mb-0.5">
+              {current.firstName} {current.lastName}
+            </div>
             <div className="text-gray-600 text-xs mb-4">{current.team} · {current.position}</div>
             <div className="text-gray-600 text-xs space-y-0.5 mb-4">
               <div>{current.careerGames} GP</div>
               <div>{current.careerPPG.toFixed(1)} PPG · {current.careerRPG.toFixed(1)} RPG · {current.careerAPG.toFixed(1)} APG</div>
             </div>
             <div className="bg-black/40 rounded-xl px-3 py-2.5 text-center">
-              <div className="text-orange-400 font-black text-2xl leading-none">{current.ebkScore.toFixed(1)}</div>
-              <div className="text-gray-700 text-[10px] mt-0.5">EBK Score</div>
+              <div className="font-display text-3xl text-orange-400 leading-none">{current.ebkScore.toFixed(1)}</div>
+              <div className="text-label mt-1">EBK Score</div>
             </div>
           </div>
 
+          {/* Challenger — hidden until reveal */}
           <div className={[
-            'rounded-2xl p-5 border-2 transition-colors duration-300',
+            'rounded-2xl p-5 border-2 transition-all duration-300',
             isRevealing && lastCorrect  ? 'bg-green-900/15 border-green-500'  : '',
             isRevealing && !lastCorrect ? 'bg-red-900/15 border-red-500'      : '',
-            !isRevealing                ? 'bg-[#111] border-white/10'         : '',
+            !isRevealing                ? 'bg-[#111118] border-white/[0.07]'  : '',
           ].join(' ')}>
-            <div className="text-[10px] text-gray-600 uppercase tracking-widest font-black mb-3">Challenger</div>
-            <div className="font-black text-white text-base leading-tight mb-0.5">{challenger.firstName} {challenger.lastName}</div>
+            <div className="text-label mb-3">Challenger</div>
+            <div className="font-black text-white text-base leading-tight mb-0.5">
+              {challenger.firstName} {challenger.lastName}
+            </div>
             <div className="text-gray-600 text-xs mb-4">{challenger.team} · {challenger.position}</div>
+
             {isRevealing ? (
               <>
                 <div className="text-gray-600 text-xs space-y-0.5 mb-4">
@@ -389,10 +418,10 @@ export default function HigherLowerPage() {
                   <div>{challenger.careerPPG.toFixed(1)} PPG · {challenger.careerRPG.toFixed(1)} RPG · {challenger.careerAPG.toFixed(1)} APG</div>
                 </div>
                 <div className={`rounded-xl px-3 py-2.5 text-center ${isTie ? 'bg-yellow-900/40' : lastCorrect ? 'bg-green-900/40' : 'bg-red-900/40'}`}>
-                  <div className={`font-black text-2xl leading-none ${isTie ? 'text-yellow-400' : lastCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className={`font-display text-3xl leading-none ${isTie ? 'text-yellow-400' : lastCorrect ? 'text-green-400' : 'text-red-400'}`}>
                     {challenger.ebkScore.toFixed(1)}
                   </div>
-                  <div className={`text-[10px] mt-0.5 ${isTie ? 'text-yellow-600' : lastCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className={`text-[10px] font-bold mt-0.5 ${isTie ? 'text-yellow-600' : lastCorrect ? 'text-green-600' : 'text-red-600'}`}>
                     {isTie ? '~ Tie!' : lastCorrect ? '✓ Correct' : '✗ Wrong'}
                   </div>
                 </div>
@@ -404,38 +433,48 @@ export default function HigherLowerPage() {
                   <div>??.? PPG · ??.? RPG · ??.? APG</div>
                 </div>
                 <div className="bg-black/40 rounded-xl px-3 py-2.5 text-center">
-                  <div className="text-gray-700 font-black text-2xl leading-none">???</div>
-                  <div className="text-gray-800 text-[10px] mt-0.5">EBK Score</div>
+                  <div className="font-display text-3xl text-gray-700 leading-none">???</div>
+                  <div className="text-label mt-1">EBK Score</div>
                 </div>
               </>
             )}
           </div>
         </div>
 
+        {/* Action buttons */}
         {!isRevealing && (
           <div className="grid grid-cols-2 gap-4">
-            <button onClick={() => guess('lower')}
-              className="bg-[#111] hover:bg-blue-950/60 border border-blue-500/20 hover:border-blue-500 text-white font-black py-5 rounded-2xl transition-all">
-              <div className="text-blue-400 text-2xl mb-1">▼</div>
-              <div className="text-base">LOWER EBK</div>
-              <div className="text-gray-600 text-[10px] mt-0.5">bigger career</div>
+            {/* LOWER = blue — bigger career, better known */}
+            <button
+              onClick={() => guess('lower')}
+              className="group relative overflow-hidden bg-[#0c111f] hover:bg-blue-950/50 border border-blue-500/25 hover:border-blue-400/70 text-white font-black py-6 rounded-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-blue-900/30"
+            >
+              <div className="font-display text-4xl text-blue-400 leading-none mb-1 group-hover:scale-110 transition-transform">▼</div>
+              <div className="text-sm tracking-wider uppercase">Lower EBK</div>
+              <div className="text-[11px] text-blue-500/70 mt-0.5 font-normal">bigger career</div>
             </button>
-            <button onClick={() => guess('higher')}
-              className="bg-[#111] hover:bg-red-950/60 border border-red-500/20 hover:border-red-500 text-white font-black py-5 rounded-2xl transition-all">
-              <div className="text-red-400 text-2xl mb-1">▲</div>
-              <div className="text-base">HIGHER EBK</div>
-              <div className="text-gray-600 text-[10px] mt-0.5">smaller career</div>
+
+            {/* HIGHER = orange — unknown gem, EBK brand color */}
+            <button
+              onClick={() => guess('higher')}
+              className="group relative overflow-hidden bg-[#1a0e05] hover:bg-orange-950/50 border border-orange-500/25 hover:border-orange-400/70 text-white font-black py-6 rounded-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-orange-900/30"
+            >
+              <div className="font-display text-4xl text-orange-400 leading-none mb-1 group-hover:scale-110 transition-transform">▲</div>
+              <div className="text-sm tracking-wider uppercase">Higher EBK</div>
+              <div className="text-[11px] text-orange-500/70 mt-0.5 font-normal">unknown gem</div>
             </button>
           </div>
         )}
 
+        {/* Reveal verdict */}
         {isRevealing && (
           <div className="flex items-center justify-center h-[88px]">
-            <span className={`font-black text-2xl ${isTie ? 'text-yellow-400' : lastCorrect ? 'text-green-400' : 'text-red-400'}`}>
+            <span className={`font-display text-4xl ${isTie ? 'text-yellow-400' : lastCorrect ? 'text-green-400' : 'text-red-400'}`}>
               {isTie ? '~ Tie — Free Pass!' : lastCorrect ? '✓  Correct!' : '✗  Wrong!'}
             </span>
           </div>
         )}
+
       </div>
     </div>
   )
