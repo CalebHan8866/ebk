@@ -90,7 +90,9 @@ export async function PATCH(request: NextRequest) {
         maxAge: 60 * 60 * 24 * 7,
       })
 
-      return NextResponse.json({ user })
+      // Strip tokenVersion — it's an internal session counter, not client data
+      const { tokenVersion: _tv, ...safeUser } = user
+      return NextResponse.json({ user: safeUser })
     } catch (e: unknown) {
       if (typeof e === 'object' && e !== null && 'code' in e && (e as { code: unknown }).code === 'P2002') {
         return NextResponse.json({ error: 'Username is already taken' }, { status: 409 })
