@@ -60,7 +60,7 @@ export default function Navbar() {
         <div className="flex items-center gap-6 flex-1">
           {navLink('/lobby', 'Play')}
           {navLink('/leaderboard', 'Leaderboard')}
-          <span className="hidden md:block">{navLink('/fun-facts', 'Fun Facts')}</span>
+          {navLink('/fun-facts', 'Fun Facts')}
         </div>
 
         {/* Right: auth section */}
