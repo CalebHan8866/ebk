@@ -19,7 +19,6 @@ interface Player {
   careerAPG: number
   careerMPG: number
   ebkScore: number
-  ebkMpgScore: number
   yearFrom: number
   yearTo: number
 }

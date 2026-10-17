@@ -12,7 +12,25 @@ export async function GET() {
   if (cache && now - cache.at < CACHE_TTL) {
     return NextResponse.json(cache.data)
   }
-  const players = await prisma.player.findMany()
+  const players = await prisma.player.findMany({
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      team: true,
+      position: true,
+      positions: true,
+      careerGames: true,
+      careerPPG: true,
+      careerRPG: true,
+      careerAPG: true,
+      careerMPG: true,
+      ebkScore: true,
+      yearFrom: true,
+      yearTo: true,
+      careerEarnings: true,
+    },
+  })
   cache = { data: players, at: now }
   return NextResponse.json(players)
 }
