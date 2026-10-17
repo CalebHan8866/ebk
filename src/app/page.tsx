@@ -125,7 +125,7 @@ export default function Home() {
             </span>
           </h1>
 
-          <p className="text-[11px] font-bold tracking-[0.45em] text-gray-500 uppercase -mt-2 mb-6">
+          <p className="text-[11px] font-bold tracking-[0.45em] text-gray-400 uppercase -mt-2 mb-6">
             Elite Ball Knowledge
           </p>
 
@@ -135,7 +135,7 @@ export default function Home() {
             <span className="text-orange-400">lower</span>{' '}
             than your opponent. Win with obscure knowledge.
           </p>
-          <p className="text-gray-500 text-sm max-w-sm mx-auto mb-10 leading-relaxed">
+          <p className="text-gray-400 text-sm max-w-sm mx-auto mb-10 leading-relaxed">
             The less famous the player, the better their score. Real basketball IQ beats star power every time.
           </p>
 
@@ -153,7 +153,7 @@ export default function Home() {
           </div>
 
           {/* Micro social proof below CTA */}
-          <p className="text-gray-600 text-xs mt-5">
+          <p className="text-gray-400 text-xs mt-5">
             No account needed to play &mdash;{' '}
             <Link href="/register" className="text-orange-500/70 hover:text-orange-400 font-semibold transition-colors">
               Create free account
@@ -169,7 +169,7 @@ export default function Home() {
           {SOCIAL_PROOF.map((item, i) => (
             <div key={i} className="flex items-center gap-3 shrink-0">
               <span className="font-display text-orange-400 text-xl leading-none">{item.value}</span>
-              <span className="text-gray-600 text-xs uppercase tracking-widest">{item.label}</span>
+              <span className="text-gray-400 text-xs uppercase tracking-widest">{item.label}</span>
               <span className="text-gray-800 text-xs">·</span>
             </div>
           ))}
@@ -178,19 +178,18 @@ export default function Home() {
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────── */}
       <div className="max-w-4xl mx-auto px-4 pb-16">
-        <div className="flex items-center gap-3 mb-8">
-          <p className="text-[10px] font-black tracking-[0.4em] text-gray-600 uppercase">How It Works</p>
-          <div className="flex-1 h-px bg-white/[0.05]" />
+        <div className="section-divider mb-8">
+          <p className="text-label">How It Works</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {HOW_IT_WORKS.map(step => (
-            <div key={step.step} className={`card-surface p-6 border ${step.border} relative overflow-hidden`}>
-              <div className={`font-display text-6xl leading-none ${step.color} opacity-20 absolute -top-2 -right-2`}>
+            <div key={step.step} className={`card-accent p-6 relative overflow-hidden`}>
+              <div className={`font-display text-[7rem] leading-none ${step.color} opacity-[0.06] absolute -bottom-4 -right-2 select-none pointer-events-none`}>
                 {step.step}
               </div>
-              <div className={`font-display text-4xl leading-none ${step.color} mb-3`}>{step.step}</div>
-              <h3 className="font-black text-white text-base mb-2">{step.title}</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">{step.desc}</p>
+              <div className={`font-display text-5xl leading-none ${step.color} mb-4`}>{step.step}</div>
+              <h3 className="font-black text-white text-base mb-2 tracking-wide">{step.title}</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">{step.desc}</p>
             </div>
           ))}
         </div>
@@ -198,16 +197,15 @@ export default function Home() {
 
       {/* ── GAME MODES ───────────────────────────────────────────────── */}
       <div className="max-w-4xl mx-auto px-4 pb-16">
-        <div className="flex items-center gap-3 mb-6">
-          <p className="text-[10px] font-black tracking-[0.4em] text-gray-600 uppercase">Game Modes</p>
-          <div className="flex-1 h-px bg-white/[0.05]" />
+        <div className="section-divider mb-6">
+          <p className="text-label">Game Modes</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {GAME_MODES.map(mode => (
             <Link key={mode.num} href={mode.href}
-              className={`group card-surface p-5 block border transition-all hover:scale-[1.01] active:scale-[0.99] ${mode.accent}`}>
-              <div className="flex items-start justify-between mb-3">
-                <div className="font-display text-orange-500/40 text-2xl leading-none group-hover:text-orange-500/60 transition-colors">
+              className={`group card-surface p-5 block border transition-all duration-200 hover:scale-[1.015] hover:border-orange-700/40 active:scale-[0.99] ${mode.accent}`}>
+              <div className="flex items-start justify-between mb-4">
+                <div className="font-display text-orange-500/30 text-3xl leading-none group-hover:text-orange-500/60 transition-colors">
                   {mode.num}
                 </div>
                 <div className="flex items-center gap-2">
@@ -216,15 +214,16 @@ export default function Home() {
                       {mode.badge}
                     </span>
                   )}
-                  <span className="text-gray-600 text-xs bg-white/[0.04] border border-white/5 px-2 py-0.5 rounded-full">
+                  <span className="text-label bg-white/[0.04] border border-white/5 px-2 py-1 rounded-full">
                     {mode.sub}
                   </span>
                 </div>
               </div>
-              <h3 className="font-black text-white text-base mb-1 tracking-wide">{mode.label}</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">{mode.desc}</p>
-              <div className="mt-3 text-orange-500 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                Play →
+              <h3 className="font-display text-2xl text-white leading-none mb-2 tracking-wide">{mode.label}</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">{mode.desc}</p>
+              <div className="mt-4 flex items-center gap-1.5 text-orange-500 text-xs font-black tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-opacity">
+                <span>Play</span>
+                <span>→</span>
               </div>
             </Link>
           ))}
@@ -233,9 +232,8 @@ export default function Home() {
 
       {/* ── HOW EBK SCORING WORKS ────────────────────────────────────── */}
       <div className="max-w-4xl mx-auto px-4 pb-16">
-        <div className="flex items-center gap-3 mb-6">
-          <p className="text-[10px] font-black tracking-[0.4em] text-gray-600 uppercase">The EBK Score</p>
-          <div className="flex-1 h-px bg-white/[0.05]" />
+        <div className="section-divider mb-6">
+          <p className="text-label">The EBK Score</p>
         </div>
         <div className="card-accent p-6 sm:p-8">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -263,9 +261,8 @@ export default function Home() {
 
       {/* ── TEAM MODES ───────────────────────────────────────────────── */}
       <div className="max-w-2xl mx-auto px-4 pb-16">
-        <div className="flex items-center gap-3 mb-6">
-          <p className="text-[10px] font-black tracking-[0.4em] text-gray-600 uppercase">Team Formats</p>
-          <div className="flex-1 h-px bg-white/[0.05]" />
+        <div className="section-divider mb-6">
+          <p className="text-label">Team Formats</p>
         </div>
         <div className="grid grid-cols-3 gap-3">
           {[
@@ -274,11 +271,11 @@ export default function Home() {
             { n: '12', label: 'Full 12',  sub: 'Starters + 7 bench',    desc: '~25 min' },
           ].map(m => (
             <div key={m.n}
-              className="card-surface flex flex-col items-center py-6 px-3 border border-white/[0.05] hover:border-orange-900/40 transition-colors">
-              <span className="font-display text-5xl text-orange-500/60 leading-none mb-2">{m.n}</span>
+              className="card-stat flex flex-col items-center py-6 px-3 hover:border-orange-800/40 transition-all group">
+              <span className="font-display text-5xl text-orange-500/70 leading-none mb-2 group-hover:text-orange-400 transition-colors">{m.n}</span>
               <span className="font-black text-white text-sm tracking-wide">{m.label}</span>
-              <span className="text-gray-600 text-[10px] mt-1 text-center">{m.sub}</span>
-              <span className="text-gray-700 text-[9px] mt-2">{m.desc}</span>
+              <span className="text-label mt-2 text-center">{m.sub}</span>
+              <span className="text-gray-600 text-[9px] mt-1.5 font-bold">{m.desc}</span>
             </div>
           ))}
         </div>
@@ -286,10 +283,11 @@ export default function Home() {
 
       {/* ── RECENT GAMES FEED ────────────────────────────────────────── */}
       <div className="max-w-2xl mx-auto px-4 pb-16">
-        <div className="flex items-center gap-3 mb-6">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
-          <p className="text-[10px] font-black tracking-[0.4em] text-gray-600 uppercase">Live Activity</p>
-          <div className="flex-1 h-px bg-white/[0.05]" />
+        <div className="section-divider mb-6">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="live-dot" />
+            <p className="text-label">Live Activity</p>
+          </div>
         </div>
         <div className="space-y-1.5">
           {RECENT_GAMES.slice(0, 7).map((g, i) => {
@@ -308,7 +306,7 @@ export default function Home() {
                     : <><span className="text-white font-bold">{winner}</span> beat <span className="text-white/50">{winner === g.user1 ? g.user2 : g.user1}</span></>
                   }
                 </span>
-                <span className="text-gray-600 text-xs tabular-nums shrink-0">
+                <span className="text-gray-400 text-xs tabular-nums shrink-0">
                   {g.score1.toFixed(1)} vs {g.score2.toFixed(1)}
                 </span>
                 <span className="text-gray-700 text-[10px] shrink-0">{g.min}m ago</span>
@@ -320,11 +318,12 @@ export default function Home() {
 
       {/* ── FINAL CTA BANNER ─────────────────────────────────────────── */}
       <div className="max-w-2xl mx-auto px-4 pb-28">
-        <div className="card-accent p-8 text-center">
-          <p className="font-display text-4xl text-white mb-2">Ready to Prove Your EBK?</p>
-          <p className="text-gray-500 text-sm mb-6">No download. No credit card. Jump into a live game in 30 seconds.</p>
-          <Link href="/lobby" className="btn-primary text-sm uppercase tracking-widest px-10 py-4">
-            Start Playing
+        <div className="card-accent p-10 text-center animate-glow">
+          <p className="font-display text-5xl sm:text-6xl text-white mb-1 leading-none">Ready to Prove</p>
+          <p className="font-display text-5xl sm:text-6xl text-orange-500 mb-4 leading-none">Your EBK?</p>
+          <p className="text-gray-400 text-sm mb-8 max-w-xs mx-auto leading-relaxed">No download. No credit card. Jump into a live game in 30 seconds.</p>
+          <Link href="/lobby" className="btn-primary text-sm uppercase tracking-widest px-12 py-4">
+            Start Playing Free
           </Link>
         </div>
       </div>
