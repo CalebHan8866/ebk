@@ -16,7 +16,7 @@ export default function Home() {
     <div className="min-h-screen animate-fade-in">
 
       {/* ── HERO ─────────────────────────────────────────────────────── */}
-      <div className="relative text-center pt-8 sm:pt-16 pb-8 sm:pb-16 px-4 overflow-hidden">
+      <div className="relative text-center pt-12 sm:pt-24 pb-12 sm:pb-20 px-4 overflow-hidden">
         {/* Ambient glow */}
         <div className="absolute inset-x-0 top-0 h-[500px] pointer-events-none"
           style={{ background: 'radial-gradient(ellipse 80% 100% at 50% -15%, rgba(234,88,12,0.28) 0%, rgba(234,88,12,0.06) 50%, transparent 70%)' }} />
@@ -31,21 +31,21 @@ export default function Home() {
             </span>
           </h1>
 
-          <p className="text-[11px] font-bold tracking-[0.45em] text-gray-400 uppercase -mt-1 mb-4 sm:mb-6">
+          <p className="text-[11px] font-bold tracking-[0.45em] text-gray-400 uppercase -mt-1 mb-8 sm:mb-10">
             Elite Ball Knowledge
           </p>
 
-          <p className="text-white/90 text-lg sm:text-2xl font-black max-w-md mx-auto mb-6 sm:mb-10 leading-snug tracking-wide uppercase">
+          <p className="text-white/90 text-lg sm:text-2xl font-black max-w-md mx-auto mb-10 sm:mb-12 leading-snug tracking-wide uppercase">
             Draft NBA Players.<br />
             <span className="text-orange-400">Score lower. Win.</span>
           </p>
 
           <Link href="/lobby"
-            className="btn-primary text-sm uppercase tracking-widest px-8 sm:px-10 py-3 sm:py-4">
+            className="btn-primary text-sm uppercase tracking-widest px-10 py-4">
             Play Now — Free
           </Link>
 
-          <p className="text-gray-500 text-xs mt-4">
+          <p className="text-gray-500 text-xs mt-6">
             No account needed &mdash;{' '}
             <Link href="/register" className="text-orange-500/70 hover:text-orange-400 font-semibold transition-colors">
               sign up free
