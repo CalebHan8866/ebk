@@ -901,15 +901,14 @@ export default function AuctionRoomPage() {
             {/* Player card */}
             {cp && (
               <div className="card-accent w-full max-w-sm p-6 text-center animate-scale-in">
-                <div className="flex justify-center mb-4">
+                <div className="flex items-center justify-center gap-3 mb-4">
                   <PosBadge pos={cp.position} />
+                  <span className="text-white/25 text-xs font-mono tracking-widest">{cp.team}</span>
+                  <span className="text-white/15 text-xs">{cp.yearFrom}–{cp.yearTo}</span>
                 </div>
-                <h2 className="font-display text-5xl md:text-6xl text-white tracking-wider leading-none mb-2">
+                <h2 className="font-display text-5xl md:text-6xl text-white tracking-wider leading-none mb-6">
                   {cp.firstName}<br />{cp.lastName}
                 </h2>
-                <p className="text-white/30 text-sm mb-6 tracking-wider">
-                  {cp.team} · <span className="text-white/20">{cp.yearFrom}–{cp.yearTo}</span>
-                </p>
                 <div className="grid grid-cols-4 gap-2 mb-5">
                   {[
                     { label: 'GP', value: cp.careerGames },
@@ -917,34 +916,45 @@ export default function AuctionRoomPage() {
                     { label: 'RPG', value: cp.careerRPG?.toFixed(1) },
                     { label: 'APG', value: cp.careerAPG?.toFixed(1) },
                   ].map(s => (
-                    <div key={s.label} className="bg-white/[0.04] border border-white/[0.05] rounded-xl py-3">
+                    <div key={s.label} className="bg-white/[0.04] border border-white/[0.06] rounded-xl py-3 hover:bg-white/[0.06] transition-colors">
                       <p className="font-display text-2xl text-white leading-none">{s.value ?? '–'}</p>
                       <p className="text-label mt-1">{s.label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="stat-highlight rounded-xl py-3.5">
+                <div className="stat-highlight rounded-xl py-4">
                   <span className="text-label tracking-[0.18em]">EBK Score</span>
-                  <p className="font-display text-4xl text-orange-400 leading-none mt-0.5">{cp.ebkScore.toFixed(1)}</p>
+                  <p className="font-display text-5xl text-orange-400 leading-none mt-1">{cp.ebkScore.toFixed(1)}</p>
                 </div>
               </div>
             )}
 
             {/* Current bid */}
-            <div className="text-center" aria-live="polite" aria-atomic="true">
+            <div className={`w-full max-w-sm rounded-2xl px-6 py-5 text-center transition-all ${
+              amLeading
+                ? 'bg-orange-950/40 border border-orange-500/50 shadow-[0_0_32px_rgba(234,88,12,0.18)] animate-glow'
+                : auctionState.currentBid > 0
+                ? 'bg-white/[0.03] border border-white/[0.08]'
+                : 'bg-white/[0.015] border border-white/[0.04]'
+            }`} aria-live="polite" aria-atomic="true">
+              <div className="text-label mb-1 tracking-[0.2em]">Current Bid</div>
               <div
                 key={auctionState.currentBid}
-                className={`bid-hero animate-num-pop ${auctionState.currentBid > 0 ? (amLeading ? 'text-orange-400' : 'text-white') : 'text-white/20'}`}
+                className={`bid-hero animate-num-pop ${auctionState.currentBid > 0 ? (amLeading ? 'text-orange-400' : 'text-white') : 'text-white/15'}`}
                 aria-label={auctionState.currentBid > 0 ? `Current bid: $${auctionState.currentBid}M` : 'No bids yet'}
               >
                 {auctionState.currentBid > 0 ? `$${auctionState.currentBid}M` : '–––'}
               </div>
               {auctionState.currentBidderName ? (
-                <p className={`text-sm mt-1 font-black tracking-wide ${amLeading ? 'text-orange-400' : 'text-white/50'}`}>
-                  {amLeading ? 'YOU ARE LEADING' : `Leading: ${auctionState.currentBidderName}`}
-                </p>
+                <div className={`mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-black tracking-widest uppercase ${
+                  amLeading
+                    ? 'bg-orange-950/60 border-orange-500/40 text-orange-400'
+                    : 'bg-white/[0.04] border-white/[0.08] text-white/50'
+                }`}>
+                  {amLeading ? '🔥 You are leading' : `Leading: ${auctionState.currentBidderName}`}
+                </div>
               ) : (
-                <p className="text-white/30 text-sm mt-1 tracking-widest uppercase text-[11px]">No bids yet — be first</p>
+                <p className="text-white/25 text-xs mt-2 tracking-widest uppercase">No bids yet — be first</p>
               )}
             </div>
 
@@ -1023,15 +1033,23 @@ export default function AuctionRoomPage() {
             {phase === 'steal-window' && (
               <div className="w-full max-w-sm">
                 {auctionState.stealInitiated ? (
-                  <div className="text-center text-white/40 text-sm">Steal executed — next player incoming...</div>
+                  <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl px-5 py-4 text-center">
+                    <div className="text-white/40 text-sm">Steal executed — next player incoming...</div>
+                  </div>
                 ) : (
-                  <div className="text-center">
-                    <p className="text-yellow-400 font-bold mb-1">⚡ Steal Window Open</p>
-                    <p className="text-white/40 text-sm">
-                      {auctionState.lastWinnerName} won <span className="text-white font-bold">{cp?.firstName} {cp?.lastName}</span> for ${auctionState.lastWonAmount}M
+                  <div className="bg-yellow-950/30 border border-yellow-700/40 rounded-2xl px-5 py-5 text-center shadow-[0_0_24px_rgba(234,179,8,0.08)]">
+                    <div className="inline-flex items-center gap-2 mb-3">
+                      <span className="text-yellow-400 font-black text-sm tracking-widest uppercase">⚡ Steal Window Open</span>
+                    </div>
+                    <p className="text-white/60 text-sm mb-1">
+                      <span className="text-white font-black">{auctionState.lastWinnerName}</span> won this player for{' '}
+                      <span className="text-yellow-400 font-black">${auctionState.lastWonAmount}M</span>
                     </p>
-                    <p className="text-white/40 text-sm mt-1">Steal cost: <span className="text-yellow-400 font-bold">${stealPrice}M</span></p>
-                    <p className="text-white/30 text-xs mt-2">Click ⚡ on a player in the roster panel to steal</p>
+                    <div className="mt-3 bg-yellow-500/10 border border-yellow-500/25 rounded-xl px-4 py-2.5">
+                      <div className="text-label mb-0.5 tracking-[0.15em]">Steal Price</div>
+                      <div className="font-display text-3xl text-yellow-400 leading-none">${stealPrice}M</div>
+                    </div>
+                    <p className="text-white/25 text-xs mt-3">Tap ⚡ on any opponent&apos;s player in the roster panel to steal</p>
                   </div>
                 )}
               </div>
@@ -1040,27 +1058,43 @@ export default function AuctionRoomPage() {
 
           {/* Right: Bid log */}
           <aside className={`lg:col-span-1 border-l border-white/[0.07] p-4 flex flex-col ${mobilePanel !== 'log' ? 'hidden lg:flex' : ''}`}>
-            <p className="font-display text-sm text-white/40 tracking-widest mb-4">BID LOG</p>
-            <div className="flex-1 overflow-y-auto space-y-1.5">
+            <p className="text-label tracking-[0.2em] mb-4">Bid Log</p>
+            <div className="flex-1 overflow-y-auto space-y-1">
+              {auctionState.bidLog.length === 0 && (
+                <div className="empty-state py-8">
+                  <div className="empty-state-icon">📋</div>
+                  <div className="empty-state-title">No bids yet</div>
+                </div>
+              )}
               {auctionState.bidLog.map((entry, i) => (
-                <div key={i} className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs ${
-                  entry.action === 'won' ? 'bg-green-500/10 border border-green-500/20' :
-                  entry.action === 'steal' ? 'bg-yellow-500/10 border border-yellow-500/20' :
-                  entry.action === 'pass' ? 'bg-white/[0.02] border border-white/[0.05]' :
-                  entry.action === 'trade' ? 'bg-blue-500/10 border border-blue-500/20' :
-                  'bg-white/[0.03] border border-white/[0.05]'
+                <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs border transition-colors ${
+                  entry.action === 'won'   ? 'bg-green-500/8 border-green-500/20' :
+                  entry.action === 'steal' ? 'bg-yellow-500/8 border-yellow-500/20' :
+                  entry.action === 'pass'  ? 'bg-transparent border-transparent' :
+                  entry.action === 'trade' ? 'bg-blue-500/8 border-blue-500/20' :
+                  'bg-white/[0.025] border-white/[0.04]'
                 }`}>
-                  <span className={`font-bold ${
-                    entry.action === 'won' ? 'text-green-400' :
+                  <span className={`w-4 shrink-0 text-center ${
+                    entry.action === 'won'   ? 'text-green-400' :
                     entry.action === 'steal' ? 'text-yellow-400' :
+                    entry.action === 'pass'  ? 'text-white/20' :
                     entry.action === 'trade' ? 'text-blue-400' :
-                    'text-white/70'
+                    'text-orange-400/80'
                   }`}>
-                    {entry.action === 'won' ? '✓' : entry.action === 'steal' ? '⚡' : entry.action === 'pass' ? '–' : entry.action === 'trade' ? '↔' : '↑'}
-                    {' '}{entry.name}
+                    {entry.action === 'won' ? '✓' : entry.action === 'steal' ? '⚡' : entry.action === 'pass' ? '·' : entry.action === 'trade' ? '↔' : '↑'}
                   </span>
+                  <span className={`flex-1 truncate font-semibold ${
+                    entry.action === 'won' ? 'text-green-300' :
+                    entry.action === 'steal' ? 'text-yellow-300' :
+                    entry.action === 'pass' ? 'text-white/25' :
+                    'text-white/70'
+                  }`}>{entry.name}</span>
                   {entry.amount > 0 && (
-                    <span className="text-orange-400 font-bold">${entry.amount}M</span>
+                    <span className={`font-black shrink-0 tabular-nums ${
+                      entry.action === 'won' ? 'text-green-400' :
+                      entry.action === 'steal' ? 'text-yellow-400' :
+                      'text-orange-400'
+                    }`}>${entry.amount}M</span>
                   )}
                 </div>
               ))}
