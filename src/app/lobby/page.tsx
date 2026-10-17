@@ -547,7 +547,7 @@ export default function LobbyPage() {
                   </div>
                 </div>
                 <div className="font-display text-3xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">Online Play</div>
-                <div className="text-gray-400 text-sm leading-relaxed">Match against a random opponent in real-time.</div>
+                <div className="text-gray-400 text-sm font-black uppercase tracking-wide leading-snug">Random opponent. Real-time. Win.</div>
                 <div className="mt-4 text-orange-500 text-xs font-black opacity-0 group-hover:opacity-100 transition-opacity">Play →</div>
               </button>
 
@@ -559,7 +559,7 @@ export default function LobbyPage() {
                   <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-orange-600 text-white tracking-widest">NEW</span>
                 </div>
                 <div className="font-display text-3xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">War Room</div>
-                <div className="text-gray-400 text-sm leading-relaxed">Salary-cap auction draft.</div>
+                <div className="text-gray-400 text-sm font-black uppercase tracking-wide leading-snug">Bid. Steal. Outmaneuver.</div>
                 <div className="mt-4 text-orange-500 text-xs font-black opacity-0 group-hover:opacity-100 transition-opacity">Enter →</div>
               </Link>
 
@@ -572,7 +572,7 @@ export default function LobbyPage() {
                   <span className="text-label">Private</span>
                 </div>
                 <div className="font-display text-3xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">Play Friends</div>
-                <div className="text-gray-400 text-sm leading-relaxed">Create a private room and share the code.</div>
+                <div className="text-gray-400 text-sm font-black uppercase tracking-wide leading-snug">Private room. Share the code.</div>
                 <div className="mt-4 text-orange-500 text-xs font-black opacity-0 group-hover:opacity-100 transition-opacity">Create Room →</div>
               </button>
 
@@ -583,7 +583,7 @@ export default function LobbyPage() {
                   <span className="text-label">Solo</span>
                 </div>
                 <div className="font-display text-3xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">Higher / Lower</div>
-                <div className="text-gray-400 text-sm leading-relaxed">Guess which player has the higher EBK score.</div>
+                <div className="text-gray-400 text-sm font-black uppercase tracking-wide leading-snug">Guess. Streak. Beat your best.</div>
                 <div className="mt-4 text-orange-500 text-xs font-black opacity-0 group-hover:opacity-100 transition-opacity">Play →</div>
               </Link>
 
@@ -594,7 +594,7 @@ export default function LobbyPage() {
                   <span className="text-label">Solo</span>
                 </div>
                 <div className="font-display text-3xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">Practice</div>
-                <div className="text-gray-400 text-sm leading-relaxed">Draft alone with no timer. Learn the player pool.</div>
+                <div className="text-gray-400 text-sm font-black uppercase tracking-wide leading-snug">Solo draft. No timer. Learn.</div>
                 <div className="mt-4 text-orange-500 text-xs font-black opacity-0 group-hover:opacity-100 transition-opacity">Draft →</div>
               </Link>
 
@@ -626,7 +626,6 @@ export default function LobbyPage() {
               <div className="mb-4 flex items-center gap-3 text-xs text-gray-500">
                 <span><Link href="/login" className="text-orange-400 hover:text-orange-300 font-bold transition-colors">Sign in</Link> to post games and track your record.</span>
                 <Link href="/register" className="btn-primary py-1.5 px-3 text-xs shrink-0">Sign Up Free</Link>
-                </div>
               </div>
             )}
 
