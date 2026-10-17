@@ -236,6 +236,7 @@ function GameContent() {
       setCurrentPickerInTimer(picker)
       setPickError(null)
       setSearchQuery('')
+      setDebouncedSearch('')
       setFilterPos('ALL')
       setShuffledIds([]) // clear old team's pool immediately — refilled after spin animation
 
@@ -1311,7 +1312,7 @@ function GameContent() {
                 className="input-field pl-9 pr-8 py-2.5 text-sm rounded-xl"
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} aria-label="Clear search" className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 active:text-white transition-colors text-xs w-5 h-5 flex items-center justify-center rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50">✕</button>
+                <button onClick={() => { setSearchQuery(''); setDebouncedSearch('') }} aria-label="Clear search" className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 active:text-white transition-colors text-xs w-7 h-7 flex items-center justify-center rounded touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50">✕</button>
               )}
             </div>
 
@@ -1333,7 +1334,7 @@ function GameContent() {
             <div className="flex items-center gap-1.5 mb-3 flex-wrap">
               {room.difficulty !== 'ebk' && ['ALL', 'PG', 'SG', 'SF', 'PF', 'C'].map(pos => (
                 <button key={pos} onClick={() => setFilterPos(pos)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-black tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50 ${
+                  className={`px-3 py-2 rounded-lg text-xs font-black tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50 touch-manipulation ${
                     filterPos === pos
                       ? 'bg-orange-600 text-white shadow-[0_2px_8px_rgba(234,88,12,0.35)]'
                       : 'bg-white/[0.04] border border-white/[0.07] text-white/50 hover:text-white hover:border-white/20 hover:bg-white/[0.07]'

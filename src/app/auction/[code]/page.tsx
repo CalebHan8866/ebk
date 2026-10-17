@@ -525,11 +525,11 @@ export default function AuctionRoomPage() {
                 {/* Best value callout */}
                 {bestVal && (
                   <div className="flex items-center gap-2 pt-3 border-t border-white/[0.05] text-xs text-gray-400 flex-wrap">
-                    <span className="text-green-400 font-black shrink-0">⚡ Best Value:</span>
+                    <span className="text-green-400 font-black shrink-0">💎 Best Value:</span>
                     <span className="text-white font-bold">{bestVal.firstName[0]}. {bestVal.lastName}</span>
                     <span className="text-gray-400">{bestVal.ebkScore.toFixed(1)} EBK for ${bestVal.paidPrice}M</span>
-                    <span className="text-green-500/70 ml-auto font-black tabular-nums">
-                      {(bestVal.paidPrice / bestVal.ebkScore).toFixed(2)}$/pt
+                    <span className="text-green-500/70 ml-auto font-black tabular-nums" title="Lower is better — least EBK score per million spent">
+                      {(bestVal.paidPrice / bestVal.ebkScore).toFixed(2)}M/pt
                     </span>
                   </div>
                 )}
