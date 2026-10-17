@@ -531,7 +531,8 @@ export default function LobbyPage() {
 
         {/* ── Mode selector (shown when no mode selected) ─────────────────── */}
         {!mainTab && (
-          <div className="mb-6">
+          <div className="mb-6 space-y-3">
+            {/* Top row: head-to-head modes */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 onClick={() => { setMainTab('online'); setError('') }}
@@ -566,6 +567,30 @@ export default function LobbyPage() {
                   <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
                 </div>
               </button>
+            </div>
+            {/* Bottom row: solo modes */}
+            <div className="grid grid-cols-3 gap-3">
+              <Link href="/practice"
+                className="group card-surface border border-white/[0.06] hover:border-orange-700/50 hover:bg-orange-950/10 rounded-2xl p-5 text-left transition-all hover:scale-[1.02] active:scale-[0.98] block">
+                <div className="text-label mb-2">Solo</div>
+                <div className="font-black text-white text-sm mb-1 group-hover:text-orange-400 transition-colors">Practice</div>
+                <div className="text-gray-500 text-xs leading-relaxed">Draft alone, no timer.</div>
+              </Link>
+              <Link href="/higher-lower"
+                className="group card-surface border border-white/[0.06] hover:border-blue-700/50 hover:bg-blue-950/10 rounded-2xl p-5 text-left transition-all hover:scale-[1.02] active:scale-[0.98] block">
+                <div className="text-label mb-2">Solo</div>
+                <div className="font-black text-white text-sm mb-1 group-hover:text-blue-400 transition-colors">Higher / Lower</div>
+                <div className="text-gray-500 text-xs leading-relaxed">Guess the EBK score.</div>
+              </Link>
+              <Link href="/auction"
+                className="group card-surface border border-orange-900/30 hover:border-orange-500/50 hover:bg-orange-950/10 rounded-2xl p-5 text-left transition-all hover:scale-[1.02] active:scale-[0.98] block">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="text-label">Multi</span>
+                  <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full bg-orange-600 text-white">NEW</span>
+                </div>
+                <div className="font-black text-white text-sm mb-1 group-hover:text-orange-400 transition-colors">War Room</div>
+                <div className="text-gray-500 text-xs leading-relaxed">Live auction vs 2–6 GMs.</div>
+              </Link>
             </div>
           </div>
         )}
