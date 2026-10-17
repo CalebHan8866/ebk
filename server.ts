@@ -1271,11 +1271,18 @@ app.prepare().then(async () => {
       }
 
       // Re-associate socket ID in case of reconnect/refresh.
-      // Security: only allow takeover if the original socket is gone OR the userId matches.
+      // Security: only allow slot takeover when the original socket is gone OR the userId
+      // matches the stored userId for that slot.  Anonymous slots (no userId) are NOT
+      // open to arbitrary takeover while the original socket is still live — that would
+      // let any socket claim a connected player's turn mid-game.
       if (role === 'host') {
         const origConnected = io.sockets.sockets.has(room.hostSocketId)
-        const isLegit = !room.hostUserId || userId === room.hostUserId
-        if (origConnected && socket.id !== room.hostSocketId && !isLegit) {
+        // For authenticated hosts: require matching userId.
+        // For anonymous hosts: only allow takeover when the original socket has gone away.
+        const isLegit = room.hostUserId
+          ? userId === room.hostUserId
+          : !origConnected || socket.id === room.hostSocketId
+        if (!isLegit) {
           console.warn('[room] Unauthorized host takeover attempt code=%s userId=%s', code, userId)
           socket.emit('room-error', { message: 'Unauthorized' })
           return
@@ -1283,8 +1290,11 @@ app.prepare().then(async () => {
         room.hostSocketId = socket.id
       } else if (role === 'guest') {
         const origConnected = !!room.guestSocketId && io.sockets.sockets.has(room.guestSocketId)
-        const isLegit = !room.guestUserId || userId === room.guestUserId
-        if (origConnected && socket.id !== room.guestSocketId && !isLegit) {
+        // Same logic for guest slot.
+        const isLegit = room.guestUserId
+          ? userId === room.guestUserId
+          : !origConnected || socket.id === room.guestSocketId
+        if (!isLegit) {
           console.warn('[room] Unauthorized guest takeover attempt code=%s userId=%s', code, userId)
           socket.emit('room-error', { message: 'Unauthorized' })
           return
@@ -1595,6 +1605,13 @@ app.prepare().then(async () => {
           socket.emit('auction:error', { message: 'Unauthorized' })
           return
         }
+        // For anonymous participants, only allow slot takeover when the original
+        // socket is no longer connected — prevents name-guessing hijacks while the
+        // real player is still live.
+        if (!existingByName.userId && io.sockets.sockets.has(existingByName.socketId)) {
+          socket.emit('auction:error', { message: 'Unauthorized' })
+          return
+        }
         const wasHost = existingByName.socketId === room.hostSocketId
         existingByName.socketId = socket.id
         if (wasHost) room.hostSocketId = socket.id
@@ -1827,6 +1844,13 @@ app.prepare().then(async () => {
           const incomingUserId: string | null = (socket.data as { userId?: string })?.userId ?? null
           // If the stored participant was authenticated, require a matching userId.
           if (byName.userId && incomingUserId !== byName.userId) {
+            socket.emit('auction:error', { message: 'Unauthorized' })
+            return
+          }
+          // For anonymous participants, only allow slot takeover when the original
+          // socket is no longer connected — prevents name-guessing hijacks while the
+          // real player is still live.
+          if (!byName.userId && io.sockets.sockets.has(byName.socketId)) {
             socket.emit('auction:error', { message: 'Unauthorized' })
             return
           }
