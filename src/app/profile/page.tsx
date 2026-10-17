@@ -183,7 +183,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Badges */}
-        <div className="bg-[#101010] rounded-2xl p-6">
+        <div className="card-surface rounded-2xl p-6">
           <h2 className="font-display text-xl text-white tracking-wider mb-1">Badges</h2>
           <p className="text-gray-500 text-xs mb-4">Badges are a mystery — keep playing to discover them. Tap to equip up to 3.</p>
 
@@ -228,7 +228,7 @@ export default function ProfilePage() {
                     onClick={() => equipItem('badge', badge.id)}
                     className={[
                       'relative group rounded-xl p-2.5 border transition-all cursor-pointer hover:brightness-110',
-                      isEquipped ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-[#101010]' : '',
+                      isEquipped ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-[#0d0d0d]' : '',
                       badge.bgClass,
                       badge.borderClass,
                     ].join(' ')}
@@ -248,7 +248,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Emotes */}
-        <div className="bg-[#101010] rounded-2xl p-6">
+        <div className="card-surface rounded-2xl p-6">
           <h2 className="font-display text-xl text-white tracking-wider mb-1">Emotes</h2>
           <p className="text-gray-500 text-xs mb-5">Send a quick message after a game. Equip one to use in matches.</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -267,7 +267,7 @@ export default function ProfilePage() {
                       ? 'bg-[#1a1a1a] border-gray-700 cursor-pointer hover:border-orange-500/50'
                       : 'bg-[#111111] border-gray-800 cursor-default opacity-40',
                     isEquipped
-                      ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-[#101010] border-orange-500/50'
+                      ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-[#0d0d0d] border-orange-500/50'
                       : '',
                   ].join(' ')}
                 >
@@ -297,7 +297,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Milestones */}
-        <div className="bg-[#101010] rounded-2xl p-6">
+        <div className="card-surface rounded-2xl p-6">
           <h2 className="font-display text-xl text-white tracking-wider mb-1">Milestones</h2>
           <p className="text-gray-500 text-xs mb-5">Track your progress across key achievements.</p>
           <div className="space-y-2">
