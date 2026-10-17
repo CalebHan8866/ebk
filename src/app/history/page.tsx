@@ -20,28 +20,37 @@ interface GameRecord {
 
 const MODE_LABEL: Record<string, string> = {
   starter5: 'Starter 5',
-  bench8: 'Bench 8',
-  full12: 'Full 12',
+  bench8:   'Bench 8',
+  full12:   'Full 12',
 }
 
 const RESULT_CONFIG = {
   win: {
-    pill: 'bg-green-500/20 border border-green-500/40 text-green-400',
-    row: 'border-l-2 border-l-green-500/50',
-    label: 'W',
-    textColor: 'text-green-400',
+    badge:      'result-win',
+    leftBorder: 'border-l-2 border-l-green-500/50',
+    label:      'W',
+    verb:       'Beat',
+    nameColor:  'text-green-400',
+    scoreColor: 'text-green-400',
+    hoverBg:    'hover:bg-green-500/[0.03]',
   },
   loss: {
-    pill: 'bg-red-500/15 border border-red-500/30 text-red-400',
-    row: 'border-l-2 border-l-red-500/40',
-    label: 'L',
-    textColor: 'text-red-400',
+    badge:      'result-loss',
+    leftBorder: 'border-l-2 border-l-red-500/40',
+    label:      'L',
+    verb:       'Lost to',
+    nameColor:  'text-red-400',
+    scoreColor: 'text-red-400',
+    hoverBg:    'hover:bg-red-500/[0.03]',
   },
   draw: {
-    pill: 'bg-gray-500/15 border border-gray-500/30 text-gray-400',
-    row: 'border-l-2 border-l-gray-500/30',
-    label: 'D',
-    textColor: 'text-gray-400',
+    badge:      'result-draw',
+    leftBorder: 'border-l-2 border-l-yellow-500/30',
+    label:      'D',
+    verb:       'Drew with',
+    nameColor:  'text-yellow-400',
+    scoreColor: 'text-yellow-400',
+    hoverBg:    'hover:bg-yellow-500/[0.02]',
   },
 }
 
@@ -57,7 +66,6 @@ function timeAgo(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-// ── Quick stats summary ────────────────────────────────────────────────────────
 function QuickStats({ records }: { records: GameRecord[] }) {
   if (!records.length) return null
   const wins   = records.filter(r => r.result === 'win').length
@@ -66,7 +74,6 @@ function QuickStats({ records }: { records: GameRecord[] }) {
   const total  = records.length
   const pct    = total > 0 ? ((wins / total) * 100).toFixed(0) : '0'
 
-  // Streak from most recent
   let streak = 0
   let streakResult: 'win' | 'loss' | null = null
   for (const r of records) {
@@ -75,21 +82,25 @@ function QuickStats({ records }: { records: GameRecord[] }) {
     else break
   }
 
+  const streakLabel    = streak > 1 ? (streakResult === 'win' ? `W${streak}` : `L${streak}`) : draws > 0 ? draws : '—'
+  const streakColor    = streak > 1 ? (streakResult === 'win' ? 'text-orange-400' : 'text-red-400') : 'text-white/40'
+  const streakSubLabel = streak > 1 ? (streakResult === 'win' ? 'Win Streak' : 'Loss Streak') : 'Draws'
+
   return (
-    <div className="grid grid-cols-4 gap-2 mb-6">
+    <div className="grid grid-cols-4 gap-2.5 mb-8">
       {[
-        { label: 'Wins', value: wins, color: 'text-green-400' },
-        { label: 'Losses', value: losses, color: 'text-red-400' },
-        { label: 'Win%', value: `${pct}%`, color: 'text-orange-400' },
-        {
-          label: streak > 1 ? (streakResult === 'win' ? '🔥 W Streak' : '📉 L Streak') : 'Streak',
-          value: streak > 1 ? streak : draws,
-          color: streak > 1 ? (streakResult === 'win' ? 'text-orange-400' : 'text-red-400') : 'text-gray-400',
-        },
-      ].map(s => (
-        <div key={s.label} className="card-surface rounded-xl py-3 text-center border border-white/[0.05]">
-          <div className={`font-display text-2xl leading-none ${s.color}`}>{s.value}</div>
-          <div className="text-label mt-1 text-[10px]">{s.label}</div>
+        { label: 'Wins',         value: wins,          color: 'text-green-400' },
+        { label: 'Losses',       value: losses,        color: 'text-red-400' },
+        { label: 'Win %',        value: `${pct}%`,     color: 'text-orange-400' },
+        { label: streakSubLabel, value: streakLabel,   color: streakColor },
+      ].map((s, i) => (
+        <div
+          key={s.label}
+          className="card-surface rounded-xl py-4 text-center animate-fade-up"
+          style={{ animationDelay: `${i * 60}ms` }}
+        >
+          <div className={`font-display text-3xl leading-none ${s.color}`}>{s.value}</div>
+          <div className="text-label mt-1.5">{s.label}</div>
         </div>
       ))}
     </div>
@@ -105,8 +116,7 @@ export default function HistoryPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const controller = new AbortController()
-    fetch('/api/games/history', { signal: controller.signal })
+    fetch('/api/games/history')
       .then(r => {
         if (r.status === 401) { setLoading(false); router.push('/login'); return null }
         return r.json()
@@ -118,8 +128,7 @@ export default function HistoryPage() {
         setHasMore(d?.hasMore ?? false)
         setLoading(false)
       })
-      .catch(err => { if (err.name !== 'AbortError') setLoading(false) })
-    return () => controller.abort()
+      .catch(() => setLoading(false))
   }, [router])
 
   async function loadMore() {
@@ -133,7 +142,7 @@ export default function HistoryPage() {
       setNextCursor(d?.nextCursor ?? null)
       setHasMore(d?.hasMore ?? false)
     } catch {
-      // silently ignore — the user can retry by clicking again
+      // silently ignore — user can retry
     } finally {
       setLoadingMore(false)
     }
@@ -143,14 +152,14 @@ export default function HistoryPage() {
     return (
       <div className="min-h-screen py-10 px-4">
         <div className="max-w-2xl mx-auto">
-          <div className="h-10 w-36 rounded-xl bg-white/[0.07] animate-pulse mb-2" />
-          <div className="h-3 w-24 rounded bg-white/[0.04] animate-pulse mb-6" />
-          <div className="grid grid-cols-4 gap-2 mb-6">
-            {[0,1,2,3].map(i => <div key={i} className="h-16 rounded-xl bg-white/[0.04] animate-pulse" />)}
+          <div className="h-10 w-40 rounded-xl skeleton mb-2" />
+          <div className="h-3 w-24 rounded skeleton mb-8" />
+          <div className="grid grid-cols-4 gap-2.5 mb-8">
+            {[0,1,2,3].map(i => <div key={i} className="h-[72px] rounded-xl skeleton" />)}
           </div>
           <div className="space-y-2">
-            {[0,1,2,3,4].map(i => (
-              <div key={i} className="h-16 rounded-xl bg-white/[0.04] animate-pulse border-l-2 border-l-white/[0.04]" />
+            {[0,1,2,3,4,5].map(i => (
+              <div key={i} className="h-[72px] rounded-xl skeleton border-l-2 border-l-white/[0.04]" />
             ))}
           </div>
         </div>
@@ -159,105 +168,140 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="min-h-screen py-10 px-4 animate-fade-in">
+    <div className="min-h-screen py-10 px-4">
       <div className="max-w-2xl mx-auto">
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        {/* ── Header ───────────────────────────────────────────────── */}
+        <div className="flex items-end justify-between mb-8 animate-fade-up">
           <div>
-            <h1 className="font-display text-4xl text-orange-500 leading-none tracking-wide">History</h1>
-            <p className="text-gray-400 text-sm mt-1">{records.length} game{records.length !== 1 ? 's' : ''}{hasMore ? ' loaded' : ''}</p>
+            <p className="text-label mb-2">Your Record</p>
+            <h1 className="font-display text-5xl md:text-6xl text-white leading-none tracking-wide">
+              GAME <span className="text-orange-500">HISTORY</span>
+            </h1>
+            <p className="text-white/35 text-xs font-bold mt-2">
+              <span className="font-display text-orange-400 text-lg">{records.length}</span>
+              <span className="ml-1.5">game{records.length !== 1 ? 's' : ''}{hasMore ? ' loaded' : ''}</span>
+            </p>
           </div>
-          <Link href="/lobby" className="text-gray-400 hover:text-white text-sm transition-colors">← Lobby</Link>
+          <Link
+            href="/lobby"
+            className="inline-flex items-center gap-1.5 text-white/40 hover:text-white/80 transition-colors text-sm group shrink-0"
+          >
+            <svg className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Lobby
+          </Link>
         </div>
 
+        {/* ── Empty State ──────────────────────────────────────────── */}
         {records.length === 0 ? (
-          <div className="card-surface rounded-2xl p-12 text-center">
-            <div className="text-4xl mb-3">🏀</div>
-            <p className="text-gray-400 font-bold">No games yet</p>
-            <p className="text-gray-400 text-sm mt-1">Play online to start tracking your history</p>
-            <Link href="/lobby" className="inline-block mt-5 bg-orange-600 hover:bg-orange-700 text-white font-black px-6 py-3 rounded-xl transition-colors">
-              Play Now
-            </Link>
+          <div className="card-accent animate-fade-up-1">
+            <div className="empty-state py-16">
+              <div className="empty-state-icon text-5xl">🏀</div>
+              <p className="empty-state-title text-base">No games yet</p>
+              <p className="empty-state-body mt-1">Play online to start building your record</p>
+              <Link href="/lobby" className="btn-primary mt-6 text-sm">
+                Play Now
+              </Link>
+            </div>
           </div>
         ) : (
           <>
             <QuickStats records={records} />
 
-            <div className="space-y-1.5">
+            {/* ── Game Rows ────────────────────────────────────────── */}
+            <div className="space-y-2">
               {records.map((r, idx) => {
-                const cfg = RESULT_CONFIG[r.result]
-                const ago = timeAgo(r.createdAt)
-                const date = new Date(r.createdAt)
-                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                const cfg       = RESULT_CONFIG[r.result]
+                const ago       = timeAgo(r.createdAt)
+                const modeLabel = MODE_LABEL[r.teamMode] || r.teamMode
 
                 return (
                   <div
                     key={r.id}
-                    className={`card-surface rounded-xl px-4 py-3 flex items-center gap-3 ${cfg.row} animate-slide-up`}
-                    style={{ animationDelay: `${Math.min(idx * 25, 250)}ms`, animationFillMode: 'both' }}
+                    className={`card-surface rounded-xl px-4 py-3.5 flex items-center gap-3 ${cfg.leftBorder} ${cfg.hoverBg} transition-colors animate-fade-up`}
+                    style={{ animationDelay: `${Math.min(idx * 30, 300)}ms`, animationFillMode: 'both' }}
                   >
-                    {/* Result pill */}
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-display text-xl shrink-0 ${cfg.pill}`}>
+                    {/* W / L / D badge */}
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-display text-2xl shrink-0 ${cfg.badge}`}>
                       {cfg.label}
                     </div>
 
                     {/* Main info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-white font-black text-sm">
-                          {r.result === 'win' ? 'Beat' : r.result === 'loss' ? 'Lost to' : 'Drew with'}{' '}
-                          <span className={cfg.textColor}>{r.opponentName}</span>
-                        </span>
+                        <span className="text-white/50 text-sm font-bold">{cfg.verb}</span>
+                        <span className={`font-black text-sm ${cfg.nameColor}`}>{r.opponentName}</span>
                         {r.source === 'online' && (
-                          <span className="text-[9px] font-black text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Online</span>
+                          <span className="text-[9px] font-black text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
+                            Online
+                          </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5 text-gray-400 text-xs">
-                        <span>{MODE_LABEL[r.teamMode] || r.teamMode}</span>
-                        {r.series > 1 && <><span className="text-gray-700">·</span><span>Bo{r.series}</span></>}
-                        {r.statCategory && <><span className="text-gray-700">·</span><span className="text-gray-400">{r.statCategory}</span></>}
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-white/30 text-xs">{modeLabel}</span>
+                        {r.series > 1 && (
+                          <>
+                            <span className="text-white/15 text-xs">·</span>
+                            <span className="text-white/30 text-xs">Bo{r.series}</span>
+                          </>
+                        )}
+                        {r.statCategory && (
+                          <>
+                            <span className="text-white/15 text-xs">·</span>
+                            <span className="text-white/30 text-xs">{r.statCategory}</span>
+                          </>
+                        )}
                       </div>
                     </div>
 
-                    {/* Score block */}
+                    {/* Score + timestamp */}
                     <div className="text-right shrink-0">
                       {r.series > 1 ? (
                         <>
-                          <div className={`font-black text-base leading-none tabular-nums ${cfg.textColor}`}>
+                          <div className={`font-display text-2xl leading-none tabular-nums ${cfg.scoreColor}`}>
                             {r.mySeriesScore}–{r.oppSeriesScore}
                           </div>
-                          <div className="text-gray-400 text-[10px] mt-0.5">series</div>
+                          <div className="text-label mt-1">Series</div>
                         </>
                       ) : (r.myScore !== undefined && r.myScore !== null) ? (
                         <>
-                          <div className="font-black text-sm leading-none tabular-nums text-white">
-                            <span className={cfg.textColor}>{r.myScore?.toFixed(1)}</span>
-                            <span className="text-gray-400 mx-1">vs</span>
-                            <span className="text-gray-400">{r.oppScore?.toFixed(1)}</span>
+                          <div className="leading-none tabular-nums">
+                            <span className={`font-display text-xl ${cfg.scoreColor}`}>{r.myScore?.toFixed(1)}</span>
+                            <span className="text-white/20 font-display text-lg mx-1">vs</span>
+                            <span className="font-display text-xl text-white/30">{r.oppScore?.toFixed(1)}</span>
                           </div>
-                          <div className="text-gray-400 text-[10px] mt-0.5">EBK score</div>
+                          <div className="text-label mt-1">EBK Score</div>
                         </>
                       ) : null}
-                      <div className="text-gray-400 text-[10px] mt-0.5 tabular-nums">{ago}</div>
+                      <div className="text-white/25 text-[10px] font-bold mt-1.5 tabular-nums">{ago}</div>
                     </div>
                   </div>
                 )
               })}
             </div>
 
-            {/* Load More / footer */}
-            <div className="mt-8 text-center space-y-4">
+            {/* ── Footer ───────────────────────────────────────────── */}
+            <div className="mt-8 space-y-3">
               {hasMore && (
                 <button
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="w-full py-3 rounded-xl border border-white/[0.08] text-gray-400 text-sm font-black uppercase tracking-wider hover:border-orange-500/50 hover:text-orange-400 transition-colors disabled:opacity-50"
+                  className="btn-secondary w-full disabled:opacity-50"
                 >
-                  {loadingMore ? 'Loading…' : 'Load More'}
+                  {loadingMore ? (
+                    <span className="flex items-center gap-2 justify-center">
+                      <span className="w-3 h-3 border border-white/40 border-t-white/80 rounded-full animate-spin" />
+                      Loading…
+                    </span>
+                  ) : 'Load More Games'}
                 </button>
               )}
-              <Link href="/profile" className="block text-gray-400 text-sm hover:text-orange-400 transition-colors">
+              <Link
+                href="/profile"
+                className="block text-center text-white/35 text-sm hover:text-orange-400 transition-colors font-bold"
+              >
                 View full stats on profile →
               </Link>
             </div>
