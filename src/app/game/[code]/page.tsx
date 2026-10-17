@@ -396,14 +396,19 @@ function GameContent() {
 
   // Load user's unlocked emotes
   useEffect(() => {
-    fetch('/api/auth/me').then(r => r.json()).then(d => {
-      if (d.user?.unlockedEmotes) {
-        try {
-          const arr = JSON.parse(d.user.unlockedEmotes)
-          setMyEmotes(Array.isArray(arr) ? arr : [])
-        } catch { setMyEmotes([]) }
-      }
-    }).catch(() => {})
+    const controller = new AbortController()
+    fetch('/api/auth/me', { signal: controller.signal })
+      .then(r => r.json())
+      .then(d => {
+        if (d.user?.unlockedEmotes) {
+          try {
+            const arr = JSON.parse(d.user.unlockedEmotes)
+            setMyEmotes(Array.isArray(arr) ? arr : [])
+          } catch { setMyEmotes([]) }
+        }
+      })
+      .catch(() => {})
+    return () => controller.abort()
   }, [])
 
   function pickPlayer(playerId: number, slotPos: string) {

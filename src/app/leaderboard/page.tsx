@@ -402,22 +402,32 @@ export default function LeaderboardPage() {
   const [sort, setSort]                 = useState<SortKey>('wins')
   const meRowRef                        = useRef<HTMLDivElement>(null)
   const timerRef                        = useRef<ReturnType<typeof setInterval> | null>(null)
+  const abortRef                        = useRef<AbortController | null>(null)
 
   async function load() {
+    if (abortRef.current) abortRef.current.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
     try {
-      const d = await fetch('/api/leaderboard').then(r => r.json())
+      const d = await fetch('/api/leaderboard', { signal: controller.signal }).then(r => r.json())
       if (d?.users) setUsers(d.users)
       if (d?.totalPlayers !== undefined) setTotalPlayers(d.totalPlayers)
       setMe(d?.me ?? null)
       setLastUpdated(new Date())
-    } catch {}
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return
+    }
     setLoading(false)
   }
 
   useEffect(() => {
     load()
     timerRef.current = setInterval(load, REFRESH_MS)
-    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+      if (abortRef.current) abortRef.current.abort()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const sorted = [...users].sort((a, b) => {

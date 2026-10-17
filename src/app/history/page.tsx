@@ -105,7 +105,8 @@ export default function HistoryPage() {
   const router = useRouter()
 
   useEffect(() => {
-    fetch('/api/games/history')
+    const controller = new AbortController()
+    fetch('/api/games/history', { signal: controller.signal })
       .then(r => {
         if (r.status === 401) { setLoading(false); router.push('/login'); return null }
         return r.json()
@@ -117,7 +118,8 @@ export default function HistoryPage() {
         setHasMore(d?.hasMore ?? false)
         setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch(err => { if (err.name !== 'AbortError') setLoading(false) })
+    return () => controller.abort()
   }, [router])
 
   async function loadMore() {

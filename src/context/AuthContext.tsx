@@ -43,13 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    const controller = new AbortController()
+    fetch('/api/auth/me', { signal: controller.signal })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         setUser(data?.user || null)
         setLoading(false)
       })
-      .catch(() => { setLoading(false) })
+      .catch(err => { if (err.name !== 'AbortError') setLoading(false) })
+    return () => controller.abort()
   }, [])
 
   async function logout() {

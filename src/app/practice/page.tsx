@@ -108,11 +108,13 @@ function PracticeContent() {
   // Load players when entering draft
   useEffect(() => {
     if (screen !== 'draft' || players.length > 0) return
+    const controller = new AbortController()
     setLoadingPlayers(true)
-    fetch('/api/players')
+    fetch('/api/players', { signal: controller.signal })
       .then(r => r.json())
       .then((data: Player[]) => { setPlayers(data); setLoadingPlayers(false); triggerSpin(data, []) })
-      .catch(() => setLoadingPlayers(false))
+      .catch(err => { if (err.name !== 'AbortError') setLoadingPlayers(false) })
+    return () => controller.abort()
   }, [screen, players.length])
 
   // Clean up any pending spin timers on unmount

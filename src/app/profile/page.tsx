@@ -140,7 +140,8 @@ export default function ProfilePage() {
   }
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    const controller = new AbortController()
+    fetch('/api/auth/me', { signal: controller.signal })
       .then(r => {
         if (!r.ok) { router.push('/login'); return null }
         return r.json()
@@ -155,7 +156,8 @@ export default function ProfilePage() {
         }
         setLoading(false)
       })
-      .catch(() => { setLoading(false); router.push('/login') })
+      .catch(err => { if (err.name !== 'AbortError') { setLoading(false); router.push('/login') } })
+    return () => controller.abort()
   }, [router])
 
   async function equipItem(type: 'badge' | 'emote', id: string) {

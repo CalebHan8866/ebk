@@ -360,7 +360,8 @@ export default function FunFactsPage() {
   const [factIndex, setFactIndex] = useState(0)
 
   useEffect(() => {
-    fetch('/api/players')
+    const controller = new AbortController()
+    fetch('/api/players', { signal: controller.signal })
       .then(r => r.json())
       .then((data: Player[]) => {
         // Keep only players whose earnings produce a $100K–$1M/yr comparison
@@ -377,7 +378,8 @@ export default function FunFactsPage() {
         setPlayers(eligible)
         setLoading(false)
       })
-      .catch(() => { setLoadError(true); setLoading(false) })
+      .catch(err => { if (err.name !== 'AbortError') { setLoadError(true); setLoading(false) } })
+    return () => controller.abort()
   }, [])
 
   const filtered = useMemo(() => {
