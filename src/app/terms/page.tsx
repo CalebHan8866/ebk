@@ -8,7 +8,7 @@ export default function TermsPage() {
           <Link href="/" className="text-orange-400 hover:text-orange-300 text-sm">← Back</Link>
         </div>
         <h1 className="font-display text-4xl text-white leading-none mb-2">Terms of Service</h1>
-        <p className="text-gray-500 text-sm mb-10">Last updated: October 2025</p>
+        <p className="text-gray-400 text-sm mb-10">Last updated: October 2025</p>
 
         <div className="space-y-8 text-gray-300 text-sm leading-relaxed">
 
@@ -49,7 +49,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-white font-black text-lg mb-3">5. Intellectual Property</h2>
             <p>All content, design, code, and branding of EBK — including the name &quot;Elite Ball Knowledge&quot; and the EBK mark — are owned by or licensed to the operator. You may not copy, reproduce, or distribute any part of the Service without written permission.</p>
-            <p className="mt-2 text-gray-500">NBA team names, player names, and statistics are property of the NBA and respective rights holders. EBK is an independent fan project and is not affiliated with, endorsed by, or sponsored by the NBA.</p>
+            <p className="mt-2 text-gray-400">NBA team names, player names, and statistics are property of the NBA and respective rights holders. EBK is an independent fan project and is not affiliated with, endorsed by, or sponsored by the NBA.</p>
           </section>
 
           <section>
@@ -79,7 +79,7 @@ export default function TermsPage() {
 
         </div>
 
-        <div className="mt-12 pt-8 border-t border-gray-800 text-gray-600 text-xs">
+        <div className="mt-12 pt-8 border-t border-gray-800 text-gray-400 text-xs">
           <Link href="/privacy" className="text-orange-400 hover:text-orange-300 mr-4">Privacy Policy</Link>
           <Link href="/" className="hover:text-gray-400">Back to EBK</Link>
         </div>

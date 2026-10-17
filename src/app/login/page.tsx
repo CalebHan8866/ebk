@@ -60,7 +60,7 @@ function LoginForm() {
       )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="login-email" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Email</label>
+          <label htmlFor="login-email" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">Email</label>
           <div className="relative flex items-center">
             <input
               id="login-email"
@@ -90,7 +90,7 @@ function LoginForm() {
         </div>
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label htmlFor="login-password" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase">Password</label>
+            <label htmlFor="login-password" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase">Password</label>
             <Link href="/forgot-password" className="text-orange-500/70 hover:text-orange-400 text-xs font-semibold transition-colors">
               Forgot password?
             </Link>
@@ -126,7 +126,7 @@ function LoginForm() {
           {loading ? 'Signing in…' : 'Sign In'}
         </button>
       </form>
-      <p className="text-center text-gray-600 text-sm mt-6">
+      <p className="text-center text-gray-400 text-sm mt-6">
         No account?{' '}
         <Link href="/register" className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
           Sign up free
@@ -145,7 +145,7 @@ export default function LoginPage() {
             style={{ textShadow: '0 0 60px rgba(249,115,22,0.3)' }}>
             EBK
           </h1>
-          <p className="text-[10px] font-bold tracking-[0.4em] text-gray-600 uppercase">Welcome Back</p>
+          <p className="text-[10px] font-bold tracking-[0.4em] text-gray-400 uppercase">Welcome Back</p>
         </div>
         <Suspense fallback={null}>
           <LoginForm />

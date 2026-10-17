@@ -48,6 +48,9 @@ const prisma = new PrismaClient({ datasources: { db: { url: buildDbUrl() } } })
 type TeamMode = 'starter5' | 'bench8' | 'full12'
 type SeriesLength = 1 | 3 | 5
 type Difficulty = 'casual' | 'ebk'
+type StatCategory = 'games_played' | 'ppg' | 'rpg' | 'apg' | 'earnings' | 'ebk_score'
+
+const VALID_STAT_CATEGORIES: StatCategory[] = ['games_played', 'ppg', 'rpg', 'apg', 'earnings', 'ebk_score']
 
 // ─── Team Lineage ────────────────────────────────────────────────────────────
 
@@ -190,6 +193,8 @@ interface Room {
   teamMode: TeamMode
   series: SeriesLength
   difficulty: Difficulty
+  /** Stat category chosen by the host — all games in the series use this stat */
+  statCategory: StatCategory
   source: 'online' | 'friends'
   status: 'waiting' | 'drafting' | 'result' | 'complete'
   draftOrder: ('host' | 'guest')[]
@@ -232,6 +237,7 @@ interface QueueEntry {
   teamMode: TeamMode
   series: SeriesLength
   difficulty: Difficulty
+  statCategory: StatCategory
   userRecord: { wins: number; losses: number; draws: number }
 }
 
@@ -254,6 +260,7 @@ interface GameListing {
   hostStreak: number
   teamMode: TeamMode
   series: SeriesLength
+  statCategory: StatCategory
 }
 
 interface AuctionParticipant {
@@ -539,16 +546,20 @@ function getStatForMode(player: PlayerData, statMode: string): number {
     case 'ppg': return player.careerPPG
     case 'rpg': return player.careerRPG
     case 'apg': return player.careerAPG
+    case 'earnings': return player.careerEarnings
+    case 'ebk_score': return player.ebkScore
     default: return player.careerGames
   }
 }
 
-function getStatModeForGame(gameNum: number): string {
+function getStatModeForGame(gameNum: number, statCategory?: StatCategory | null): string {
+  // If a custom stat category is set, every game in the series uses it
+  if (statCategory) return statCategory
   return STAT_CYCLE[(gameNum - 1) % STAT_CYCLE.length]
 }
 
 function calculateResult(room: Room): GameResult {
-  const statMode = getStatModeForGame(room.currentGame)
+  const statMode = getStatModeForGame(room.currentGame, room.statCategory)
   let hostTotal = 0
   let guestTotal = 0
 
@@ -586,7 +597,7 @@ function autoPickPlayer(room: Room): { playerId: number; slotPos: string } | nul
     const teamAvail = available.filter(p => getCurrentTeam(p.team) === room.currentSpunTeam)
     if (teamAvail.length > 0) available = teamAvail
   }
-  const statMode = getStatModeForGame(room.currentGame)
+  const statMode = getStatModeForGame(room.currentGame, room.statCategory)
   available.sort((a, b) => getStatForMode(a, statMode) - getStatForMode(b, statMode))
   const chosenPlayer = available[0]
   // Determine slot using greedy algo (reuse already-computed usedPositions/remainingBenchSlots)
@@ -744,6 +755,7 @@ function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
     teamMode: rr.hostEntry.teamMode,
     series: rr.hostEntry.series,
     difficulty: rr.hostEntry.difficulty,
+    statCategory: rr.hostEntry.statCategory,
     source: 'online',
     status: 'drafting',
     draftOrder: buildSnakeDraft(teamSize),
@@ -1048,8 +1060,8 @@ app.prepare().then(async () => {
       })
     })
 
-    socket.on('create-room', ({ teamMode, series, difficulty, userName }: {
-      teamMode: TeamMode, series: SeriesLength, difficulty: Difficulty, userName: string
+    socket.on('create-room', ({ teamMode, series, difficulty, statCategory, userName }: {
+      teamMode: TeamMode, series: SeriesLength, difficulty: Difficulty, statCategory?: StatCategory, userName: string
     }) => {
       if (!['starter5', 'bench8', 'full12'].includes(teamMode)) return
       if (![1, 3, 5].includes(series)) return
@@ -1058,6 +1070,8 @@ app.prepare().then(async () => {
       const userId = socket.data.userId as string | null
       let code = generateCode()
       while (rooms.has(code)) code = generateCode()
+
+      const resolvedStatCategory: StatCategory = (statCategory && VALID_STAT_CATEGORIES.includes(statCategory)) ? statCategory : 'games_played'
 
       const teamSize = TEAM_SIZES[teamMode]
       const room: Room = {
@@ -1071,6 +1085,7 @@ app.prepare().then(async () => {
         teamMode,
         series,
         difficulty: difficulty || 'casual',
+        statCategory: resolvedStatCategory,
         source: 'friends',
         status: 'waiting',
         draftOrder: buildSnakeDraft(teamSize),
@@ -1290,8 +1305,8 @@ app.prepare().then(async () => {
       socket.emit('listings-updated', { listings: Array.from(gameListings.values()) })
     })
 
-    socket.on('create-listing', async ({ userName, teamMode, series }: {
-      userName: string, teamMode: TeamMode, series: SeriesLength
+    socket.on('create-listing', async ({ userName, teamMode, series, statCategory }: {
+      userName: string, teamMode: TeamMode, series: SeriesLength, statCategory?: StatCategory
     }) => {
       if (!['starter5', 'bench8', 'full12'].includes(teamMode)) return
       if (![1, 3, 5].includes(series)) return
@@ -1344,7 +1359,8 @@ app.prepare().then(async () => {
         return
       }
 
-      const listing: GameListing = { code, hostSocketId: socket.id, hostUserId: userId, hostName: userName, hostRecord, hostBadge: hostUser?.equippedBadge || '', hostStreak, teamMode, series }
+      const resolvedStatCategory: StatCategory = (statCategory && VALID_STAT_CATEGORIES.includes(statCategory)) ? statCategory : 'games_played'
+      const listing: GameListing = { code, hostSocketId: socket.id, hostUserId: userId, hostName: userName, hostRecord, hostBadge: hostUser?.equippedBadge || '', hostStreak, teamMode, series, statCategory: resolvedStatCategory }
       gameListings.set(code, listing)
 
       // Auto-expire listing after 10 minutes
@@ -1427,11 +1443,13 @@ app.prepare().then(async () => {
 
       const hostEntry: QueueEntry = {
         socketId: listing.hostSocketId, userId: listing.hostUserId, userName: listing.hostName,
-        teamMode: listing.teamMode, series: listing.series, difficulty: 'ebk', userRecord: listing.hostRecord,
+        teamMode: listing.teamMode, series: listing.series, difficulty: 'ebk',
+        statCategory: listing.statCategory, userRecord: listing.hostRecord,
       }
       const guestEntry: QueueEntry = {
         socketId: socket.id, userId, userName,
-        teamMode: listing.teamMode, series: listing.series, difficulty: 'ebk', userRecord: guestRecord,
+        teamMode: listing.teamMode, series: listing.series, difficulty: 'ebk',
+        statCategory: listing.statCategory, userRecord: guestRecord,
       }
 
       const readyTimer = setTimeout(() => {
@@ -1443,7 +1461,7 @@ app.prepare().then(async () => {
 
       readyRooms.set(code, { code, hostEntry, guestEntry, hostReady: false, guestReady: false, timer: readyTimer })
 
-      const basePayload = { proposedTeamMode: listing.teamMode, proposedSeries: listing.series, grudgeMatch }
+      const basePayload = { proposedTeamMode: listing.teamMode, proposedSeries: listing.series, proposedStatCategory: listing.statCategory, grudgeMatch }
       io.to(listing.hostSocketId).emit('match-found', {
         ...basePayload, code, isHost: true,
         opponentName: userName, opponentRecord: guestRecord, opponentBadge: guestBadge,

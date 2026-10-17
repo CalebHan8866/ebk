@@ -33,7 +33,7 @@ function VerifyContent() {
           <>
             <h1 className="font-display text-5xl text-white leading-none mb-3">Check Your Email</h1>
             <p className="text-gray-400 mb-2">We sent a verification link to your inbox.</p>
-            <p className="text-gray-600 text-sm mb-8">
+            <p className="text-gray-400 text-sm mb-8">
               Click the link in the email to verify your account and start playing.
               Check your spam folder if you don&apos;t see it within a minute.
             </p>

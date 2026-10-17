@@ -82,8 +82,8 @@ export default function RegisterPage() {
           </p>
           <p className="text-orange-400 font-semibold text-sm mb-6">{email}</p>
           {process.env.NODE_ENV === 'development' && (
-            <p className="text-gray-600 text-xs mb-6">
-              Dev mode: link is in the <strong className="text-gray-400">server terminal</strong>.
+            <p className="text-gray-400 text-xs mb-6">
+              Dev mode: link is in the <strong className="text-gray-300">server terminal</strong>.
             </p>
           )}
           <Link href="/login" className="text-orange-400 hover:text-orange-300 font-semibold text-sm transition-colors">
@@ -104,7 +104,7 @@ export default function RegisterPage() {
             style={{ textShadow: '0 0 60px rgba(249,115,22,0.3)' }}>
             EBK
           </h1>
-          <p className="text-[10px] font-bold tracking-[0.4em] text-gray-600 uppercase">Create Your Account</p>
+          <p className="text-[10px] font-bold tracking-[0.4em] text-gray-400 uppercase">Create Your Account</p>
         </div>
 
         {/* Value prop chips — what you unlock by registering */}
@@ -127,7 +127,7 @@ export default function RegisterPage() {
 
             {/* Username */}
             <div>
-              <label htmlFor="register-username" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Username</label>
+              <label htmlFor="register-username" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">Username</label>
               <div className="relative flex items-center">
                 <input
                   id="register-username"
@@ -152,7 +152,7 @@ export default function RegisterPage() {
 
             {/* Email */}
             <div>
-              <label htmlFor="register-email" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Email</label>
+              <label htmlFor="register-email" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">Email</label>
               <div className="relative flex items-center">
                 <input
                   id="register-email"
@@ -172,7 +172,7 @@ export default function RegisterPage() {
 
             {/* Password */}
             <div>
-              <label htmlFor="register-password" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Password</label>
+              <label htmlFor="register-password" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">Password</label>
               <div className="relative flex items-center">
                 <input
                   id="register-password"
@@ -200,7 +200,7 @@ export default function RegisterPage() {
                       />
                     ))}
                   </div>
-                  <p className="text-[10px] text-gray-500">Password strength: {strengthLabel}</p>
+                  <p className="text-[10px] text-gray-400">Password strength: {strengthLabel}</p>
                 </div>
               )}
             </div>
@@ -209,7 +209,7 @@ export default function RegisterPage() {
               {loading ? 'Creating account…' : 'Create Free Account'}
             </button>
           </form>
-          <p className="text-center text-gray-600 text-sm mt-6">
+          <p className="text-center text-gray-400 text-sm mt-6">
             Already have an account?{' '}
             <Link href="/login" className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
               Sign in

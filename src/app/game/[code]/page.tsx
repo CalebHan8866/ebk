@@ -5,13 +5,10 @@ import { getSocket } from '@/lib/socket'
 import { CURRENT_TEAMS, getCurrentTeam } from '@/lib/teams'
 import { EMOTES } from '@/lib/accessories'
 import { useAuth } from '@/context/AuthContext'
-import { type TeamMode, type GameResult, type Room, type Player, TEAM_SIZES, getRequiredPositions, getStatModeForGame } from '@/types/game'
+import { type TeamMode, type GameResult, type Room, type Player, TEAM_SIZES, getRequiredPositions, getStatModeForGame, STAT_CATEGORY_LABELS, STAT_CATEGORY_SHORT } from '@/types/game'
 
 const STAT_LABELS: Record<string, string> = {
-  games_played: 'Games Played',
-  ppg: 'Points Per Game',
-  rpg: 'Rebounds Per Game',
-  apg: 'Assists Per Game',
+  ...STAT_CATEGORY_LABELS,
 }
 
 function getStatValue(player: Player, mode: string): number {
@@ -20,12 +17,19 @@ function getStatValue(player: Player, mode: string): number {
     case 'ppg': return player.careerPPG
     case 'rpg': return player.careerRPG
     case 'apg': return player.careerAPG
+    case 'earnings': return player.careerEarnings
+    case 'ebk_score': return player.ebkScore
     default: return 0
   }
 }
 
 function formatStat(val: number, statMode: string): string {
   if (statMode === 'games_played') return Math.round(val).toString()
+  if (statMode === 'earnings') {
+    if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`
+    if (val >= 1_000) return `$${(val / 1_000).toFixed(0)}K`
+    return val === 0 ? 'N/A' : `$${val}`
+  }
   return val.toFixed(1)
 }
 
@@ -35,6 +39,8 @@ function getStatUnit(statMode: string): string {
     case 'ppg': return 'pts / game (career avg)'
     case 'rpg': return 'reb / game (career avg)'
     case 'apg': return 'ast / game (career avg)'
+    case 'earnings': return 'real career salary earned'
+    case 'ebk_score': return 'EBK composite score'
     default: return ''
   }
 }
@@ -398,12 +404,16 @@ function GameContent() {
             <div className="font-display text-7xl text-orange-400 tracking-[0.35em] leading-none mb-3">{room.code}</div>
             <p className="text-gray-400 text-xs">Share this code with your opponent</p>
           </div>
-          <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
+          <div className="flex items-center justify-center gap-2 text-gray-400 text-sm flex-wrap">
             <span className="bg-white/[0.04] border border-white/[0.07] rounded-lg px-3 py-1.5 text-xs font-black text-gray-300">
               {room.teamMode === 'starter5' ? 'Starter 5' : room.teamMode === 'bench8' ? 'Bench 8' : 'Full Roster'}
             </span>
             <span className="text-gray-700">·</span>
             <span className="text-xs text-gray-400">{room.series === 1 ? '1 Game' : `Best of ${room.series}`}</span>
+            <span className="text-gray-700">·</span>
+            <span className="text-orange-400 text-xs font-black">
+              {STAT_CATEGORY_LABELS[room.statCategory] ?? 'Games Played'}
+            </span>
           </div>
         </div>
       </div>
@@ -416,7 +426,7 @@ function GameContent() {
   const oppName = role === 'host' ? (room.guestName || 'Opponent') : room.hostName
   const currentPicker = room.draftOrder[room.currentPickIndex]
   const isMyTurn = currentPicker === role
-  const statMode = getStatModeForGame(room.currentGame)
+  const statMode = getStatModeForGame(room.currentGame, room.statCategory)
   const teamSize = TEAM_SIZES[room.teamMode]
   const requiredSlots = getRequiredPositions(room.teamMode)
   const takenIds = new Set([...room.hostPicks, ...room.guestPicks])
@@ -903,7 +913,10 @@ function GameContent() {
               <span className="font-display text-orange-500 text-base leading-none tracking-wider shrink-0">
                 GAME {room.currentGame}{room.series > 1 ? ` / ${room.series}` : ''}
               </span>
-              <span className="text-gray-700 text-xs font-bold hidden sm:inline">|</span>
+              <span className="text-gray-700 text-xs font-bold">|</span>
+              <span className="text-orange-400 text-[10px] font-black tracking-widest bg-orange-950/40 border border-orange-900/50 rounded px-2 py-0.5 shrink-0 uppercase">
+                {STAT_CATEGORY_SHORT[statMode as keyof typeof STAT_CATEGORY_SHORT] ?? statMode.toUpperCase()}
+              </span>
               <span className="text-gray-400 text-xs truncate hidden sm:inline">
                 {STAT_LABELS[statMode]} · lower wins
               </span>
@@ -1295,10 +1308,10 @@ function GameContent() {
                               <div className={`font-display text-xl leading-none tabular-nums ${
                                 isSelected ? 'text-orange-400' : 'text-white'
                               }`}>
-                                {statMode === 'games_played' ? Math.round(statVal) : statVal.toFixed(1)}
+                                {formatStat(statVal, statMode)}
                               </div>
                               <div className="text-gray-400 text-[10px] tracking-wider uppercase mt-0.5">
-                                {statMode === 'games_played' ? 'GP' : statMode.toUpperCase()}
+                                {STAT_CATEGORY_SHORT[statMode as keyof typeof STAT_CATEGORY_SHORT] ?? statMode.toUpperCase()}
                               </div>
                             </div>
                           )}

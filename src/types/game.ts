@@ -8,6 +8,38 @@ export type SeriesLength = 1 | 3 | 5
 export type Difficulty = 'casual' | 'ebk'
 export type AuctionStatus = 'waiting' | 'bidding' | 'steal-window' | 'trading' | 'complete'
 
+/** Which stat category all games in a series are scored on */
+export type StatCategory = 'games_played' | 'ppg' | 'rpg' | 'apg' | 'earnings' | 'ebk_score'
+
+export const STAT_CATEGORY_LABELS: Record<StatCategory, string> = {
+  games_played: 'Games Played',
+  ppg: 'Points Per Game',
+  rpg: 'Rebounds Per Game',
+  apg: 'Assists Per Game',
+  earnings: 'Career Earnings',
+  ebk_score: 'EBK Score',
+}
+
+export const STAT_CATEGORY_SHORT: Record<StatCategory, string> = {
+  games_played: 'GP',
+  ppg: 'PPG',
+  rpg: 'RPG',
+  apg: 'APG',
+  earnings: '$$$',
+  ebk_score: 'EBK',
+}
+
+export const STAT_CATEGORY_DESC: Record<StatCategory, string> = {
+  games_played: 'Total career games played',
+  ppg: 'Career points per game avg',
+  rpg: 'Career rebounds per game avg',
+  apg: 'Career assists per game avg',
+  earnings: 'Real career salary earned',
+  ebk_score: 'EBK composite score',
+}
+
+export const ALL_STAT_CATEGORIES: StatCategory[] = ['games_played', 'ppg', 'rpg', 'apg', 'earnings', 'ebk_score']
+
 export interface GameResult {
   game: number
   statMode: string
@@ -28,6 +60,8 @@ export interface Room {
   teamMode: TeamMode
   series: SeriesLength
   difficulty: Difficulty
+  /** Stat category chosen by the host — all games in the series use this stat */
+  statCategory: StatCategory
   source: 'online' | 'friends'
   status: 'waiting' | 'drafting' | 'result' | 'complete'
   draftOrder: ('host' | 'guest')[]
@@ -75,6 +109,8 @@ export function getRequiredPositions(teamMode: TeamMode): string[] {
   return [...starters, ...bench]
 }
 
-export function getStatModeForGame(gameNum: number): string {
+export function getStatModeForGame(gameNum: number, statCategory?: StatCategory | null): string {
+  // If a custom stat category is set, every game in the series uses it
+  if (statCategory) return statCategory
   return STAT_CYCLE[(gameNum - 1) % STAT_CYCLE.length]
 }

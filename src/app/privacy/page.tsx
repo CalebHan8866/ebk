@@ -8,7 +8,7 @@ export default function PrivacyPage() {
           <Link href="/" className="text-orange-400 hover:text-orange-300 text-sm">← Back</Link>
         </div>
         <h1 className="font-display text-4xl text-white leading-none mb-2">Privacy Policy</h1>
-        <p className="text-gray-500 text-sm mb-10">Last updated: October 2025</p>
+        <p className="text-gray-400 text-sm mb-10">Last updated: October 2025</p>
 
         <div className="space-y-8 text-gray-300 text-sm leading-relaxed">
 
@@ -89,7 +89,7 @@ export default function PrivacyPage() {
 
         </div>
 
-        <div className="mt-12 pt-8 border-t border-gray-800 text-gray-600 text-xs">
+        <div className="mt-12 pt-8 border-t border-gray-800 text-gray-400 text-xs">
           <Link href="/terms" className="text-orange-400 hover:text-orange-300 mr-4">Terms of Service</Link>
           <Link href="/" className="hover:text-gray-400">Back to EBK</Link>
         </div>

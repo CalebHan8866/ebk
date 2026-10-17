@@ -36,7 +36,7 @@ export default function ForgotPasswordPage() {
             style={{ textShadow: '0 0 60px rgba(249,115,22,0.3)' }}>
             EBK
           </h1>
-          <p className="text-[10px] font-bold tracking-[0.4em] text-gray-600 uppercase">Forgot Password</p>
+          <p className="text-[10px] font-bold tracking-[0.4em] text-gray-400 uppercase">Forgot Password</p>
         </div>
 
         <div className="card-surface p-8">
@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
           ) : (
             <>
               <h2 className="font-black text-white text-lg mb-1">Reset Password</h2>
-              <p className="text-gray-500 text-sm mb-6">Enter your email and we&apos;ll send you a reset link.</p>
+              <p className="text-gray-400 text-sm mb-6">Enter your email and we&apos;ll send you a reset link.</p>
               {error && (
                 <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 mb-5 text-sm">
                   {error}
@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
               )}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Email</label>
+                  <label className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">Email</label>
                   <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                     required placeholder="you@example.com" className="input-field" />
                 </div>
@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
                   {loading ? 'Sending…' : 'Send Reset Link'}
                 </button>
               </form>
-              <p className="text-center text-gray-600 text-sm mt-6">
+              <p className="text-center text-gray-400 text-sm mt-6">
                 <Link href="/login" className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
                   Back to Login
                 </Link>
