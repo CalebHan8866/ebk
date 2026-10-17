@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { getSocket } from '@/lib/socket'
 import { useAuth } from '@/context/AuthContext'
 import { BADGES } from '@/lib/accessories'
-import { type TeamMode, type SeriesLength, type Difficulty } from '@/types/game'
+import { type TeamMode, type SeriesLength, type Difficulty, type StatCategory, STAT_CATEGORY_LABELS, STAT_CATEGORY_DESC, ALL_STAT_CATEGORIES } from '@/types/game'
 
 type OnlineState = 'idle' | 'listing' | 'found'
 
@@ -19,6 +19,7 @@ interface GameListing {
   hostStreak: number
   teamMode: TeamMode
   series: SeriesLength
+  statCategory: StatCategory
 }
 
 interface MatchInfo {
@@ -32,6 +33,7 @@ interface MatchInfo {
   grudgeMatch: boolean
   proposedTeamMode: TeamMode
   proposedSeries: SeriesLength
+  proposedStatCategory?: StatCategory
   isHost: boolean
 }
 
@@ -82,7 +84,7 @@ function winPct(wins: number, losses: number) {
 // ── Main component ───────────────────────────────────────────────────────────
 
 export default function LobbyPage() {
-  const [mainTab, setMainTab] = useState<'online' | 'friends'>('online')
+  const [mainTab, setMainTab] = useState<'online' | 'friends' | null>(null)
   const { user, loading: authLoading } = useAuth()
 
   // Socket connection state
@@ -105,12 +107,14 @@ export default function LobbyPage() {
   // Create game options
   const [createTeamMode, setCreateTeamMode] = useState<TeamMode>('starter5')
   const [createSeries, setCreateSeries] = useState<SeriesLength>(1)
+  const [createStatCategory, setCreateStatCategory] = useState<StatCategory>('games_played')
 
   // Play with friends state
   const [friendsTab, setFriendsTab] = useState<'create' | 'join'>('create')
   const [teamMode, setTeamMode] = useState<TeamMode>('starter5')
   const [series, setSeries] = useState<SeriesLength>(1)
   const [difficulty, setDifficulty] = useState<Difficulty>('casual')
+  const [statCategory, setStatCategory] = useState<StatCategory>('games_played')
   const [joinCode, setJoinCode] = useState('')
   const [userName, setUserName] = useState(user?.username || '')
 
@@ -236,6 +240,7 @@ export default function LobbyPage() {
       userName: user.username,
       teamMode: createTeamMode,
       series: createSeries,
+      statCategory: createStatCategory,
     })
   }
 
@@ -288,7 +293,7 @@ export default function LobbyPage() {
     }, 8000)
     socket.once('room-created', onCreated)
     socket.once('room-error', onCreateError)
-    socket.emit('create-room', { teamMode, series, difficulty, userName: userName.trim() })
+    socket.emit('create-room', { teamMode, series, difficulty, statCategory, userName: userName.trim() })
   }
 
   function handleJoin() {
@@ -427,7 +432,11 @@ export default function LobbyPage() {
                 <span className="text-gray-700">·</span>
                 <span className="text-gray-400">{seriesLabel(matchInfo.proposedSeries)}</span>
                 <span className="text-gray-700">·</span>
-                <span className="text-yellow-400 font-black">EBK</span>
+                {matchInfo.proposedStatCategory ? (
+                  <span className="text-orange-400 font-black">{STAT_CATEGORY_LABELS[matchInfo.proposedStatCategory]}</span>
+                ) : (
+                  <span className="text-yellow-400 font-black">EBK</span>
+                )}
               </div>
             </div>
 
@@ -467,22 +476,32 @@ export default function LobbyPage() {
 
         {/* ── Page header ─────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="font-display text-6xl text-orange-500 leading-none tracking-wide">LOBBY</h1>
-            <p className="text-gray-400 text-[11px] tracking-[0.18em] uppercase mt-1.5">Elite Ball Knowledge</p>
+          <div className="flex items-center gap-3">
+            {mainTab && (
+              <button onClick={() => { setMainTab(null); setError('') }}
+                className="text-gray-400 hover:text-white transition-colors text-sm font-bold mr-1">
+                ← Back
+              </button>
+            )}
+            <div>
+              <h1 className="font-display text-6xl text-orange-500 leading-none tracking-wide">
+                {mainTab === 'online' ? 'ONLINE' : mainTab === 'friends' ? 'FRIENDS' : 'LOBBY'}
+              </h1>
+              <p className="text-gray-400 text-[11px] tracking-[0.18em] uppercase mt-1.5">Elite Ball Knowledge</p>
+            </div>
           </div>
 
           {/* User identity chip */}
           {!authLoading && user && (
             <Link href="/profile" className="flex items-center gap-3 group">
-              <div className="text-right">
+              <div className="text-right hidden sm:block">
                 <div className="text-white font-black text-sm group-hover:text-orange-400 transition-colors leading-tight">
                   {user.username}
                 </div>
                 <div className="text-gray-400 text-xs mt-0.5">
                   {user.wins}W {user.losses}L
                   {(user.wins + user.losses) > 0 && (
-                    <span className="text-gray-700 ml-1.5">{winPct(user.wins, user.losses)}</span>
+                    <span className="text-gray-500 ml-1.5">{winPct(user.wins, user.losses)}</span>
                   )}
                 </div>
               </div>
@@ -496,12 +515,6 @@ export default function LobbyPage() {
               </div>
             </Link>
           )}
-          {!authLoading && !user && (
-            <div className="flex gap-2">
-              <Link href="/login" className="btn-secondary py-2 px-5 text-xs">Sign In</Link>
-              <Link href="/register" className="btn-primary py-2 px-5 text-xs">Sign Up</Link>
-            </div>
-          )}
         </div>
 
         {/* Global error banner */}
@@ -512,25 +525,65 @@ export default function LobbyPage() {
           </div>
         )}
 
-        {/* ── Main tab bar ────────────────────────────────────────────────── */}
-        <div className="tab-pill mb-6" role="tablist" aria-label="Lobby mode">
-          <button
-            role="tab"
-            aria-selected={mainTab === 'online'}
-            onClick={() => { setMainTab('online'); setError('') }}
-            className={`tab-pill-item${mainTab === 'online' ? ' active' : ''}`}
-          >
-            Online Play
-          </button>
-          <button
-            role="tab"
-            aria-selected={mainTab === 'friends'}
-            onClick={() => { setMainTab('friends'); setError('') }}
-            className={`tab-pill-item${mainTab === 'friends' ? ' active' : ''}`}
-          >
-            Play with Friends
-          </button>
-        </div>
+        {/* ── Mode selector (shown when no mode selected) ─────────────────── */}
+        {!mainTab && (
+          <div className="space-y-3 mb-6">
+            {/* Top row: 3 primary modes */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <button
+                onClick={() => { setMainTab('online'); setError('') }}
+                className="group card-surface border border-white/[0.06] hover:border-orange-700/50 hover:bg-orange-950/10 rounded-2xl p-6 text-left transition-all hover:scale-[1.02] active:scale-[0.99]"
+              >
+                <div className="font-display text-4xl text-orange-500/60 group-hover:text-orange-500/80 leading-none mb-3 transition-colors">01</div>
+                <div className="font-black text-white text-base mb-1">Online Play</div>
+                <div className="text-gray-400 text-sm leading-relaxed">Match against a random opponent in real-time.</div>
+                <div className="mt-3 text-orange-500 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">Play →</div>
+              </button>
+              <button
+                onClick={() => { setMainTab('friends'); setError('') }}
+                className="group card-surface border border-white/[0.06] hover:border-orange-700/50 hover:bg-orange-950/10 rounded-2xl p-6 text-left transition-all hover:scale-[1.02] active:scale-[0.99]"
+              >
+                <div className="font-display text-4xl text-orange-500/60 group-hover:text-orange-500/80 leading-none mb-3 transition-colors">02</div>
+                <div className="font-black text-white text-base mb-1">Play with Friends</div>
+                <div className="text-gray-400 text-sm leading-relaxed">Create a private room and share the code.</div>
+                <div className="mt-3 text-orange-500 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">Create →</div>
+              </button>
+              <Link
+                href="/practice"
+                className="group card-surface border border-white/[0.06] hover:border-orange-700/50 hover:bg-orange-950/10 rounded-2xl p-6 text-left transition-all hover:scale-[1.02] active:scale-[0.99] block"
+              >
+                <div className="font-display text-4xl text-orange-500/60 group-hover:text-orange-500/80 leading-none mb-3 transition-colors">03</div>
+                <div className="font-black text-white text-base mb-1">Practice</div>
+                <div className="text-gray-400 text-sm leading-relaxed">Draft solo with no timer. Learn the player pool.</div>
+                <div className="mt-3 text-orange-500 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">Practice →</div>
+              </Link>
+            </div>
+            {/* Bottom row: 2 bonus modes */}
+            <div className="grid grid-cols-2 gap-3">
+              <Link
+                href="/higher-lower"
+                className="group card-surface border border-white/[0.06] hover:border-blue-700/50 hover:bg-blue-950/10 rounded-2xl p-6 text-left transition-all hover:scale-[1.02] active:scale-[0.99] block"
+              >
+                <div className="font-display text-4xl text-blue-500/60 group-hover:text-blue-400/80 leading-none mb-3 transition-colors">04</div>
+                <div className="font-black text-white text-base mb-1">Higher / Lower</div>
+                <div className="text-gray-400 text-sm leading-relaxed">Solo streak game. Guess the EBK score.</div>
+                <div className="mt-3 text-blue-400 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">Play →</div>
+              </Link>
+              <Link
+                href="/auction"
+                className="group card-surface border border-orange-600/30 hover:border-orange-500/60 bg-orange-950/10 rounded-2xl p-6 text-left transition-all hover:scale-[1.02] active:scale-[0.99] block"
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="font-display text-4xl text-orange-500/60 group-hover:text-orange-500/80 leading-none transition-colors">05</div>
+                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-orange-600 text-white tracking-widest">NEW</span>
+                </div>
+                <div className="font-black text-white text-base mb-1">War Room</div>
+                <div className="text-gray-400 text-sm leading-relaxed">Live salary-cap auction vs 2–6 GMs.</div>
+                <div className="mt-3 text-orange-500 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">Enter →</div>
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* ── ONLINE MODE ─────────────────────────────────────────────────── */}
         {mainTab === 'online' && (
@@ -551,16 +604,15 @@ export default function LobbyPage() {
               </div>
             )}
 
-            {/* Login gate */}
+            {/* Sign-in prompt for guests */}
             {!authLoading && !user && (
-              <div className="card-surface rounded-2xl px-8 py-14 text-center max-w-md mx-auto">
-                <div className="font-display text-4xl text-white leading-none mb-3">SIGN IN TO PLAY</div>
-                <p className="text-gray-400 text-sm mb-7 leading-relaxed">
-                  Create a free account to track your record,<br />earn badges, and compete on the leaderboard.
+              <div className="card-surface rounded-2xl px-6 py-5 mb-4 flex items-center justify-between gap-4 border border-orange-900/30">
+                <p className="text-gray-400 text-sm">
+                  <span className="text-white font-bold">Sign in</span> to post games, track your record, and earn badges.
                 </p>
-                <div className="flex gap-3 justify-center">
-                  <Link href="/login" className="btn-primary px-8">Sign In</Link>
-                  <Link href="/register" className="btn-secondary px-8">Sign Up</Link>
+                <div className="flex gap-2 shrink-0">
+                  <Link href="/login" className="btn-secondary py-1.5 px-4 text-xs">Sign In</Link>
+                  <Link href="/register" className="btn-primary py-1.5 px-4 text-xs">Sign Up</Link>
                 </div>
               </div>
             )}
@@ -622,6 +674,29 @@ export default function LobbyPage() {
                       </div>
                     </div>
 
+                    {/* Stat category selector */}
+                    <div>
+                      <div className="text-label mb-2">Stat Category</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {ALL_STAT_CATEGORIES.map(cat => (
+                          <button
+                            key={cat}
+                            onClick={() => setCreateStatCategory(cat)}
+                            className={`rounded-xl px-3 py-2.5 text-left border transition-all ${
+                              createStatCategory === cat
+                                ? 'border-orange-500/60 bg-orange-600/10'
+                                : 'border-white/[0.05] bg-white/[0.02] hover:border-white/[0.12]'
+                            }`}
+                          >
+                            <div className={`font-black text-sm ${createStatCategory === cat ? 'text-orange-400' : 'text-white'}`}>
+                              {STAT_CATEGORY_LABELS[cat]}
+                            </div>
+                            <div className="text-gray-400 text-[10px] mt-0.5 leading-tight">{STAT_CATEGORY_DESC[cat]}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Error */}
                     {listingError && (
                       <div className="bg-red-900/20 border border-red-500/30 text-red-400 rounded-xl px-3 py-2 text-xs text-center">
@@ -661,6 +736,10 @@ export default function LobbyPage() {
                       <div className="flex items-center justify-between px-4 py-2.5">
                         <span className="text-gray-400 text-xs">Series</span>
                         <span className="text-gray-300 text-sm">{seriesLabel(createSeries)}</span>
+                      </div>
+                      <div className="flex items-center justify-between px-4 py-2.5">
+                        <span className="text-gray-400 text-xs">Stat</span>
+                        <span className="text-orange-400 font-black text-sm">{STAT_CATEGORY_LABELS[createStatCategory]}</span>
                       </div>
                     </div>
 
@@ -766,6 +845,7 @@ export default function LobbyPage() {
                                 {MODE_LABEL[l.teamMode]}
                               </span>
                               <span className="text-gray-400 text-[11px]">{seriesLabel(l.series)}</span>
+                              <span className="text-orange-400 text-[10px] font-black">{STAT_CATEGORY_LABELS[l.statCategory] ?? 'Games Played'}</span>
                             </div>
                             <button
                               onClick={() => handleJoinListing(l.code)}
@@ -908,6 +988,29 @@ export default function LobbyPage() {
                         </div>
                         <div className="text-gray-400 text-xs mt-0.5">Blind picks</div>
                       </button>
+                    </div>
+                  </div>
+
+                  {/* Stat category selector */}
+                  <div>
+                    <div className="text-label mb-2">Stat Category</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {ALL_STAT_CATEGORIES.map(cat => (
+                        <button
+                          key={cat}
+                          onClick={() => setStatCategory(cat)}
+                          className={`rounded-xl px-3 py-2.5 text-left border transition-all ${
+                            statCategory === cat
+                              ? 'border-orange-500/60 bg-orange-600/10'
+                              : 'border-white/[0.05] bg-white/[0.02] hover:border-white/[0.12]'
+                          }`}
+                        >
+                          <div className={`font-black text-sm ${statCategory === cat ? 'text-orange-400' : 'text-white'}`}>
+                            {STAT_CATEGORY_LABELS[cat]}
+                          </div>
+                          <div className="text-gray-400 text-[10px] mt-0.5 leading-tight">{STAT_CATEGORY_DESC[cat]}</div>
+                        </button>
+                      ))}
                     </div>
                   </div>
 

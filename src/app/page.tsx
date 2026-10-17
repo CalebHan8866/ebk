@@ -145,11 +145,6 @@ export default function Home() {
               className="btn-primary text-sm uppercase tracking-widest px-8 py-4">
               Play Now — Free
             </Link>
-            <Link href="/auction"
-              className="flex items-center gap-2 bg-white/[0.04] hover:bg-white/[0.07] border border-orange-800/40 hover:border-orange-600/60 text-orange-300 font-black text-sm px-6 py-3.5 rounded-xl transition-all">
-              <span>⚡</span>
-              <span>War Room</span>
-            </Link>
           </div>
 
           {/* Micro social proof below CTA */}
