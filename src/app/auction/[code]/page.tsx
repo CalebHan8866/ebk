@@ -706,7 +706,7 @@ export default function AuctionRoomPage() {
                             <span>{player.firstName[0]}. {player.lastName}</span>
                           </div>
                           {canSteal && p.socketId !== mySocketId && (
-                            <div className="absolute bottom-full left-0 mb-1 bg-[#0d0d0d] border border-yellow-500/30 rounded-lg px-2 py-1 text-xs text-yellow-300 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10 transition-opacity">
+                            <div className="absolute bottom-full left-0 mb-1 card-surface border border-yellow-500/30 rounded-lg px-2 py-1 text-xs text-yellow-300 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10 transition-opacity">
                               Steal for ${Math.ceil(player.paidPrice * 1.5)}M
                             </div>
                           )}

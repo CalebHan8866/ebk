@@ -9,6 +9,7 @@ const cache = new Map<string, CacheEntry>()
 const CACHE_TTL = 30 * 1000 // 30 seconds
 
 export async function GET(request: NextRequest) {
+  try {
   const now = Date.now()
 
   // Check if the request includes a logged-in user
@@ -72,4 +73,7 @@ export async function GET(request: NextRequest) {
   })
   cache.set(cacheKey, { data: result, at: now })
   return NextResponse.json(result)
+  } catch {
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  }
 }
