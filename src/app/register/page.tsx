@@ -23,6 +23,25 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
+  const [resendMsg, setResendMsg] = useState('')
+
+  async function handleResend() {
+    setResendLoading(true)
+    setResendMsg('')
+    try {
+      await fetch('/api/auth/resend-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      setResendMsg('New link sent — check your inbox.')
+    } catch {
+      setResendMsg('Could not send. Try again.')
+    } finally {
+      setResendLoading(false)
+    }
+  }
 
   // Touched state for inline validation
   const [touchedUsername, setTouchedUsername] = useState(false)
@@ -81,10 +100,14 @@ export default function RegisterPage() {
             We sent a verification link to
           </p>
           <p className="text-orange-400 font-semibold text-sm mb-6">{email}</p>
-          {process.env.NODE_ENV === 'development' && (
-            <p className="text-gray-400 text-xs mb-6">
-              Dev mode: link is in the <strong className="text-gray-300">server terminal</strong>.
-            </p>
+          <p className="text-gray-500 text-xs mb-6">Check your spam folder if you don&apos;t see it within a minute.</p>
+          {resendMsg ? (
+            <p className="text-green-400 text-xs mb-4">{resendMsg}</p>
+          ) : (
+            <button onClick={handleResend} disabled={resendLoading}
+              className="text-gray-500 hover:text-gray-300 text-xs transition-colors mb-4 block mx-auto">
+              {resendLoading ? 'Sending...' : 'Didn\'t get it? Resend email'}
+            </button>
           )}
           <Link href="/login" className="text-orange-400 hover:text-orange-300 font-semibold text-sm transition-colors">
             Go to Login →

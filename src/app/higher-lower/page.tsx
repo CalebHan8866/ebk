@@ -17,7 +17,7 @@ interface Player {
   ebkScore: number
 }
 
-type GameScreen = 'loading' | 'playing' | 'revealing' | 'gameover' | 'complete'
+type GameScreen = 'loading' | 'playing' | 'revealing' | 'gameover' | 'complete' | 'error'
 type ClaimStatus = 'pending' | 'unlocked' | 'already' | 'failed' | null
 
 function seededShuffle<T>(arr: T[], seed: number): T[] {
@@ -74,7 +74,7 @@ export default function HigherLowerPage() {
         setSequence(seededShuffle(byGames, seed).slice(0, TOTAL_PLAYERS))
         setScreen('playing')
       })
-      .catch(() => { if (isMounted.current) setScreen('playing') })
+      .catch(() => { if (isMounted.current) setScreen('error') })
   }, [])
 
   async function tryUnlock(milestone: string, currentStreak: number) {
@@ -187,6 +187,17 @@ export default function HigherLowerPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+      </div>
+    )
+  }
+
+  if (screen === 'error') {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="text-center">
+          <p className="text-gray-400 mb-4">Couldn&apos;t load players. Check your connection and try again.</p>
+          <button onClick={() => window.location.reload()} className="btn-primary">Retry</button>
+        </div>
       </div>
     )
   }
@@ -363,19 +374,9 @@ export default function HigherLowerPage() {
           </div>
         </div>
 
-        {/* Question — the most important text on the screen */}
+        {/* Challenger label — self-intuitive, no question text needed */}
         <div className="text-center mb-5">
-          <p className="text-gray-400 text-sm leading-relaxed">
-            Does{' '}
-            <span className="text-white font-black text-base">{challenger.firstName} {challenger.lastName}</span>
-            {' '}have a{' '}
-            <span className="text-orange-400 font-black">higher</span>
-            {' '}or{' '}
-            <span className="text-blue-400 font-black">lower</span>
-            {' '}EBK score than{' '}
-            <span className="text-white font-black text-base">{current.firstName} {current.lastName}</span>?
-          </p>
-          <p className="text-gray-700 text-[11px] mt-1">Lower EBK = bigger career · Higher EBK = unknown gem</p>
+          <p className="text-gray-600 text-[11px] uppercase tracking-widest">Challenger</p>
         </div>
 
         {/* Player cards */}

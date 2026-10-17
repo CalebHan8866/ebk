@@ -1,6 +1,6 @@
 'use client'
-import { Suspense, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 
@@ -12,8 +12,6 @@ function LoginForm() {
   const [touchedEmail, setTouchedEmail] = useState(false)
   const [touchedPassword, setTouchedPassword] = useState(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const justVerified = searchParams.get('verified') === '1'
   const { setUser } = useAuth()
 
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -45,14 +43,6 @@ function LoginForm() {
 
   return (
     <div className="card-surface p-8">
-      {justVerified && (
-        <div className="bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl p-3 mb-6 text-sm flex items-center gap-2">
-          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-          </svg>
-          Email verified — you can now log in.
-        </div>
-      )}
       {error && (
         <div id="login-error" role="alert" className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 mb-6 text-sm">
           {error}
@@ -147,9 +137,7 @@ export default function LoginPage() {
           </h1>
           <p className="text-[10px] font-bold tracking-[0.4em] text-gray-400 uppercase">Welcome Back</p>
         </div>
-        <Suspense fallback={null}>
-          <LoginForm />
-        </Suspense>
+        <LoginForm />
       </div>
     </div>
   )

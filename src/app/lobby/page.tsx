@@ -1026,33 +1026,6 @@ export default function LobbyPage() {
           </div>
         )}
 
-        {/* ── Other game modes ────────────────────────────────────────────── */}
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Link href="/higher-lower"
-            className="card-surface rounded-xl px-5 py-4 flex items-center justify-between group transition-all hover:border-white/[0.12]">
-            <div>
-              <div className="text-white font-black text-sm group-hover:text-orange-400 transition-colors">Higher / Lower</div>
-              <div className="text-gray-400 text-xs mt-0.5">Solo — beat your streak</div>
-            </div>
-            <div className="text-gray-400 group-hover:text-gray-300 transition-colors text-sm">→</div>
-          </Link>
-          <Link href="/auction"
-            className="rounded-xl px-5 py-4 flex items-center justify-between border border-orange-900/40 bg-orange-950/20 hover:border-orange-700/50 hover:bg-orange-950/30 transition-all group">
-            <div>
-              <div className="text-orange-300 font-black text-sm">War Room</div>
-              <div className="text-gray-400 text-xs mt-0.5">Multiplayer salary auction</div>
-            </div>
-            <span className="text-[10px] font-black text-orange-600 bg-orange-900/40 border border-orange-800/50 px-2 py-0.5 rounded">NEW</span>
-          </Link>
-          <Link href="/practice"
-            className="card-surface rounded-xl px-5 py-4 flex items-center justify-between group transition-all hover:border-white/[0.12]">
-            <div>
-              <div className="text-white font-black text-sm group-hover:text-orange-400 transition-colors">Practice</div>
-              <div className="text-gray-400 text-xs mt-0.5">Solo draft, no pressure</div>
-            </div>
-            <div className="text-gray-400 group-hover:text-gray-300 transition-colors text-sm">→</div>
-          </Link>
-        </div>
 
       </div>
     </div>
