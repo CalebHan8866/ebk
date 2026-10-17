@@ -87,6 +87,9 @@ export default function LobbyPage() {
   const [mainTab, setMainTab] = useState<'online' | 'friends'>('online')
   const { user, loading: authLoading } = useAuth()
 
+  // Socket connection state
+  const [socketFailed, setSocketFailed] = useState(false)
+
   // Online matchmaking state
   const [onlineState, setOnlineState] = useState<OnlineState>('idle')
   const [listings, setListings] = useState<GameListing[]>([])
@@ -190,6 +193,16 @@ export default function LobbyPage() {
       selfDeclinedRef.current = false
     }
 
+    const handleConnectError = () => {
+      setSocketFailed(true)
+    }
+    const handleReconnect = () => {
+      setSocketFailed(false)
+      socket.emit('get-listings')
+    }
+
+    socket.on('connect', handleReconnect)
+    socket.on('connect_error', handleConnectError)
     socket.on('listings-updated', handleListingsUpdated)
     socket.on('listing-created', handleListingCreated)
     socket.on('listing-expired', handleListingExpired)
@@ -201,6 +214,8 @@ export default function LobbyPage() {
     socket.emit('get-listings')
 
     return () => {
+      socket.off('connect', handleReconnect)
+      socket.off('connect_error', handleConnectError)
       socket.off('listings-updated', handleListingsUpdated)
       socket.off('listing-created', handleListingCreated)
       socket.off('listing-expired', handleListingExpired)
@@ -319,7 +334,7 @@ export default function LobbyPage() {
           {matchInfo.grudgeMatch && (
             <div className="mb-4 rounded-xl py-2.5 px-4 text-center border border-red-500/30 bg-red-900/20">
               <span className="text-red-400 font-black text-sm tracking-widest uppercase">Grudge Match</span>
-              <span className="text-gray-500 text-xs ml-2">You&apos;ve played before</span>
+              <span className="text-gray-400 text-xs ml-2">You&apos;ve played before</span>
             </div>
           )}
 
@@ -339,7 +354,7 @@ export default function LobbyPage() {
                   />
                 </div>
                 <div className={`text-xs font-black mt-1.5 tabular-nums ${
-                  countdown <= 10 ? 'text-red-400' : countdown <= 20 ? 'text-yellow-400' : 'text-gray-500'
+                  countdown <= 10 ? 'text-red-400' : countdown <= 20 ? 'text-yellow-400' : 'text-gray-400'
                 }`}>
                   {countdown > 0 ? `${countdown}s to accept` : 'Processing...'}
                 </div>
@@ -362,7 +377,7 @@ export default function LobbyPage() {
                   </div>
                 )}
                 {user && (
-                  <div className="text-gray-500 text-xs mt-1">
+                  <div className="text-gray-400 text-xs mt-1">
                     {user.wins}W {user.losses}L
                     <span className="text-gray-700 ml-1">· {winPct(user.wins, user.losses)}</span>
                   </div>
@@ -393,7 +408,7 @@ export default function LobbyPage() {
                 <div className="flex items-center justify-center gap-1.5 mt-1 flex-wrap">
                   <BadgeChip badgeId={matchInfo.opponentBadge} />
                 </div>
-                <div className="text-gray-500 text-xs mt-1">
+                <div className="text-gray-400 text-xs mt-1">
                   {matchInfo.opponentRecord.wins}W {matchInfo.opponentRecord.losses}L
                   <span className="text-gray-700 ml-1">· {winPct(matchInfo.opponentRecord.wins, matchInfo.opponentRecord.losses)}</span>
                 </div>
@@ -437,7 +452,7 @@ export default function LobbyPage() {
             </div>
 
             {(myReady || oppReady) && !(myReady && oppReady) && (
-              <p className="text-center text-gray-600 text-xs pb-4">
+              <p className="text-center text-gray-400 text-xs pb-4">
                 Waiting for {myReady ? matchInfo.opponentName : displayName} to accept...
               </p>
             )}
@@ -456,7 +471,7 @@ export default function LobbyPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="font-display text-6xl text-orange-500 leading-none tracking-wide">LOBBY</h1>
-            <p className="text-gray-600 text-[11px] tracking-[0.18em] uppercase mt-1.5">Elite Ball Knowledge</p>
+            <p className="text-gray-400 text-[11px] tracking-[0.18em] uppercase mt-1.5">Elite Ball Knowledge</p>
           </div>
 
           {/* User identity chip */}
@@ -466,7 +481,7 @@ export default function LobbyPage() {
                 <div className="text-white font-black text-sm group-hover:text-orange-400 transition-colors leading-tight">
                   {user.username}
                 </div>
-                <div className="text-gray-500 text-xs mt-0.5">
+                <div className="text-gray-400 text-xs mt-0.5">
                   {user.wins}W {user.losses}L
                   {(user.wins + user.losses) > 0 && (
                     <span className="text-gray-700 ml-1.5">{winPct(user.wins, user.losses)}</span>
@@ -530,7 +545,7 @@ export default function LobbyPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-black text-sm mb-0.5">Welcome to the Lobby</p>
-                  <p className="text-gray-500 text-xs leading-relaxed">
+                  <p className="text-gray-400 text-xs leading-relaxed">
                     Post a game to get matched with an opponent, or join an open game from the browser on the right.
                     Draft obscure NBA players — lower EBK score wins.
                   </p>
@@ -542,7 +557,7 @@ export default function LobbyPage() {
             {!authLoading && !user && (
               <div className="card-surface rounded-2xl px-8 py-14 text-center max-w-md mx-auto">
                 <div className="font-display text-4xl text-white leading-none mb-3">SIGN IN TO PLAY</div>
-                <p className="text-gray-500 text-sm mb-7 leading-relaxed">
+                <p className="text-gray-400 text-sm mb-7 leading-relaxed">
                   Create a free account to track your record,<br />earn badges, and compete on the leaderboard.
                 </p>
                 <div className="flex gap-3 justify-center">
@@ -579,7 +594,7 @@ export default function LobbyPage() {
                               <div className={`font-black text-sm ${createTeamMode === val ? 'text-orange-400' : 'text-white'}`}>
                                 {MODE_LABEL[val]}
                               </div>
-                              <div className="text-gray-600 text-xs">{MODE_DESC[val]}</div>
+                              <div className="text-gray-400 text-xs">{MODE_DESC[val]}</div>
                             </div>
                             <div className={`w-4 h-4 rounded-full border-2 transition-all shrink-0 ${
                               createTeamMode === val ? 'border-orange-500 bg-orange-500' : 'border-gray-700'
@@ -635,23 +650,23 @@ export default function LobbyPage() {
                       <Avatar name={user.username} />
                       <div>
                         <div className="text-white font-black">{user.username}</div>
-                        <div className="text-gray-500 text-xs">{user.wins}W {user.losses}L · {winPct(user.wins, user.losses)}</div>
+                        <div className="text-gray-400 text-xs">{user.wins}W {user.losses}L · {winPct(user.wins, user.losses)}</div>
                       </div>
                     </div>
 
                     {/* Game details */}
                     <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl divide-y divide-white/[0.04]">
                       <div className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-gray-600 text-xs">Format</span>
+                        <span className="text-gray-400 text-xs">Format</span>
                         <span className="text-white font-black text-sm">{MODE_LABEL[createTeamMode]}</span>
                       </div>
                       <div className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-gray-600 text-xs">Series</span>
+                        <span className="text-gray-400 text-xs">Series</span>
                         <span className="text-gray-300 text-sm">{seriesLabel(createSeries)}</span>
                       </div>
                     </div>
 
-                    <p className="text-gray-600 text-xs text-center leading-relaxed">
+                    <p className="text-gray-400 text-xs text-center leading-relaxed">
                       Your game is visible to all players.<br />Waiting for someone to join...
                     </p>
 
@@ -673,7 +688,7 @@ export default function LobbyPage() {
                   <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.05] shrink-0">
                     <div>
                       <div className="text-white font-black text-sm">Open Games</div>
-                      <div className="text-gray-600 text-xs mt-0.5">
+                      <div className="text-gray-400 text-xs mt-0.5">
                         {listings.length > 0
                           ? `${listings.length} game${listings.length !== 1 ? 's' : ''} waiting`
                           : 'No open games right now'}
@@ -681,13 +696,26 @@ export default function LobbyPage() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <div className="live-dot" />
-                      <span className="text-gray-600 text-xs">Live</span>
+                      <span className="text-gray-400 text-xs">Live</span>
                     </div>
                   </div>
 
                   {/* Listings */}
                   <div className="flex-1 overflow-y-auto">
-                    {!listingsLoaded ? (
+                    {socketFailed && !listingsLoaded ? (
+                      /* Socket failed to connect — show a clear error instead of infinite shimmer */
+                      <div className="empty-state">
+                        <div className="empty-state-icon">⚡</div>
+                        <div className="empty-state-title">Can&apos;t reach server</div>
+                        <div className="empty-state-body">Check your connection and refresh the page</div>
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="btn-secondary py-2 px-5 text-xs mt-4"
+                        >
+                          Refresh
+                        </button>
+                      </div>
+                    ) : !listingsLoaded ? (
                       /* Skeleton shimmer while waiting for first socket event */
                       <div className="divide-y divide-white/[0.04] px-5">
                         {[0,1,2].map(i => (
@@ -728,7 +756,7 @@ export default function LobbyPage() {
                                   </span>
                                 )}
                               </div>
-                              <div className="text-gray-500 text-xs">
+                              <div className="text-gray-400 text-xs">
                                 {l.hostRecord.wins}W {l.hostRecord.losses}L
                                 <span className="text-gray-700 mx-1">·</span>
                                 <span className="text-gray-400">{winPct(l.hostRecord.wins, l.hostRecord.losses)}</span>
@@ -739,7 +767,7 @@ export default function LobbyPage() {
                               <span className="text-xs font-black text-gray-200 bg-white/[0.05] border border-white/[0.08] rounded-lg px-2.5 py-1 leading-none">
                                 {MODE_LABEL[l.teamMode]}
                               </span>
-                              <span className="text-gray-600 text-[11px]">{seriesLabel(l.series)}</span>
+                              <span className="text-gray-400 text-[11px]">{seriesLabel(l.series)}</span>
                             </div>
                             <button
                               onClick={() => handleJoinListing(l.code)}
@@ -756,7 +784,7 @@ export default function LobbyPage() {
 
                   {/* Footer row */}
                   <div className="px-5 py-3 border-t border-white/[0.05] flex items-center justify-between shrink-0">
-                    <span className="text-gray-600 text-xs">
+                    <span className="text-gray-400 text-xs">
                       Playing as <span className="text-gray-400 font-bold">{user.username}</span>
                     </span>
                     <Link href="/history" className="text-orange-500 hover:text-orange-400 text-xs font-bold transition-colors">
@@ -822,7 +850,7 @@ export default function LobbyPage() {
                             <div className={`font-black text-sm ${teamMode === val ? 'text-orange-400' : 'text-white'}`}>
                               {MODE_LABEL[val]}
                             </div>
-                            <div className="text-gray-600 text-xs">{MODE_DESC[val]}</div>
+                            <div className="text-gray-400 text-xs">{MODE_DESC[val]}</div>
                           </div>
                           <div className={`w-4 h-4 rounded-full border-2 transition-all shrink-0 ${
                             teamMode === val ? 'border-orange-500 bg-orange-500' : 'border-gray-700'
@@ -867,7 +895,7 @@ export default function LobbyPage() {
                         <div className={`font-black text-sm ${difficulty === 'casual' ? 'text-orange-400' : 'text-white'}`}>
                           Casual
                         </div>
-                        <div className="text-gray-600 text-xs mt-0.5">Stats shown</div>
+                        <div className="text-gray-400 text-xs mt-0.5">Stats shown</div>
                       </button>
                       <button
                         onClick={() => setDifficulty('ebk')}
@@ -880,7 +908,7 @@ export default function LobbyPage() {
                         <div className={`font-black text-sm ${difficulty === 'ebk' ? 'text-yellow-400' : 'text-white'}`}>
                           EBK Mode
                         </div>
-                        <div className="text-gray-600 text-xs mt-0.5">Blind picks</div>
+                        <div className="text-gray-400 text-xs mt-0.5">Blind picks</div>
                       </button>
                     </div>
                   </div>
@@ -918,15 +946,15 @@ export default function LobbyPage() {
             className="card-surface rounded-xl px-5 py-4 flex items-center justify-between group transition-all hover:border-white/[0.12]">
             <div>
               <div className="text-white font-black text-sm group-hover:text-orange-400 transition-colors">Higher / Lower</div>
-              <div className="text-gray-600 text-xs mt-0.5">Solo — beat your streak</div>
+              <div className="text-gray-400 text-xs mt-0.5">Solo — beat your streak</div>
             </div>
-            <div className="text-gray-600 group-hover:text-gray-300 transition-colors text-sm">→</div>
+            <div className="text-gray-400 group-hover:text-gray-300 transition-colors text-sm">→</div>
           </Link>
           <Link href="/auction"
             className="rounded-xl px-5 py-4 flex items-center justify-between border border-orange-900/40 bg-orange-950/20 hover:border-orange-700/50 hover:bg-orange-950/30 transition-all group">
             <div>
               <div className="text-orange-300 font-black text-sm">War Room</div>
-              <div className="text-gray-600 text-xs mt-0.5">Multiplayer salary auction</div>
+              <div className="text-gray-400 text-xs mt-0.5">Multiplayer salary auction</div>
             </div>
             <span className="text-[10px] font-black text-orange-600 bg-orange-900/40 border border-orange-800/50 px-2 py-0.5 rounded">NEW</span>
           </Link>
@@ -934,9 +962,9 @@ export default function LobbyPage() {
             className="card-surface rounded-xl px-5 py-4 flex items-center justify-between group transition-all hover:border-white/[0.12]">
             <div>
               <div className="text-white font-black text-sm group-hover:text-orange-400 transition-colors">Practice</div>
-              <div className="text-gray-600 text-xs mt-0.5">Solo draft, no pressure</div>
+              <div className="text-gray-400 text-xs mt-0.5">Solo draft, no pressure</div>
             </div>
-            <div className="text-gray-600 group-hover:text-gray-300 transition-colors text-sm">→</div>
+            <div className="text-gray-400 group-hover:text-gray-300 transition-colors text-sm">→</div>
           </Link>
         </div>
 

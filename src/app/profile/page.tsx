@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { BADGES, EMOTES, MILESTONES } from '@/lib/accessories'
 import { useAuth } from '@/context/AuthContext'
 
-type ProfileTab = 'overview' | 'stats' | 'badges' | 'milestones'
+type ProfileTab = 'overview' | 'stats' | 'badges' | 'milestones' | 'settings'
 
 interface UserProfile {
   id: string
@@ -36,6 +36,108 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<ProfileTab>('overview')
   const router = useRouter()
   const { setUser: setAuthUser, user: authUser } = useAuth()
+
+  // Settings tab state
+  const [newUsername, setNewUsername] = useState('')
+  const [usernameMsg, setUsernameMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [usernameLoading, setUsernameLoading] = useState(false)
+
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordMsg, setPasswordMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [passwordLoading, setPasswordLoading] = useState(false)
+
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleteMsg, setDeleteMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [showDeleteForm, setShowDeleteForm] = useState(false)
+
+  async function handleUsernameChange(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newUsername.trim()) return
+    setUsernameLoading(true)
+    setUsernameMsg(null)
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: newUsername.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setUsernameMsg({ ok: false, text: data.error || 'Failed to update username' })
+      } else {
+        setUsernameMsg({ ok: true, text: 'Username updated!' })
+        setUser(u => u ? { ...u, username: data.user.username } : u)
+        if (authUser) setAuthUser({ ...authUser, username: data.user.username })
+        setNewUsername('')
+      }
+    } catch {
+      setUsernameMsg({ ok: false, text: 'Something went wrong' })
+    } finally {
+      setUsernameLoading(false)
+    }
+  }
+
+  async function handlePasswordChange(e: React.FormEvent) {
+    e.preventDefault()
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg({ ok: false, text: 'New passwords do not match' })
+      return
+    }
+    setPasswordLoading(true)
+    setPasswordMsg(null)
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setPasswordMsg({ ok: false, text: data.error || 'Failed to change password' })
+      } else {
+        setPasswordMsg({ ok: true, text: 'Password changed successfully.' })
+        setCurrentPassword('')
+        setNewPassword('')
+        setConfirmPassword('')
+      }
+    } catch {
+      setPasswordMsg({ ok: false, text: 'Something went wrong' })
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
+
+  async function handleDeleteAccount(e: React.FormEvent) {
+    e.preventDefault()
+    if (deleteConfirmText !== 'DELETE') {
+      setDeleteMsg({ ok: false, text: 'Type DELETE to confirm' })
+      return
+    }
+    setDeleteLoading(true)
+    setDeleteMsg(null)
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePassword }),
+      })
+      if (res.status === 204) {
+        setAuthUser(null)
+        router.push('/register')
+      } else {
+        const data = await res.json()
+        setDeleteMsg({ ok: false, text: data.error || 'Failed to delete account' })
+      }
+    } catch {
+      setDeleteMsg({ ok: false, text: 'Something went wrong' })
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -180,6 +282,7 @@ export default function ProfilePage() {
             ['stats',      'Stats'],
             ['badges',     'Badges'],
             ['milestones', 'Milestones'],
+            ['settings',   'Settings'],
           ] as [ProfileTab, string][]).map(([key, label]) => (
             <button
               key={key}
@@ -598,6 +701,167 @@ export default function ProfilePage() {
               Play Now
             </Link>
           </div>
+          </>}
+
+          {/* ── Settings tab ── */}
+          {activeTab === 'settings' && <>
+
+          {/* Change username */}
+          <div className="card-surface p-6">
+            <h2 className="font-display text-2xl text-white tracking-wider leading-none mb-1">Change Username</h2>
+            <p className="text-gray-500 text-xs mb-5">Letters, numbers, and underscores only · 3–20 characters</p>
+            <form onSubmit={handleUsernameChange} className="space-y-4">
+              <div>
+                <label htmlFor="new-username" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">
+                  New Username
+                </label>
+                <input
+                  id="new-username"
+                  type="text"
+                  value={newUsername}
+                  onChange={e => setNewUsername(e.target.value)}
+                  minLength={3}
+                  maxLength={20}
+                  placeholder={user?.username}
+                  className="input-field"
+                />
+              </div>
+              {usernameMsg && (
+                <div className={`rounded-xl px-4 py-3 text-sm ${usernameMsg.ok ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
+                  {usernameMsg.text}
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={usernameLoading || !newUsername.trim()}
+                className="btn-primary w-full text-sm uppercase disabled:opacity-50"
+              >
+                {usernameLoading ? 'Saving…' : 'Update Username'}
+              </button>
+            </form>
+          </div>
+
+          {/* Change password */}
+          <div className="card-surface p-6">
+            <h2 className="font-display text-2xl text-white tracking-wider leading-none mb-1">Change Password</h2>
+            <p className="text-gray-500 text-xs mb-5">Minimum 6 characters</p>
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              <div>
+                <label htmlFor="current-password" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Current Password</label>
+                <input
+                  id="current-password"
+                  type="password"
+                  value={currentPassword}
+                  onChange={e => setCurrentPassword(e.target.value)}
+                  required
+                  className="input-field"
+                  placeholder="••••••••"
+                />
+              </div>
+              <div>
+                <label htmlFor="new-password" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">New Password</label>
+                <input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="input-field"
+                  placeholder="Min 6 characters"
+                />
+              </div>
+              <div>
+                <label htmlFor="confirm-password" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Confirm New Password</label>
+                <input
+                  id="confirm-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="input-field"
+                  placeholder="Repeat new password"
+                />
+              </div>
+              {passwordMsg && (
+                <div className={`rounded-xl px-4 py-3 text-sm ${passwordMsg.ok ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
+                  {passwordMsg.text}
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={passwordLoading || !currentPassword || !newPassword || !confirmPassword}
+                className="btn-primary w-full text-sm uppercase disabled:opacity-50"
+              >
+                {passwordLoading ? 'Saving…' : 'Change Password'}
+              </button>
+            </form>
+          </div>
+
+          {/* Delete account */}
+          <div className="card-surface p-6 border border-red-900/30">
+            <h2 className="font-display text-2xl text-red-400 tracking-wider leading-none mb-1">Danger Zone</h2>
+            <p className="text-gray-500 text-xs mb-5">Permanently delete your account and all game history. This cannot be undone.</p>
+            {!showDeleteForm ? (
+              <button
+                onClick={() => setShowDeleteForm(true)}
+                className="w-full py-3 rounded-xl border border-red-800/50 text-red-400 text-sm font-black uppercase tracking-wider hover:bg-red-950/30 transition-colors"
+              >
+                Delete My Account
+              </button>
+            ) : (
+              <form onSubmit={handleDeleteAccount} className="space-y-4">
+                <div>
+                  <label htmlFor="delete-password" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Confirm Password</label>
+                  <input
+                    id="delete-password"
+                    type="password"
+                    value={deletePassword}
+                    onChange={e => setDeletePassword(e.target.value)}
+                    required
+                    className="input-field border-red-900/40 focus:border-red-700/60"
+                    placeholder="Your current password"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="delete-confirm-text" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">
+                    Type <span className="text-red-400 font-black">DELETE</span> to confirm
+                  </label>
+                  <input
+                    id="delete-confirm-text"
+                    type="text"
+                    value={deleteConfirmText}
+                    onChange={e => setDeleteConfirmText(e.target.value)}
+                    className="input-field border-red-900/40 focus:border-red-700/60"
+                    placeholder="DELETE"
+                  />
+                </div>
+                {deleteMsg && (
+                  <div className={`rounded-xl px-4 py-3 text-sm ${deleteMsg.ok ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
+                    {deleteMsg.text}
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { setShowDeleteForm(false); setDeletePassword(''); setDeleteConfirmText(''); setDeleteMsg(null) }}
+                    className="btn-secondary flex-1 text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={deleteLoading || deleteConfirmText !== 'DELETE' || !deletePassword}
+                    className="flex-1 py-3 rounded-xl bg-red-700 hover:bg-red-600 text-white text-sm font-black uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {deleteLoading ? 'Deleting…' : 'Permanently Delete'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+
           </>}
 
         </div>
