@@ -531,74 +531,69 @@ export default function LobbyPage() {
 
         {/* ── Mode selector (shown when no mode selected) ─────────────────── */}
         {!mainTab && (
-          <div className="mb-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="mb-6 space-y-3">
 
-              {/* 1 — Online Play */}
-              <button
-                onClick={() => { setMainTab('online'); setError('') }}
-                className="group card-surface border border-white/[0.06] hover:border-orange-700/50 hover:bg-orange-950/10 rounded-2xl p-6 text-left transition-all hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <div className="flex items-center justify-between mb-4">
+            {/* Hero: Online Play */}
+            <button
+              onClick={() => { setMainTab('online'); setError('') }}
+              className="animate-fade-up-1 group w-full card-surface border border-white/[0.06] hover:border-orange-700/50 hover:bg-orange-950/10 rounded-2xl p-7 text-left transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-between gap-6"
+            >
+              <div>
+                <div className="flex items-center gap-2 mb-3">
                   <span className="text-label">Live</span>
-                  <div className="live-banner py-0.5 px-2.5" style={{ fontSize: 10 }}>
+                  <div className="live-banner py-0.5 px-2" style={{ fontSize: 9 }}>
                     <span className="live-dot" style={{ width: 5, height: 5 }} />
                     ONLINE
                   </div>
                 </div>
-                <div className="font-display text-3xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">Online Play</div>
-                <div className="text-gray-400 text-sm font-black uppercase tracking-wide leading-snug">Random opponent. Real-time. Win.</div>
-                <div className="mt-4 text-orange-500 text-xs font-black opacity-0 group-hover:opacity-100 transition-opacity">Play →</div>
-              </button>
+                <div className="font-display text-4xl sm:text-5xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">Online Play</div>
+                <div className="text-gray-500 text-xs font-black uppercase tracking-wide">Random opponent. Real-time. Win.</div>
+              </div>
+              <div className="shrink-0 w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center group-hover:bg-orange-500/20 transition-all">
+                <span className="text-orange-400 text-xl font-black">→</span>
+              </div>
+            </button>
 
-              {/* 2 — War Room */}
+            {/* Row: War Room + Play Friends */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Link href="/auction"
-                className="group card-surface border border-orange-900/30 hover:border-orange-500/50 hover:bg-orange-950/10 rounded-2xl p-6 text-left transition-all hover:scale-[1.02] active:scale-[0.98] block">
-                <div className="flex items-center justify-between mb-4">
+                className="animate-fade-up-2 group card-surface border border-orange-900/30 hover:border-orange-500/40 hover:bg-orange-950/10 rounded-2xl p-6 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block">
+                <div className="flex items-center gap-2 mb-3">
                   <span className="text-label">Multiplayer</span>
-                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-orange-600 text-white tracking-widest">NEW</span>
+                  <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full bg-orange-600 text-white tracking-widest">NEW</span>
                 </div>
                 <div className="font-display text-3xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">War Room</div>
-                <div className="text-gray-400 text-sm font-black uppercase tracking-wide leading-snug">Bid. Steal. Outmaneuver.</div>
-                <div className="mt-4 text-orange-500 text-xs font-black opacity-0 group-hover:opacity-100 transition-opacity">Enter →</div>
+                <div className="text-gray-500 text-xs font-black uppercase tracking-wide">Bid. Steal. Outmaneuver.</div>
               </Link>
 
-              {/* 3 — Play with Friends */}
               <button
                 onClick={() => { setMainTab('friends'); setError('') }}
-                className="group card-surface border border-white/[0.06] hover:border-orange-700/50 hover:bg-orange-950/10 rounded-2xl p-6 text-left transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="animate-fade-up-3 group card-surface border border-white/[0.06] hover:border-orange-700/50 hover:bg-orange-950/10 rounded-2xl p-6 text-left transition-all hover:scale-[1.01] active:scale-[0.99] w-full"
               >
-                <div className="flex items-center justify-between mb-4">
+                <div className="mb-3">
                   <span className="text-label">Private</span>
                 </div>
                 <div className="font-display text-3xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">Play Friends</div>
-                <div className="text-gray-400 text-sm font-black uppercase tracking-wide leading-snug">Private room. Share the code.</div>
-                <div className="mt-4 text-orange-500 text-xs font-black opacity-0 group-hover:opacity-100 transition-opacity">Create Room →</div>
+                <div className="text-gray-500 text-xs font-black uppercase tracking-wide">Private room. Share the code.</div>
               </button>
-
-              {/* 4 — Higher / Lower */}
-              <Link href="/higher-lower"
-                className="group card-surface border border-white/[0.06] hover:border-white/[0.14] rounded-2xl p-6 text-left transition-all hover:scale-[1.02] active:scale-[0.98] block">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-label">Solo</span>
-                </div>
-                <div className="font-display text-3xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">Higher / Lower</div>
-                <div className="text-gray-400 text-sm font-black uppercase tracking-wide leading-snug">Guess. Streak. Beat your best.</div>
-                <div className="mt-4 text-orange-500 text-xs font-black opacity-0 group-hover:opacity-100 transition-opacity">Play →</div>
-              </Link>
-
-              {/* 5 — Practice */}
-              <Link href="/practice"
-                className="group card-surface border border-white/[0.06] hover:border-white/[0.14] rounded-2xl p-6 text-left transition-all hover:scale-[1.02] active:scale-[0.98] block">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-label">Solo</span>
-                </div>
-                <div className="font-display text-3xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">Practice</div>
-                <div className="text-gray-400 text-sm font-black uppercase tracking-wide leading-snug">Solo draft. No timer. Learn.</div>
-                <div className="mt-4 text-orange-500 text-xs font-black opacity-0 group-hover:opacity-100 transition-opacity">Draft →</div>
-              </Link>
-
             </div>
+
+            {/* Row: Higher/Lower + Practice (compact) */}
+            <div className="grid grid-cols-2 gap-3">
+              <Link href="/higher-lower"
+                className="animate-fade-up-4 group card-surface border border-white/[0.04] hover:border-white/[0.12] rounded-2xl px-5 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block">
+                <div className="text-label mb-2">Solo</div>
+                <div className="font-display text-2xl text-white leading-none mb-1 group-hover:text-orange-400 transition-colors">Higher / Lower</div>
+                <div className="text-gray-600 text-[11px] font-black uppercase tracking-wide">Guess. Streak. Win.</div>
+              </Link>
+              <Link href="/practice"
+                className="animate-fade-up-5 group card-surface border border-white/[0.04] hover:border-white/[0.12] rounded-2xl px-5 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block">
+                <div className="text-label mb-2">Solo</div>
+                <div className="font-display text-2xl text-white leading-none mb-1 group-hover:text-orange-400 transition-colors">Practice</div>
+                <div className="text-gray-600 text-[11px] font-black uppercase tracking-wide">Draft. No timer. Learn.</div>
+              </Link>
+            </div>
+
           </div>
         )}
 
