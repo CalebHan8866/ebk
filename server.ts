@@ -798,6 +798,10 @@ function advanceAuction(io: SocketServer, room: AuctionRoom) {
 }
 
 function handleAuctionBidExpiry(io: SocketServer, room: AuctionRoom) {
+  // Guard: only execute if we're still in bidding or steal-window phase.
+  // This prevents double-advancement if the timer fires after an explicit pass.
+  if (room.status !== 'bidding' && room.status !== 'steal-window') return
+
   if (room.currentBid === 0 || !room.currentBidderSocketId || !room.currentPlayer) {
     room.bidLog.push({ name: 'Nobody', amount: 0, action: 'pass' })
     advanceAuction(io, room)
@@ -1461,6 +1465,21 @@ app.prepare().then(async () => {
 
       room.bidLog.push({ name: bidder.name, amount, action: 'bid' })
       broadcastAuctionState(io, room)
+    })
+
+    // Explicit pass: skip the current player immediately (no 25s wait).
+    // Uses playerIndex to prevent stale passes from double-advancing the auction.
+    socket.on('auction:pass', ({ code, playerIndex }: { code: string; playerIndex: number }) => {
+      const room = auctionRooms.get(code)
+      if (!room || room.status !== 'bidding') return
+      // Ignore if the player is passing on an already-advanced round
+      if (room.currentPlayerIndex !== playerIndex) return
+      const passer = room.participants.find(p => p.socketId === socket.id)
+      if (!passer) return
+      // Cancel the running timer so handleAuctionBidExpiry doesn't also fire
+      if (room.bidTimer) { clearTimeout(room.bidTimer); room.bidTimer = null }
+      room.bidLog.push({ name: passer.name, amount: 0, action: 'pass' })
+      advanceAuction(io, room)
     })
 
     socket.on('auction:steal', ({ code, playerIdToSteal }: { code: string; playerIdToSteal: number }) => {

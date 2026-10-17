@@ -161,12 +161,13 @@ export default function AuctionRoomPage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [auctionState?.bidDeadline, auctionState?.tradeDeadline])
 
-  // Auto-update bid amount
+  // Reset bid amount whenever a new player comes up OR the current bid changes.
+  // currentPlayer?.id changes on every new player, even if currentBid stays 0.
   useEffect(() => {
     if (auctionState) {
       setBidAmount(auctionState.currentBid + 1)
     }
-  }, [auctionState?.currentBid])
+  }, [auctionState?.currentBid, auctionState?.currentPlayer?.id])
 
   // Scroll bid log
   useEffect(() => {
@@ -177,14 +178,18 @@ export default function AuctionRoomPage() {
     const socket = getSocket()
     setMySocketId(socket.id || '')
 
-    socket.on('connect', () => setMySocketId(socket.id || ''))
+    socket.on('connect', () => {
+      // Socket reconnected with a new ID — re-seat ourselves in the auction room
+      setMySocketId(socket.id || '')
+      socket.emit('auction:get-state', { code, userName: guestName })
+    })
 
     socket.on('auction:state', (state: AuctionState) => {
+      // Keep mySocketId fresh in case of reconnects
+      setMySocketId(socket.id || '')
       setAuctionState(state)
       const newPhase = state.status as AuctionPhase
       setPhase(newPhase === 'complete' ? 'complete' : newPhase)
-      // If the state already carries final results (status:'complete'), populate them
-      // immediately so the results screen renders without waiting for auction:complete.
       if (state.status === 'complete' && state.finalResults && state.finalResults.length > 0) {
         setResults(state.finalResults)
       }
@@ -233,6 +238,11 @@ export default function AuctionRoomPage() {
   function handleBid() {
     if (!canBid) return
     getSocket().emit('auction:bid', { code, amount: bidAmount })
+  }
+
+  function handlePass() {
+    if (!auctionState || phase !== 'bidding') return
+    getSocket().emit('auction:pass', { code, playerIndex: auctionState.playerIndex })
   }
 
   function handleSteal(playerIdToSteal: number) {
@@ -785,6 +795,15 @@ export default function AuctionRoomPage() {
                   }`}
                 >
                   {amLeading ? 'Leading Bid' : `Bid $${bidAmount}M`}
+                </button>
+                <button
+                  onClick={handlePass}
+                  disabled={amLeading}
+                  className={`w-full py-2.5 rounded-xl border border-white/10 text-white/40 hover:text-white/70 hover:border-white/25 text-sm font-bold transition-all ${
+                    amLeading ? 'opacity-30 cursor-not-allowed' : ''
+                  }`}
+                >
+                  Pass
                 </button>
                 {me && (
                   <p className="text-center text-white/30 text-xs">Budget: ${me.budget}M remaining</p>
