@@ -151,6 +151,8 @@ export default function AuctionRoomPage() {
   // Flash when you win a player (green glow on the current bid card)
   const [justWon, setJustWon] = useState(false)
   const prevWinnerRef = useRef<string | null>(null)
+  // Persistent error message for the error phase (errorMsg auto-clears after 4s)
+  const persistentErrorRef = useRef('')
   // If the user is authenticated, always use their username so the server can reliably
   // re-seat them on reconnect (the server matches by name + userId). For unauthenticated
   // users, use a ref-stable random name generated once at mount.
@@ -238,6 +240,7 @@ export default function AuctionRoomPage() {
     }
 
     function handleAuctionError({ message }: { message: string }) {
+      persistentErrorRef.current = message
       setErrorMsg(message)
       setTimeout(() => setErrorMsg(''), 4000)
     }
@@ -269,7 +272,7 @@ export default function AuctionRoomPage() {
   const isHost = auctionState && mySocketId === auctionState.hostSocketId
   const canBid = phase === 'bidding' && me && me.budget >= bidAmount && me.rosterCount < (auctionState?.teamSize ?? 0)
   const amLeading = auctionState?.currentBidderSocketId === mySocketId
-  const tradeTargetParticipant = auctionState?.participants.find(p => p.socketId === tradeTarget)
+
 
   function handleBid() {
     if (!canBid) return
@@ -338,14 +341,22 @@ export default function AuctionRoomPage() {
 
   // ── Error ──────────────────────────────────────────────────────────────────
   if (phase === 'error') {
+    const lastError = persistentErrorRef.current || errorMsg
+    const isInProgress = lastError.toLowerCase().includes('progress')
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4">
         <div className="card-surface p-10 max-w-sm w-full text-center animate-scale-in">
           <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto mb-4">
             <span className="text-red-400 text-xl font-black">!</span>
           </div>
-          <h2 className="font-display text-3xl text-white mb-2">ROOM NOT FOUND</h2>
-          <p className="text-gray-400 text-sm mb-6">This War Room doesn&apos;t exist or has already ended.</p>
+          <h2 className="font-display text-3xl text-white mb-2">
+            {isInProgress ? 'AUCTION IN PROGRESS' : 'ROOM NOT FOUND'}
+          </h2>
+          <p className="text-gray-400 text-sm mb-6">
+            {isInProgress
+              ? 'This War Room has already started. Ask the host to create a new room.'
+              : "This War Room doesn't exist or has already ended."}
+          </p>
           <Link href="/auction" className="btn-primary w-full">Back to Lobby</Link>
         </div>
       </div>
@@ -866,8 +877,11 @@ export default function AuctionRoomPage() {
               <span className="live-dot" />
               LIVE
             </div>
-            <div className="text-white/30 text-xs bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1 font-mono">
-              {auctionState.playerIndex + 1}<span className="text-white/15"> / {auctionState.poolSize}</span>
+            <div className="text-white/30 text-xs bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1 font-mono" title="Current player in pool">
+              {Math.max(0, auctionState.playerIndex + 1)}<span className="text-white/15"> / {auctionState.poolSize}</span>
+            </div>
+            <div className="hidden sm:block text-white/25 text-xs bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1 font-mono" title="Total slots filled">
+              {auctionState.participants.reduce((s, p) => s + p.rosterCount, 0)}<span className="text-white/15"> / {auctionState.participants.length * auctionState.teamSize} slots</span>
             </div>
           </div>
         </div>
