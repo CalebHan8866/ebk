@@ -353,6 +353,7 @@ function generateFacts(p: Player): Fact[] {
 export default function FunFactsPage() {
   const [players, setPlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [search, setSearch] = useState('')
   const [cardIndex, setCardIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
@@ -376,7 +377,7 @@ export default function FunFactsPage() {
         setPlayers(eligible)
         setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch(() => { setLoadError(true); setLoading(false) })
   }, [])
 
   const filtered = useMemo(() => {
@@ -427,6 +428,17 @@ export default function FunFactsPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="text-center">
+          <p className="text-gray-400 mb-4">Couldn&apos;t load player data. Check your connection and try again.</p>
+          <button onClick={() => window.location.reload()} className="btn-primary">Retry</button>
+        </div>
       </div>
     )
   }
