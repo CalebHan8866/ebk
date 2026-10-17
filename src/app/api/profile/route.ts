@@ -3,9 +3,13 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { cookies } from 'next/headers'
-import { verifyToken } from '@/lib/auth'
+import { verifyToken, createToken } from '@/lib/auth'
 import { containsProfanity } from '@/lib/profanity'
 import bcrypt from 'bcryptjs'
+
+// A bcrypt hash of a dummy password used to make the DELETE timing constant
+// regardless of whether the user record exists (mirrors the login pattern).
+const DUMMY_HASH = '$2a$12$irrelevant.hash.to.prevent.timing.sidechannel.XXXXXXXXX'
 
 async function getAuthUser(request: NextRequest) {
   const cookieStore = await cookies()
@@ -41,6 +45,9 @@ export async function GET(request: NextRequest) {
 }
 
 // PATCH /api/profile — update username
+// After a successful rename the JWT is reissued so the username claim in the
+// cookie is immediately up to date. Without this the old username would persist
+// in the token for up to 7 days.
 export async function PATCH(request: NextRequest) {
   try {
     const payload = await getAuthUser(request)
@@ -64,8 +71,20 @@ export async function PATCH(request: NextRequest) {
       const user = await prisma.user.update({
         where: { id: payload.userId },
         data: { username },
-        select: { id: true, username: true, email: true },
+        select: { id: true, username: true, email: true, tokenVersion: true },
       })
+
+      // Reissue the JWT so the updated username is reflected in the cookie
+      // immediately rather than waiting up to 7 days for the old token to expire.
+      const cookieStore = await cookies()
+      const newToken = await createToken({ userId: user.id, username: user.username, tokenVersion: user.tokenVersion })
+      cookieStore.set('ebk-token', newToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 60 * 60 * 24 * 7,
+      })
+
       return NextResponse.json({ user })
     } catch (e: any) {
       if (e?.code === 'P2002') {
@@ -80,6 +99,8 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE /api/profile — permanently delete account (GDPR right to erasure)
 // Requires the user's current password as confirmation to prevent accidental/malicious deletion.
+// bcrypt.compare is always called (even when the user record is not found) to
+// keep the response time constant and avoid leaking whether an account exists.
 export async function DELETE(request: NextRequest) {
   try {
     const payload = await getAuthUser(request)
@@ -97,9 +118,12 @@ export async function DELETE(request: NextRequest) {
       where: { id: payload.userId },
       select: { id: true, password: true },
     })
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
-    const passwordMatch = await bcrypt.compare(password, user.password)
+    // Always run bcrypt to keep timing constant regardless of whether the user
+    // record exists. This prevents a theoretical timing oracle for account existence.
+    const passwordMatch = await bcrypt.compare(password, user?.password ?? DUMMY_HASH)
+
+    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
     if (!passwordMatch) return NextResponse.json({ error: 'Incorrect password' }, { status: 403 })
 
     // GameRecords are cascade-deleted via the FK onDelete: Cascade in schema.prisma

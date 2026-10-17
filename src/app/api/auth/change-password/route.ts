@@ -3,13 +3,15 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { cookies } from 'next/headers'
-import { verifyToken } from '@/lib/auth'
+import { verifyToken, createToken } from '@/lib/auth'
 import { rateLimit } from '@/lib/ratelimit'
 import bcrypt from 'bcryptjs'
 
 // POST /api/auth/change-password
 // Allows an authenticated user to change their password.
 // Requires currentPassword for confirmation; prevents account takeover if a session cookie is stolen.
+// After a successful change, tokenVersion is bumped to invalidate all other active sessions.
+// A fresh token is issued so the current browser stays logged in.
 export async function POST(request: NextRequest) {
   try {
     const ip = (request.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { id: true, password: true },
+      select: { id: true, username: true, password: true, tokenVersion: true },
     })
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
@@ -51,9 +53,21 @@ export async function POST(request: NextRequest) {
     }
 
     const hashed = await bcrypt.hash(newPassword, 12)
+    const newVersion = user.tokenVersion + 1
+
+    // Bump tokenVersion — all existing cookies (other sessions) are now invalid.
     await prisma.user.update({
       where: { id: user.id },
-      data: { password: hashed },
+      data: { password: hashed, tokenVersion: newVersion },
+    })
+
+    // Reissue a fresh token for this session so the current browser stays logged in.
+    const newToken = await createToken({ userId: user.id, username: user.username, tokenVersion: newVersion })
+    cookieStore.set('ebk-token', newToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 60 * 60 * 24 * 7,
     })
 
     return NextResponse.json({ message: 'Password changed successfully.' })

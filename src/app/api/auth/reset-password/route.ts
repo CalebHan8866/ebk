@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
         resetToken: token,
         resetTokenExpiry: { gt: new Date() },
       },
+      select: { id: true, tokenVersion: true },
     })
 
     if (!user) {
@@ -30,11 +31,27 @@ export async function POST(request: NextRequest) {
     }
 
     const hashed = await bcrypt.hash(password, 12)
+    const newVersion = user.tokenVersion + 1
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { password: hashed, resetToken: null, resetTokenExpiry: null },
+    // Atomic single-use enforcement: the WHERE clause includes the token so this
+    // update only succeeds if the token has not already been cleared by a
+    // concurrent request. If two requests race, exactly one wins; the other
+    // finds count === 0 and is rejected — no token reuse possible.
+    // Bumping tokenVersion also invalidates all existing sessions so a stolen
+    // cookie cannot be used after a successful password reset.
+    const result = await prisma.user.updateMany({
+      where: {
+        id: user.id,
+        resetToken: token,             // atomic guard against concurrent use
+        resetTokenExpiry: { gt: new Date() },
+      },
+      data: { password: hashed, resetToken: null, resetTokenExpiry: null, tokenVersion: newVersion },
     })
+
+    if (result.count === 0) {
+      // Lost the race — another request already consumed this token
+      return NextResponse.json({ error: 'Reset link is invalid or has expired.' }, { status: 400 })
+    }
 
     return NextResponse.json({ message: 'Password reset successfully.' })
   } catch (e) {

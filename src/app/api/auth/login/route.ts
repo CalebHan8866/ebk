@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
-    const user = await prisma.user.findUnique({ where: { email }, select: { id: true, username: true, email: true, password: true, emailVerified: true, wins: true, losses: true, draws: true, equippedBadges: true } })
+    const user = await prisma.user.findUnique({ where: { email }, select: { id: true, username: true, email: true, password: true, emailVerified: true, wins: true, losses: true, draws: true, equippedBadges: true, tokenVersion: true } })
 
     // Always run bcrypt to prevent timing-based email enumeration
     const DUMMY_HASH = '$2a$12$irrelevant.hash.to.prevent.timing.sidechannel.XXXXXXXXX'
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Please verify your email before logging in. Check your inbox.' }, { status: 403 })
     }
 
-    const token = await createToken({ userId: user.id, username: user.username })
+    const token = await createToken({ userId: user.id, username: user.username, tokenVersion: user.tokenVersion })
     const cookieStore = await cookies()
     cookieStore.set('ebk-token', token, {
       httpOnly: true,
