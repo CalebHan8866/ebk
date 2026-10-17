@@ -5,6 +5,28 @@ import { Server as SocketServer } from 'socket.io'
 import { PrismaClient } from '@prisma/client'
 import { BADGES, EMOTES, MILESTONES } from './src/lib/accessories'
 import { verifyToken } from './src/lib/auth'
+import { validateEnv } from './src/lib/validateEnv'
+
+// ─── Startup validation ───────────────────────────────────────────────────────
+// Fail fast with a clear message rather than mysterious crashes later.
+validateEnv()
+
+// ─── Global error handlers ────────────────────────────────────────────────────
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[server] Unhandled promise rejection:', {
+    reason: reason instanceof Error ? reason.message : String(reason),
+    stack: reason instanceof Error ? reason.stack : undefined,
+    promise: String(promise),
+  })
+})
+
+process.on('uncaughtException', (err) => {
+  console.error('[server] Uncaught exception — process will exit:', {
+    message: err.message,
+    stack: err.stack,
+  })
+  process.exit(1)
+})
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = '0.0.0.0'
@@ -456,6 +478,7 @@ function scheduleRoomCleanup(code: string, ioRef?: SocketServer) {
     consecutiveTimeouts.delete(code)
     // Evict all remaining Socket.IO room members so the code can be safely reused
     if (ioRef) ioRef.in(code).socketsLeave(code)
+    console.log('[room] destroyed code=%s game_rooms=%d', code, rooms.size)
   }, 60_000) // 60s grace — lets clients receive final event before room disappears
 }
 
@@ -508,7 +531,7 @@ function calculateResult(room: Room): GameResult {
     if (p) guestTotal += getStatForMode(p, statMode)
   }
 
-  const winner = hostTotal < guestTotal ? 'host' : guestTotal < hostTotal ? 'guest' : 'draw'
+  const winner = hostTotal > guestTotal ? 'host' : guestTotal > hostTotal ? 'guest' : 'draw'
   return { game: room.currentGame, statMode, hostTotal, guestTotal, winner }
 }
 
@@ -649,8 +672,8 @@ function startPickTimer(io: SocketServer, room: Room) {
           recordMatchup(currentRoom.hostUserId, currentRoom.guestUserId)
           if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, seriesWinner === 'host', seriesWinner === 'draw', currentRoom.hostJCGames, true)
           if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw', currentRoom.guestJCGames, false)
+          saveGameRecords(currentRoom, seriesWinner)
         }
-        saveGameRecords(currentRoom, seriesWinner)
         io.to(code).emit('series-complete', { room: currentRoom, seriesWinner })
         scheduleRoomCleanup(code, io)
       } else {
@@ -709,6 +732,8 @@ function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
   }
   rooms.set(code, room)
   consecutiveTimeouts.set(code, { host: 0, guest: 0 })
+  console.log('[room] created source=online code=%s host=%s guest=%s mode=%s series=%d game_rooms=%d',
+    code, rr.hostEntry.userName, rr.guestEntry.userName, rr.hostEntry.teamMode, rr.hostEntry.series, rooms.size)
 
   const hostSocket = io.sockets.sockets.get(rr.hostEntry.socketId)
   const guestSocket = io.sockets.sockets.get(rr.guestEntry.socketId)
@@ -921,6 +946,52 @@ app.prepare().then(async () => {
     path: '/socket.io',
   })
 
+  // ─── Socket.IO error logging ─────────────────────────────────────────────────
+  io.engine.on('connection_error', (err) => {
+    console.error('[socket] Connection error:', { code: (err as NodeJS.ErrnoException).code, message: err.message })
+  })
+
+  // ─── Socket count heartbeat (every 5 min) ────────────────────────────────────
+  setInterval(() => {
+    const socketCount = io.sockets.sockets.size
+    const roomCount = rooms.size
+    const auctionCount = auctionRooms.size
+    console.log('[metrics] connections=%d game_rooms=%d auction_rooms=%d', socketCount, roomCount, auctionCount)
+  }, 5 * 60 * 1000)
+
+  // ─── Graceful SIGTERM (Railway zero-downtime deploys) ────────────────────────
+  // Railway sends SIGTERM to the old instance before starting the new one.
+  // We stop accepting new HTTP connections and give active rooms up to 10 s to
+  // finish before forcing exit so in-flight games are not cut mid-play.
+  process.on('SIGTERM', () => {
+    console.log('[server] SIGTERM received — starting graceful shutdown')
+    const activeRoomCodes = [...rooms.keys(), ...auctionRooms.keys()]
+    console.log('[server] Active rooms at shutdown:', activeRoomCodes.length, activeRoomCodes)
+
+    // Stop accepting new HTTP connections
+    httpServer.close(() => {
+      console.log('[server] HTTP server closed')
+    })
+
+    // Give active rooms up to 10 s to reach a terminal state, then force exit
+    const forceExitTimer = setTimeout(() => {
+      console.warn('[server] Graceful shutdown timed out — forcing exit')
+      process.exit(0)
+    }, 10_000)
+    // Don't let this timer keep the event loop alive if rooms finish sooner
+    forceExitTimer.unref()
+
+    // Poll until all rooms are gone or the timer fires
+    const pollInterval = setInterval(() => {
+      if (rooms.size === 0 && auctionRooms.size === 0) {
+        clearInterval(pollInterval)
+        clearTimeout(forceExitTimer)
+        console.log('[server] All rooms drained — exiting cleanly')
+        process.exit(0)
+      }
+    }, 500)
+  })
+
   // Verify JWT from httpOnly cookie on every connection — no client changes needed
   io.use(async (socket, next) => {
     const cookieHeader = socket.handshake.headers.cookie || ''
@@ -1086,8 +1157,8 @@ app.prepare().then(async () => {
             recordMatchup(room.hostUserId, room.guestUserId)
             if (room.hostUserId) updateStatsAndUnlock(io, room.hostUserId, room.hostSocketId, seriesWinner === 'host', seriesWinner === 'draw', room.hostJCGames, true)
             if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw', room.guestJCGames, false)
+            saveGameRecords(room, seriesWinner)
           }
-          saveGameRecords(room, seriesWinner)
           io.to(code).emit('series-complete', { room, seriesWinner })
           scheduleRoomCleanup(code, io)
         } else {
@@ -1330,6 +1401,9 @@ app.prepare().then(async () => {
       const isHost = socket.id === room.hostSocketId
       const isGuest = socket.id === room.guestSocketId
       if (!isHost && !isGuest) return
+      // Validate emoteText against the known emote texts to prevent arbitrary string injection
+      const validEmoteTexts = new Set(EMOTES.map(e => e.text))
+      if (!validEmoteTexts.has(emoteText)) return
       const now = Date.now()
       const last = emoteLastSent.get(socket.id) ?? 0
       if (now - last < 3000) return // 3s cooldown

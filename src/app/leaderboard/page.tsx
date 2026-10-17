@@ -423,7 +423,11 @@ export default function LeaderboardPage() {
         {/* ── Pinned "you" row if outside top 100 ── */}
         {me && meInList === -1 && (
           <div className="mt-4 pt-4 border-t border-white/[0.05]">
-            <div className="text-label text-center mb-2">You are outside the top 100</div>
+            <div className="text-label text-center mb-2">
+              {sort === 'wins'
+                ? 'You are outside the top 100'
+                : 'Your stats (rank shown by wins)'}
+            </div>
             <LeaderboardRow
               user={me}
               rank={me.rank}

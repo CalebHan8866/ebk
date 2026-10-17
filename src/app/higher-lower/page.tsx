@@ -77,7 +77,7 @@ export default function HigherLowerPage() {
       .catch(() => { if (isMounted.current) setScreen('playing') })
   }, [])
 
-  async function tryUnlock(milestone: string) {
+  async function tryUnlock(milestone: string, currentStreak: number) {
     if (!user) return
     const isGauntlet = milestone === 'hl_gauntlet'
     if (isGauntlet && isMounted.current) setClaimStatus('pending')
@@ -85,7 +85,7 @@ export default function HigherLowerPage() {
       const res = await fetch('/api/higher-lower/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ milestone }),
+        body: JSON.stringify({ milestone, streak: currentStreak, complete: isGauntlet }),
       })
       if (!isMounted.current) return
       if (!res.ok) {
@@ -140,15 +140,15 @@ export default function HigherLowerPage() {
         if (typeof window !== 'undefined') localStorage.setItem('hl_best', String(newStreak))
       }
 
-      if (newStreak === 10) tryUnlock('hl_10')
-      if (newStreak === 25) tryUnlock('hl_25')
+      if (newStreak === 10) tryUnlock('hl_10', newStreak)
+      if (newStreak === 25) tryUnlock('hl_25', newStreak)
 
       timerRef.current = setTimeout(() => {
         if (!isMounted.current) return
         isGuessingRef.current = false
         const nextIdx = idx + 1
         if (nextIdx >= sequence.length - 1) {
-          tryUnlock('hl_gauntlet')
+          tryUnlock('hl_gauntlet', newStreak)
           setScreen('complete')
         } else {
           setIdx(nextIdx)
