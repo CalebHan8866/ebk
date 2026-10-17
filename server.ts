@@ -708,8 +708,8 @@ function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
 
 // ─── Auction helpers ──────────────────────────────────────────────────────────
 
-function broadcastAuctionState(io: SocketServer, room: AuctionRoom) {
-  const state = {
+function buildAuctionStateForSocket(room: AuctionRoom) {
+  return {
     code: room.code,
     status: room.status,
     teamSize: room.teamSize,
@@ -750,6 +750,10 @@ function broadcastAuctionState(io: SocketServer, room: AuctionRoom) {
     poolSize: room.playerPool.length,
     bidLog: room.bidLog.slice(-25),
   }
+}
+
+function broadcastAuctionState(io: SocketServer, room: AuctionRoom) {
+  const state = buildAuctionStateForSocket(room)
   for (const p of room.participants) {
     io.to(p.socketId).emit('auction:state', state)
   }
@@ -1507,10 +1511,28 @@ app.prepare().then(async () => {
       broadcastAuctionState(io, room)
     })
 
-    socket.on('auction:get-state', ({ code }: { code: string }) => {
+    socket.on('auction:get-state', ({ code, userName }: { code: string; userName?: string }) => {
       const room = auctionRooms.get(code)
       if (!room) { socket.emit('auction:error', { message: 'Room not found' }); return }
-      broadcastAuctionState(io, room)
+
+      // Handle reconnection: if this socket is not a participant but a participant
+      // has the same name (or same userId), update their socketId.
+      const existing = room.participants.find(p => p.socketId === socket.id)
+      if (!existing && userName) {
+        const byName = room.participants.find(p => p.name === userName)
+        if (byName) {
+          // Re-seat this socket into the existing participant slot (reconnection)
+          const wasHost = byName.socketId === room.hostSocketId
+          byName.socketId = socket.id
+          if (wasHost) room.hostSocketId = socket.id
+          socket.join(`auction:${room.code}`)
+        }
+      }
+
+      // Rebuild and emit state directly to the requesting socket (not just participants).
+      // This handles the case where socketId changed after a reconnect/navigation.
+      const state = buildAuctionStateForSocket(room)
+      socket.emit('auction:state', state)
     })
 
     socket.on('auction:finish-trading', ({ code }: { code: string }) => {

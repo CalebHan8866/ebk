@@ -200,8 +200,9 @@ export default function AuctionRoomPage() {
       setTimeout(() => setErrorMsg(''), 4000)
     })
 
-    // Request state on mount
-    socket.emit('auction:get-state', { code })
+    // Request state on mount — include userName so server can re-seat
+    // this socket if we reconnected with a new socketId
+    socket.emit('auction:get-state', { code, userName: guestName })
 
     // Redirect to lobby if no state received within 6 seconds (not a participant)
     const loadTimeout = setTimeout(() => {
