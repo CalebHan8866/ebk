@@ -313,7 +313,7 @@ export default function LobbyPage() {
   // ── MATCH FOUND — full-page takeover ──────────────────────────────────────
   if (onlineState === 'found' && matchInfo) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 py-10">
+      <div className="min-h-screen flex items-center justify-center px-4 py-10" aria-live="polite" aria-atomic="true">
         <div className="w-full max-w-md animate-slide-up">
 
           {matchInfo.grudgeMatch && (
@@ -495,19 +495,23 @@ export default function LobbyPage() {
         {error && (
           <div className="bg-red-900/30 border border-red-500/40 text-red-300 rounded-xl px-4 py-3 mb-5 text-sm flex items-center justify-between animate-slide-up">
             <span>{error}</span>
-            <button onClick={() => setError('')} className="text-red-500 hover:text-red-300 ml-3 shrink-0">✕</button>
+            <button onClick={() => setError('')} aria-label="Dismiss error" className="text-red-500 hover:text-red-300 ml-3 shrink-0">✕</button>
           </div>
         )}
 
         {/* ── Main tab bar ────────────────────────────────────────────────── */}
-        <div className="tab-pill mb-6">
+        <div className="tab-pill mb-6" role="tablist" aria-label="Lobby mode">
           <button
+            role="tab"
+            aria-selected={mainTab === 'online'}
             onClick={() => { setMainTab('online'); setError('') }}
             className={`tab-pill-item${mainTab === 'online' ? ' active' : ''}`}
           >
             Online Play
           </button>
           <button
+            role="tab"
+            aria-selected={mainTab === 'friends'}
             onClick={() => { setMainTab('friends'); setError('') }}
             className={`tab-pill-item${mainTab === 'friends' ? ' active' : ''}`}
           >

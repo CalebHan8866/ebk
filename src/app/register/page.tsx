@@ -127,31 +127,35 @@ export default function RegisterPage() {
 
             {/* Username */}
             <div>
-              <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Username</label>
+              <label htmlFor="register-username" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Username</label>
               <div className="relative flex items-center">
                 <input
+                  id="register-username"
                   type="text"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   onBlur={() => setTouchedUsername(true)}
                   required minLength={3} maxLength={20}
+                  aria-describedby={touchedUsername && !validUsername ? 'username-error' : undefined}
+                  aria-invalid={touchedUsername && !validUsername ? true : undefined}
                   className={`input-field pr-9 ${touchedUsername ? (validUsername ? 'valid' : 'invalid') : ''}`}
                   placeholder="YourTag23"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2" aria-hidden="true">
                   <FieldStatus valid={validUsername} touched={touchedUsername} />
                 </span>
               </div>
               {touchedUsername && !validUsername && (
-                <p className="text-red-400 text-[10px] mt-1 ml-1">3–20 characters required</p>
+                <p id="username-error" role="alert" className="text-red-400 text-[10px] mt-1 ml-1">3–20 characters required</p>
               )}
             </div>
 
             {/* Email */}
             <div>
-              <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Email</label>
+              <label htmlFor="register-email" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Email</label>
               <div className="relative flex items-center">
                 <input
+                  id="register-email"
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
@@ -160,7 +164,7 @@ export default function RegisterPage() {
                   className={`input-field pr-9 ${touchedEmail ? (validEmail ? 'valid' : 'invalid') : ''}`}
                   placeholder="you@example.com"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2" aria-hidden="true">
                   <FieldStatus valid={validEmail} touched={touchedEmail} />
                 </span>
               </div>
@@ -168,25 +172,27 @@ export default function RegisterPage() {
 
             {/* Password */}
             <div>
-              <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Password</label>
+              <label htmlFor="register-password" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Password</label>
               <div className="relative flex items-center">
                 <input
+                  id="register-password"
                   type="password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   onBlur={() => setTouchedPassword(true)}
                   required minLength={6}
+                  aria-describedby={password.length > 0 ? 'password-strength' : undefined}
                   className={`input-field pr-9 ${touchedPassword ? (validPassword ? 'valid' : 'invalid') : ''}`}
                   placeholder="Min 6 characters"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2" aria-hidden="true">
                   <FieldStatus valid={validPassword} touched={touchedPassword} />
                 </span>
               </div>
               {/* Password strength meter */}
               {password.length > 0 && (
-                <div className="mt-2">
-                  <div className="flex gap-1 mb-1">
+                <div id="password-strength" className="mt-2" aria-live="polite">
+                  <div className="flex gap-1 mb-1" aria-hidden="true">
                     {[1, 2, 3, 4, 5].map(i => (
                       <div
                         key={i}
@@ -194,7 +200,7 @@ export default function RegisterPage() {
                       />
                     ))}
                   </div>
-                  <p className="text-[10px] text-gray-500">{strengthLabel}</p>
+                  <p className="text-[10px] text-gray-500">Password strength: {strengthLabel}</p>
                 </div>
               )}
             </div>

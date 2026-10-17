@@ -108,8 +108,8 @@ function TimerRing({ timeLeft, maxTime }: { timeLeft: number; maxTime: number })
   const color = timeLeft <= 5 ? '#ef4444' : timeLeft <= 10 ? '#f97316' : '#22c55e'
 
   return (
-    <div className="relative w-20 h-20 flex items-center justify-center">
-      <svg className="absolute inset-0 -rotate-90" width="80" height="80">
+    <div className="relative w-20 h-20 flex items-center justify-center" role="timer" aria-label={`${timeLeft} seconds remaining`}>
+      <svg className="absolute inset-0 -rotate-90" width="80" height="80" aria-hidden="true">
         <circle cx="40" cy="40" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
         <circle
           cx="40" cy="40" r={r} fill="none"
@@ -120,7 +120,7 @@ function TimerRing({ timeLeft, maxTime }: { timeLeft: number; maxTime: number })
           style={{ transition: 'stroke-dashoffset 0.1s linear, stroke 0.3s' }}
         />
       </svg>
-      <span className={`font-display text-2xl ${timeLeft <= 5 ? 'text-red-400' : timeLeft <= 10 ? 'text-orange-400' : 'text-white'}`}>
+      <span aria-hidden="true" className={`font-display text-2xl ${timeLeft <= 5 ? 'text-red-400' : timeLeft <= 10 ? 'text-orange-400' : 'text-white'}`}>
         {timeLeft}
       </span>
     </div>
@@ -682,20 +682,22 @@ export default function AuctionRoomPage() {
         </div>
 
         {errorMsg && (
-          <div className="mx-4 mt-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2 text-red-400 text-sm text-center">
+          <div role="alert" aria-live="assertive" className="mx-4 mt-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2 text-red-400 text-sm text-center">
             {errorMsg}
           </div>
         )}
 
         {/* Mobile panel switcher — only visible below lg */}
-        <div className="lg:hidden flex gap-0 border-b border-white/[0.07] bg-black/30">
+        <div className="lg:hidden flex gap-0 border-b border-white/[0.07] bg-black/30" role="tablist" aria-label="War Room panel">
           {([
-            ['bid', '🏷 Bid'],
-            ['rosters', '👥 GMs'],
-            ['log', '📋 Log'],
+            ['bid', 'Bid'],
+            ['rosters', 'GMs'],
+            ['log', 'Log'],
           ] as [WarRoomPanel, string][]).map(([panel, label]) => (
             <button
               key={panel}
+              role="tab"
+              aria-selected={mobilePanel === panel}
               onClick={() => setMobilePanel(panel)}
               className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider transition-colors ${
                 mobilePanel === panel
@@ -739,18 +741,22 @@ export default function AuctionRoomPage() {
                     <div className="flex flex-wrap gap-1">
                       {p.roster.map(player => player && (
                         <div key={player.id} className="relative group">
-                          <div className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-xs border ${
-                            canSteal && p.socketId !== mySocketId
-                              ? 'border-yellow-500/40 bg-yellow-500/10 text-yellow-300 cursor-pointer hover:bg-yellow-500/20'
-                              : 'border-white/[0.07] bg-white/[0.03] text-white/60'
-                          }`}
-                          onClick={() => canSteal && p.socketId !== mySocketId && handleSteal(player.id)}
-                          >
-                            {canSteal && p.socketId !== mySocketId && <span className="text-yellow-400">⚡</span>}
-                            <span>{player.firstName[0]}. {player.lastName}</span>
-                          </div>
+                          {canSteal && p.socketId !== mySocketId ? (
+                            <button
+                              onClick={() => handleSteal(player.id)}
+                              aria-label={`Steal ${player.firstName} ${player.lastName} for $${Math.ceil(player.paidPrice * 1.5)}M`}
+                              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs border border-yellow-500/40 bg-yellow-500/10 text-yellow-300 hover:bg-yellow-500/20 transition-colors"
+                            >
+                              <span aria-hidden="true">⚡</span>
+                              <span>{player.firstName[0]}. {player.lastName}</span>
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs border border-white/[0.07] bg-white/[0.03] text-white/60">
+                              <span>{player.firstName[0]}. {player.lastName}</span>
+                            </div>
+                          )}
                           {canSteal && p.socketId !== mySocketId && (
-                            <div className="absolute bottom-full left-0 mb-1 card-surface border border-yellow-500/30 rounded-lg px-2 py-1 text-xs text-yellow-300 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10 transition-opacity">
+                            <div className="absolute bottom-full left-0 mb-1 card-surface border border-yellow-500/30 rounded-lg px-2 py-1 text-xs text-yellow-300 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10 transition-opacity" aria-hidden="true">
                               Steal for ${Math.ceil(player.paidPrice * 1.5)}M
                             </div>
                           )}
@@ -807,10 +813,11 @@ export default function AuctionRoomPage() {
             )}
 
             {/* Current bid */}
-            <div className="text-center">
+            <div className="text-center" aria-live="polite" aria-atomic="true">
               <div
                 key={auctionState.currentBid}
                 className={`bid-hero animate-num-pop ${auctionState.currentBid > 0 ? (amLeading ? 'text-orange-400' : 'text-white') : 'text-white/20'}`}
+                aria-label={auctionState.currentBid > 0 ? `Current bid: $${auctionState.currentBid}M` : 'No bids yet'}
               >
                 {auctionState.currentBid > 0 ? `$${auctionState.currentBid}M` : '–––'}
               </div>
@@ -835,6 +842,7 @@ export default function AuctionRoomPage() {
                     <button
                       key={bump}
                       onClick={() => setBidAmount(prev => Math.min(me?.budget ?? prev, prev + bump))}
+                      aria-label={`Add $${bump}M to bid`}
                       className="flex-1 py-2.5 sm:py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/60 text-sm sm:text-xs font-black hover:bg-white/[0.08] hover:text-white/80 active:bg-white/[0.12] transition-all touch-action-manipulation"
                       style={{ touchAction: 'manipulation' }}
                     >
@@ -843,9 +851,10 @@ export default function AuctionRoomPage() {
                   ))}
                 </div>
                 {/* Stepper */}
-                <div className="bid-stepper">
+                <div className="bid-stepper" role="group" aria-label="Bid amount">
                   <button
                     className="bid-stepper-btn"
+                    aria-label="Decrease bid by 1"
                     onClick={() => setBidAmount(prev => Math.max(auctionState.currentBid + 1, prev - 1))}
                   >−</button>
                   <input
@@ -855,11 +864,13 @@ export default function AuctionRoomPage() {
                     value={bidAmount}
                     min={auctionState.currentBid + 1}
                     max={me?.budget ?? 0}
+                    aria-label={`Bid amount in millions of dollars`}
                     onChange={e => setBidAmount(Math.max(auctionState.currentBid + 1, parseInt(e.target.value) || 1))}
                     className="bid-stepper-input"
                   />
                   <button
                     className="bid-stepper-btn"
+                    aria-label="Increase bid by 1"
                     onClick={() => setBidAmount(prev => Math.min(me?.budget ?? prev, prev + 1))}
                   >+</button>
                 </div>

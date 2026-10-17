@@ -1061,10 +1061,17 @@ function GameContent() {
                 const validSlots = selectedPlayer ? getValidSlots(selectedPlayer) : new Set<number>()
                 const isValidTarget = isMyTurn && selectedPlayer !== null && validSlots.has(i) && pickedPlayer === null
                 const isBlocked = isMyTurn && selectedPlayer !== null && !validSlots.has(i) && pickedPlayer === null
+                const slotLabel = pickedPlayer
+                  ? `${displayLabel} slot: ${pickedPlayer.lastName}`
+                  : isValidTarget
+                  ? `Place ${selectedPlayer?.lastName ?? 'player'} in ${displayLabel} slot`
+                  : `${displayLabel} slot: empty`
+                const Elem = isValidTarget ? 'button' : 'div'
                 return (
-                  <div
+                  <Elem
                     key={i}
-                    onClick={() => isValidTarget ? pickIntoSlot(i) : undefined}
+                    onClick={isValidTarget ? () => pickIntoSlot(i) : undefined}
+                    aria-label={isValidTarget ? slotLabel : undefined}
                     className={`rounded px-2 py-1 text-xs flex items-center gap-1.5 transition-all ${
                       isValidTarget
                         ? 'bg-orange-600/20 border border-orange-500 cursor-pointer'
@@ -1079,7 +1086,7 @@ function GameContent() {
                     <span className={`truncate ${pickedPlayer ? 'text-white' : isValidTarget ? 'text-orange-300' : 'text-gray-600'}`}>
                       {pickedPlayer ? pickedPlayer.lastName : isValidTarget ? 'tap' : '—'}
                     </span>
-                  </div>
+                  </Elem>
                 )
               })}
             </div>
@@ -1123,10 +1130,17 @@ function GameContent() {
                 const validSlots = selectedPlayer ? getValidSlots(selectedPlayer) : new Set<number>()
                 const isValidTarget = isMyTurn && selectedPlayer !== null && validSlots.has(i) && pickedPlayer === null
                 const isBlocked = isMyTurn && selectedPlayer !== null && !validSlots.has(i) && pickedPlayer === null
+                const slotLabelDesktop = pickedPlayer
+                  ? `${displayLabel} slot: ${pickedPlayer.firstName} ${pickedPlayer.lastName}`
+                  : isValidTarget
+                  ? `Place ${selectedPlayer?.lastName ?? 'player'} in ${displayLabel} slot`
+                  : `${displayLabel} slot: empty`
+                const DeskElem = isValidTarget ? 'button' : 'div'
                 return (
-                  <div
+                  <DeskElem
                     key={i}
-                    onClick={() => isValidTarget ? pickIntoSlot(i) : undefined}
+                    onClick={isValidTarget ? () => pickIntoSlot(i) : undefined}
+                    aria-label={isValidTarget ? slotLabelDesktop : undefined}
                     className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 transition-all ${
                       isValidTarget
                         ? 'bg-orange-600/20 border border-orange-500 cursor-pointer hover:bg-orange-600/40'
@@ -1145,7 +1159,7 @@ function GameContent() {
                         {isValidTarget ? 'tap to place' : 'empty'}
                       </span>
                     )}
-                  </div>
+                  </DeskElem>
                 )
               })}
             </div>
@@ -1182,7 +1196,7 @@ function GameContent() {
 
             {/* Pick error */}
             {pickError && (
-              <div className="bg-red-900/60 border border-red-500 text-red-300 rounded-lg px-4 py-2 text-sm mb-3 text-center">
+              <div role="alert" aria-live="assertive" className="bg-red-900/60 border border-red-500 text-red-300 rounded-lg px-4 py-2 text-sm mb-3 text-center">
                 {pickError}
               </div>
             )}
@@ -1198,7 +1212,7 @@ function GameContent() {
                 className="w-full bg-[#0d0d0d] border border-white/[0.07] rounded-lg pl-8 pr-8 py-2 text-white text-sm focus:outline-none focus:border-orange-500 placeholder-gray-600"
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-xs">✕</button>
+                <button onClick={() => setSearchQuery('')} aria-label="Clear search" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-xs">✕</button>
               )}
             </div>
 
@@ -1232,7 +1246,7 @@ function GameContent() {
 
             {/* Timeout warning toast */}
             {timeoutWarning && (
-              <div className="bg-yellow-900/60 border border-yellow-500 text-yellow-300 rounded-lg px-4 py-2 text-sm mb-3 text-center">
+              <div role="alert" aria-live="assertive" className="bg-yellow-900/60 border border-yellow-500 text-yellow-300 rounded-lg px-4 py-2 text-sm mb-3 text-center">
                 {timeoutWarning}
               </div>
             )}

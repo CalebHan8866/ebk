@@ -54,25 +54,27 @@ function LoginForm() {
         </div>
       )}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 mb-6 text-sm">
+        <div id="login-error" role="alert" className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 mb-6 text-sm">
           {error}
         </div>
       )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Email</label>
+          <label htmlFor="login-email" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Email</label>
           <div className="relative flex items-center">
             <input
+              id="login-email"
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               onBlur={() => setTouchedEmail(true)}
               required
+              aria-describedby={error ? 'login-error' : undefined}
               className={`input-field pr-9 ${touchedEmail ? (validEmail ? 'valid' : 'invalid') : ''}`}
               placeholder="you@example.com"
             />
             {touchedEmail && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2" aria-hidden="true">
                 {validEmail ? (
                   <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -88,23 +90,25 @@ function LoginForm() {
         </div>
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase">Password</label>
+            <label htmlFor="login-password" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase">Password</label>
             <Link href="/forgot-password" className="text-orange-500/70 hover:text-orange-400 text-xs font-semibold transition-colors">
               Forgot password?
             </Link>
           </div>
           <div className="relative flex items-center">
             <input
+              id="login-password"
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               onBlur={() => setTouchedPassword(true)}
               required
+              aria-describedby={error ? 'login-error' : undefined}
               className={`input-field pr-9 ${touchedPassword ? (validPassword ? 'valid' : 'invalid') : ''}`}
               placeholder="••••••••"
             />
             {touchedPassword && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2" aria-hidden="true">
                 {validPassword ? (
                   <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
