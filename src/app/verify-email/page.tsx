@@ -25,7 +25,7 @@ function VerifyContent() {
           <>
             <h1 className="font-display text-5xl text-orange-500 mb-3 leading-none">Verified!</h1>
             <p className="text-gray-400 mb-8">Your account is confirmed. You&apos;re ready to play EBK.</p>
-            <Link href="/lobby" className="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-4 rounded-xl inline-block text-lg transition-colors">
+            <Link href="/lobby" className="btn-primary inline-block uppercase">
               Start Playing
             </Link>
           </>
