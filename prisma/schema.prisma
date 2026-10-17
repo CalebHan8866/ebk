@@ -37,6 +37,7 @@ model User {
   gameRecords       GameRecord[]
 
   @@index([gamesPlayed, wins(sort: Desc)])
+  @@index([wins(sort: Desc), gamesPlayed])
 }
 
 model GameRecord {
