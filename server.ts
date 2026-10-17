@@ -1141,11 +1141,11 @@ app.prepare().then(async () => {
     })
 
     socket.on('pick-player', ({ code, playerId, slotPos }: { code: string, playerId: number, slotPos: string }) => {
-      const room = rooms.get(code)
-      if (!room || room.status !== 'drafting') return
-      // Runtime type guards against malformed payloads
-      if (typeof playerId !== 'number' || !Number.isInteger(playerId) || playerId <= 0) return
+      // Runtime type guards — validate before any Map lookups
       if (typeof code !== 'string' || typeof slotPos !== 'string') return
+      if (typeof playerId !== 'number' || !Number.isInteger(playerId) || playerId <= 0) return
+      const room = rooms.get(code.toUpperCase())
+      if (!room || room.status !== 'drafting') return
 
       const currentPicker = room.draftOrder[room.currentPickIndex]
       const isHost = socket.id === room.hostSocketId
@@ -1188,15 +1188,17 @@ app.prepare().then(async () => {
         socket.emit('pick-error', { message: 'Invalid slot' }); return
       }
 
+      const roomCode = room.code
+
       // Clear pick timer
-      const timer = pickTimers.get(code)
+      const timer = pickTimers.get(roomCode)
       if (timer) clearTimeout(timer)
-      pickTimers.delete(code)
+      pickTimers.delete(roomCode)
 
       // Reset consecutive timeouts for this picker (manual pick resets streak)
-      const timeouts = consecutiveTimeouts.get(code) || { host: 0, guest: 0 }
+      const timeouts = consecutiveTimeouts.get(roomCode) || { host: 0, guest: 0 }
       timeouts[currentPicker] = 0
-      consecutiveTimeouts.set(code, timeouts)
+      consecutiveTimeouts.set(roomCode, timeouts)
 
       if (currentPicker === 'host') { room.hostPicks.push(playerId); room.hostPickSlots.push(slotPos) }
       else { room.guestPicks.push(playerId); room.guestPickSlots.push(slotPos) }
@@ -1228,22 +1230,24 @@ app.prepare().then(async () => {
             if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw', room.guestJCGames, false)
             saveGameRecords(room, seriesWinner)
           }
-          io.to(code).emit('series-complete', { room, seriesWinner })
-          scheduleRoomCleanup(code, io)
+          io.to(roomCode).emit('series-complete', { room, seriesWinner })
+          scheduleRoomCleanup(roomCode, io)
         } else {
-          io.to(code).emit('game-result', { room, result })
+          io.to(roomCode).emit('game-result', { room, result })
         }
       } else {
-        io.to(code).emit('room-updated', { room })
+        io.to(roomCode).emit('room-updated', { room })
         startPickTimer(io, room)
       }
     })
 
     socket.on('next-game', ({ code }: { code: string }) => {
-      const room = rooms.get(code)
+      if (typeof code !== 'string') return
+      const room = rooms.get(code.toUpperCase())
       if (!room || room.status !== 'result') return
       if (socket.id !== room.hostSocketId) return // only host can start next game
 
+      const roomCode = room.code
       room.currentGame++
       room.hostPicks = []
       room.guestPicks = []
@@ -1256,9 +1260,9 @@ app.prepare().then(async () => {
         room.draftOrder = room.draftOrder.map(p => p === 'host' ? 'guest' : 'host')
       }
       room.status = 'drafting'
-      consecutiveTimeouts.set(code, { host: 0, guest: 0 })
+      consecutiveTimeouts.set(roomCode, { host: 0, guest: 0 })
 
-      io.to(code).emit('draft-started', { room, players: allPlayers })
+      io.to(roomCode).emit('draft-started', { room, players: allPlayers })
       startPickTimer(io, room)
     })
 
