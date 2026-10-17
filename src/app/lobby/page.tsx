@@ -5,10 +5,8 @@ import Link from 'next/link'
 import { getSocket } from '@/lib/socket'
 import { useAuth } from '@/context/AuthContext'
 import { BADGES } from '@/lib/accessories'
+import { type TeamMode, type SeriesLength, type Difficulty } from '@/types/game'
 
-type TeamMode = 'starter5' | 'bench8' | 'full12'
-type SeriesLength = 1 | 3 | 5
-type Difficulty = 'casual' | 'ebk'
 type OnlineState = 'idle' | 'listing' | 'found'
 
 interface UserRecord { wins: number; losses: number; draws: number }

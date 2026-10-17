@@ -2,28 +2,8 @@
 import { useState, useEffect, useRef, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CURRENT_TEAMS, getCurrentTeam } from '@/lib/teams'
+import { type TeamMode, type Difficulty, type Player, TEAM_SIZES, getRequiredPositions } from '@/types/game'
 
-type TeamMode = 'starter5' | 'bench8' | 'full12'
-type Difficulty = 'casual' | 'ebk'
-
-interface Player {
-  id: number
-  firstName: string
-  lastName: string
-  team: string
-  position: string
-  positions: string
-  careerGames: number
-  careerPPG: number
-  careerRPG: number
-  careerAPG: number
-  careerMPG: number
-  ebkScore: number
-  yearFrom: number
-  yearTo: number
-}
-
-const TEAM_SIZES: Record<TeamMode, number> = { starter5: 5, bench8: 8, full12: 12 }
 const STAT_LABELS: Record<string, string> = {
   games_played: 'Games Played',
   ppg: 'Points Per Game',
@@ -39,12 +19,6 @@ function getStatValue(p: Player, mode: string): number {
     case 'apg': return p.careerAPG
     default: return 0
   }
-}
-
-function getRequiredPositions(teamMode: TeamMode): string[] {
-  const starters = ['PG', 'SG', 'SF', 'PF', 'C']
-  const bench = Array(TEAM_SIZES[teamMode] - 5).fill('BENCH')
-  return [...starters, ...bench]
 }
 
 // Best possible given the exact teams that were spun during this draft session.

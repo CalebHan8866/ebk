@@ -105,13 +105,6 @@ function getCurrentTeam(teamStr: string): string {
   return teamStr
 }
 
-function getRequiredPositions(teamMode: TeamMode): string[] {
-  const starters = ['PG', 'SG', 'SF', 'PF', 'C']
-  const benchCount = TEAM_SIZES[teamMode] - 5
-  const bench = Array(benchCount).fill('BENCH')
-  return [...starters, ...bench]
-}
-
 function getPickerUsedPositions(room: Room): { usedPositions: Set<string>; remainingBenchSlots: number } {
   const picker = room.draftOrder[room.currentPickIndex]
   const pickerSlots = picker === 'host' ? room.hostPickSlots : room.guestPickSlots
@@ -148,6 +141,35 @@ const TEAM_SIZES: Record<TeamMode, number> = {
 }
 
 const STAT_CYCLE = ['games_played', 'ppg', 'rpg', 'apg']
+
+// ─── Timing constants (milliseconds) ─────────────────────────────────────────
+
+/** How long each draft pick timer runs before auto-pick fires */
+const PICK_TIMER_MS = 30_000
+/** Initial bid window duration for each auction player */
+const BID_TIMER_MS = 25_000
+/** Minimum remaining time that triggers a bid-timer extension */
+const BID_EXTENSION_THRESHOLD_MS = 10_000
+/** How much time is added / restored when a late bid extends the timer */
+const BID_EXTENSION_MS = 10_000
+/** Steal window duration after a player is won at auction */
+const STEAL_WINDOW_MS = 10_000
+/** Brief cooldown after a steal before the auction advances */
+const POST_STEAL_ADVANCE_MS = 3_000
+/** Trade phase duration after bidding ends */
+const TRADE_PHASE_MS = 3 * 60 * 1000
+/** How long a ready-room waits for both players to confirm before auto-starting */
+const READY_ROOM_TIMEOUT_MS = 60_000
+/** How long a game listing stays open before expiring */
+const LISTING_EXPIRY_MS = 10 * 60 * 1000
+/** How long after auction completion before the room is cleaned up */
+const AUCTION_CLEANUP_MS = 30 * 60 * 1000
+/** Grace period after a game ends before the room is deleted */
+const ROOM_CLEANUP_GRACE_MS = 60_000
+/** Steal price multiplier: winner pays ceil(originalPrice × STEAL_MULTIPLIER) */
+const STEAL_MULTIPLIER = 1.5
+/** Auction budget by team size */
+const AUCTION_BUDGETS: Record<number, number> = { 5: 125, 8: 175, 12: 250 }
 
 interface GameResult {
   game: number
@@ -487,7 +509,7 @@ function scheduleRoomCleanup(code: string, ioRef?: SocketServer) {
     // Evict all remaining Socket.IO room members so the code can be safely reused
     if (ioRef) ioRef.in(code).socketsLeave(code)
     console.log('[room] destroyed code=%s game_rooms=%d', code, rooms.size)
-  }, 60_000) // 60s grace — lets clients receive final event before room disappears
+  }, ROOM_CLEANUP_GRACE_MS) // grace — lets clients receive final event before room disappears
 }
 
 function generateCode(): string {
@@ -691,11 +713,11 @@ function startPickTimer(io: SocketServer, room: Room) {
       io.to(code).emit('room-updated', { room: currentRoom })
       startPickTimer(io, currentRoom) // start timer for next pick
     }
-  }, 30000)
+  }, PICK_TIMER_MS)
 
   pickTimers.set(code, timer)
   pickTimerStartedAt.set(code, Date.now())
-  io.to(code).emit('pick-timer-start', { picker: currentPicker, duration: 30, spunTeam })
+  io.to(code).emit('pick-timer-start', { picker: currentPicker, duration: PICK_TIMER_MS / 1000, spunTeam })
 }
 
 function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
@@ -822,9 +844,9 @@ function advanceAuction(io: SocketServer, room: AuctionRoom) {
       room.lastWinnerName = null
       room.stealInitiated = false
       room.status = 'bidding'
-      room.bidDeadline = Date.now() + 25000
+      room.bidDeadline = Date.now() + BID_TIMER_MS
       if (room.bidTimer) clearTimeout(room.bidTimer)
-      room.bidTimer = setTimeout(() => handleAuctionBidExpiry(io, room), 25000)
+      room.bidTimer = setTimeout(() => handleAuctionBidExpiry(io, room), BID_TIMER_MS)
       broadcastAuctionState(io, room)
       return
     }
@@ -854,10 +876,10 @@ function handleAuctionBidExpiry(io: SocketServer, room: AuctionRoom) {
   room.lastWonAmount = room.currentBid
   room.stealInitiated = false
   room.status = 'steal-window'
-  room.bidDeadline = Date.now() + 10000
+  room.bidDeadline = Date.now() + STEAL_WINDOW_MS
   broadcastAuctionState(io, room)
   if (room.bidTimer) clearTimeout(room.bidTimer)
-  room.bidTimer = setTimeout(() => advanceAuction(io, room), 10000)
+  room.bidTimer = setTimeout(() => advanceAuction(io, room), STEAL_WINDOW_MS)
 }
 
 function startAuctionTradePhase(io: SocketServer, room: AuctionRoom) {
@@ -866,9 +888,9 @@ function startAuctionTradePhase(io: SocketServer, room: AuctionRoom) {
   room.bidDeadline = 0
   if (room.bidTimer) clearTimeout(room.bidTimer)
   room.bidTimer = null
-  room.tradeDeadline = Date.now() + 3 * 60 * 1000
+  room.tradeDeadline = Date.now() + TRADE_PHASE_MS
   if (room.tradeTimer) clearTimeout(room.tradeTimer)
-  room.tradeTimer = setTimeout(() => finishAuction(io, room), 3 * 60 * 1000)
+  room.tradeTimer = setTimeout(() => finishAuction(io, room), TRADE_PHASE_MS)
   broadcastAuctionState(io, room)
 }
 
@@ -899,7 +921,7 @@ function finishAuction(io: SocketServer, room: AuctionRoom) {
   for (const p of room.participants) {
     io.to(p.socketId).emit('auction:complete', { results })
   }
-  setTimeout(() => { auctionRooms.delete(room.code) }, 30 * 60 * 1000)
+  setTimeout(() => { auctionRooms.delete(room.code) }, AUCTION_CLEANUP_MS)
 }
 
 // ─── Server ──────────────────────────────────────────────────────────────────
@@ -1251,7 +1273,7 @@ app.prepare().then(async () => {
         const currentPicker = room.draftOrder[room.currentPickIndex]
         const startedAt = pickTimerStartedAt.get(code) ?? Date.now()
         const elapsed = Math.floor((Date.now() - startedAt) / 1000)
-        const remaining = Math.max(2, 30 - elapsed)
+        const remaining = Math.max(2, PICK_TIMER_MS / 1000 - elapsed)
         socket.emit('pick-timer-start', { picker: currentPicker, duration: remaining, spunTeam: room.currentSpunTeam })
       }
     })
@@ -1319,7 +1341,7 @@ app.prepare().then(async () => {
           socket.emit('listing-expired')
           io.to('lobby').emit('listings-updated', { listings: Array.from(gameListings.values()) })
         }
-      }, 10 * 60 * 1000)
+      }, LISTING_EXPIRY_MS)
       listingTimers.set(code, expireTimer)
 
       pendingListingCreate.delete(socket.id)
@@ -1394,7 +1416,7 @@ app.prepare().then(async () => {
         if (!rr) return
         readyRooms.delete(code)
         startGameFromReadyRoom(io, rr)
-      }, 60000)
+      }, READY_ROOM_TIMEOUT_MS)
 
       readyRooms.set(code, { code, hostEntry, guestEntry, hostReady: false, guestReady: false, timer: readyTimer })
 
@@ -1483,7 +1505,7 @@ app.prepare().then(async () => {
       let code = Math.random().toString(36).substring(2, 8).toUpperCase()
       while (auctionRooms.has(code)) code = Math.random().toString(36).substring(2, 8).toUpperCase()
 
-      const budget = teamSize === 5 ? 125 : teamSize === 8 ? 175 : 250
+      const budget = AUCTION_BUDGETS[teamSize] ?? 175
       const validPlayers = allPlayers.filter(p => p.ebkScore > 5)
       const shuffled = [...validPlayers].sort(() => Math.random() - 0.5)
       const poolSize = maxPlayers * teamSize * 2
@@ -1580,10 +1602,10 @@ app.prepare().then(async () => {
       room.currentBidderName = bidder.name
 
       const remaining = room.bidDeadline - Date.now()
-      if (remaining < 10000) {
-        room.bidDeadline = Date.now() + 10000
+      if (remaining < BID_EXTENSION_THRESHOLD_MS) {
+        room.bidDeadline = Date.now() + BID_EXTENSION_MS
         if (room.bidTimer) clearTimeout(room.bidTimer)
-        room.bidTimer = setTimeout(() => handleAuctionBidExpiry(io, room), 10000)
+        room.bidTimer = setTimeout(() => handleAuctionBidExpiry(io, room), BID_EXTENSION_MS)
       }
 
       room.bidLog.push({ name: bidder.name, amount, action: 'bid' })
@@ -1622,7 +1644,7 @@ app.prepare().then(async () => {
       const owner = room.participants.find(p => p.roster.includes(playerIdToSteal))
       if (!owner || owner.socketId === socket.id) { socket.emit('auction:error', { message: 'Invalid steal target' }); return }
       const originalPrice = owner.paidPrices[playerIdToSteal] ?? 1
-      const stealPrice = Math.ceil(originalPrice * 1.5)
+      const stealPrice = Math.ceil(originalPrice * STEAL_MULTIPLIER)
       if (stealer.budget < stealPrice) { socket.emit('auction:error', { message: `Need $${stealPrice}M to steal` }); return }
       if (stealer.roster.length >= room.teamSize) { socket.emit('auction:error', { message: 'Roster is full' }); return }
 
@@ -1638,7 +1660,7 @@ app.prepare().then(async () => {
       broadcastAuctionState(io, room)
 
       if (room.bidTimer) clearTimeout(room.bidTimer)
-      room.bidTimer = setTimeout(() => advanceAuction(io, room), 3000)
+      room.bidTimer = setTimeout(() => advanceAuction(io, room), POST_STEAL_ADVANCE_MS)
     })
 
     socket.on('auction:trade-offer', ({ code, toSocketId, offeredPlayerIds, requestedPlayerIds }: {

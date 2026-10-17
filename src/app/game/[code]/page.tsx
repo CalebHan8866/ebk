@@ -5,68 +5,13 @@ import { getSocket } from '@/lib/socket'
 import { CURRENT_TEAMS, getCurrentTeam } from '@/lib/teams'
 import { EMOTES } from '@/lib/accessories'
 import { useAuth } from '@/context/AuthContext'
-
-type TeamMode = 'starter5' | 'bench8' | 'full12'
-
-interface Player {
-  id: number
-  firstName: string
-  lastName: string
-  team: string
-  position: string
-  positions: string
-  careerGames: number
-  careerPPG: number
-  careerRPG: number
-  careerAPG: number
-  careerMPG: number
-  ebkScore: number
-  yearFrom: number
-  yearTo: number
-}
-
-interface GameResult {
-  game: number
-  statMode: string
-  hostTotal: number
-  guestTotal: number
-  winner: 'host' | 'guest' | 'draw'
-}
-
-interface Room {
-  code: string
-  hostSocketId: string
-  guestSocketId: string | null
-  hostName: string
-  guestName: string | null
-  teamMode: TeamMode
-  series: number
-  difficulty: 'casual' | 'ebk'
-  status: 'waiting' | 'drafting' | 'result' | 'complete'
-  draftOrder: ('host' | 'guest')[]
-  currentPickIndex: number
-  hostPicks: number[]
-  guestPicks: number[]
-  hostPickSlots: string[]
-  guestPickSlots: string[]
-  currentGame: number
-  hostSeriesScore: number
-  guestSeriesScore: number
-  gameResults: GameResult[]
-  currentSpunTeam: string | null
-}
+import { type TeamMode, type GameResult, type Room, type Player, TEAM_SIZES, getRequiredPositions, getStatModeForGame } from '@/types/game'
 
 const STAT_LABELS: Record<string, string> = {
   games_played: 'Games Played',
   ppg: 'Points Per Game',
   rpg: 'Rebounds Per Game',
   apg: 'Assists Per Game',
-}
-
-const STAT_CYCLE = ['games_played', 'ppg', 'rpg', 'apg']
-
-function getStatModeForGame(gameNum: number) {
-  return STAT_CYCLE[(gameNum - 1) % STAT_CYCLE.length]
 }
 
 function getStatValue(player: Player, mode: string): number {
@@ -92,15 +37,6 @@ function getStatUnit(statMode: string): string {
     case 'apg': return 'ast / game (career avg)'
     default: return ''
   }
-}
-
-const TEAM_SIZES: Record<TeamMode, number> = { starter5: 5, bench8: 8, full12: 12 }
-
-function getRequiredPositions(teamMode: TeamMode): string[] {
-  const starters = ['PG', 'SG', 'SF', 'PF', 'C']
-  const benchCount = TEAM_SIZES[teamMode] - 5
-  const bench = Array(benchCount).fill('BENCH')
-  return [...starters, ...bench]
 }
 
 // Map a flat list of picked player IDs to their correct position slots for display.
@@ -430,7 +366,7 @@ function GameContent() {
           <h2 className="font-display text-3xl text-white mb-2">
             {disconnectReason ? 'ROOM ERROR' : 'DISCONNECTED'}
           </h2>
-          <p className="text-gray-500 text-sm mb-6 leading-relaxed">{disconnectReason ?? 'Your opponent disconnected.'}</p>
+          <p className="text-gray-400 text-sm mb-6 leading-relaxed">{disconnectReason ?? 'Your opponent disconnected.'}</p>
           <button onClick={() => router.push('/lobby')} className="btn-primary w-full">Back to Lobby</button>
         </div>
       </div>
@@ -442,7 +378,7 @@ function GameContent() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 rounded-full border-2 border-orange-500 border-t-transparent animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500 text-sm tracking-widest uppercase">Connecting...</p>
+          <p className="text-gray-400 text-sm tracking-widest uppercase">Connecting...</p>
         </div>
       </div>
     )
@@ -460,14 +396,14 @@ function GameContent() {
           <div className="card-accent p-8 mb-4">
             <p className="text-label tracking-[0.2em] mb-4">Room Code</p>
             <div className="font-display text-7xl text-orange-400 tracking-[0.35em] leading-none mb-3">{room.code}</div>
-            <p className="text-gray-600 text-xs">Share this code with your opponent</p>
+            <p className="text-gray-400 text-xs">Share this code with your opponent</p>
           </div>
-          <div className="flex items-center justify-center gap-2 text-gray-600 text-sm">
+          <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
             <span className="bg-white/[0.04] border border-white/[0.07] rounded-lg px-3 py-1.5 text-xs font-black text-gray-300">
               {room.teamMode === 'starter5' ? 'Starter 5' : room.teamMode === 'bench8' ? 'Bench 8' : 'Full Roster'}
             </span>
             <span className="text-gray-700">·</span>
-            <span className="text-xs text-gray-500">{room.series === 1 ? '1 Game' : `Best of ${room.series}`}</span>
+            <span className="text-xs text-gray-400">{room.series === 1 ? '1 Game' : `Best of ${room.series}`}</span>
           </div>
         </div>
       </div>
