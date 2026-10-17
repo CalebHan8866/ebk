@@ -484,34 +484,38 @@ export default function LobbyPage() {
               </button>
             )}
             <div>
-              <h1 className="font-display text-6xl text-orange-500 leading-none tracking-wide">
-                {mainTab === 'online' ? 'ONLINE' : mainTab === 'friends' ? 'FRIENDS' : 'LOBBY'}
+              <p className="text-label mb-1">Head-to-Head Draft</p>
+              <h1 className="font-display text-7xl text-white leading-none tracking-wide">
+                <span className="text-orange-500">
+                  {mainTab === 'online' ? 'O' : mainTab === 'friends' ? 'F' : 'L'}
+                </span>
+                {mainTab === 'online' ? 'NLINE' : mainTab === 'friends' ? 'RIENDS' : 'OBBY'}
               </h1>
-              <p className="text-gray-400 text-[11px] tracking-[0.18em] uppercase mt-1.5">Elite Ball Knowledge</p>
             </div>
           </div>
 
           {/* User identity chip */}
           {!authLoading && user && (
-            <Link href="/profile" className="flex items-center gap-3 group">
-              <div className="text-right hidden sm:block">
-                <div className="text-white font-black text-sm group-hover:text-orange-400 transition-colors leading-tight">
-                  {user.username}
-                </div>
-                <div className="text-gray-400 text-xs mt-0.5">
-                  {user.wins}W {user.losses}L
-                  {(user.wins + user.losses) > 0 && (
-                    <span className="text-gray-500 ml-1.5">{winPct(user.wins, user.losses)}</span>
-                  )}
-                </div>
-              </div>
-              <div className="relative">
+            <Link href="/profile"
+              className="flex items-center gap-2.5 px-3 py-2 rounded-xl card-surface border border-white/[0.07] hover:border-orange-700/40 hover:bg-orange-950/20 transition-all group">
+              <div className="relative shrink-0">
                 <Avatar name={user.username} />
                 {user.winStreak >= 3 && (
                   <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-orange-500 rounded-full flex items-center justify-center text-[7px] font-black text-white">
                     {user.winStreak}
                   </span>
                 )}
+              </div>
+              <div className="hidden sm:block text-left">
+                <div className="text-xs font-black text-gray-200 group-hover:text-white transition-colors leading-tight tracking-wide">
+                  {user.username}
+                </div>
+                <div className="text-label tabular-nums" style={{ fontSize: '9px' }}>
+                  {user.wins}W–{user.losses}L
+                  {(user.wins + user.losses) > 0 && (
+                    <span className="ml-1 text-orange-500">{winPct(user.wins, user.losses)}</span>
+                  )}
+                </div>
               </div>
             </Link>
           )}
