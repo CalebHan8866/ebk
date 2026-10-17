@@ -273,6 +273,9 @@ const pickTimerStartedAt = new Map<string, number>()
 const consecutiveTimeouts = new Map<string, { host: number; guest: number }>()
 const emoteLastSent = new Map<string, number>() // socketId → timestamp
 const pendingListingCreate = new Set<string>() // socketId → in-flight guard
+// Per-socket bid throttle: socketId → { count, windowStart }
+// Allows max 5 bids per second per socket to prevent DoS spam
+const bidThrottle = new Map<string, { count: number; windowStart: number }>()
 // cooldown: userId → Map(opponentId → timestamp of last game end)
 const recentMatchups = new Map<string, Map<string, number>>()
 // grudge: userId → Map(opponentId → total games played together)
@@ -1452,6 +1455,16 @@ app.prepare().then(async () => {
     })
 
     socket.on('auction:bid', ({ code, amount }: { code: string; amount: number }) => {
+      // Rate limit: max 5 bids per second per socket to prevent DoS spam
+      const now = Date.now()
+      const throttle = bidThrottle.get(socket.id)
+      if (throttle && now - throttle.windowStart < 1000) {
+        if (throttle.count >= 5) { socket.emit('auction:error', { message: 'Bidding too fast — slow down.' }); return }
+        throttle.count++
+      } else {
+        bidThrottle.set(socket.id, { count: 1, windowStart: now })
+      }
+
       const room = auctionRooms.get(code)
       if (!room || room.status !== 'bidding') return
       const bidder = room.participants.find(p => p.socketId === socket.id)
@@ -1634,6 +1647,7 @@ app.prepare().then(async () => {
 
     socket.on('disconnect', () => {
       emoteLastSent.delete(socket.id)
+      bidThrottle.delete(socket.id)
       // Remove any open listing by this socket
       for (const [code, listing] of gameListings.entries()) {
         if (listing.hostSocketId === socket.id) {

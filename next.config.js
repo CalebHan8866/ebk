@@ -18,6 +18,21 @@ const nextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          {
+            key: 'Content-Security-Policy',
+            // socket.io requires connect-src for WebSocket connections back to self.
+            // cdnjs is whitelisted for Twemoji SVG img-src.
+            // Inline styles are permitted (Tailwind runtime) — unsafe-inline only for style-src.
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https://cdnjs.cloudflare.com",
+              "font-src 'self'",
+              "connect-src 'self' wss:",
+              "frame-ancestors 'none'",
+            ].join('; '),
+          },
         ],
       },
       {

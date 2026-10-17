@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     response.cookies.set('ebk-token', authToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       maxAge: 60 * 60 * 24 * 7,
     })
     return response
