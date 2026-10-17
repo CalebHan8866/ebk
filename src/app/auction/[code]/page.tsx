@@ -148,6 +148,9 @@ export default function AuctionRoomPage() {
   const [selectedToOffer, setSelectedToOffer] = useState<number[]>([])
   const [selectedToRequest, setSelectedToRequest] = useState<number[]>([])
   const [mobilePanel, setMobilePanel] = useState<WarRoomPanel>('bid')
+  // Flash when you win a player (green glow on the current bid card)
+  const [justWon, setJustWon] = useState(false)
+  const prevWinnerRef = useRef<string | null>(null)
   // If the user is authenticated, always use their username so the server can reliably
   // re-seat them on reconnect (the server matches by name + userId). For unauthenticated
   // users, use a ref-stable random name generated once at mount.
@@ -179,6 +182,18 @@ export default function AuctionRoomPage() {
       setBidAmount(auctionState.currentBid + 1)
     }
   }, [auctionState?.currentBid, auctionState?.currentPlayer?.id])
+
+  // Flash green when you win a player — fires when lastWinnerSocketId transitions to our id
+  useEffect(() => {
+    const winner = auctionState?.lastWinnerSocketId
+    if (winner && winner !== prevWinnerRef.current && winner === mySocketId) {
+      setJustWon(true)
+      const t = setTimeout(() => setJustWon(false), 1800)
+      prevWinnerRef.current = winner
+      return () => clearTimeout(t)
+    }
+    prevWinnerRef.current = winner ?? null
+  }, [auctionState?.lastWinnerSocketId, mySocketId])
 
   // Scroll bid log
   useEffect(() => {
@@ -990,17 +1005,24 @@ export default function AuctionRoomPage() {
             )}
 
             {/* Current bid */}
-            <div className={`w-full max-w-sm rounded-2xl px-6 py-5 text-center transition-all ${
-              amLeading
+            <div className={`w-full max-w-sm rounded-2xl px-6 py-5 text-center transition-all duration-300 ${
+              justWon
+                ? 'bg-green-950/40 border border-green-500/50 shadow-[0_0_40px_rgba(34,197,94,0.25)]'
+                : amLeading
                 ? 'bg-orange-950/40 border border-orange-500/50 shadow-[0_0_32px_rgba(234,88,12,0.18)] animate-glow'
                 : auctionState.currentBid > 0
                 ? 'bg-white/[0.03] border border-white/[0.08]'
                 : 'bg-white/[0.015] border border-white/[0.04]'
             }`} aria-live="polite" aria-atomic="true">
-              <div className="text-label mb-1 tracking-[0.2em]">Current Bid</div>
+              <div className="text-label mb-1 tracking-[0.2em]">
+                {justWon ? 'PLAYER WON!' : 'Current Bid'}
+              </div>
               <div
                 key={auctionState.currentBid}
-                className={`bid-hero animate-num-pop ${auctionState.currentBid > 0 ? (amLeading ? 'text-orange-400' : 'text-white') : 'text-white/15'}`}
+                className={`bid-hero animate-num-pop ${
+                  justWon ? 'text-green-400' :
+                  auctionState.currentBid > 0 ? (amLeading ? 'text-orange-400' : 'text-white') : 'text-white/15'
+                }`}
                 aria-label={auctionState.currentBid > 0 ? `Current bid: $${auctionState.currentBid}M` : 'No bids yet'}
               >
                 {auctionState.currentBid > 0 ? `$${auctionState.currentBid}M` : '–––'}
