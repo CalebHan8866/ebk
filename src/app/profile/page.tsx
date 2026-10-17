@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { BADGES, EMOTES, MILESTONES } from '@/lib/accessories'
 import { useAuth } from '@/context/AuthContext'
 
+type ProfileTab = 'overview' | 'stats' | 'badges' | 'milestones'
+
 interface UserProfile {
   id: string
   username: string
@@ -31,6 +33,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [equippedBadges, setEquippedBadges] = useState<string[]>([])
   const [equippedEmote, setEquippedEmote] = useState('')
+  const [activeTab, setActiveTab] = useState<ProfileTab>('overview')
   const router = useRouter()
   const { setUser: setAuthUser, user: authUser } = useAuth()
 
@@ -160,7 +163,7 @@ export default function ProfilePage() {
       <div className="max-w-3xl mx-auto">
 
         {/* Page header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="font-display text-5xl text-orange-500 leading-none tracking-wide">PROFILE</h1>
             <p className="text-gray-600 text-[11px] tracking-[0.18em] uppercase mt-1.5">
@@ -170,9 +173,31 @@ export default function ProfilePage() {
           <Link href="/lobby" className="btn-secondary py-2 px-4 text-xs">← Lobby</Link>
         </div>
 
+        {/* Tab nav */}
+        <div className="flex gap-1 mb-7 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1">
+          {([
+            ['overview',   'Overview'],
+            ['stats',      'Stats'],
+            ['badges',     'Badges'],
+            ['milestones', 'Milestones'],
+          ] as [ProfileTab, string][]).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`flex-1 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
+                activeTab === key
+                  ? 'bg-orange-600 text-white shadow'
+                  : 'text-gray-500 hover:text-white'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className="space-y-6">
 
-          {/* Player identity card — elevated hero with glow */}
+          {/* ── Always-visible identity hero ── */}
           <div className="profile-hero p-5 sm:p-8">
             {/* Mobile: avatar centered on top, info below. sm+: row layout */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
@@ -207,6 +232,9 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* ── Overview tab ── */}
+          {activeTab === 'overview' && <>
 
           {/* Career stats — card-stat for maximum number contrast */}
           <div className="card-stat p-6">
@@ -272,6 +300,133 @@ export default function ProfilePage() {
             )}
           </div>
 
+          {/* History quick-link */}
+          <div className="card-surface p-4 flex items-center justify-between rounded-xl">
+            <div>
+              <div className="font-black text-white text-sm">Game History</div>
+              <div className="text-gray-500 text-xs mt-0.5">See every match result</div>
+            </div>
+            <Link href="/history" className="text-orange-400 text-sm font-black hover:text-orange-300 transition-colors">View →</Link>
+          </div>
+
+          </>}
+
+          {/* ── Stats tab ── */}
+          {activeTab === 'stats' && <>
+          <div className="card-stat p-6">
+            <h3 className="text-label mb-5 tracking-[0.18em]">Performance Breakdown</h3>
+
+            {/* Win / Loss / Draw trio */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="stat-highlight rounded-xl py-4 text-center">
+                <div className="font-display text-5xl text-green-400 leading-none">{user.wins}</div>
+                <div className="text-label mt-1.5">Wins</div>
+              </div>
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl py-4 text-center">
+                <div className="font-display text-5xl text-red-400 leading-none">{user.losses}</div>
+                <div className="text-label mt-1.5">Losses</div>
+              </div>
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl py-4 text-center">
+                <div className="font-display text-5xl text-yellow-400 leading-none">{user.draws}</div>
+                <div className="text-label mt-1.5">Draws</div>
+              </div>
+            </div>
+
+            {/* Win rate bar */}
+            <div className="mb-5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-label tracking-[0.14em]">Win Rate</span>
+                <span className="text-white text-sm font-black">{winPct}%</span>
+              </div>
+              <div className="budget-bar">
+                <div className="budget-bar-fill" style={{ width: `${winPctNum}%` }} />
+              </div>
+            </div>
+
+            {/* Advanced grid */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-4 text-center">
+                <div className="font-display text-3xl text-orange-400 leading-none">{user.gamesPlayed}</div>
+                <div className="text-label mt-1">Games Played</div>
+              </div>
+              <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-4 text-center">
+                <div className="font-display text-3xl text-orange-300 leading-none">{user.maxWinStreak}</div>
+                <div className="text-label mt-1">Best Streak</div>
+              </div>
+              <div className={`bg-white/[0.03] border border-white/[0.05] rounded-xl p-4 text-center ${user.winStreak >= 3 ? 'border-orange-700/30 bg-orange-950/20' : ''}`}>
+                <div className={`font-display text-3xl leading-none ${user.winStreak >= 3 ? 'text-orange-400' : 'text-gray-400'}`}>
+                  {user.winStreak >= 3 ? `🔥 ${user.winStreak}` : user.winStreak}
+                </div>
+                <div className="text-label mt-1">Current Streak</div>
+              </div>
+              {user.firstPickGames > 0 ? (
+                <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-4 text-center">
+                  <div className="font-display text-3xl text-blue-400 leading-none">
+                    {((user.firstPickWins / user.firstPickGames) * 100).toFixed(0)}%
+                  </div>
+                  <div className="text-label mt-1">1st Pick Win%</div>
+                </div>
+              ) : (
+                <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-4 text-center">
+                  <div className="font-display text-3xl text-gray-600 leading-none">—</div>
+                  <div className="text-label mt-1">1st Pick Win%</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Performance insights */}
+          <div className="card-surface p-6">
+            <h3 className="font-display text-xl text-white tracking-wider leading-none mb-4">Insights</h3>
+            <div className="space-y-3">
+              {/* Games to win ratio */}
+              <div className="flex items-center justify-between py-2.5 border-b border-white/[0.05]">
+                <span className="text-gray-400 text-sm">Win percentage</span>
+                <span className={`font-black text-sm tabular-nums ${winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-white' : 'text-red-400'}`}>
+                  {total >= 5 ? `${winPct}%` : 'Need 5+ games'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 border-b border-white/[0.05]">
+                <span className="text-gray-400 text-sm">Losses per 10 games</span>
+                <span className="font-black text-sm tabular-nums text-white">
+                  {total > 0 ? ((user.losses / total) * 10).toFixed(1) : '—'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-2.5 border-b border-white/[0.05]">
+                <span className="text-gray-400 text-sm">Draw rate</span>
+                <span className="font-black text-sm tabular-nums text-yellow-400">
+                  {total > 0 ? `${((user.draws / total) * 100).toFixed(1)}%` : '—'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-2.5">
+                <span className="text-gray-400 text-sm">Best streak ever</span>
+                <span className="font-black text-sm tabular-nums text-orange-400">
+                  {user.maxWinStreak > 0 ? `${user.maxWinStreak} wins` : '—'}
+                </span>
+              </div>
+            </div>
+
+            {/* Tier badge */}
+            <div className="mt-5 pt-4 border-t border-white/[0.06]">
+              <div className="text-label mb-2">Tier</div>
+              {(() => {
+                const w = user.wins
+                if (w >= 100) return <div className="inline-flex items-center gap-2 bg-yellow-950 border border-yellow-700/50 rounded-full px-4 py-1.5"><span className="text-yellow-400 text-sm font-black">👑 Legend · {w}W</span></div>
+                if (w >= 50)  return <div className="inline-flex items-center gap-2 bg-purple-950 border border-purple-700/50 rounded-full px-4 py-1.5"><span className="text-purple-400 text-sm font-black">💎 Elite · {w}W</span></div>
+                if (w >= 25)  return <div className="inline-flex items-center gap-2 bg-blue-950 border border-blue-700/50 rounded-full px-4 py-1.5"><span className="text-blue-400 text-sm font-black">⚡ Veteran · {w}W</span></div>
+                if (w >= 10)  return <div className="inline-flex items-center gap-2 bg-green-950 border border-green-800/50 rounded-full px-4 py-1.5"><span className="text-green-400 text-sm font-black">🏀 Baller · {w}W</span></div>
+                return <div className="inline-flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-full px-4 py-1.5"><span className="text-gray-400 text-sm font-black">🌱 Rookie · {w}W</span></div>
+              })()}
+            </div>
+          </div>
+
+          <div className="text-center pb-2">
+            <Link href="/history" className="text-gray-500 text-sm hover:text-orange-400 transition-colors">View game history →</Link>
+          </div>
+          </>}
+
+          {/* ── Badges tab ── */}
+          {activeTab === 'badges' && <>
           {/* Badges */}
           <div className="card-surface p-6">
             <h2 className="font-display text-2xl text-white tracking-wider leading-none mb-1">Badges</h2>
@@ -339,7 +494,7 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* Emotes */}
+          {/* Emotes — still in badges tab */}
           <div className="card-surface p-6">
             <h2 className="font-display text-2xl text-white tracking-wider leading-none mb-1">Emotes</h2>
             <p className="text-gray-500 text-xs mb-5">Send a quick message after a game. Equip one to use in matches.</p>
@@ -388,6 +543,10 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          </>}
+
+          {/* ── Milestones tab ── */}
+          {activeTab === 'milestones' && <>
           {/* Milestones */}
           <div className="card-surface p-6">
             <h2 className="font-display text-2xl text-white tracking-wider leading-none mb-1">Milestones</h2>
@@ -439,6 +598,7 @@ export default function ProfilePage() {
               Play Now
             </Link>
           </div>
+          </>}
 
         </div>
       </div>

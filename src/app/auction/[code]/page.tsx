@@ -336,51 +336,168 @@ export default function AuctionRoomPage() {
   }
 
   if (phase === 'complete' && results.length > 0) {
-    const medals = ['🥇', '🥈', '🥉']
-    const medalBg = [
-      'bg-yellow-500/10 border-yellow-500/30',
-      'bg-gray-400/10 border-gray-400/30',
-      'bg-orange-800/10 border-orange-700/30',
+    // ── Draft grade calculation ────────────────────────────────────────────────
+    // Lower EBK total = better draft (core game mechanic)
+    const sortedByScore = [...results].sort((a, b) => a.ebkTotal - b.ebkTotal)
+    const bestScore  = sortedByScore[0]?.ebkTotal ?? 0
+    const worstScore = sortedByScore[sortedByScore.length - 1]?.ebkTotal ?? bestScore
+
+    const getDraftGrade = (ebkTotal: number, rank: number): { grade: string; color: string; bg: string; label: string } => {
+      const range = worstScore - bestScore
+      const pctFromBest = range > 0 ? (ebkTotal - bestScore) / range : 0
+      if (rank === 0)           return { grade: 'A+', color: 'text-green-300', bg: 'bg-green-500/15 border-green-500/30', label: 'Elite Draft' }
+      if (pctFromBest <= 0.15)  return { grade: 'A',  color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20', label: 'Excellent' }
+      if (pctFromBest <= 0.35)  return { grade: 'B+', color: 'text-blue-300',  bg: 'bg-blue-500/10 border-blue-500/20',  label: 'Strong' }
+      if (pctFromBest <= 0.55)  return { grade: 'B',  color: 'text-blue-400',  bg: 'bg-blue-500/10 border-blue-500/15',  label: 'Solid' }
+      if (pctFromBest <= 0.75)  return { grade: 'C',  color: 'text-yellow-400',bg: 'bg-yellow-500/10 border-yellow-500/20', label: 'Needs Work' }
+      return                           { grade: 'D',  color: 'text-red-400',   bg: 'bg-red-500/10 border-red-500/20',    label: 'Overpaid' }
+    }
+
+    const bestValuePlayer = (roster: RosterPlayer[]) =>
+      roster.filter(p => p && p.paidPrice > 0).sort((a, b) => (b.ebkScore / b.paidPrice) - (a.ebkScore / a.paidPrice))[0]
+
+    const isMe = (r: AuctionResult) => r.socketId === mySocketId
+    const PODIUM_STYLES = [
+      { medal: '🥇', border: 'border-yellow-500/40', bg: 'bg-yellow-950/30', glow: 'shadow-[0_0_32px_rgba(234,179,8,0.12)]', rank: 'text-yellow-300', nameSize: 'text-xl sm:text-2xl' },
+      { medal: '🥈', border: 'border-slate-500/30',  bg: 'bg-slate-900/30',  glow: '',                                         rank: 'text-slate-300', nameSize: 'text-lg sm:text-xl' },
+      { medal: '🥉', border: 'border-orange-800/30', bg: 'bg-orange-950/20', glow: '',                                         rank: 'text-orange-400', nameSize: 'text-base sm:text-lg' },
     ]
 
     return (
-      <div className="min-h-screen px-4 py-8 sm:py-10 max-w-4xl mx-auto animate-fade-in">
-        <div className="text-center mb-8 sm:mb-10">
-          <h1 className="font-display text-4xl sm:text-5xl text-orange-500 tracking-wider mb-1">FINAL ROSTERS</h1>
-          <p className="text-white/40 text-sm">War Room · {code}</p>
+      <div className="min-h-screen px-4 py-8 sm:py-12 max-w-4xl mx-auto animate-fade-in">
+
+        {/* ── Header — ESPN-style recap banner ── */}
+        <div className="text-center mb-10">
+          <p className="text-[10px] font-black tracking-[0.5em] text-gray-600 uppercase mb-3">
+            War Room · {code} · Draft Recap
+          </p>
+          <h1 className="font-display text-5xl sm:text-6xl text-white tracking-wider leading-none mb-2">
+            DRAFT <span className="text-orange-500">COMPLETE</span>
+          </h1>
+          <p className="text-gray-500 text-sm">{results.length} GMs · {results[0]?.rosterCount} players each</p>
         </div>
 
-        <div className="space-y-4 mb-10">
-          {results.map((r, i) => (
-            <div key={r.socketId} className={`card-surface border ${medalBg[i] || 'border-white/[0.07]'} p-4 sm:p-5 animate-slide-up`} style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}>
-              <div className="flex items-center gap-3 sm:gap-4 mb-4">
-                <span className="text-2xl sm:text-3xl shrink-0">{medals[i] || `#${i + 1}`}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-base sm:text-lg text-white truncate">{r.name}</p>
-                  <p className="text-white/40 text-xs sm:text-sm">${r.budgetSpent}M spent · {r.rosterCount} players</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="font-display text-2xl sm:text-3xl text-orange-400">{r.ebkTotal}</p>
-                  <p className="text-white/30 text-xs uppercase tracking-widest">EBK Score</p>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {r.roster.map(p => p && (
-                  <div key={p.id} className="flex items-center gap-2 bg-white/[0.04] rounded-lg px-3 py-1.5">
-                    <PosBadge pos={p.position} />
-                    <span className="text-white text-sm font-bold">{p.firstName[0]}. {p.lastName}</span>
-                    <span className="text-orange-400 text-xs">{p.ebkScore.toFixed(1)}</span>
-                    <span className="text-white/30 text-xs">${p.paidPrice}M</span>
-                  </div>
-                ))}
+        {/* ── Winner spotlight ── */}
+        {sortedByScore[0] && (
+          <div className="mb-8 animate-scale-in">
+            <div className="relative card-accent border border-yellow-500/30 p-6 sm:p-8 text-center overflow-hidden shadow-[0_0_60px_rgba(234,179,8,0.08)]">
+              <div className="absolute inset-0 pointer-events-none"
+                style={{ background: 'radial-gradient(ellipse 70% 90% at 50% 0%, rgba(234,179,8,0.07) 0%, transparent 70%)' }} />
+              <div className="relative">
+                <div className="text-4xl mb-2">🏆</div>
+                <p className="text-[10px] font-black tracking-[0.4em] text-yellow-600 uppercase mb-1">Best Draft</p>
+                <h2 className="font-display text-4xl sm:text-5xl text-yellow-300 tracking-wider leading-none mb-1">
+                  {sortedByScore[0].name}
+                  {isMe(sortedByScore[0]) && (
+                    <span className="ml-3 text-sm text-orange-400 font-sans font-black align-middle">YOU</span>
+                  )}
+                </h2>
+                <p className="text-gray-500 text-sm mt-1">
+                  EBK Total:{' '}
+                  <span className="text-yellow-400 font-black text-xl">{sortedByScore[0].ebkTotal.toFixed(1)}</span>
+                </p>
               </div>
             </div>
-          ))}
+          </div>
+        )}
+
+        {/* ── All GM draft cards ── */}
+        <div className="space-y-4 mb-10">
+          {sortedByScore.map((r, i) => {
+            const style = PODIUM_STYLES[i] || {
+              medal: `#${i+1}`, border: 'border-white/[0.07]', bg: '', glow: '', rank: 'text-gray-500', nameSize: 'text-base',
+            }
+            const grade = getDraftGrade(r.ebkTotal, i)
+            const totalBudget = auctionState?.totalBudget ?? 100
+            const budgetRemaining = totalBudget - r.budgetSpent
+            const budgetPct = (r.budgetSpent / totalBudget) * 100
+            const bestVal = bestValuePlayer(r.roster)
+            const meStyle = isMe(r) ? 'ring-2 ring-orange-500/50' : ''
+
+            return (
+              <div
+                key={r.socketId}
+                className={`card-surface border ${style.border} ${style.bg} ${style.glow} ${meStyle} rounded-2xl p-5 sm:p-6 animate-slide-up`}
+                style={{ animationDelay: `${i * 100}ms`, animationFillMode: 'both' }}
+              >
+                {/* GM header row */}
+                <div className="flex items-start gap-3 sm:gap-4 mb-5">
+                  <div className="text-3xl sm:text-4xl shrink-0 leading-none pt-0.5">{style.medal}</div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className={`font-display ${style.nameSize} ${style.rank} leading-none tracking-wide truncate`}>
+                        {r.name}
+                      </h3>
+                      {isMe(r) && (
+                        <span className="text-[9px] font-black text-orange-500 bg-orange-950 border border-orange-700/50 rounded px-1.5 py-[2px] uppercase tracking-wider shrink-0">
+                          YOU
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500 flex-wrap">
+                      <span>${r.budgetSpent}M spent</span>
+                      <span className="text-gray-700">·</span>
+                      <span className={budgetRemaining <= 5 ? 'text-red-400' : 'text-gray-500'}>${budgetRemaining}M left</span>
+                      <span className="text-gray-700">·</span>
+                      <span>{r.rosterCount} players</span>
+                    </div>
+                    <div className="mt-2 budget-bar" style={{ height: '3px' }}>
+                      <div className="budget-bar-fill" style={{ width: `${Math.min(100, budgetPct)}%` }} />
+                    </div>
+                  </div>
+
+                  {/* EBK score + draft grade */}
+                  <div className="text-right shrink-0">
+                    <div className="font-display text-3xl sm:text-4xl text-orange-400 leading-none tabular-nums">
+                      {r.ebkTotal.toFixed(1)}
+                    </div>
+                    <div className="text-white/30 text-[10px] uppercase tracking-widest mb-2">EBK Total</div>
+                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-black ${grade.bg} ${grade.color}`}>
+                      <span className="text-xl leading-none">{grade.grade}</span>
+                      <span className="hidden sm:inline text-[10px] font-bold opacity-80">{grade.label}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Player chips */}
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {r.roster.filter(Boolean).map(p => (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-1.5 bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.06] rounded-lg px-2.5 py-1.5 transition-colors"
+                    >
+                      <PosBadge pos={p.position} />
+                      <span className="text-white text-xs font-bold">{p.firstName[0]}. {p.lastName}</span>
+                      <span className="text-orange-400 text-xs font-black tabular-nums">{p.ebkScore.toFixed(1)}</span>
+                      <span className="text-white/25 text-[10px] tabular-nums">${p.paidPrice}M</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Best value callout */}
+                {bestVal && (
+                  <div className="flex items-center gap-2 pt-3 border-t border-white/[0.05] text-xs text-gray-500 flex-wrap">
+                    <span className="text-green-400 font-black shrink-0">⚡ Best Value:</span>
+                    <span className="text-white font-bold">{bestVal.firstName[0]}. {bestVal.lastName}</span>
+                    <span className="text-gray-600">{bestVal.ebkScore.toFixed(1)} EBK for ${bestVal.paidPrice}M</span>
+                    <span className="text-green-500/70 ml-auto font-black tabular-nums">
+                      {(bestVal.ebkScore / bestVal.paidPrice).toFixed(2)}/M
+                    </span>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
 
-        <div className="flex justify-center gap-4">
+        {/* ── Action row ── */}
+        <div className="flex justify-center gap-3 flex-wrap">
           <Link href="/auction" className="btn-primary">Play Again</Link>
-          <Link href="/lobby" className="px-6 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/30 transition-all">
+          <Link href="/leaderboard" className="px-6 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/30 transition-all text-sm font-bold">
+            Leaderboard
+          </Link>
+          <Link href="/lobby" className="px-6 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/30 transition-all text-sm font-bold">
             Back to Lobby
           </Link>
         </div>

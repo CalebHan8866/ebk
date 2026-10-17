@@ -33,7 +33,6 @@ function SkeletonRow({ wide }: { wide?: boolean }) {
         <div className={`h-3.5 rounded bg-white/10 ${wide ? 'w-32' : 'w-24'}`} />
         <div className="h-2.5 w-12 rounded bg-white/[0.07]" />
       </div>
-      {/* stat columns */}
       <div className="w-10 h-4 rounded bg-white/10 shrink-0" />
       <div className="w-10 h-4 rounded bg-white/10 shrink-0" />
       <div className="w-12 h-4 rounded bg-white/10 shrink-0" />
@@ -45,7 +44,6 @@ function SkeletonScreen() {
   return (
     <div className="min-h-screen py-10 px-4">
       <div className="max-w-2xl mx-auto">
-        {/* header skeleton */}
         <div className="flex items-center justify-between mb-6">
           <div className="space-y-2">
             <div className="h-9 w-48 rounded bg-white/10 animate-pulse" />
@@ -53,15 +51,12 @@ function SkeletonScreen() {
           </div>
           <div className="h-4 w-16 rounded bg-white/[0.07] animate-pulse" />
         </div>
-        {/* sort tabs skeleton */}
         <div className="flex gap-2 mb-5">
           {[80, 64, 88].map(w => (
             <div key={w} className={`h-9 w-[${w}px] rounded-xl bg-white/[0.06] animate-pulse`} />
           ))}
         </div>
-        {/* column headers */}
         <div className="h-6 w-full rounded bg-white/[0.04] animate-pulse mb-1" />
-        {/* rows */}
         <div className="space-y-1.5">
           {[true, false, false, false, false, false, false].map((w, i) => (
             <SkeletonRow key={i} wide={w} />
@@ -94,33 +89,111 @@ function BadgeIcons({ equippedBadges }: { equippedBadges: string }) {
   )
 }
 
-// ── Rank display — number or medal ────────────────────────────────────────────
-const TOP3_COLORS = ['text-yellow-400', 'text-slate-300', 'text-orange-400'] as const
-const TOP3_BG     = [
-  'bg-yellow-950/25 border-yellow-700/35',
-  'bg-slate-900/50  border-slate-600/35',
-  'bg-orange-950/20 border-orange-800/35',
-] as const
+// ── Rank badge chips ──────────────────────────────────────────────────────────
+function RankChip({ user, rank, totalPlayers }: { user: LeaderboardUser; rank: number; totalPlayers: number }) {
+  const chips: { label: string; cls: string }[] = []
 
-function RankCell({ rank, isTop3 }: { rank: number; isTop3: boolean }) {
-  if (rank === 1) return (
-    <div className="w-9 text-center shrink-0">
-      <span className="font-display text-2xl text-yellow-400 leading-none drop-shadow-[0_0_6px_rgba(250,204,21,0.5)]">1</span>
-    </div>
-  )
-  if (rank === 2) return (
-    <div className="w-9 text-center shrink-0">
-      <span className="font-display text-xl text-slate-300 leading-none">2</span>
-    </div>
-  )
-  if (rank === 3) return (
-    <div className="w-9 text-center shrink-0">
-      <span className="font-display text-xl text-orange-400 leading-none">3</span>
-    </div>
-  )
+  if (user.winStreak >= 5) chips.push({ label: '🔥 Hot Streak', cls: 'bg-orange-950 border-orange-700/50 text-orange-400' })
+  else if (user.winStreak >= 3) chips.push({ label: '🔥 On Fire', cls: 'bg-orange-950/70 border-orange-800/50 text-orange-500' })
+
+  if (rank <= 10) chips.push({ label: '👑 Top 10', cls: 'bg-yellow-950 border-yellow-700/50 text-yellow-400' })
+
+  const winPct = user.gamesPlayed >= 10 ? (user.wins / user.gamesPlayed) * 100 : 0
+  if (winPct >= 70 && user.gamesPlayed >= 10) chips.push({ label: '⚡ Rising', cls: 'bg-blue-950 border-blue-700/50 text-blue-400' })
+
+  if (!chips.length) return null
   return (
-    <div className="w-9 text-center shrink-0">
-      <span className="font-black text-sm tabular-nums text-gray-500">{rank}</span>
+    <div className="flex gap-1 mt-0.5 flex-wrap">
+      {chips.slice(0, 2).map(c => (
+        <span key={c.label} className={`text-[9px] font-black px-1.5 py-[2px] rounded border leading-none ${c.cls}`}>{c.label}</span>
+      ))}
+    </div>
+  )
+}
+
+// ── Podium card for top 3 ─────────────────────────────────────────────────────
+const PODIUM_CONFIG = [
+  {
+    order: 1,
+    height: 'h-32',
+    avatarSize: 'w-16 h-16',
+    avatarText: 'text-3xl',
+    nameSize: 'text-base',
+    scoreSize: 'text-3xl',
+    medalLabel: '🥇',
+    borderGlow: 'border-yellow-500/50 shadow-[0_0_24px_rgba(234,179,8,0.25)]',
+    bg: 'bg-gradient-to-b from-yellow-950/60 to-yellow-950/20',
+    rankColor: 'text-yellow-400',
+    scoreColor: 'text-yellow-300',
+    crown: true,
+  },
+  {
+    order: 2,
+    height: 'h-24',
+    avatarSize: 'w-12 h-12',
+    avatarText: 'text-2xl',
+    nameSize: 'text-sm',
+    scoreSize: 'text-2xl',
+    medalLabel: '🥈',
+    borderGlow: 'border-slate-500/40 shadow-[0_0_16px_rgba(148,163,184,0.15)]',
+    bg: 'bg-gradient-to-b from-slate-800/40 to-slate-900/20',
+    rankColor: 'text-slate-300',
+    scoreColor: 'text-slate-200',
+    crown: false,
+  },
+  {
+    order: 3,
+    height: 'h-20',
+    avatarSize: 'w-11 h-11',
+    avatarText: 'text-xl',
+    nameSize: 'text-sm',
+    scoreSize: 'text-2xl',
+    medalLabel: '🥉',
+    borderGlow: 'border-orange-700/40 shadow-[0_0_14px_rgba(194,65,12,0.15)]',
+    bg: 'bg-gradient-to-b from-orange-950/50 to-orange-950/10',
+    rankColor: 'text-orange-400',
+    scoreColor: 'text-orange-300',
+    crown: false,
+  },
+]
+
+function PodiumCard({ user, rank, isMe, totalPlayers }: { user: LeaderboardUser; rank: number; isMe: boolean; totalPlayers: number }) {
+  const cfg = PODIUM_CONFIG[rank - 1]
+  const winPct = user.gamesPlayed > 0 ? ((user.wins / user.gamesPlayed) * 100).toFixed(1) : '0.0'
+
+  return (
+    <div className={`flex flex-col items-center gap-0 ${rank === 1 ? 'order-2' : rank === 2 ? 'order-1' : 'order-3'}`}>
+      {/* Avatar + badge hover */}
+      <div className="relative group mb-2">
+        {cfg.crown && (
+          <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-2xl pointer-events-none select-none">👑</div>
+        )}
+        <div className={`${cfg.avatarSize} rounded-full flex items-center justify-center font-black text-white shrink-0 ${
+          isMe ? 'bg-orange-500 ring-2 ring-orange-300' : rank === 1 ? 'bg-gradient-to-br from-yellow-600 to-yellow-800' : rank === 2 ? 'bg-gradient-to-br from-slate-500 to-slate-700' : 'bg-gradient-to-br from-orange-700 to-orange-900'
+        }`}>
+          <span className={cfg.avatarText}>{user.username[0].toUpperCase()}</span>
+        </div>
+      </div>
+
+      {/* Name + YOU tag */}
+      <div className="text-center mb-1">
+        <div className="flex items-center justify-center gap-1">
+          <span className={`font-black truncate max-w-[80px] ${cfg.nameSize} ${cfg.rankColor}`}>{user.username}</span>
+          {isMe && <span className="text-[8px] font-black text-orange-500 bg-orange-950 border border-orange-700/50 rounded px-1 py-[1px] leading-none">YOU</span>}
+        </div>
+        <div className="text-[10px] text-gray-500 tabular-nums">{user.wins}W–{user.losses}L · {winPct}%</div>
+        {user.winStreak >= 3 && (
+          <div className="text-[9px] font-black text-orange-400 mt-0.5">🔥{user.winStreak}</div>
+        )}
+      </div>
+
+      {/* Podium platform */}
+      <div className={`w-full ${cfg.height} ${cfg.bg} border ${cfg.borderGlow} rounded-t-xl flex items-center justify-center`}>
+        <div className="text-center">
+          <div className={`font-display ${cfg.scoreSize} ${cfg.scoreColor} leading-none`}>{cfg.medalLabel}</div>
+          <div className={`font-display text-xl ${cfg.rankColor} leading-none mt-0.5`}>#{rank}</div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -142,13 +215,9 @@ function WinPctBadge({ pct, gamesPlayed }: { pct: string; gamesPlayed: number })
 function ColumnHeaders({ sort }: { sort: SortKey }) {
   return (
     <div className="flex items-center gap-3 px-4 pb-1.5 pt-0.5">
-      {/* rank col */}
       <div className="w-9 shrink-0" />
-      {/* avatar col */}
       <div className="w-8 shrink-0" />
-      {/* player col */}
       <div className="flex-1 min-w-0 text-label">Player</div>
-      {/* stat columns — always visible, sorted col highlighted */}
       <div className={`w-10 text-right text-label shrink-0 ${sort === 'wins' ? 'text-orange-500' : ''}`}>W</div>
       <div className="w-10 text-right text-label shrink-0">L</div>
       <div className={`w-14 text-right text-label shrink-0 ${sort === 'winPct' ? 'text-orange-500' : ''}`}>WIN%</div>
@@ -157,42 +226,42 @@ function ColumnHeaders({ sort }: { sort: SortKey }) {
   )
 }
 
-// ── Leaderboard row ───────────────────────────────────────────────────────────
+// ── Leaderboard row (rank 4+) ─────────────────────────────────────────────────
 interface RowProps {
   user: LeaderboardUser
   rank: number
   isMe: boolean
   sort: SortKey
+  totalPlayers: number
   rowRef?: React.RefObject<HTMLDivElement>
 }
 
-function LeaderboardRow({ user: u, rank, isMe, sort, rowRef }: RowProps) {
-  const isTop3 = rank <= 3
+function LeaderboardRow({ user: u, rank, isMe, sort, totalPlayers, rowRef }: RowProps) {
   const winPct = u.gamesPlayed > 0 ? ((u.wins / u.gamesPlayed) * 100).toFixed(1) : '0.0'
 
   const rowClass = [
     'table-row gap-3 rounded-xl border min-h-[44px]',
     isMe
       ? 'bg-orange-950/30 border-orange-600/50 ring-1 ring-orange-600/30'
-      : isTop3
-        ? TOP3_BG[rank - 1]
-        : 'border-white/[0.06]',
+      : 'border-white/[0.06]',
   ].join(' ')
 
   return (
     <div ref={rowRef} className={rowClass}>
       {/* Rank */}
-      <RankCell rank={rank} isTop3={isTop3} />
+      <div className="w-9 text-center shrink-0">
+        <span className="font-black text-sm tabular-nums text-gray-500">{rank}</span>
+      </div>
 
       {/* Avatar */}
-      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-white text-xs shrink-0 ${isMe ? 'bg-orange-500' : isTop3 ? 'bg-orange-700/80' : 'bg-orange-900/60'}`}>
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-white text-xs shrink-0 ${isMe ? 'bg-orange-500' : 'bg-orange-900/60'}`}>
         {u.username[0].toUpperCase()}
       </div>
 
-      {/* Player name + badges */}
+      {/* Player name + chips */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className={`font-black text-sm truncate ${isMe ? 'text-orange-300' : isTop3 ? TOP3_COLORS[rank - 1] : 'text-white'}`}>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className={`font-black text-sm truncate ${isMe ? 'text-orange-300' : 'text-white'}`}>
             {u.username}
           </span>
           {isMe && (
@@ -201,27 +270,30 @@ function LeaderboardRow({ user: u, rank, isMe, sort, rowRef }: RowProps) {
             </span>
           )}
         </div>
-        <BadgeIcons equippedBadges={u.equippedBadges} />
+        <div className="flex items-center gap-1 flex-wrap">
+          <BadgeIcons equippedBadges={u.equippedBadges} />
+          <RankChip user={u} rank={rank} totalPlayers={totalPlayers} />
+        </div>
       </div>
 
-      {/* W — always visible, highlighted when sorting by wins */}
+      {/* W */}
       <div className="w-10 text-right shrink-0">
         <span className={`tabular-nums font-black text-sm ${sort === 'wins' ? 'text-white' : 'text-gray-300'}`}>
           {u.wins}
         </span>
       </div>
 
-      {/* L — always visible */}
+      {/* L */}
       <div className="w-10 text-right shrink-0">
         <span className="tabular-nums font-bold text-sm text-gray-500">{u.losses}</span>
       </div>
 
-      {/* WIN% — always visible, color-coded, highlighted when sorting by winPct */}
+      {/* WIN% */}
       <div className="w-14 text-right shrink-0">
         <WinPctBadge pct={winPct} gamesPlayed={u.gamesPlayed} />
       </div>
 
-      {/* Streak — always visible, fire icon when hot, highlighted when sorting by streak */}
+      {/* Streak */}
       <div className="w-12 text-right shrink-0">
         {u.winStreak >= 3 ? (
           <span className={`tabular-nums font-black text-xs ${sort === 'winStreak' ? 'text-orange-400' : 'text-orange-500/70'}`}>
@@ -252,10 +324,8 @@ function MyRankBanner({ me, totalPlayers }: { me: MeRow; totalPlayers: number })
         </div>
       </div>
 
-      {/* Divider */}
       <div className="w-px self-stretch bg-white/[0.07] shrink-0 hidden xs:block" />
 
-      {/* W-L — hidden on very small screens to prevent overflow */}
       <div className="text-center shrink-0 hidden xs:block">
         <div className="text-label mb-1">Record</div>
         <div className="flex items-baseline gap-1 tabular-nums">
@@ -266,10 +336,8 @@ function MyRankBanner({ me, totalPlayers }: { me: MeRow; totalPlayers: number })
         </div>
       </div>
 
-      {/* Divider */}
       <div className="w-px self-stretch bg-white/[0.07] shrink-0 mx-0.5 sm:mx-1" />
 
-      {/* Win% */}
       <div className="text-center shrink-0">
         <div className="text-label mb-1">Win%</div>
         <div className={`font-display text-xl sm:text-2xl leading-none tabular-nums ${
@@ -279,10 +347,8 @@ function MyRankBanner({ me, totalPlayers }: { me: MeRow; totalPlayers: number })
         </div>
       </div>
 
-      {/* Divider */}
       <div className="w-px self-stretch bg-white/[0.07] shrink-0 mx-1 hidden sm:block" />
 
-      {/* Streak */}
       <div className="text-center shrink-0 hidden sm:block">
         <div className="text-label mb-1">Streak</div>
         <div className={`font-display text-2xl leading-none tabular-nums ${me.winStreak >= 3 ? 'text-orange-400' : 'text-gray-400'}`}>
@@ -344,6 +410,8 @@ export default function LeaderboardPage() {
   })
 
   const meInList = me ? sorted.findIndex(u => u.id === me.id) : -1
+  const top3 = sorted.slice(0, 3)
+  const rest = sorted.slice(3)
 
   if (loading) return <SkeletonScreen />
 
@@ -372,7 +440,7 @@ export default function LeaderboardPage() {
         {me && <MyRankBanner me={me} totalPlayers={totalPlayers} />}
 
         {/* ── Sort tabs ── */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-6">
           {([
             ['wins',      'Most Wins'],
             ['winPct',    'Win %'],
@@ -390,34 +458,55 @@ export default function LeaderboardPage() {
           ))}
         </div>
 
-        {/* ── Table ── */}
         {sorted.length === 0 ? <EmptyState /> : (
-          <div className="card-surface rounded-2xl overflow-hidden">
-            {/* Column headers */}
-            <ColumnHeaders sort={sort} />
-
-            {/* Divider */}
-            <div className="mx-4 h-px bg-white/[0.06]" />
-
-            {/* Rows — rendered inside the card so last-child border-bottom fires */}
-            <div className="px-2 py-1.5 space-y-0.5">
-              {sorted.map((u, i) => (
-                <div
-                  key={u.id}
-                  className="animate-slide-up"
-                  style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: 'both' }}
-                >
-                  <LeaderboardRow
-                    user={u}
-                    rank={i + 1}
-                    isMe={me?.id === u.id}
-                    sort={sort}
-                    rowRef={me?.id === u.id ? meRowRef : undefined}
-                  />
+          <>
+            {/* ── Podium — top 3 ── */}
+            {top3.length >= 2 && (
+              <div className="mb-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <p className="text-[10px] font-black tracking-[0.4em] text-gray-600 uppercase">Top Performers</p>
+                  <div className="flex-1 h-px bg-white/[0.05]" />
                 </div>
-              ))}
-            </div>
-          </div>
+                <div className="grid grid-cols-3 gap-2 items-end px-2">
+                  {top3.map((u, i) => (
+                    <PodiumCard
+                      key={u.id}
+                      user={u}
+                      rank={i + 1}
+                      isMe={me?.id === u.id}
+                      totalPlayers={totalPlayers}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Ranks 4+ table ── */}
+            {rest.length > 0 && (
+              <div className="card-surface rounded-2xl overflow-hidden">
+                <ColumnHeaders sort={sort} />
+                <div className="mx-4 h-px bg-white/[0.06]" />
+                <div className="px-2 py-1.5 space-y-0.5">
+                  {rest.map((u, i) => (
+                    <div
+                      key={u.id}
+                      className="animate-slide-up"
+                      style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: 'both' }}
+                    >
+                      <LeaderboardRow
+                        user={u}
+                        rank={i + 4}
+                        isMe={me?.id === u.id}
+                        sort={sort}
+                        totalPlayers={totalPlayers}
+                        rowRef={me?.id === u.id ? meRowRef : undefined}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* ── Pinned "you" row if outside top 100 ── */}
@@ -428,13 +517,26 @@ export default function LeaderboardPage() {
                 ? 'You are outside the top 100'
                 : 'Your stats (rank shown by wins)'}
             </div>
-            <LeaderboardRow
-              user={me}
-              rank={me.rank}
-              isMe
-              sort={sort}
-              rowRef={meRowRef}
-            />
+            {/* Highlighted pinned "You" row */}
+            <div className="rounded-xl border border-orange-500/40 bg-orange-950/20 ring-1 ring-orange-600/20 px-3 py-3 flex items-center gap-3">
+              <div className="w-9 text-center shrink-0">
+                <span className="font-black text-sm tabular-nums text-orange-400">#{me.rank}</span>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center font-black text-white text-xs shrink-0">
+                {me.username[0].toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-black text-sm text-orange-300 truncate">{me.username}</span>
+                  <span className="text-[9px] font-black text-orange-500 bg-orange-950 border border-orange-700/50 rounded px-1.5 py-[2px] leading-none uppercase">YOU</span>
+                </div>
+                <RankChip user={me} rank={me.rank} totalPlayers={totalPlayers} />
+              </div>
+              <div className="text-right shrink-0 space-y-0.5">
+                <div className="text-xs font-black text-green-400 tabular-nums">{me.wins}W <span className="text-gray-600">·</span> <span className="text-red-400">{me.losses}L</span></div>
+                <WinPctBadge pct={me.gamesPlayed > 0 ? ((me.wins / me.gamesPlayed) * 100).toFixed(1) : '0.0'} gamesPlayed={me.gamesPlayed} />
+              </div>
+            </div>
           </div>
         )}
 

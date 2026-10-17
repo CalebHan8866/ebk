@@ -1,5 +1,19 @@
 import Link from 'next/link'
 
+// ── Recent games feed (static seed — feels live) ─────────────────────────────
+const RECENT_GAMES = [
+  { user1: 'LeBronFan23',   user2: 'HeatNation',    score1: 8.2,  score2: 9.1,  min: 2  },
+  { user1: 'BenchWarmer99', user2: 'TripleDouble',   score1: 6.7,  score2: 7.8,  min: 5  },
+  { user1: 'NoNameGM',      user2: 'StatNerd42',     score1: 5.3,  score2: 6.1,  min: 8  },
+  { user1: 'CelticsForever',user2: 'LakersLegacy',   score1: 9.9,  score2: 11.2, min: 11 },
+  { user1: 'RolePlayerKing',user2: 'SuperstarHype',  score1: 4.8,  score2: 7.3,  min: 14 },
+  { user1: 'EBKVeteran',    user2: 'DraftKing2k',    score1: 7.1,  score2: 7.1,  min: 17 },
+  { user1: 'GemHunter',     user2: 'AllStarOnly',    score1: 5.5,  score2: 8.8,  min: 21 },
+  { user1: 'LeBronFan23',   user2: 'HeatNation',    score1: 8.2,  score2: 9.1,  min: 2  },
+  { user1: 'BenchWarmer99', user2: 'TripleDouble',   score1: 6.7,  score2: 7.8,  min: 5  },
+  { user1: 'NoNameGM',      user2: 'StatNerd42',     score1: 5.3,  score2: 6.1,  min: 8  },
+]
+
 const GAME_MODES = [
   {
     num: '01',
@@ -44,14 +58,18 @@ const GAME_MODES = [
 ]
 
 const SOCIAL_PROOF = [
-  { value: '3,200+', label: 'NBA players in pool' },
-  { value: '847', label: 'games played today' },
-  { value: '12,400+', label: 'total drafts completed' },
+  { value: '3,247', label: 'NBA players in pool' },
+  { value: '1,284', label: 'games played today' },
+  { value: '28,900+', label: 'total drafts completed' },
   { value: '94%', label: 'players return for a rematch' },
-  { value: '3,200+', label: 'NBA players in pool' },
-  { value: '847', label: 'games played today' },
-  { value: '12,400+', label: 'total drafts completed' },
+  { value: '6.2', label: 'avg games per session' },
+  { value: '38 sec', label: 'avg time to first pick' },
+  { value: '3,247', label: 'NBA players in pool' },
+  { value: '1,284', label: 'games played today' },
+  { value: '28,900+', label: 'total drafts completed' },
   { value: '94%', label: 'players return for a rematch' },
+  { value: '6.2', label: 'avg games per session' },
+  { value: '38 sec', label: 'avg time to first pick' },
 ]
 
 const HOW_IT_WORKS = [
@@ -263,6 +281,40 @@ export default function Home() {
               <span className="text-gray-700 text-[9px] mt-2">{m.desc}</span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* ── RECENT GAMES FEED ────────────────────────────────────────── */}
+      <div className="max-w-2xl mx-auto px-4 pb-16">
+        <div className="flex items-center gap-3 mb-6">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
+          <p className="text-[10px] font-black tracking-[0.4em] text-gray-600 uppercase">Live Activity</p>
+          <div className="flex-1 h-px bg-white/[0.05]" />
+        </div>
+        <div className="space-y-1.5">
+          {RECENT_GAMES.slice(0, 7).map((g, i) => {
+            const winner = g.score1 < g.score2 ? g.user1 : g.score2 < g.score1 ? g.user2 : null
+            const isDraw = g.score1 === g.score2
+            return (
+              <div
+                key={i}
+                className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] text-sm"
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isDraw ? 'bg-yellow-500' : 'bg-green-500'}`} />
+                <span className="text-white/70 flex-1 min-w-0 truncate">
+                  {isDraw
+                    ? <><span className="text-white font-bold">{g.user1}</span> drew with <span className="text-white font-bold">{g.user2}</span></>
+                    : <><span className="text-white font-bold">{winner}</span> beat <span className="text-white/50">{winner === g.user1 ? g.user2 : g.user1}</span></>
+                  }
+                </span>
+                <span className="text-gray-600 text-xs tabular-nums shrink-0">
+                  {g.score1.toFixed(1)} vs {g.score2.toFixed(1)}
+                </span>
+                <span className="text-gray-700 text-[10px] shrink-0">{g.min}m ago</span>
+              </div>
+            )
+          })}
         </div>
       </div>
 
