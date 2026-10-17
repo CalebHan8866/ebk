@@ -8,17 +8,28 @@ export async function GET(request: NextRequest) {
   try {
     const token = request.nextUrl.searchParams.get('token')
     if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 400 })
+    // Reject implausibly long tokens before hitting the DB (crypto.randomBytes(32).hex = 64 chars)
+    if (token.length > 128) return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 })
 
+    // Look up the user by token first so we have their id for the JWT.
     const user = await prisma.user.findFirst({
       where: { verificationToken: token },
       select: { id: true, username: true, tokenVersion: true },
     })
     if (!user) return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 })
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { emailVerified: true, verificationToken: null }
+    // Atomic single-use enforcement: include BOTH id AND token in the WHERE clause.
+    // If two concurrent requests race on the same token, only the first updateMany
+    // will match a row (count > 0) because the token is cleared by the first write.
+    // The second request finds count === 0 and returns 400 — no duplicate sessions.
+    const updated = await prisma.user.updateMany({
+      where: { id: user.id, verificationToken: token },
+      data: { emailVerified: true, verificationToken: null },
     })
+    if (updated.count === 0) {
+      // Lost the race — another concurrent request already consumed this token
+      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 })
+    }
 
     // Auto-log the user in after verification so they land on the success screen already authenticated.
     // Set the cookie directly on the redirect response — cookies().set() operates on a separate

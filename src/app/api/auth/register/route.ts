@@ -36,9 +36,9 @@ export async function POST(request: NextRequest) {
       await prisma.user.create({
         data: { username, email, password: hashed, verificationToken, emailVerified: false }
       })
-    } catch (e: any) {
+    } catch (e: unknown) {
       // P2002 = Prisma unique constraint violation (race condition: concurrent signup with same username/email)
-      if (e?.code === 'P2002') {
+      if (typeof e === 'object' && e !== null && 'code' in e && (e as { code: unknown }).code === 'P2002') {
         return NextResponse.json({ error: 'Username or email already taken' }, { status: 409 })
       }
       throw e

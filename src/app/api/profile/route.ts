@@ -91,8 +91,8 @@ export async function PATCH(request: NextRequest) {
       })
 
       return NextResponse.json({ user })
-    } catch (e: any) {
-      if (e?.code === 'P2002') {
+    } catch (e: unknown) {
+      if (typeof e === 'object' && e !== null && 'code' in e && (e as { code: unknown }).code === 'P2002') {
         return NextResponse.json({ error: 'Username is already taken' }, { status: 409 })
       }
       throw e

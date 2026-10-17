@@ -879,6 +879,14 @@ function handleAuctionBidExpiry(io: SocketServer, room: AuctionRoom) {
   }
   const winner = room.participants.find(p => p.socketId === room.currentBidderSocketId)
   if (!winner || !room.currentPlayer) { advanceAuction(io, room); return }
+  // Defensive guard: budget must still cover the bid (should always hold since bids are
+  // validated at submission time and budgets can only increase via steal refunds, but
+  // guard here to prevent any future code path from causing underflow).
+  if (winner.budget < room.currentBid) {
+    console.warn('[auction] bid-expiry budget underflow prevented code=%s winner=%s budget=%d bid=%d',
+      room.code, winner.name, winner.budget, room.currentBid)
+    advanceAuction(io, room); return
+  }
   winner.roster.push(room.currentPlayer.id)
   winner.paidPrices[room.currentPlayer.id] = room.currentBid
   winner.budget -= room.currentBid
@@ -1602,6 +1610,11 @@ app.prepare().then(async () => {
         socket.join(`auction:${room.code}`)
         broadcastAuctionState(io, room); return
       }
+      // Reject duplicate names in the waiting room — the reconnect-by-name logic relies
+      // on names being unique per room to identify the correct participant slot.
+      if (room.participants.some(p => p.name === userName)) {
+        socket.emit('auction:error', { message: 'That name is already taken in this room' }); return
+      }
       const userId: string | null = (socket.data as { userId?: string })?.userId ?? null
       room.participants.push({ socketId: socket.id, userId, name: userName, budget: room.totalBudget, roster: [], paidPrices: {} })
       socket.join(`auction:${room.code}`)
@@ -1632,10 +1645,10 @@ app.prepare().then(async () => {
       if (!room || room.status !== 'bidding') return
       const bidder = room.participants.find(p => p.socketId === socket.id)
       if (!bidder) return
-      if (!Number.isInteger(amount) || amount <= room.currentBid) {
+      if (!Number.isInteger(amount) || amount < 1 || amount <= room.currentBid) {
         socket.emit('auction:error', { message: `Bid must be more than $${room.currentBid}M` }); return
       }
-      if (bidder.budget < amount) { socket.emit('auction:error', { message: 'Not enough budget' }); return }
+      if (amount > bidder.budget) { socket.emit('auction:error', { message: 'Not enough budget' }); return }
       if (bidder.roster.length >= room.teamSize) { socket.emit('auction:error', { message: 'Roster is full' }); return }
 
       room.currentBid = amount
@@ -1658,6 +1671,8 @@ app.prepare().then(async () => {
     socket.on('auction:pass', ({ code, playerIndex }: { code: string; playerIndex: number }) => {
       const room = auctionRooms.get(code)
       if (!room || room.status !== 'bidding') return
+      // Validate playerIndex is an integer — reject spoofed non-numeric values
+      if (!Number.isInteger(playerIndex)) return
       // Ignore if the player is passing on an already-advanced round
       if (room.currentPlayerIndex !== playerIndex) return
       const passer = room.participants.find(p => p.socketId === socket.id)
@@ -1680,6 +1695,10 @@ app.prepare().then(async () => {
       const room = auctionRooms.get(code)
       if (!room || room.status !== 'steal-window') return
       if (room.stealInitiated) { socket.emit('auction:error', { message: 'Steal already used this round' }); return }
+      // Validate playerIdToSteal is a positive integer to prevent prototype pollution or NaN tricks
+      if (!Number.isInteger(playerIdToSteal) || playerIdToSteal <= 0) {
+        socket.emit('auction:error', { message: 'Invalid steal target' }); return
+      }
       const stealer = room.participants.find(p => p.socketId === socket.id)
       if (!stealer) return
       const owner = room.participants.find(p => p.roster.includes(playerIdToSteal))
@@ -1718,6 +1737,24 @@ app.prepare().then(async () => {
       const from = room.participants.find(p => p.socketId === socket.id)
       const to = room.participants.find(p => p.socketId === toSocketId)
       if (!from || !to) return
+      // Validate arrays are proper non-empty arrays of integers within roster bounds.
+      // empty-array trades are no-ops that pollute the offer list; oversized arrays
+      // could reference players outside the pool.
+      if (!Array.isArray(offeredPlayerIds) || !Array.isArray(requestedPlayerIds)) {
+        socket.emit('auction:error', { message: 'Invalid trade payload' }); return
+      }
+      if (offeredPlayerIds.length === 0 && requestedPlayerIds.length === 0) {
+        socket.emit('auction:error', { message: 'Trade must include at least one player' }); return
+      }
+      if (offeredPlayerIds.length > room.teamSize || requestedPlayerIds.length > room.teamSize) {
+        socket.emit('auction:error', { message: 'Too many players in trade offer' }); return
+      }
+      if (!offeredPlayerIds.every(id => Number.isInteger(id) && id > 0)) {
+        socket.emit('auction:error', { message: 'Invalid player IDs in trade offer' }); return
+      }
+      if (!requestedPlayerIds.every(id => Number.isInteger(id) && id > 0)) {
+        socket.emit('auction:error', { message: 'Invalid player IDs in trade request' }); return
+      }
       if (!offeredPlayerIds.every(id => from.roster.includes(id))) { socket.emit('auction:error', { message: "You don't own those players" }); return }
       if (!requestedPlayerIds.every(id => to.roster.includes(id))) { socket.emit('auction:error', { message: "They don't own those players" }); return }
 
@@ -1739,6 +1776,12 @@ app.prepare().then(async () => {
       if (offerIdx === -1) return
       const offer = room.tradeOffers[offerIdx]
       if (offer.toSocketId !== socket.id) return
+      // Extra guard: reject self-accept even if socketIds match after a reconnect collision
+      if (offer.fromSocketId === socket.id) {
+        room.tradeOffers.splice(offerIdx, 1)
+        socket.emit('auction:error', { message: 'Cannot accept your own trade offer' })
+        return
+      }
       room.tradeOffers.splice(offerIdx, 1)
 
       if (accept) {

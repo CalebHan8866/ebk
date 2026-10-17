@@ -37,7 +37,9 @@ export async function POST(request: NextRequest) {
     const req = HL_BADGE_REQUIREMENTS[milestone]
     if (req) {
       if (req.streakRequired !== undefined) {
-        if (typeof streak !== 'number' || !Number.isFinite(streak) || streak < 0 || !Number.isInteger(streak)) {
+        // Validate type, sign, and impose a sane upper bound (total player pool is ~4 000,
+        // so no legitimate game could produce a streak above that).
+        if (typeof streak !== 'number' || !Number.isFinite(streak) || streak < 0 || !Number.isInteger(streak) || streak > 10_000) {
           return NextResponse.json({ error: 'Invalid streak value' }, { status: 400 })
         }
         if (streak < req.streakRequired) {
