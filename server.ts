@@ -1409,8 +1409,16 @@ app.prepare().then(async () => {
 
       // Allow a previous participant (same name) to reconnect even if auction has started.
       // New socketId after reconnect won't match, so check by name first.
+      // Security: if the stored participant has a userId, the reconnecting socket must
+      // present a matching userId — blocking name-guessing seat hijacks by unauthenticated
+      // clients or authenticated clients using a different account.
+      const incomingUserId: string | null = (socket.data as { userId?: string })?.userId ?? null
       const existingByName = room.participants.find(p => p.name === userName)
       if (existingByName && room.status !== 'waiting') {
+        if (existingByName.userId && incomingUserId !== existingByName.userId) {
+          socket.emit('auction:error', { message: 'Unauthorized' })
+          return
+        }
         const wasHost = existingByName.socketId === room.hostSocketId
         existingByName.socketId = socket.id
         if (wasHost) room.hostSocketId = socket.id
@@ -1476,6 +1484,14 @@ app.prepare().then(async () => {
       if (room.currentPlayerIndex !== playerIndex) return
       const passer = room.participants.find(p => p.socketId === socket.id)
       if (!passer) return
+      // Only allow a pass when nobody has bid yet — once a bid is placed the
+      // auction must run its course (timer or outbid). Without this check any
+      // participant could force-skip a player that another participant is winning,
+      // cancelling a valid bid.
+      if (room.currentBid > 0) {
+        socket.emit('auction:error', { message: 'Cannot pass after a bid has been placed' })
+        return
+      }
       // Cancel the running timer so handleAuctionBidExpiry doesn't also fire
       if (room.bidTimer) { clearTimeout(room.bidTimer); room.bidTimer = null }
       room.bidLog.push({ name: passer.name, amount: 0, action: 'pass' })
@@ -1515,6 +1531,12 @@ app.prepare().then(async () => {
     }) => {
       const room = auctionRooms.get(code)
       if (!room || room.status !== 'trading') return
+      // Prevent self-trade: offering to yourself would corrupt paidPrices when the
+      // same participant object is used as both `from` and `to`.
+      if (toSocketId === socket.id) {
+        socket.emit('auction:error', { message: 'Cannot trade with yourself' })
+        return
+      }
       const from = room.participants.find(p => p.socketId === socket.id)
       const to = room.participants.find(p => p.socketId === toSocketId)
       if (!from || !to) return
@@ -1574,10 +1596,19 @@ app.prepare().then(async () => {
 
       // Handle reconnection: if this socket is not a participant but a participant
       // has the same name (or same userId), update their socketId.
+      // Security: if the stored participant has a userId, the reconnecting socket
+      // must present a matching userId — otherwise any unauthenticated client can
+      // steal a seat by knowing the participant's username.
       const existing = room.participants.find(p => p.socketId === socket.id)
       if (!existing && userName) {
         const byName = room.participants.find(p => p.name === userName)
         if (byName) {
+          const incomingUserId: string | null = (socket.data as { userId?: string })?.userId ?? null
+          // If the stored participant was authenticated, require a matching userId.
+          if (byName.userId && incomingUserId !== byName.userId) {
+            socket.emit('auction:error', { message: 'Unauthorized' })
+            return
+          }
           // Re-seat this socket into the existing participant slot (reconnection)
           const wasHost = byName.socketId === room.hostSocketId
           byName.socketId = socket.id
