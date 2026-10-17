@@ -14,7 +14,7 @@ function VerifyContent() {
       // Refresh user state in context after auto-login
       fetch('/api/auth/me').then(r => r.json()).then(d => {
         if (d.user) setUser(d.user)
-      })
+      }).catch(() => {})
     }
   }, [success, setUser])
 
