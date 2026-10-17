@@ -476,16 +476,16 @@ export default function LobbyPage() {
 
         {/* ── Page header ─────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             {mainTab && (
               <button onClick={() => { setMainTab(null); setError('') }}
-                className="text-gray-400 hover:text-white transition-colors text-sm font-bold mr-1">
+                className="text-gray-400 hover:text-white transition-colors text-sm font-bold shrink-0">
                 ← Back
               </button>
             )}
-            <div>
+            <div className="min-w-0">
               <p className="text-label mb-1">Head-to-Head Draft</p>
-              <h1 className="font-display text-7xl text-white leading-none tracking-wide">
+              <h1 className="font-display text-4xl sm:text-7xl text-white leading-none tracking-wide truncate">
                 <span className="text-orange-500">
                   {mainTab === 'online' ? 'O' : mainTab === 'friends' ? 'F' : 'L'}
                 </span>
@@ -494,10 +494,10 @@ export default function LobbyPage() {
             </div>
           </div>
 
-          {/* User identity chip */}
+          {/* User identity chip — hide on mobile when inside a mode (navbar covers it) */}
           {!authLoading && user && (
             <Link href="/profile"
-              className="flex items-center gap-2.5 px-3 py-2 rounded-xl card-surface border border-white/[0.07] hover:border-orange-700/40 hover:bg-orange-950/20 transition-all group">
+              className="hidden sm:flex items-center gap-2.5 px-3 py-2 rounded-xl card-surface border border-white/[0.07] hover:border-orange-700/40 hover:bg-orange-950/20 transition-all group shrink-0">
               <div className="relative shrink-0">
                 <Avatar name={user.username} />
                 {user.winStreak >= 3 && (
