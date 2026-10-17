@@ -98,6 +98,7 @@ body {
   transform: translateY(-1px);
 }
 .btn-primary:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(234,88,12,0.3); }
+.btn-primary:focus-visible { outline: 2px solid rgba(249,115,22,0.7); outline-offset: 3px; }
 
 .btn-secondary {
   display: inline-flex;
@@ -121,6 +122,8 @@ body {
   border-color: rgba(255,255,255,0.2);
   color: #fff;
 }
+.btn-secondary:active { background: rgba(255,255,255,0.08); }
+.btn-secondary:focus-visible { outline: 2px solid rgba(255,255,255,0.3); outline-offset: 3px; }
 
 /* ── Typography scales ──────────────────────────────────────────────────────── */
 .stat-mega { font-family: var(--font-bebas), sans-serif; letter-spacing: 0.02em; line-height: 1; }
@@ -259,6 +262,18 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: shimmer 2s linear infinite;
+}
+
+/* ── Focus ring — consistent across all interactive elements ─────────────────── */
+*:focus-visible {
+  outline: 2px solid rgba(249,115,22,0.55);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* Elements with custom focus styles suppress the default ring */
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible {
+  outline-offset: 3px;
 }
 
 /* ── Input validation states ──────────────────────────────────────────────────── */
