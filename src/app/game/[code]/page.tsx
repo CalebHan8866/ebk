@@ -112,11 +112,20 @@ function GameContent() {
   const [seriesWinner, setSeriesWinner] = useState<'host' | 'guest' | 'draw' | null>(null)
   const [filterPos, setFilterPos] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
+  // Debounced search query — actual filter runs on this, not searchQuery directly
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null)
   const [lastResult, setLastResult] = useState<GameResult | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const [disconnected, setDisconnected] = useState(false)
   const [disconnectReason, setDisconnectReason] = useState<string | null>(null)
+  // Opponent pick highlight — shows a flash animation on newly drafted opponent player
+  const [recentOppPickId, setRecentOppPickId] = useState<number | null>(null)
+  const recentOppPickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // My own most recently drafted player ID — for the enter animation in my roster
+  const [recentMyPickId, setRecentMyPickId] = useState<number | null>(null)
+  const recentMyPickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Emotes & accessories
   const [opponentEmote, setOpponentEmote] = useState<string | null>(null)
   const [unlockedToast, setUnlockedToast] = useState<{ type: string; name: string }[] | null>(null)
@@ -161,7 +170,7 @@ function GameContent() {
     const handleDraftStarted = ({ room, players }: { room: Room; players: Player[] }) => {
       playersRef.current = players
       playerByIdRef.current = new Map(players.map(p => [p.id, p]))
-      setRoom(room); setPlayers(players); setLastResult(null); setSearchQuery('')
+      setRoom(room); setPlayers(players); setLastResult(null); setSearchQuery(''); setDebouncedSearch('')
       // Reset spinner/pick state from previous game in series
       setIsSpinning(false)
       setSpunTeam(null)
@@ -169,12 +178,42 @@ function GameContent() {
       setSelectedPlayerId(null)
       setPickError(null)
       setCurrentPickerInTimer(null)
+      setRecentOppPickId(null)
+      setRecentMyPickId(null)
       if (pickTimerRef.current) { clearInterval(pickTimerRef.current); pickTimerRef.current = null }
       spinRefs.current.forEach(id => { clearInterval(id); clearTimeout(id) })
       spinRefs.current = []
       spinIntervalRef.current = null
     }
-    const handleRoomUpdated = ({ room }: { room: Room }) => { setRoom(room); setSelectedPlayerId(null) }
+    const handleRoomUpdated = ({ room }: { room: Room }) => {
+      // Detect newly added picks to flash-highlight them in the roster panels
+      setRoom(prev => {
+        if (prev) {
+          const prevOppPicks = role === 'host' ? prev.guestPicks : prev.hostPicks
+          const nextOppPicks = role === 'host' ? room.guestPicks : room.hostPicks
+          if (nextOppPicks.length > prevOppPicks.length) {
+            const newId = nextOppPicks[nextOppPicks.length - 1]
+            if (newId !== undefined) {
+              setRecentOppPickId(newId)
+              if (recentOppPickTimerRef.current) clearTimeout(recentOppPickTimerRef.current)
+              recentOppPickTimerRef.current = setTimeout(() => setRecentOppPickId(null), 2000)
+            }
+          }
+          const prevMyPicks = role === 'host' ? prev.hostPicks : prev.guestPicks
+          const nextMyPicks = role === 'host' ? room.hostPicks : room.guestPicks
+          if (nextMyPicks.length > prevMyPicks.length) {
+            const newMyId = nextMyPicks[nextMyPicks.length - 1]
+            if (newMyId !== undefined) {
+              setRecentMyPickId(newMyId)
+              if (recentMyPickTimerRef.current) clearTimeout(recentMyPickTimerRef.current)
+              recentMyPickTimerRef.current = setTimeout(() => setRecentMyPickId(null), 1500)
+            }
+          }
+        }
+        return room
+      })
+      setSelectedPlayerId(null)
+    }
     const handleGameResult = ({ room, result }: { room: Room; result: GameResult }) => {
       setRoom(room); setLastResult(result); setCurrentPickerInTimer(null); refreshUser()
     }
@@ -337,8 +376,22 @@ function GameContent() {
       if (warningTimerRef.current) clearTimeout(warningTimerRef.current)
       spinRefs.current.forEach(id => { clearTimeout(id); clearInterval(id) })
       spinRefs.current = []
+      if (recentOppPickTimerRef.current) clearTimeout(recentOppPickTimerRef.current)
+      if (recentMyPickTimerRef.current) clearTimeout(recentMyPickTimerRef.current)
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
     }
   }, [code, role])
+
+  // Debounce search query by 120ms — prevents janky filtering on every keystroke
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    searchDebounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+    }, 120)
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    }
+  }, [searchQuery])
 
   // Load user's unlocked emotes
   useEffect(() => {
@@ -687,13 +740,20 @@ function GameContent() {
           <div>
           {/* Result header */}
           <div className="text-center mb-4">
+            {/* Game N of Y pill */}
+            <div className="inline-flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.08] rounded-full px-3 py-1 mb-3">
+              <span className="text-label">Game {effectiveLastResult.game}</span>
+              {room.series > 1 && (
+                <span className="text-label">of {room.series}</span>
+              )}
+            </div>
             <div
               className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text' : isDraw ? 'text-gray-400 animate-scale-in' : 'text-gray-400 animate-loss-drop'}`}
               style={iWon ? { fontSize: 'clamp(5rem, 20vw, 8rem)' } : { fontSize: 'clamp(4rem, 18vw, 7rem)' }}>
               {iWon ? 'W' : isDraw ? 'D' : 'L'}
             </div>
             <div className={`font-black text-lg ${iWon ? 'text-white' : isDraw ? 'text-gray-400' : 'text-gray-400'}`}>
-              {iWon ? `Game ${effectiveLastResult.game} — You Win` : isDraw ? `Game ${effectiveLastResult.game} — Draw` : `Game ${effectiveLastResult.game} — You Lose`}
+              {iWon ? 'You Win' : isDraw ? 'Draw' : 'You Lose'}
             </div>
           </div>
 
@@ -809,12 +869,12 @@ function GameContent() {
           {/* CTA */}
           {role === 'host' ? (
             <button onClick={startNextGame} className="btn-primary w-full mt-2 py-4 text-base font-display tracking-widest animate-glow">
-              Start Game {room.currentGame + 1}
+              Start Game {room.currentGame + 1}{room.series > 1 ? ` of ${room.series}` : ''}
             </button>
           ) : (
             <div className="card-surface rounded-2xl py-4 px-6 text-center mt-2 flex items-center justify-center gap-3">
               <span className="w-4 h-4 rounded-full border-2 border-orange-500/50 border-t-orange-400 animate-spin shrink-0" />
-              <span className="text-gray-400 text-sm">Waiting for <span className="text-white font-bold">{room.hostName}</span> to start...</span>
+              <span className="text-gray-400 text-sm">Waiting for <span className="text-white font-bold">{room.hostName}</span> to start Game {room.currentGame + 1}{room.series > 1 ? ` of ${room.series}` : ''}…</span>
             </div>
           )}
         </div>
@@ -882,19 +942,20 @@ function GameContent() {
     setSelectedPlayerId(null)
   }
 
-  // Build display list from shuffled order; apply search/pos filter on top
+  // Build display list from shuffled order; apply search/pos filter on top.
+  // Uses debouncedSearch (120ms) so typing doesn't re-filter every single keystroke.
   const filteredPlayers = shuffledIds
     .map(id => playerById.get(id))
     .filter((p): p is Player => {
       if (!p) return false
-      if (room?.difficulty === 'ebk' && searchQuery.length < 3) return false
+      if (room?.difficulty === 'ebk' && debouncedSearch.length < 3) return false
       if (takenIds.has(p.id)) return false
       // Starter slots: hide only if ALL of the player's positions are used
       if (isStarterSlot && p.positions.split(',').every(pos => usedStarterPositions.has(pos))) return false
       if (filterPos !== 'ALL' && !p.positions.split(',').includes(filterPos)) return false
-      if (searchQuery) {
+      if (debouncedSearch) {
         const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        const q = norm(searchQuery)
+        const q = norm(debouncedSearch)
         const currentAbbr = getCurrentTeam(p.team)
         const teamEntry = CURRENT_TEAMS.find(t => t.abbr === currentAbbr)
         const teamSearchStr = norm([p.team, currentAbbr, teamEntry?.name ?? '', teamEntry?.city ?? ''].join(' '))
@@ -904,7 +965,7 @@ function GameContent() {
     })
 
   return (
-    <div className="min-h-screen py-4 px-4 relative">
+    <div className="min-h-screen py-4 px-4 relative animate-fade-in">
       {/* Opponent emote popup */}
       {opponentEmote && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-slide-up">
@@ -976,12 +1037,21 @@ function GameContent() {
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-gray-600 animate-pulse shrink-0" />
+                  {/* Animated thinking dots */}
+                  <div className="flex gap-0.5 shrink-0">
+                    {[0, 1, 2].map(i => (
+                      <div
+                        key={i}
+                        className="w-1.5 h-1.5 rounded-full bg-gray-500"
+                        style={{ animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }}
+                      />
+                    ))}
+                  </div>
                   <div>
                     <div className="text-gray-300 font-black text-base">
                       {currentPicker === 'host' ? room.hostName : room.guestName}
                     </div>
-                    <div className="text-gray-400 text-[11px] tracking-wider uppercase">is picking…</div>
+                    <div className="text-gray-400 text-[11px] tracking-wider uppercase">Thinking…</div>
                   </div>
                 </div>
               )}
@@ -1009,6 +1079,51 @@ function GameContent() {
           </div>
         </div>
 
+        {/* Snake draft order tracker */}
+        {room.status === 'drafting' && (
+          <div className="mb-3 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <span className="text-label shrink-0">Draft:</span>
+            {room.draftOrder.map((picker, idx) => {
+              const isPast = idx < room.currentPickIndex
+              const isCurrent = idx === room.currentPickIndex
+              const isMe = picker === role
+              return (
+                <div
+                  key={idx}
+                  className={`shrink-0 w-6 h-6 rounded flex items-center justify-center text-[10px] font-black transition-all ${
+                    isCurrent
+                      ? isMe
+                        ? 'bg-orange-500 text-white shadow-[0_0_8px_rgba(234,88,12,0.6)] scale-110'
+                        : 'bg-gray-400 text-black scale-110'
+                      : isPast
+                      ? 'bg-white/[0.04] text-white/20'
+                      : isMe
+                      ? 'bg-orange-950/40 border border-orange-800/40 text-orange-400/60'
+                      : 'bg-white/[0.03] border border-white/[0.06] text-gray-500'
+                  }`}
+                  title={`Pick ${idx + 1}: ${picker === 'host' ? room.hostName : room.guestName}`}
+                >
+                  {isPast ? '✓' : isMe ? 'Y' : 'O'}
+                </div>
+              )
+            })}
+            {/* Snake direction arrow */}
+            {(() => {
+              const pickIdx = room.currentPickIndex
+              const prev = room.draftOrder[pickIdx - 1]
+              const curr = room.draftOrder[pickIdx]
+              const next = room.draftOrder[pickIdx + 1]
+              if (!curr || !next) return null
+              const goingRight = (prev === undefined) || (prev !== curr)
+              return (
+                <span className="text-gray-600 text-xs ml-1 shrink-0 font-black">
+                  {goingRight ? '→' : '←'}
+                </span>
+              )
+            })()}
+          </div>
+        )}
+
         {/* Mobile: teams side by side on top. Desktop: 4-col grid */}
 
         {/* Teams row — always visible, compact on mobile */}
@@ -1031,6 +1146,7 @@ function GameContent() {
                   : isValidTarget
                   ? `Place ${selectedPlayer?.lastName ?? 'player'} in ${displayLabel} slot`
                   : `${displayLabel} slot: empty`
+                const isNewMyPick = pickedPlayer !== null && pickedPlayer.id === recentMyPickId
                 const Elem = isValidTarget ? 'button' : 'div'
                 return (
                   <Elem
@@ -1038,7 +1154,9 @@ function GameContent() {
                     onClick={isValidTarget ? () => pickIntoSlot(i) : undefined}
                     aria-label={isValidTarget ? slotLabel : undefined}
                     className={`rounded px-2 py-1 text-xs flex items-center gap-1.5 transition-all ${
-                      isValidTarget
+                      isNewMyPick
+                        ? 'bg-orange-500/20 border border-orange-400/60 animate-slide-up'
+                        : isValidTarget
                         ? 'bg-orange-600/20 border border-orange-500 cursor-pointer'
                         : isBlocked
                         ? 'bg-[#0A0A0A] border border-dashed border-gray-800 opacity-30'
@@ -1048,7 +1166,7 @@ function GameContent() {
                     }`}
                   >
                     <span className={`font-bold w-6 shrink-0 text-[10px] ${isBench ? 'text-gray-400' : 'text-orange-400'}`}>{displayLabel}</span>
-                    <span className={`truncate ${pickedPlayer ? 'text-white' : isValidTarget ? 'text-orange-300' : 'text-gray-400'}`} title={pickedPlayer ? `${pickedPlayer.firstName} ${pickedPlayer.lastName}` : undefined}>
+                    <span className={`truncate ${pickedPlayer ? (isNewMyPick ? 'text-orange-300' : 'text-white') : isValidTarget ? 'text-orange-300' : 'text-gray-400'}`} title={pickedPlayer ? `${pickedPlayer.firstName} ${pickedPlayer.lastName}` : undefined}>
                       {pickedPlayer ? pickedPlayer.lastName : isValidTarget ? 'tap' : '—'}
                     </span>
                   </Elem>
@@ -1067,12 +1185,20 @@ function GameContent() {
                 const pickedPlayer = oppSlots[i]
                 const isBench = slotPos === 'BENCH'
                 const displayLabel = isBench ? 'BN' : slotPos
+                const isNewPick = pickedPlayer !== null && pickedPlayer.id === recentOppPickId
                 return (
-                  <div key={i} className={`rounded px-2 py-1 text-xs flex items-center gap-1.5 bg-[#0A0A0A] ${!pickedPlayer ? 'border border-dashed border-gray-700' : ''}`}>
+                  <div key={i} className={`rounded px-2 py-1 text-xs flex items-center gap-1.5 transition-all ${
+                    isNewPick
+                      ? 'bg-blue-500/15 border border-blue-400/50 animate-slide-up'
+                      : pickedPlayer
+                      ? 'bg-[#0A0A0A]'
+                      : 'bg-[#0A0A0A] border border-dashed border-gray-700'
+                  }`}>
                     <span className={`font-bold w-6 shrink-0 text-[10px] ${isBench ? 'text-gray-400' : 'text-blue-400'}`}>{displayLabel}</span>
-                    <span className={`truncate ${pickedPlayer ? 'text-white' : 'text-gray-400'}`} title={pickedPlayer ? `${pickedPlayer.firstName} ${pickedPlayer.lastName}` : undefined}>
+                    <span className={`truncate ${pickedPlayer ? (isNewPick ? 'text-blue-300' : 'text-white') : 'text-gray-400'}`} title={pickedPlayer ? `${pickedPlayer.firstName} ${pickedPlayer.lastName}` : undefined}>
                       {pickedPlayer ? pickedPlayer.lastName : '—'}
                     </span>
+                    {isNewPick && <span className="text-blue-400 text-[9px] font-black ml-auto shrink-0">NEW</span>}
                   </div>
                 )
               })}
@@ -1100,6 +1226,7 @@ function GameContent() {
                   : isValidTarget
                   ? `Place ${selectedPlayer?.lastName ?? 'player'} in ${displayLabel} slot`
                   : `${displayLabel} slot: empty`
+                const isNewMyPickDesk = pickedPlayer !== null && pickedPlayer.id === recentMyPickId
                 const DeskElem = isValidTarget ? 'button' : 'div'
                 return (
                   <DeskElem
@@ -1107,7 +1234,9 @@ function GameContent() {
                     onClick={isValidTarget ? () => pickIntoSlot(i) : undefined}
                     aria-label={isValidTarget ? slotLabelDesktop : undefined}
                     className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 transition-all ${
-                      isValidTarget
+                      isNewMyPickDesk
+                        ? 'bg-orange-500/20 border border-orange-400/60 animate-slide-up'
+                        : isValidTarget
                         ? 'bg-orange-600/20 border border-orange-500 cursor-pointer hover:bg-orange-600/40'
                         : isBlocked
                         ? 'bg-[#0A0A0A] border border-dashed border-gray-800 opacity-30'
@@ -1118,7 +1247,9 @@ function GameContent() {
                   >
                     <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-400' : 'text-orange-400'}`}>{displayLabel}</span>
                     {pickedPlayer ? (
-                      <span className="text-white truncate" title={`${pickedPlayer.firstName} ${pickedPlayer.lastName}`}>{pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-gray-400">({pickedPlayer.team})</span></span>
+                      <span className={`truncate ${isNewMyPickDesk ? 'text-orange-300' : 'text-white'}`} title={`${pickedPlayer.firstName} ${pickedPlayer.lastName}`}>
+                        {pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-gray-400">({pickedPlayer.team})</span>
+                      </span>
                     ) : (
                       <span className={isValidTarget ? 'text-orange-300' : 'text-gray-400'}>
                         {isValidTarget ? 'tap to place' : 'empty'}
@@ -1209,7 +1340,7 @@ function GameContent() {
                 </button>
               ))}
               <span className="ml-auto text-label self-center">
-                {room.difficulty === 'ebk' && searchQuery.length < 3 ? 'type 3+ letters' : `${filteredPlayers.length} available`}
+                {room.difficulty === 'ebk' && debouncedSearch.length < 3 ? 'type 3+ letters' : `${filteredPlayers.length} available`}
               </span>
             </div>
 
@@ -1389,11 +1520,21 @@ function GameContent() {
                 const pickedPlayer = oppSlots[i]
                 const isBench = slotPos === 'BENCH'
                 const displayLabel = isBench ? 'BN' : slotPos
+                const isNewPick = pickedPlayer !== null && pickedPlayer.id === recentOppPickId
                 return (
-                  <div key={i} className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 bg-[#0A0A0A] ${!pickedPlayer ? 'border border-dashed border-gray-700' : ''}`}>
+                  <div key={i} className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 transition-all ${
+                    isNewPick
+                      ? 'bg-blue-500/15 border border-blue-400/50 animate-slide-up'
+                      : pickedPlayer
+                      ? 'bg-[#0A0A0A]'
+                      : 'bg-[#0A0A0A] border border-dashed border-gray-700'
+                  }`}>
                     <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-400' : 'text-blue-400'}`}>{displayLabel}</span>
                     {pickedPlayer ? (
-                      <span className="text-white truncate" title={`${pickedPlayer.firstName} ${pickedPlayer.lastName}`}>{pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-gray-400">({pickedPlayer.team})</span></span>
+                      <span className={`truncate ${isNewPick ? 'text-blue-200' : 'text-white'}`} title={`${pickedPlayer.firstName} ${pickedPlayer.lastName}`}>
+                        {pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-gray-400">({pickedPlayer.team})</span>
+                        {isNewPick && <span className="ml-2 text-blue-400 font-black text-[9px]">NEW</span>}
+                      </span>
                     ) : (
                       <span className="text-gray-400">empty</span>
                     )}
