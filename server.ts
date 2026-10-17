@@ -33,7 +33,15 @@ const hostname = '0.0.0.0'
 const port = parseInt(process.env.PORT || '3000')
 const app = next({ dev, hostname, port, dir: process.cwd() })
 const handle = app.getRequestHandler()
-const prisma = new PrismaClient()
+// Match the connection_limit set in src/lib/db.ts — the socket server runs as a
+// separate process context and gets its own pool, so we configure it the same way.
+function buildDbUrl(): string {
+  const base = process.env.DATABASE_URL ?? ''
+  if (base.includes('connection_limit=')) return base
+  const sep = base.includes('?') ? '&' : '?'
+  return `${base}${sep}connection_limit=10`
+}
+const prisma = new PrismaClient({ datasources: { db: { url: buildDbUrl() } } })
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

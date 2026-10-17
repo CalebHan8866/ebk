@@ -16,25 +16,17 @@ export async function POST(request: NextRequest) {
     if (count > 600) return NextResponse.json({ error: 'Max 600 per batch' }, { status: 400 })
 
     const hashed = await bcrypt.hash('TestPass123!', 10)
-    const created: string[] = []
-    const skipped: string[] = []
 
-    for (let i = 1; i <= count; i++) {
-      const username = `${prefix}${String(i).padStart(4, '0')}`
+    // Build all records upfront and insert in a single query instead of N sequential upserts
+    const records = Array.from({ length: count }, (_, i) => {
+      const username = `${prefix}${String(i + 1).padStart(4, '0')}`
       const email = `${username.toLowerCase()}@ebk-load-test.internal`
-      try {
-        await prisma.user.upsert({
-          where: { email },
-          create: { username, email, password: hashed, emailVerified: true },
-          update: { emailVerified: true },
-        })
-        created.push(username)
-      } catch {
-        skipped.push(username)
-      }
-    }
+      return { username, email, password: hashed, emailVerified: true }
+    })
 
-    return NextResponse.json({ created: created.length, skipped: skipped.length, prefix })
+    const result = await prisma.user.createMany({ data: records, skipDuplicates: true })
+
+    return NextResponse.json({ created: result.count, skipped: count - result.count, prefix })
   } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }

@@ -24,24 +24,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(cached.data)
   }
 
-  const users = await prisma.user.findMany({
-    where: { gamesPlayed: { gt: 0 } },
-    select: {
-      id: true,
-      username: true,
-      wins: true,
-      losses: true,
-      draws: true,
-      gamesPlayed: true,
-      winStreak: true,
-      maxWinStreak: true,
-      equippedBadges: true,
-    },
-    orderBy: { wins: 'desc' },
-    take: 100,
-  })
-
-  const totalPlayers = await prisma.user.count({ where: { gamesPlayed: { gt: 0 } } })
+  const [users, totalPlayers] = await Promise.all([
+    prisma.user.findMany({
+      where: { gamesPlayed: { gt: 0 } },
+      select: {
+        id: true,
+        username: true,
+        wins: true,
+        losses: true,
+        draws: true,
+        gamesPlayed: true,
+        winStreak: true,
+        maxWinStreak: true,
+        equippedBadges: true,
+      },
+      orderBy: { wins: 'desc' },
+      take: 100,
+    }),
+    prisma.user.count({ where: { gamesPlayed: { gt: 0 } } }),
+  ])
 
   let me: {
     id: string; username: string; wins: number; losses: number; draws: number
@@ -50,7 +51,9 @@ export async function GET(request: NextRequest) {
   } | null = null
 
   if (payload?.userId) {
-    const myUser = await prisma.user.findUnique({
+    // Check if the user is already in the top-100 result to avoid an extra DB round trip
+    const inTop100 = users.find(u => u.id === payload.userId)
+    const myUser = inTop100 ?? await prisma.user.findUnique({
       where: { id: payload.userId },
       select: {
         id: true, username: true, wins: true, losses: true, draws: true,
