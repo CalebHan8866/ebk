@@ -37,7 +37,10 @@ export async function POST(request: NextRequest) {
     const req = HL_BADGE_REQUIREMENTS[milestone]
     if (req) {
       if (req.streakRequired !== undefined) {
-        if (typeof streak !== 'number' || !Number.isFinite(streak) || streak < req.streakRequired) {
+        if (typeof streak !== 'number' || !Number.isFinite(streak) || streak < 0 || !Number.isInteger(streak)) {
+          return NextResponse.json({ error: 'Invalid streak value' }, { status: 400 })
+        }
+        if (streak < req.streakRequired) {
           return NextResponse.json({ error: 'Streak requirement not met' }, { status: 403 })
         }
       }

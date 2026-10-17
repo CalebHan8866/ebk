@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     // Fire and forget — don't block the response waiting for email
     sendVerificationEmail(email, username, verificationToken).catch(err => console.error('Email error:', err))
 
-    return NextResponse.json({ message: 'Account created! Check your email to verify your account.' })
+    return NextResponse.json({ message: 'Account created! Check your email to verify your account.' }, { status: 201 })
   } catch (e) {
     console.error(e)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })

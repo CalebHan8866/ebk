@@ -50,7 +50,7 @@ model GameRecord {
   series         Int
   source         String   // 'online' | 'friends'
   createdAt      DateTime @default(now())
-  user           User     @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
 }
