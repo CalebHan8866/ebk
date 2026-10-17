@@ -368,8 +368,9 @@ export default function AuctionRoomPage() {
       return                           { grade: 'D',  color: 'text-red-400',   bg: 'bg-red-500/10 border-red-500/20',    label: 'Overpaid' }
     }
 
+    // Lower EBK is better — best value is the player who scores least per dollar spent
     const bestValuePlayer = (roster: RosterPlayer[]) =>
-      roster.filter(p => p && p.paidPrice > 0).sort((a, b) => (b.ebkScore / b.paidPrice) - (a.ebkScore / a.paidPrice))[0]
+      roster.filter(p => p && p.paidPrice > 0).sort((a, b) => (a.ebkScore / a.paidPrice) - (b.ebkScore / b.paidPrice))[0]
 
     const isMe = (r: AuctionResult) => r.socketId === mySocketId
     const PODIUM_STYLES = [
@@ -498,7 +499,7 @@ export default function AuctionRoomPage() {
                     <span className="text-white font-bold">{bestVal.firstName[0]}. {bestVal.lastName}</span>
                     <span className="text-gray-400">{bestVal.ebkScore.toFixed(1)} EBK for ${bestVal.paidPrice}M</span>
                     <span className="text-green-500/70 ml-auto font-black tabular-nums">
-                      {(bestVal.ebkScore / bestVal.paidPrice).toFixed(2)}/M
+                      {(bestVal.paidPrice / bestVal.ebkScore).toFixed(2)}$/pt
                     </span>
                   </div>
                 )}
@@ -1037,7 +1038,19 @@ export default function AuctionRoomPage() {
                     min={auctionState.currentBid + 1}
                     max={me?.budget ?? 0}
                     aria-label={`Bid amount in millions of dollars`}
-                    onChange={e => setBidAmount(Math.max(auctionState.currentBid + 1, parseInt(e.target.value) || 1))}
+                    onKeyDown={e => {
+                      // Block decimal point and minus sign — only whole positive integers allowed
+                      if (e.key === '.' || e.key === '-' || e.key === 'e' || e.key === 'E') {
+                        e.preventDefault()
+                      }
+                    }}
+                    onChange={e => {
+                      const raw = parseInt(e.target.value, 10)
+                      if (isNaN(raw) || raw < 1) return
+                      const minBid = auctionState.currentBid + 1
+                      const maxBid = me?.budget ?? minBid
+                      setBidAmount(Math.min(maxBid, Math.max(minBid, raw)))
+                    }}
                     className="bid-stepper-input"
                   />
                   <button
@@ -1108,10 +1121,10 @@ export default function AuctionRoomPage() {
               )}
               {auctionState.bidLog.map((entry, i) => (
                 <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs border transition-colors ${
-                  entry.action === 'won'   ? 'bg-green-500/8 border-green-500/20' :
-                  entry.action === 'steal' ? 'bg-yellow-500/8 border-yellow-500/20' :
+                  entry.action === 'won'   ? 'bg-green-500/10 border-green-500/20' :
+                  entry.action === 'steal' ? 'bg-yellow-500/10 border-yellow-500/20' :
                   entry.action === 'pass'  ? 'bg-transparent border-transparent' :
-                  entry.action === 'trade' ? 'bg-blue-500/8 border-blue-500/20' :
+                  entry.action === 'trade' ? 'bg-blue-500/10 border-blue-500/20' :
                   'bg-white/[0.025] border-white/[0.04]'
                 }`}>
                   <span className={`w-4 shrink-0 text-center ${
