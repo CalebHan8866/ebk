@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
 
     const { email } = await request.json()
     if (!email || typeof email !== 'string') return NextResponse.json({ error: 'Email required' }, { status: 400 })
+    if (email.length > 254) return NextResponse.json({ error: 'Invalid email' }, { status: 400 })
 
     const user = await prisma.user.findUnique({ where: { email } })
     // Return success regardless — don't leak whether the email exists
