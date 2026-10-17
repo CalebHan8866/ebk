@@ -68,3 +68,51 @@ body {
   height: 2px;
   background: linear-gradient(90deg, transparent, rgba(249,115,22,0.7), transparent);
 }
+
+/* Stat display */
+.stat-block {
+  @apply text-center;
+}
+.stat-block .stat-value {
+  @apply font-display text-3xl leading-none;
+}
+.stat-block .stat-label {
+  @apply text-gray-500 text-xs mt-1 tracking-wide uppercase;
+}
+
+/* Position badge */
+.pos-pg { @apply bg-blue-900/40 text-blue-300 border-blue-700/40; }
+.pos-sg { @apply bg-cyan-900/40 text-cyan-300 border-cyan-700/40; }
+.pos-sf { @apply bg-green-900/40 text-green-300 border-green-700/40; }
+.pos-pf { @apply bg-yellow-900/40 text-yellow-300 border-yellow-700/40; }
+.pos-c  { @apply bg-red-900/40 text-red-300 border-red-700/40; }
+
+/* Tier badges */
+.tier-gold   { @apply bg-yellow-900/30 border-yellow-600/40 text-yellow-400; }
+.tier-silver { @apply bg-gray-800/60 border-gray-600/40 text-gray-300; }
+.tier-bronze { @apply bg-orange-950/40 border-orange-700/40 text-orange-500; }
+
+/* Live indicator dot */
+.live-dot {
+  @apply w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block;
+}
+
+/* Budget meter */
+.budget-bar {
+  @apply h-1.5 rounded-full bg-white/[0.05] overflow-hidden;
+}
+.budget-bar-fill {
+  @apply h-full rounded-full transition-all duration-500;
+  background: linear-gradient(90deg, #ea580c, #f97316);
+}
+
+/* War Room / Auction styles */
+.auction-card {
+  @apply card-surface border border-orange-900/20 hover:border-orange-800/40 transition-all;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
