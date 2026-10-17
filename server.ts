@@ -442,7 +442,8 @@ async function updateStatsAndUnlock(
         losses:            !won && !isDraw ? { increment: 1 } : undefined,
         draws:             isDraw ? { increment: 1 } : undefined,
         gamesPlayed:       { increment: 1 },
-        winStreak:         won    ? { increment: 1 } : { set: 0 },
+        // Draws do not break or extend the win streak — only losses reset it.
+        winStreak:         won ? { increment: 1 } : isDraw ? undefined : { set: 0 },
         jamesonCurryGames: jcGamesThisSeries > 0 ? { increment: jcGamesThisSeries } : undefined,
         firstPickGames:    isHost ? { increment: 1 } : undefined,
         firstPickWins:     isHost && won ? { increment: 1 } : undefined,
