@@ -89,6 +89,23 @@ function BadgeIcons({ equippedBadges }: { equippedBadges: string }) {
   )
 }
 
+// ── Rank number display — gold/silver/bronze tiers ───────────────────────────
+function RankNumber({ rank }: { rank: number }) {
+  if (rank === 1) return (
+    <span className="font-display text-lg tabular-nums text-yellow-400 drop-shadow-[0_0_6px_rgba(234,179,8,0.5)]">#1</span>
+  )
+  if (rank === 2) return (
+    <span className="font-display text-lg tabular-nums text-slate-300">#2</span>
+  )
+  if (rank === 3) return (
+    <span className="font-display text-lg tabular-nums text-orange-400">#3</span>
+  )
+  if (rank <= 10) return (
+    <span className="font-display text-base tabular-nums text-white/70">#{rank}</span>
+  )
+  return <span className="font-black text-sm tabular-nums text-gray-500">#{rank}</span>
+}
+
 // ── Rank badge chips ──────────────────────────────────────────────────────────
 function RankChip({ user, rank, totalPlayers }: { user: LeaderboardUser; rank: number; totalPlayers: number }) {
   const chips: { label: string; cls: string }[] = []
@@ -188,7 +205,7 @@ function PodiumCard({ user, rank, isMe, totalPlayers }: { user: LeaderboardUser;
       </div>
 
       {/* Podium platform */}
-      <div className={`w-full ${cfg.height} ${cfg.bg} border ${cfg.borderGlow} rounded-t-xl flex items-center justify-center`}>
+      <div className={`w-full ${cfg.height} ${cfg.bg} border ${cfg.borderGlow} rounded-t-xl flex items-center justify-center ${rank === 1 ? 'animate-glow' : ''}`}>
         <div className="text-center">
           <div className={`font-display ${cfg.scoreSize} ${cfg.scoreColor} leading-none`}>{cfg.medalLabel}</div>
           <div className={`font-display text-xl ${cfg.rankColor} leading-none mt-0.5`}>#{rank}</div>
@@ -243,6 +260,8 @@ function LeaderboardRow({ user: u, rank, isMe, sort, totalPlayers, rowRef }: Row
     'table-row gap-3 rounded-xl border min-h-[44px]',
     isMe
       ? 'bg-orange-950/30 border-orange-600/50 ring-1 ring-orange-600/30'
+      : rank <= 3
+      ? 'border-white/[0.1] bg-white/[0.015]'
       : 'border-white/[0.06]',
   ].join(' ')
 
@@ -250,7 +269,7 @@ function LeaderboardRow({ user: u, rank, isMe, sort, totalPlayers, rowRef }: Row
     <div ref={rowRef} className={rowClass}>
       {/* Rank */}
       <div className="w-9 text-center shrink-0">
-        <span className="font-black text-sm tabular-nums text-gray-400">{rank}</span>
+        <RankNumber rank={rank} />
       </div>
 
       {/* Avatar */}
@@ -487,6 +506,17 @@ export default function LeaderboardPage() {
             {/* ── Ranks 4+ table ── */}
             {rest.length > 0 && (
               <div className="card-surface rounded-2xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 pt-3 pb-0">
+                  <p className="text-label">Rankings</p>
+                  {me && meInList >= 3 && (
+                    <button
+                      onClick={() => meRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                      className="text-[10px] font-black text-orange-400 hover:text-orange-300 transition-colors uppercase tracking-wider"
+                    >
+                      Jump to me ↓
+                    </button>
+                  )}
+                </div>
                 <ColumnHeaders sort={sort} />
                 <div className="mx-4 h-px bg-white/[0.06]" />
                 <div className="px-2 py-1.5 space-y-0.5">
