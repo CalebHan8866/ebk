@@ -45,7 +45,7 @@ export default function Navbar() {
           <span className="font-display text-2xl text-orange-500 leading-none group-hover:text-orange-400 transition-colors">
             EBK
           </span>
-          <span className="hidden md:block text-[10px] font-bold tracking-[0.35em] text-gray-600 uppercase">
+          <span className="hidden md:block text-[10px] font-bold tracking-[0.35em] text-gray-400 uppercase">
             Elite Ball Knowledge
           </span>
         </Link>
@@ -55,6 +55,7 @@ export default function Navbar() {
           {navLink('/lobby', 'Play')}
           {navLink('/auction', 'War Room')}
           <span className="hidden sm:block">{navLink('/leaderboard', 'Leaderboard')}</span>
+          <span className="hidden md:block">{navLink('/fun-facts', 'Fun Facts')}</span>
         </div>
 
         {/* Right: auth section */}
@@ -70,13 +71,13 @@ export default function Navbar() {
                   <div className="text-sm font-bold text-gray-300 group-hover:text-white transition-colors leading-tight">
                     {user.username}
                   </div>
-                  <div className="text-[10px] text-gray-600 leading-tight tabular-nums">
+                  <div className="text-[10px] text-gray-400 leading-tight tabular-nums">
                     {user.wins}–{user.losses}
                   </div>
                 </div>
               </Link>
               <button onClick={handleLogout}
-                className="text-xs font-semibold text-gray-600 hover:text-gray-300 transition-colors px-2 py-1 rounded hover:bg-white/5">
+                className="text-xs font-semibold text-gray-400 hover:text-gray-300 transition-colors px-2 py-1 rounded hover:bg-white/5">
                 Sign Out
               </button>
             </>
