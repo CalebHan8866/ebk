@@ -419,13 +419,16 @@ function GameContent() {
 
   if (disconnected) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center text-center px-4">
-        <div>
-          <h2 className="text-2xl font-black text-white mb-2">
-            {disconnectReason ? 'Room Error' : 'Opponent Disconnected'}
+      <div className="min-h-screen flex items-center justify-center text-center px-4">
+        <div className="card-surface p-10 max-w-sm w-full animate-slide-up">
+          <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto mb-4">
+            <span className="text-red-400 text-xl font-black">!</span>
+          </div>
+          <h2 className="font-display text-3xl text-white mb-2">
+            {disconnectReason ? 'ROOM ERROR' : 'DISCONNECTED'}
           </h2>
-          <p className="text-gray-400 mb-6">{disconnectReason ?? 'The connection was lost.'}</p>
-          <button onClick={() => router.push('/lobby')} className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-6 py-3 rounded-xl">Back to Lobby</button>
+          <p className="text-gray-500 text-sm mb-6 leading-relaxed">{disconnectReason ?? 'Your opponent disconnected.'}</p>
+          <button onClick={() => router.push('/lobby')} className="btn-primary w-full">Back to Lobby</button>
         </div>
       </div>
     )
@@ -433,10 +436,10 @@ function GameContent() {
 
   if (!room) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">Connecting...</p>
+          <div className="w-10 h-10 rounded-full border-2 border-orange-500 border-t-transparent animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500 text-sm tracking-widest uppercase">Connecting...</p>
         </div>
       </div>
     )
@@ -446,19 +449,22 @@ function GameContent() {
   if (room.status === 'waiting') {
     return (
       <div className="min-h-screen flex items-center justify-center text-center px-4">
-        <div className="max-w-sm w-full">
-          <div className="inline-flex items-center gap-2 bg-orange-950/40 border border-orange-800/40 rounded-full px-4 py-1.5 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-            <span className="text-orange-300 text-xs font-black tracking-widest uppercase">Waiting for opponent</span>
+        <div className="max-w-sm w-full animate-slide-up">
+          <div className="live-banner mb-6 mx-auto w-fit">
+            <span className="live-dot" />
+            Waiting for opponent
           </div>
           <div className="card-accent p-8 mb-4">
-            <p className="text-gray-500 text-xs tracking-widest uppercase mb-3">Room Code</p>
-            <div className="font-display text-6xl text-orange-400 tracking-[0.3em] mb-1">{room.code}</div>
+            <p className="text-label tracking-[0.2em] mb-4">Room Code</p>
+            <div className="font-display text-7xl text-orange-400 tracking-[0.35em] leading-none mb-3">{room.code}</div>
             <p className="text-gray-600 text-xs">Share this code with your opponent</p>
           </div>
-          <div className="text-gray-600 text-sm">
-            {room.teamMode === 'starter5' ? 'Starter 5' : room.teamMode === 'bench8' ? 'Bench 8' : 'Full Roster'} ·{' '}
-            {room.series === 1 ? '1 Game' : `Best of ${room.series}`}
+          <div className="flex items-center justify-center gap-2 text-gray-600 text-sm">
+            <span className="bg-white/[0.04] border border-white/[0.07] rounded-lg px-3 py-1.5 text-xs font-black text-gray-300">
+              {room.teamMode === 'starter5' ? 'Starter 5' : room.teamMode === 'bench8' ? 'Bench 8' : 'Full Roster'}
+            </span>
+            <span className="text-gray-700">·</span>
+            <span className="text-xs text-gray-500">{room.series === 1 ? '1 Game' : `Best of ${room.series}`}</span>
           </div>
         </div>
       </div>
@@ -631,7 +637,7 @@ function GameContent() {
           </div>{/* end RIGHT col */}
           </div>{/* end lg:grid */}
 
-          <button onClick={() => router.push('/lobby')} className="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-4 rounded-2xl text-lg transition-colors w-full mt-4">
+          <button onClick={() => router.push('/lobby')} className="btn-primary w-full mt-4 py-4 text-base font-display tracking-widest">
             Play Again
           </button>
         </div>
@@ -775,13 +781,13 @@ function GameContent() {
 
           {/* CTA */}
           {role === 'host' ? (
-            <button onClick={startNextGame} className="bg-orange-600 hover:bg-orange-700 text-white font-black px-8 py-4 rounded-2xl text-lg transition-colors w-full mt-2">
+            <button onClick={startNextGame} className="btn-primary w-full mt-2 py-4 text-base font-display tracking-widest">
               Start Game {room.currentGame + 1}
             </button>
           ) : (
-            <div className="bg-[#111] rounded-2xl py-4 text-center text-gray-500 text-sm mt-2">
-              <span className="inline-block w-4 h-4 rounded-full border-2 border-gray-500 border-t-transparent animate-spin mr-2 align-middle"></span>
-              Waiting for {room.hostName}...
+            <div className="card-surface rounded-2xl py-4 px-6 text-center mt-2 flex items-center justify-center gap-3">
+              <span className="w-4 h-4 rounded-full border-2 border-orange-500 border-t-transparent animate-spin shrink-0"></span>
+              <span className="text-gray-500 text-sm">Waiting for <span className="text-white font-bold">{room.hostName}</span>...</span>
             </div>
           )}
         </div>
@@ -871,54 +877,106 @@ function GameContent() {
     })
 
   return (
-    <div className="min-h-screen py-6 px-4 relative">
+    <div className="min-h-screen py-4 px-4 relative">
       {/* Opponent emote popup */}
       {opponentEmote && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-          <div className="bg-[#1a1a2e] border border-orange-500 text-white text-lg px-5 py-3 rounded-2xl shadow-2xl font-medium animate-bounce">
-            <span className="text-gray-400 text-xs block text-center mb-0.5">{oppName}</span>
-            {opponentEmote}
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-slide-up">
+          <div className="card-glass border border-orange-500/60 text-white px-5 py-3 rounded-2xl shadow-2xl shadow-orange-900/30">
+            <span className="text-label text-center block mb-1.5">{oppName}</span>
+            <div className="text-white font-semibold text-center">{opponentEmote}</div>
           </div>
         </div>
       )}
 
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <div className="text-orange-500 font-black text-lg">EBK · Game {room.currentGame}{room.series > 1 ? ` of ${room.series}` : ''}</div>
-            <div className="text-gray-500 text-xs">
-              {room.code} · {STAT_LABELS[statMode]} · Lower total wins
-              {room.difficulty === 'ebk' && <span className="ml-2 text-yellow-500 font-bold">EBK Mode</span>}
+        {/* ── Command Header ─────────────────────────────────────────────── */}
+        {/* Single unified bar: game info + series score + turn state + timer */}
+        <div className={`rounded-2xl mb-4 overflow-hidden transition-all ${
+          isMyTurn
+            ? 'shadow-[0_0_32px_rgba(234,88,12,0.3)]'
+            : ''
+        }`}>
+          {/* Top strip: game label + series score */}
+          <div className="bg-[#111118] border border-white/[0.07] rounded-t-2xl px-4 py-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="font-display text-orange-500 text-base leading-none tracking-wider shrink-0">
+                GAME {room.currentGame}{room.series > 1 ? ` / ${room.series}` : ''}
+              </span>
+              <span className="text-gray-700 text-xs font-bold hidden sm:inline">|</span>
+              <span className="text-gray-500 text-xs truncate hidden sm:inline">
+                {STAT_LABELS[statMode]} · lower wins
+              </span>
+              {room.difficulty === 'ebk' && (
+                <span className="text-[10px] font-black tracking-widest text-yellow-500 bg-yellow-900/20 border border-yellow-800/40 rounded px-2 py-0.5 shrink-0">EBK</span>
+              )}
+            </div>
+            {room.series > 1 ? (
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-gray-400 text-xs font-bold truncate max-w-[70px]">{room.hostName}</span>
+                <div className="flex items-center gap-1.5 bg-[#0d0d14] rounded-lg px-3 py-1 border border-white/[0.06]">
+                  <span className="font-display text-orange-400 text-xl leading-none">{room.hostSeriesScore}</span>
+                  <span className="text-gray-600 text-xs">–</span>
+                  <span className="font-display text-orange-400 text-xl leading-none">{room.guestSeriesScore}</span>
+                </div>
+                <span className="text-gray-400 text-xs font-bold truncate max-w-[70px]">{room.guestName}</span>
+              </div>
+            ) : (
+              <span className="text-gray-600 text-xs font-mono">{room.code}</span>
+            )}
+          </div>
+
+          {/* Turn state + integrated timer */}
+          <div className={`relative px-4 py-3 transition-all ${
+            isMyTurn
+              ? 'bg-gradient-to-r from-orange-950/60 via-orange-900/40 to-orange-950/60 border-x-2 border-b-2 border-orange-500/80 rounded-b-2xl'
+              : 'bg-[#0d0d14] border-x border-b border-white/[0.05] rounded-b-2xl'
+          }`}>
+            <div className="flex items-center justify-between gap-3">
+              {isMyTurn ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shrink-0" />
+                  <div>
+                    <div className="font-display text-orange-400 leading-none tracking-widest" style={{ fontSize: 'clamp(1.25rem, 5vw, 1.75rem)' }}>
+                      YOUR PICK
+                    </div>
+                    <div className="text-orange-300/50 text-[11px] tracking-wider uppercase mt-0.5">
+                      {isSpinning ? 'Waiting for team spin…' : spunTeam ? `Pick from ${spunTeam}` : 'Select a player'}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-gray-600 animate-pulse shrink-0" />
+                  <div>
+                    <div className="text-gray-300 font-black text-base">
+                      {currentPicker === 'host' ? room.hostName : room.guestName}
+                    </div>
+                    <div className="text-gray-600 text-[11px] tracking-wider uppercase">is picking…</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Timer — always in the header, never buried */}
+              {room.status === 'drafting' && currentPickerInTimer && (
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <div className={`font-display text-2xl leading-none tabular-nums ${
+                    pickTimeLeft <= 5 ? 'text-red-400' : pickTimeLeft <= 10 ? 'text-yellow-400' : 'text-gray-300'
+                  }`}>
+                    {pickTimeLeft}
+                    <span className="text-sm font-sans ml-0.5">s</span>
+                  </div>
+                  <div className="w-20 bg-gray-800/80 rounded-full h-1.5">
+                    <div
+                      className={`h-1.5 rounded-full transition-all duration-1000 ${
+                        pickTimeLeft <= 5 ? 'bg-red-500' : pickTimeLeft <= 10 ? 'bg-yellow-400' : 'bg-green-500'
+                      }`}
+                      style={{ width: `${(pickTimeLeft / pickTimerDurationRef.current) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-          {room.series > 1 && (
-            <div className="card-surface rounded-xl px-4 py-2 text-sm flex items-center gap-2">
-              <span className="text-gray-400 font-bold truncate max-w-[80px]">{room.hostName}</span>
-              <span className="text-orange-400 font-display text-xl leading-none tracking-tight">{room.hostSeriesScore}</span>
-              <span className="text-gray-600 text-xs font-bold">–</span>
-              <span className="text-orange-400 font-display text-xl leading-none tracking-tight">{room.guestSeriesScore}</span>
-              <span className="text-gray-400 font-bold truncate max-w-[80px]">{room.guestName}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Turn Banner */}
-        <div className={`rounded-xl mb-4 text-center transition-all ${
-          isMyTurn
-            ? 'bg-orange-600/20 border-2 border-orange-500 py-4 shadow-[0_0_24px_rgba(234,88,12,0.35)]'
-            : 'bg-gray-800/40 border border-gray-700 py-3'
-        }`}>
-          {isMyTurn ? (
-            <div>
-              <div className="font-display text-orange-400 tracking-widest leading-none" style={{ fontSize: 'clamp(1.5rem, 6vw, 2.25rem)' }}>YOUR PICK</div>
-              <div className="text-orange-300/70 text-xs mt-1 tracking-wide uppercase">Select a player from the pool</div>
-            </div>
-          ) : (
-            <div className="text-gray-400 font-bold text-sm py-0.5">
-              {currentPicker === 'host' ? room.hostName : room.guestName}&apos;s pick...
-            </div>
-          )}
         </div>
 
         {/* Mobile: teams side by side on top. Desktop: 4-col grid */}
@@ -1107,24 +1165,6 @@ function GameContent() {
               </span>
             </div>
 
-            {/* Pick Timer Bar */}
-            {room.status === 'drafting' && currentPickerInTimer && (
-              <div className="mb-3">
-                <div className="flex justify-between text-xs text-gray-400 mb-1">
-                  <span>{currentPickerInTimer === role ? 'Your pick' : `${currentPickerInTimer === 'host' ? room.hostName : room.guestName}'s pick`}</span>
-                  <span className={`font-black ${pickTimeLeft <= 5 ? 'text-red-400 animate-pulse' : pickTimeLeft <= 10 ? 'text-yellow-400' : 'text-green-400'}`}>
-                    {pickTimeLeft}s
-                  </span>
-                </div>
-                <div className="w-full bg-gray-800 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full transition-all ${pickTimeLeft <= 5 ? 'bg-red-500' : pickTimeLeft <= 10 ? 'bg-yellow-400' : 'bg-green-500'}`}
-                    style={{ width: `${(pickTimeLeft / pickTimerDurationRef.current) * 100}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
             {/* Timeout warning toast */}
             {timeoutWarning && (
               <div className="bg-yellow-900/60 border border-yellow-500 text-yellow-300 rounded-lg px-4 py-2 text-sm mb-3 text-center">
@@ -1133,10 +1173,18 @@ function GameContent() {
             )}
 
             {!isMyTurn ? (
-              <div className="flex flex-col items-center justify-center h-64 rounded-2xl card-surface border border-gray-700">
-                <div className="w-8 h-8 rounded-full border-2 border-gray-500 border-t-transparent animate-spin mb-4"></div>
-                <div className="text-white font-black text-lg">{oppName} is picking...</div>
-                <div className="text-gray-500 text-sm mt-1">Hang tight</div>
+              <div className="flex flex-col items-center justify-center h-64 rounded-2xl card-surface border border-white/[0.05]">
+                {/* Pulsing ring instead of a janky spinner */}
+                <div className="relative w-14 h-14 mb-5">
+                  <div className="absolute inset-0 rounded-full border-2 border-gray-700" />
+                  <div className="absolute inset-0 rounded-full border-2 border-gray-500 border-t-transparent animate-spin" />
+                  <div className="absolute inset-2 rounded-full bg-[#111118] flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-gray-500 animate-pulse" />
+                  </div>
+                </div>
+                <div className="text-white font-black text-base tracking-wide">{oppName}</div>
+                <div className="text-gray-500 text-xs mt-1 tracking-widest uppercase">Making their pick</div>
+                <div className="text-gray-700 text-xs mt-3">Your team is locked in above</div>
               </div>
             ) : (
               <>
@@ -1170,8 +1218,8 @@ function GameContent() {
                   </div>
                 )}
 
-                <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1">
-                  {filteredPlayers.map(player => {
+                <div className="space-y-1 max-h-[50vh] overflow-y-auto pr-1">
+                  {filteredPlayers.map((player, idx) => {
                     const playerPositions = player.positions.split(',')
                     const canPick = !isSpinning && spunTeam !== null && !takenIds.has(player.id)
                     const isSelected = selectedPlayerId === player.id
@@ -1179,50 +1227,86 @@ function GameContent() {
                     const validSlots = canPick ? getValidSlots(player) : new Set<number>()
                     const hasMultipleSlots = isSelected && validSlots.size > 1
 
+                    // Map positions to design-system badge classes
+                    const posBadgeClass = (pos: string) => {
+                      switch (pos) {
+                        case 'PG': return 'pos-badge pos-pg'
+                        case 'SG': return 'pos-badge pos-sg'
+                        case 'SF': return 'pos-badge pos-sf'
+                        case 'PF': return 'pos-badge pos-pf'
+                        case 'C':  return 'pos-badge pos-c'
+                        default:   return 'pos-badge pos-pg'
+                      }
+                    }
+
                     return (
                       <div
                         key={player.id}
-                        className={`w-full rounded-xl px-3 py-2.5 text-left transition-all ${
+                        className={`w-full rounded-xl text-left transition-all ${
                           isSelected
-                            ? 'bg-orange-600/25 border-2 border-orange-500 shadow-[0_0_16px_rgba(234,88,12,0.25)]'
+                            ? 'bg-orange-600/20 border-2 border-orange-500 shadow-[0_0_18px_rgba(234,88,12,0.22)]'
                             : canPick
-                            ? 'bg-[#0d0d0d] border-2 border-white/[0.07] hover:bg-orange-950/20 hover:border-orange-600/50 cursor-pointer'
-                            : 'bg-[#0d0d0d] border-2 border-transparent opacity-40'
+                            ? 'bg-[#111118] border border-white/[0.06] hover:bg-orange-950/25 hover:border-orange-600/40 cursor-pointer shadow-[0_1px_4px_rgba(0,0,0,0.4)]'
+                            : 'bg-[#0d0d0d] border border-transparent opacity-35'
                         }`}
                       >
                         <button
-                          className="w-full flex items-center gap-2"
+                          className="w-full flex items-center gap-3 px-3 py-2.5"
                           onClick={() => canPick && selectAndPick(player.id)}
                           disabled={!canPick}
                         >
+                          {/* Rank number — muted circle, Yahoo-style */}
+                          <div className="w-6 text-center shrink-0">
+                            <span className="font-display text-gray-700 text-sm leading-none tabular-nums">{idx + 1}</span>
+                          </div>
+
+                          {/* Name + meta */}
                           <div className="flex-1 min-w-0">
-                            <div className="text-white font-bold text-sm truncate">{player.firstName} {player.lastName}</div>
-                            <div className="text-gray-500 text-xs truncate">{player.team} · {player.yearFrom}–{player.yearTo}</div>
+                            <div className="text-white font-bold text-sm leading-tight truncate">
+                              {player.firstName} {player.lastName}
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                              {playerPositions.map((pos: string) => (
+                                <span key={pos} className={posBadgeClass(pos)}>{pos}</span>
+                              ))}
+                              <span className="text-gray-600 text-[11px]">{player.team}</span>
+                              <span className="text-gray-700 text-[11px]">{player.yearFrom}–{player.yearTo}</span>
+                            </div>
                           </div>
-                          <div className="flex gap-1 shrink-0">
-                            {playerPositions.map((pos: string) => (
-                              <span key={pos} className="text-xs bg-orange-600/20 text-orange-400 px-1.5 py-0.5 rounded font-bold">{pos}</span>
-                            ))}
-                          </div>
+
+                          {/* Stat value — tabular, right-aligned, prominent */}
                           {room.difficulty === 'casual' && (
-                            <div className="text-right shrink-0 min-w-[48px]">
-                              <div className="text-white font-black text-sm">
-                                {statMode === 'games_played' ? statVal : statVal.toFixed(1)}
+                            <div className="text-right shrink-0 min-w-[52px]">
+                              <div className={`font-display text-xl leading-none tabular-nums ${
+                                isSelected ? 'text-orange-400' : 'text-white'
+                              }`}>
+                                {statMode === 'games_played' ? Math.round(statVal) : statVal.toFixed(1)}
                               </div>
-                              <div className="text-gray-500 text-xs">
+                              <div className="text-gray-600 text-[10px] tracking-wider uppercase mt-0.5">
                                 {statMode === 'games_played' ? 'GP' : statMode.toUpperCase()}
                               </div>
                             </div>
                           )}
+
+                          {/* Pick CTA — only when this card is active and pickable */}
+                          {isSelected && !hasMultipleSlots && (
+                            <div className="shrink-0">
+                              <div className="bg-orange-600 text-white text-xs font-black px-3 py-1.5 rounded-lg">
+                                PICK
+                              </div>
+                            </div>
+                          )}
                         </button>
+
+                        {/* Multi-slot chooser — expanded inline, no nested click confusion */}
                         {hasMultipleSlots && (
-                          <div className="flex gap-2 mt-2 flex-wrap" onClick={e => e.stopPropagation()}>
-                            <span className="text-orange-300 text-xs self-center">Pick slot:</span>
+                          <div className="flex items-center gap-2 px-3 pb-2.5 flex-wrap border-t border-orange-500/20 pt-2 mt-0">
+                            <span className="text-orange-300/70 text-xs">Place at:</span>
                             {Array.from(validSlots).map(slotIdx => (
                               <button
                                 key={slotIdx}
-                                onClick={() => pickIntoSlot(slotIdx)}
-                                className="bg-orange-600 hover:bg-orange-500 text-white text-xs font-black px-3 py-1 rounded-lg transition-colors"
+                                onClick={e => { e.stopPropagation(); pickIntoSlot(slotIdx) }}
+                                className="bg-orange-600 hover:bg-orange-500 text-white text-xs font-black px-3 py-1.5 rounded-lg transition-colors"
                               >
                                 {requiredSlots[slotIdx] === 'BENCH' ? 'BENCH' : requiredSlots[slotIdx]}
                               </button>

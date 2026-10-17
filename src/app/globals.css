@@ -190,3 +190,230 @@ body {
 .animate-slide-up { animation: slide-up 0.25s ease forwards; }
 @keyframes glow-pulse { 0%,100% { box-shadow:0 0 20px rgba(234,88,12,0.2); } 50% { box-shadow:0 0 40px rgba(234,88,12,0.4); } }
 .animate-glow { animation: glow-pulse 3s ease infinite; }
+@keyframes fade-in { from { opacity:0; } to { opacity:1; } }
+.animate-fade-in { animation: fade-in 0.2s ease forwards; }
+@keyframes scale-in { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+.animate-scale-in { animation: scale-in 0.2s ease forwards; }
+@keyframes countdown-shrink { from { width: 100%; } to { width: 0%; } }
+
+/* ── Tab pill (segmented control) ─────────────────────────────────────────────── */
+.tab-pill {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 4px;
+  display: flex;
+  gap: 4px;
+}
+.tab-pill-item {
+  flex: 1;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  transition: all 0.15s;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.4);
+}
+.tab-pill-item:hover { color: rgba(255,255,255,0.7); }
+.tab-pill-item.active {
+  background: #ea580c;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(234,88,12,0.3);
+}
+
+/* ── Stat highlight bar ─────────────────────────────────────────────────────── */
+.stat-highlight {
+  background: linear-gradient(135deg, rgba(234,88,12,0.08) 0%, rgba(249,115,22,0.04) 100%);
+  border: 1px solid rgba(249,115,22,0.15);
+  border-radius: 14px;
+}
+
+/* ── Glass card — blurred dark panel ───────────────────────────────────────── */
+.card-glass {
+  background: rgba(17,17,24,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+}
+
+/* ── Live banner ────────────────────────────────────────────────────────────── */
+.live-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.25);
+  border-radius: 99px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4ade80;
+}
+
+/* ── Player row ─────────────────────────────────────────────────────────────── */
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.player-row:hover {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.08);
+}
+.player-row.selected {
+  background: rgba(234,88,12,0.12);
+  border-color: rgba(234,88,12,0.4);
+  box-shadow: 0 0 0 1px rgba(234,88,12,0.2);
+}
+.player-row.taken { opacity: 0.3; pointer-events: none; }
+
+/* ── Draft slot ─────────────────────────────────────────────────────────────── */
+.draft-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+.draft-slot-empty {
+  border: 1px dashed rgba(255,255,255,0.12);
+  background: transparent;
+}
+.draft-slot-filled { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
+.draft-slot-target { background: rgba(234,88,12,0.12); border: 1px solid rgba(234,88,12,0.5); cursor: pointer; }
+.draft-slot-target:hover { background: rgba(234,88,12,0.2); }
+
+/* ── Profile hero ──────────────────────────────────────────────────────────── */
+.profile-hero {
+  background: linear-gradient(135deg, rgba(234,88,12,0.08) 0%, rgba(17,17,24,1) 60%);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.profile-hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 5%, rgba(249,115,22,0.9) 40%, rgba(249,115,22,0.9) 60%, transparent 95%);
+}
+
+/* ── Win/loss ring around avatars ──────────────────────────────────────────── */
+.avatar-win  { box-shadow: 0 0 0 3px rgba(34,197,94,0.5); }
+.avatar-loss { box-shadow: 0 0 0 3px rgba(239,68,68,0.4); }
+.avatar-hot  { box-shadow: 0 0 0 3px rgba(249,115,22,0.5), 0 0 16px rgba(249,115,22,0.2); }
+
+/* ── Bid controls ──────────────────────────────────────────────────────────── */
+.bid-stepper {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.bid-stepper-btn {
+  width: 48px;
+  font-size: 20px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.6);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.bid-stepper-btn:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.bid-stepper-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-left: 1px solid rgba(255,255,255,0.08);
+  border-right: 1px solid rgba(255,255,255,0.08);
+  text-align: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 0.04em;
+  color: #fff;
+  outline: none;
+  padding: 8px 0;
+}
+
+/* ── Milestone progress row ────────────────────────────────────────────────── */
+.milestone-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.05);
+  transition: all 0.15s;
+}
+.milestone-row.unlocked { background: rgba(34,197,94,0.04); border-color: rgba(34,197,94,0.12); }
+.milestone-row.locked   { background: rgba(255,255,255,0.015); opacity: 0.55; }
+
+/* ── Empty state ────────────────────────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  gap: 8px;
+}
+.empty-state-icon { font-size: 40px; opacity: 0.15; margin-bottom: 4px; }
+.empty-state-title { font-size: 14px; font-weight: 800; color: rgba(255,255,255,0.4); }
+.empty-state-body  { font-size: 12px; color: rgba(255,255,255,0.2); }
+
+/* ── Countdown ring color transitions ────────────────────────────────────────── */
+.timer-danger { color: #ef4444; }
+.timer-warn   { color: #f97316; }
+.timer-ok     { color: #22c55e; }
+
+/* ── War Room top bar ─────────────────────────────────────────────────────── */
+.war-room-bar {
+  background: rgba(17,17,24,0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+/* ── Current bid display ──────────────────────────────────────────────────── */
+.bid-hero {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 10vw, 5rem);
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+/* ── Roster GM card ───────────────────────────────────────────────────────── */
+.gm-card {
+  border-radius: 12px;
+  padding: 12px;
+  transition: all 0.15s;
+}
+.gm-card-me  { background: rgba(234,88,12,0.08); border: 1px solid rgba(234,88,12,0.2); }
+.gm-card-other { background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.05); }

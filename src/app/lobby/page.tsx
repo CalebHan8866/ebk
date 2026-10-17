@@ -322,12 +322,23 @@ export default function LobbyPage() {
           <div className="card-accent rounded-2xl overflow-hidden">
             {/* Header strip */}
             <div className="px-6 py-5 text-center border-b border-white/5">
-              <div className="text-label mb-1">Game Found</div>
-              <div className="font-display text-5xl text-white leading-none">MATCH UP</div>
-              <div className={`text-sm font-black mt-2 tabular-nums ${
-                countdown <= 10 ? 'text-red-400' : countdown <= 20 ? 'text-yellow-400' : 'text-gray-500'
-              }`}>
-                {countdown > 0 ? `Auto-cancels in ${countdown}s` : 'Processing...'}
+              <div className="text-label mb-2 tracking-[0.2em]">Game Found</div>
+              <div className="font-display text-6xl text-white leading-none tracking-wider">MATCH UP</div>
+              {/* Countdown bar */}
+              <div className="mt-4 mx-auto max-w-[200px]">
+                <div className="budget-bar">
+                  <div
+                    className={`budget-bar-fill transition-all duration-1000 ${
+                      countdown <= 10 ? '!bg-red-500' : countdown <= 20 ? '!bg-yellow-500' : ''
+                    }`}
+                    style={{ width: `${(countdown / 60) * 100}%` }}
+                  />
+                </div>
+                <div className={`text-xs font-black mt-1.5 tabular-nums ${
+                  countdown <= 10 ? 'text-red-400' : countdown <= 20 ? 'text-yellow-400' : 'text-gray-500'
+                }`}>
+                  {countdown > 0 ? `${countdown}s to accept` : 'Processing...'}
+                </div>
               </div>
             </div>
 
@@ -361,10 +372,10 @@ export default function LobbyPage() {
               </div>
 
               {/* VS divider */}
-              <div className="flex flex-col items-center gap-1">
-                <div className="w-px h-8 bg-white/5" />
-                <div className="font-display text-xl text-gray-700 leading-none">VS</div>
-                <div className="w-px h-8 bg-white/5" />
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="w-px flex-1 bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+                <div className="font-display text-2xl text-orange-500/80 leading-none drop-shadow-[0_0_12px_rgba(234,88,12,0.4)]">VS</div>
+                <div className="w-px flex-1 bg-gradient-to-b from-transparent via-white/10 to-transparent" />
               </div>
 
               {/* Opponent */}
@@ -438,10 +449,10 @@ export default function LobbyPage() {
       <div className="max-w-5xl mx-auto">
 
         {/* ── Page header ─────────────────────────────────────────────────── */}
-        <div className="flex items-start justify-between mb-8">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="font-display text-5xl text-orange-500 leading-none">LOBBY</h1>
-            <p className="text-gray-600 text-xs tracking-widest uppercase mt-1">Elite Ball Knowledge</p>
+            <h1 className="font-display text-6xl text-orange-500 leading-none tracking-wide">LOBBY</h1>
+            <p className="text-gray-600 text-[11px] tracking-[0.18em] uppercase mt-1.5">Elite Ball Knowledge</p>
           </div>
 
           {/* User identity chip */}
@@ -458,7 +469,14 @@ export default function LobbyPage() {
                   )}
                 </div>
               </div>
-              <Avatar name={user.username} />
+              <div className="relative">
+                <Avatar name={user.username} />
+                {user.winStreak >= 3 && (
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-orange-500 rounded-full flex items-center justify-center text-[7px] font-black text-white">
+                    {user.winStreak}
+                  </span>
+                )}
+              </div>
             </Link>
           )}
           {!authLoading && !user && (
@@ -471,31 +489,23 @@ export default function LobbyPage() {
 
         {/* Global error banner */}
         {error && (
-          <div className="bg-red-900/30 border border-red-500/40 text-red-300 rounded-xl px-4 py-3 mb-5 text-sm flex items-center justify-between">
+          <div className="bg-red-900/30 border border-red-500/40 text-red-300 rounded-xl px-4 py-3 mb-5 text-sm flex items-center justify-between animate-slide-up">
             <span>{error}</span>
             <button onClick={() => setError('')} className="text-red-500 hover:text-red-300 ml-3 shrink-0">✕</button>
           </div>
         )}
 
         {/* ── Main tab bar ────────────────────────────────────────────────── */}
-        <div className="flex gap-1 p-1 bg-white/[0.04] border border-white/[0.06] rounded-2xl mb-6">
+        <div className="tab-pill mb-6">
           <button
             onClick={() => { setMainTab('online'); setError('') }}
-            className={`flex-1 rounded-xl py-2.5 text-sm font-black transition-all ${
-              mainTab === 'online'
-                ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'
-                : 'text-gray-500 hover:text-gray-300'
-            }`}
+            className={`tab-pill-item${mainTab === 'online' ? ' active' : ''}`}
           >
             Online Play
           </button>
           <button
             onClick={() => { setMainTab('friends'); setError('') }}
-            className={`flex-1 rounded-xl py-2.5 text-sm font-black transition-all ${
-              mainTab === 'friends'
-                ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'
-                : 'text-gray-500 hover:text-gray-300'
-            }`}
+            className={`tab-pill-item${mainTab === 'friends' ? ' active' : ''}`}
           >
             Play with Friends
           </button>
@@ -654,41 +664,45 @@ export default function LobbyPage() {
                   {/* Listings */}
                   <div className="flex-1 overflow-y-auto">
                     {listings.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-                        <div className="text-5xl mb-3 opacity-20">🏀</div>
-                        <div className="text-gray-500 font-black text-sm">No open games</div>
-                        <div className="text-gray-700 text-xs mt-1">
-                          Post a game on the left to be the first
-                        </div>
+                      <div className="empty-state">
+                        <div className="empty-state-icon">🏀</div>
+                        <div className="empty-state-title">No open games</div>
+                        <div className="empty-state-body">Post a game on the left to be the first</div>
                       </div>
                     ) : (
-                      <div className="divide-y divide-white/[0.04] max-h-[400px]">
+                      <div className="divide-y divide-white/[0.04] max-h-[400px] overflow-y-auto">
                         {listings.map(l => (
-                          <div key={l.code} className="flex items-center gap-4 px-5 py-4 hover:bg-white/[0.02] transition-colors">
-                            <Avatar name={l.hostName} />
+                          <div key={l.code} className="flex items-center gap-4 px-5 py-4 hover:bg-white/[0.025] transition-colors group">
+                            <div className={l.hostStreak >= 3 ? 'avatar-hot rounded-full' : ''}>
+                              <Avatar name={l.hostName} />
+                            </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-0.5">
                                 <span className="text-white font-black text-sm truncate">{l.hostName}</span>
                                 <BadgeChip badgeId={l.hostBadge} />
                                 {l.hostStreak >= 3 && (
-                                  <span className="text-orange-400 text-xs font-black">🔥{l.hostStreak}</span>
+                                  <span className="text-orange-400 text-[11px] font-black bg-orange-950/40 border border-orange-800/50 rounded px-1.5 py-0.5">
+                                    {l.hostStreak} streak
+                                  </span>
                                 )}
                               </div>
                               <div className="text-gray-500 text-xs">
                                 {l.hostRecord.wins}W {l.hostRecord.losses}L
                                 <span className="text-gray-700 mx-1">·</span>
-                                {winPct(l.hostRecord.wins, l.hostRecord.losses)}
+                                <span className="text-gray-400">{winPct(l.hostRecord.wins, l.hostRecord.losses)}</span>
                               </div>
                             </div>
-                            {/* Format badge */}
-                            <div className="text-right shrink-0 hidden sm:block">
-                              <div className="text-gray-300 text-xs font-bold">{MODE_LABEL[l.teamMode]}</div>
-                              <div className="text-gray-600 text-xs">{seriesLabel(l.series)}</div>
+                            {/* Format chip */}
+                            <div className="hidden sm:flex flex-col items-end gap-0.5 shrink-0">
+                              <span className="text-xs font-black text-gray-200 bg-white/[0.05] border border-white/[0.08] rounded-lg px-2.5 py-1 leading-none">
+                                {MODE_LABEL[l.teamMode]}
+                              </span>
+                              <span className="text-gray-600 text-[11px]">{seriesLabel(l.series)}</span>
                             </div>
                             <button
                               onClick={() => handleJoinListing(l.code)}
                               disabled={onlineState === 'listing'}
-                              className="bg-orange-600 hover:bg-orange-500 active:bg-orange-700 disabled:opacity-30 text-white font-black text-xs px-4 py-2 rounded-lg transition-colors shrink-0"
+                              className="btn-primary py-2 px-5 text-xs disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none shrink-0"
                             >
                               Join
                             </button>
@@ -717,20 +731,16 @@ export default function LobbyPage() {
         {mainTab === 'friends' && (
           <div className="max-w-md mx-auto">
             {/* Sub-tab toggle */}
-            <div className="flex gap-1 p-1 bg-white/[0.04] border border-white/[0.06] rounded-2xl mb-5">
+            <div className="tab-pill mb-5">
               <button
                 onClick={() => setFriendsTab('create')}
-                className={`flex-1 rounded-xl py-2 text-sm font-black transition-all ${
-                  friendsTab === 'create' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'
-                }`}
+                className={`tab-pill-item${friendsTab === 'create' ? ' active' : ''}`}
               >
                 Create Room
               </button>
               <button
                 onClick={() => setFriendsTab('join')}
-                className={`flex-1 rounded-xl py-2 text-sm font-black transition-all ${
-                  friendsTab === 'join' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'
-                }`}
+                className={`tab-pill-item${friendsTab === 'join' ? ' active' : ''}`}
               >
                 Join Room
               </button>

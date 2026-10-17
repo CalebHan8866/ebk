@@ -121,75 +121,87 @@ export default function ProfilePage() {
     <div className="min-h-screen py-10 px-4">
       <div className="max-w-3xl mx-auto">
 
-        {/* Page header — matches lobby / leaderboard pattern */}
+        {/* Page header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="font-display text-4xl text-orange-500 leading-none">Profile</h1>
-            <p className="text-gray-500 text-sm mt-1">
-              Member since {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            <h1 className="font-display text-5xl text-orange-500 leading-none tracking-wide">PROFILE</h1>
+            <p className="text-gray-600 text-[11px] tracking-[0.18em] uppercase mt-1.5">
+              Since {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
             </p>
           </div>
-          <Link href="/lobby" className="text-gray-500 hover:text-white text-sm transition-colors">← Lobby</Link>
+          <Link href="/lobby" className="btn-secondary py-2 px-4 text-xs">← Lobby</Link>
         </div>
 
         <div className="space-y-6">
 
-          {/* Player identity card — card-accent for premium top-border treatment */}
-          <div className="card-accent p-8">
-            <div className="flex items-center gap-5">
-              {/* Avatar */}
-              <div className="w-20 h-20 bg-orange-600 rounded-full flex items-center justify-center shrink-0 shadow-lg shadow-orange-900/40">
-                <span className="font-display text-4xl text-white leading-none pt-1">
+          {/* Player identity card — elevated hero with glow */}
+          <div className="profile-hero p-8">
+            <div className="flex items-center gap-6">
+              {/* Avatar with win-streak ring */}
+              <div className={`w-24 h-24 bg-orange-600 rounded-full flex items-center justify-center shrink-0 shadow-xl shadow-orange-900/50 ${
+                user.winStreak >= 5 ? 'avatar-hot' : user.winStreak >= 2 ? 'avatar-win' : ''
+              }`}>
+                <span className="font-display text-5xl text-white leading-none">
                   {user.username[0].toUpperCase()}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="font-display text-3xl text-white leading-none tracking-wide">{user.username}</h2>
+                <h2 className="font-display text-4xl text-white leading-none tracking-wider">{user.username.toUpperCase()}</h2>
                 <p className="text-label mt-2">{user.email}</p>
+                {user.winStreak >= 2 && (
+                  <div className="inline-flex items-center gap-1.5 mt-3 bg-orange-950/50 border border-orange-800/40 rounded-full px-3 py-1">
+                    <span className="text-orange-400 text-[11px] font-black tracking-wider uppercase">{user.winStreak} Win Streak</span>
+                  </div>
+                )}
+              </div>
+              {/* Win% circle badge */}
+              <div className="text-center shrink-0">
+                <div className="font-display text-4xl text-orange-400 leading-none">{winPct}%</div>
+                <div className="text-label mt-1">Win Rate</div>
               </div>
             </div>
           </div>
 
           {/* Career stats — card-stat for maximum number contrast */}
           <div className="card-stat p-6">
-            <h3 className="text-label mb-5">Career Overview</h3>
+            <h3 className="text-label mb-5 tracking-[0.18em]">Career Overview</h3>
 
-            {/* Primary stats grid */}
-            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 text-center mb-6">
-              <div className="space-y-1">
-                <div className="font-display text-4xl text-green-400 leading-none">{user.wins}</div>
-                <div className="text-label">W</div>
+            {/* Primary W-L-D trio — big and bold */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="stat-highlight rounded-xl py-4 text-center">
+                <div className="font-display text-5xl text-green-400 leading-none">{user.wins}</div>
+                <div className="text-label mt-1.5">Wins</div>
               </div>
-              <div className="space-y-1">
-                <div className="font-display text-4xl text-red-400 leading-none">{user.losses}</div>
-                <div className="text-label">L</div>
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl py-4 text-center">
+                <div className="font-display text-5xl text-red-400 leading-none">{user.losses}</div>
+                <div className="text-label mt-1.5">Losses</div>
               </div>
-              <div className="space-y-1">
-                <div className="font-display text-4xl text-yellow-400 leading-none">{user.draws}</div>
-                <div className="text-label">D</div>
+              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl py-4 text-center">
+                <div className="font-display text-5xl text-yellow-400 leading-none">{user.draws}</div>
+                <div className="text-label mt-1.5">Draws</div>
               </div>
-              <div className="space-y-1">
-                <div className="font-display text-4xl text-gray-300 leading-none">{user.gamesPlayed}</div>
-                <div className="text-label">GP</div>
+            </div>
+
+            {/* Secondary stats row */}
+            <div className="grid grid-cols-3 gap-2 mb-5">
+              <div className="text-center py-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                <div className="font-display text-3xl text-gray-300 leading-none">{user.gamesPlayed}</div>
+                <div className="text-label mt-1">Played</div>
               </div>
-              <div className="space-y-1">
-                <div className="font-display text-4xl text-orange-400 leading-none">{user.winStreak}</div>
-                <div className="text-label">Streak</div>
+              <div className="text-center py-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                <div className="font-display text-3xl text-orange-400 leading-none">{user.winStreak}</div>
+                <div className="text-label mt-1">Streak</div>
               </div>
-              <div className="space-y-1">
-                <div className="font-display text-4xl text-orange-300 leading-none">{user.maxWinStreak}</div>
-                <div className="text-label">Best</div>
-              </div>
-              <div className="space-y-1">
-                <div className="font-display text-4xl text-blue-400 leading-none">{winPct}%</div>
-                <div className="text-label">Win%</div>
+              <div className="text-center py-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                <div className="font-display text-3xl text-orange-300 leading-none">{user.maxWinStreak}</div>
+                <div className="text-label mt-1">Best Streak</div>
               </div>
             </div>
 
             {/* Win rate progress bar */}
-            <div className="mb-1">
+            <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-label">Win Rate</span>
+                <span className="text-label tracking-[0.14em]">Win Rate</span>
                 <span className="text-white text-sm font-black">{winPct}%</span>
               </div>
               <div className="budget-bar">
@@ -202,12 +214,12 @@ export default function ProfilePage() {
 
             {/* First pick advantage — only if data exists */}
             {user.firstPickGames > 0 && (
-              <div className="border-t border-white/5 pt-4 mt-4 flex items-center justify-between">
-                <span className="text-label">First Pick Advantage</span>
+              <div className="border-t border-white/[0.06] pt-4 mt-4 flex items-center justify-between">
+                <span className="text-label">First Pick Win%</span>
                 <div className="text-right">
                   <span className="text-white font-black text-sm">{user.firstPickWins}W / {user.firstPickGames}G</span>
                   <span className="text-gray-500 text-xs ml-2">
-                    ({user.firstPickGames > 0 ? ((user.firstPickWins / user.firstPickGames) * 100).toFixed(0) : 0}% when first)
+                    ({user.firstPickGames > 0 ? ((user.firstPickWins / user.firstPickGames) * 100).toFixed(0) : 0}%)
                   </span>
                 </div>
               </div>
@@ -344,32 +356,28 @@ export default function ProfilePage() {
                 return (
                   <div
                     key={milestone.id}
-                    className={[
-                      'flex items-center justify-between rounded-xl px-4 py-3 border transition-all',
-                      unlocked
-                        ? 'bg-white/[0.04] border-white/10'
-                        : 'bg-white/[0.02] border-white/5 opacity-50',
-                    ].join(' ')}
+                    className={`milestone-row ${unlocked ? 'unlocked' : 'locked'}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold border flex-shrink-0 ${
-                        unlocked
-                          ? 'bg-green-500/20 border-green-500 text-green-400'
-                          : 'bg-white/5 border-white/10 text-gray-600'
-                      }`}>
-                        {unlocked ? '✓' : '✗'}
-                      </span>
-                      <div>
-                        <div className={`text-sm font-bold ${unlocked ? 'text-white' : 'text-gray-500'}`}>
-                          {milestone.name}
-                        </div>
-                        <div className="text-xs text-gray-500">{milestone.description}</div>
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black border flex-shrink-0 transition-all ${
+                      unlocked
+                        ? 'bg-green-500/20 border-green-500/60 text-green-400'
+                        : 'bg-white/[0.03] border-white/10 text-gray-700'
+                    }`}>
+                      {unlocked ? '✓' : ''}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-sm font-bold ${unlocked ? 'text-white' : 'text-gray-500'}`}>
+                        {milestone.name}
                       </div>
+                      <div className="text-xs text-gray-600 truncate">{milestone.description}</div>
                     </div>
                     {!unlocked && req && (
-                      <div className="text-label whitespace-nowrap ml-4 shrink-0">
+                      <div className="text-label whitespace-nowrap shrink-0">
                         {req}
                       </div>
+                    )}
+                    {unlocked && (
+                      <div className="text-[10px] font-black text-green-400/60 uppercase tracking-wider shrink-0">Done</div>
                     )}
                   </div>
                 )
