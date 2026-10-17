@@ -20,10 +20,15 @@ export default function Navbar() {
     return (
       <Link href={href}
         className={[
-          'text-sm font-semibold transition-colors whitespace-nowrap',
-          active ? 'text-orange-400' : 'text-gray-400 hover:text-white',
+          'text-sm font-bold transition-all whitespace-nowrap relative py-1',
+          active
+            ? 'text-orange-400'
+            : 'text-white/50 hover:text-white',
         ].join(' ')}>
         {label}
+        {active && (
+          <span className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-orange-500 to-transparent rounded-full" />
+        )}
       </Link>
     )
   }
@@ -65,8 +70,15 @@ export default function Navbar() {
               {/* Profile chip */}
               <Link href="/profile"
                 className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.07] hover:border-orange-700/40 hover:bg-orange-950/20 transition-all group">
-                <div className={`w-7 h-7 ${avatarColor} rounded-full flex items-center justify-center font-black text-white text-[10px] shrink-0`}>
-                  {user.username.slice(0, 2).toUpperCase()}
+                <div className="relative shrink-0">
+                  <div className={`w-7 h-7 ${avatarColor} rounded-full flex items-center justify-center font-black text-white text-[10px]`}>
+                    {user.username.slice(0, 2).toUpperCase()}
+                  </div>
+                  {user.winStreak >= 3 && (
+                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-orange-500 rounded-full border border-[#0a0a0f] flex items-center justify-center text-[7px] font-black text-white leading-none">
+                      {user.winStreak}
+                    </span>
+                  )}
                 </div>
                 <div className="hidden sm:block">
                   <div className="text-xs font-black text-gray-200 group-hover:text-white transition-colors leading-tight tracking-wide">
