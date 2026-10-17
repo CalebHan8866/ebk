@@ -1,6 +1,5 @@
 'use client'
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { resetSocket } from '@/lib/socket'
 
 interface AuthUser {
   id: string
@@ -59,6 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Force a new socket connection so the server middleware re-reads the now-cleared
     // auth cookie. Without this the old socket retains the previous user's identity
     // for the duration of its connection.
+    // Dynamic import ensures socket.io-client is never loaded during SSR/prerender.
+    const { resetSocket } = await import('@/lib/socket')
     resetSocket()
   }
 

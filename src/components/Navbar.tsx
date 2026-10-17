@@ -2,7 +2,6 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
-import { resetSocket } from '@/lib/socket'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -10,8 +9,8 @@ export default function Navbar() {
   const pathname = usePathname()
 
   async function handleLogout() {
+    // logout() in AuthContext already calls resetSocket() internally
     await logout()
-    resetSocket()
     router.push('/')
     router.refresh()
   }

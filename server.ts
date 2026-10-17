@@ -1166,6 +1166,8 @@ app.prepare().then(async () => {
     // ── Game Listings (open lobby browser) ───────────────────────────────────
 
     socket.on('get-listings', () => {
+      // Join the lobby broadcast room so future listings-updated events reach this client
+      socket.join('lobby')
       socket.emit('listings-updated', { listings: Array.from(gameListings.values()) })
     })
 
@@ -1222,14 +1224,14 @@ app.prepare().then(async () => {
           gameListings.delete(code)
           listingTimers.delete(code)
           socket.emit('listing-expired')
-          io.emit('listings-updated', { listings: Array.from(gameListings.values()) })
+          io.to('lobby').emit('listings-updated', { listings: Array.from(gameListings.values()) })
         }
       }, 10 * 60 * 1000)
       listingTimers.set(code, expireTimer)
 
       pendingListingCreate.delete(socket.id)
       socket.emit('listing-created', { code })
-      io.emit('listings-updated', { listings: Array.from(gameListings.values()) })
+      io.to('lobby').emit('listings-updated', { listings: Array.from(gameListings.values()) })
     })
 
     socket.on('cancel-listing', ({ code }: { code: string }) => {
@@ -1238,7 +1240,7 @@ app.prepare().then(async () => {
       clearTimeout(listingTimers.get(code))
       listingTimers.delete(code)
       gameListings.delete(code)
-      io.emit('listings-updated', { listings: Array.from(gameListings.values()) })
+      io.to('lobby').emit('listings-updated', { listings: Array.from(gameListings.values()) })
     })
 
     socket.on('join-listing', async ({ code, userName }: {
@@ -1271,7 +1273,7 @@ app.prepare().then(async () => {
       clearTimeout(listingTimers.get(code))
       listingTimers.delete(code)
       gameListings.delete(code)
-      io.emit('listings-updated', { listings: Array.from(gameListings.values()) })
+      io.to('lobby').emit('listings-updated', { listings: Array.from(gameListings.values()) })
 
       const guestUser = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { wins: true, losses: true, draws: true, equippedBadge: true, winStreak: true } }).catch(() => null) : null
       const guestRecord = { wins: guestUser?.wins || 0, losses: guestUser?.losses || 0, draws: guestUser?.draws || 0 }
@@ -1654,7 +1656,7 @@ app.prepare().then(async () => {
           clearTimeout(listingTimers.get(code))
           listingTimers.delete(code)
           gameListings.delete(code)
-          io.emit('listings-updated', { listings: Array.from(gameListings.values()) })
+          io.to('lobby').emit('listings-updated', { listings: Array.from(gameListings.values()) })
           break
         }
       }

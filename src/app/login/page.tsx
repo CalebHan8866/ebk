@@ -3,7 +3,6 @@ import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
-import { resetSocket } from '@/lib/socket'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -28,6 +27,8 @@ function LoginForm() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Login failed'); return }
       setUser(data.user)
+      // Dynamic import so socket.io-client never loads during SSR/prerender
+      const { resetSocket } = await import('@/lib/socket')
       resetSocket()
       router.push('/lobby')
     } catch {
