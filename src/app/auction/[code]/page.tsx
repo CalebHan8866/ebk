@@ -1129,11 +1129,25 @@ export default function AuctionRoomPage() {
             {/* Steal window info */}
             {phase === 'steal-window' && (
               <div className="w-full max-w-sm">
-                {auctionState.stealInitiated ? (
-                  <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl px-5 py-4 text-center">
-                    <div className="text-white/40 text-sm">Steal executed — next player incoming...</div>
-                  </div>
-                ) : (
+                {auctionState.stealInitiated ? (() => {
+                  const stealEntry = [...auctionState.bidLog].reverse().find(e => e.action === 'steal')
+                  const iMeStole = stealEntry?.name === me?.name
+                  return (
+                    <div className={`rounded-2xl px-5 py-4 text-center border ${
+                      iMeStole
+                        ? 'bg-green-950/30 border-green-500/40'
+                        : 'bg-white/[0.03] border-white/[0.07]'
+                    }`}>
+                      {iMeStole ? (
+                        <div className="text-green-400 font-black text-sm tracking-wide">⚡ You stole it! Next player incoming...</div>
+                      ) : (
+                        <div className="text-white/40 text-sm">
+                          {stealEntry ? `${stealEntry.name} executed a steal` : 'Steal executed'} — next player incoming...
+                        </div>
+                      )}
+                    </div>
+                  )
+                })() : (
                   <div className="bg-yellow-950/30 border border-yellow-700/40 rounded-2xl px-5 py-5 text-center shadow-[0_0_24px_rgba(234,179,8,0.08)]">
                     <div className="inline-flex items-center gap-2 mb-3">
                       <span className="text-yellow-400 font-black text-sm tracking-widest uppercase">⚡ Steal Window Open</span>
