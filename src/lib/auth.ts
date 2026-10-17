@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose'
 import crypto from 'crypto'
-import { prisma } from '@/lib/db'
+import { prisma } from './db'
 
 // If JWT_SECRET is not set, generate a random one at startup.
 // Sessions will not survive server restarts but tokens cannot be forged.
