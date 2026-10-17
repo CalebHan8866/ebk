@@ -1986,6 +1986,8 @@ app.prepare().then(async () => {
           }
         } else if (room.status !== 'complete') {
           // Active room: mark the participant as disconnected but keep their slot.
+          // Broadcast state so remaining players see accurate participant list.
+          broadcastAuctionState(io, room)
           // If ALL participants are now disconnected, tear down timers and delete the
           // room — nobody is coming back and the timers would otherwise fire forever.
           const allGone = room.participants.every(p => !io.sockets.sockets.has(p.socketId))
