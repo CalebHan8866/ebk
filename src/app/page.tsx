@@ -52,7 +52,7 @@ const STAT_SHOWCASE = [
 
 export default function Home() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen animate-fade-in">
 
       {/* ── HERO ─────────────────────────────────────────────────────── */}
       <div className="relative text-center pt-16 pb-20 px-4 overflow-hidden">
@@ -96,7 +96,7 @@ export default function Home() {
               Play Now
             </Link>
             <Link href="/auction"
-              className="flex items-center gap-2 bg-[#141414] hover:bg-[#1a1a1a] border border-orange-800/40 hover:border-orange-600/60 text-orange-300 font-black text-sm px-6 py-3.5 rounded-xl transition-all">
+              className="flex items-center gap-2 bg-white/[0.04] hover:bg-white/[0.07] border border-orange-800/40 hover:border-orange-600/60 text-orange-300 font-black text-sm px-6 py-3.5 rounded-xl transition-all">
               <span>⚡</span>
               <span>War Room</span>
             </Link>
@@ -109,7 +109,7 @@ export default function Home() {
       </div>
 
       {/* ── STAT BAR ─────────────────────────────────────────────────── */}
-      <div className="border-y border-white/[0.05] bg-[#0a0a0a] py-4 px-4 mb-16">
+      <div className="border-y border-white/[0.05] bg-black/60 py-4 px-4 mb-16">
         <div className="max-w-3xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
           {STAT_SHOWCASE.map(s => (
             <div key={s.label}>
@@ -140,7 +140,7 @@ export default function Home() {
                       {mode.badge}
                     </span>
                   )}
-                  <span className="text-gray-600 text-xs bg-[#111] border border-white/5 px-2 py-0.5 rounded-full">
+                  <span className="text-gray-600 text-xs bg-white/[0.04] border border-white/5 px-2 py-0.5 rounded-full">
                     {mode.sub}
                   </span>
                 </div>

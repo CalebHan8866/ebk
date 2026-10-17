@@ -243,7 +243,7 @@ function MyRankBanner({ me, totalPlayers }: { me: MeRow; totalPlayers: number })
   const pctNum  = parseFloat(winPct)
 
   return (
-    <div className="card-accent rounded-xl px-4 py-3 mb-5 flex items-center justify-between gap-4">
+    <div className="card-accent rounded-xl px-3 sm:px-4 py-3 mb-5 flex items-center justify-between gap-2 sm:gap-4">
       <div>
         <div className="text-label text-orange-500 mb-1">Your Standing</div>
         <div className="font-display text-4xl text-white leading-none tabular-nums">
@@ -253,26 +253,26 @@ function MyRankBanner({ me, totalPlayers }: { me: MeRow; totalPlayers: number })
       </div>
 
       {/* Divider */}
-      <div className="w-px self-stretch bg-white/[0.07] shrink-0 mx-1" />
+      <div className="w-px self-stretch bg-white/[0.07] shrink-0 hidden xs:block" />
 
-      {/* W-L */}
-      <div className="text-center shrink-0">
+      {/* W-L — hidden on very small screens to prevent overflow */}
+      <div className="text-center shrink-0 hidden xs:block">
         <div className="text-label mb-1">Record</div>
-        <div className="flex items-baseline gap-1.5 tabular-nums">
-          <span className="font-display text-2xl text-green-400 leading-none">{me.wins}</span>
+        <div className="flex items-baseline gap-1 tabular-nums">
+          <span className="font-display text-xl sm:text-2xl text-green-400 leading-none">{me.wins}</span>
           <span className="text-gray-600 text-xs font-bold">W</span>
-          <span className="font-display text-2xl text-red-400 leading-none">{me.losses}</span>
+          <span className="font-display text-xl sm:text-2xl text-red-400 leading-none">{me.losses}</span>
           <span className="text-gray-600 text-xs font-bold">L</span>
         </div>
       </div>
 
       {/* Divider */}
-      <div className="w-px self-stretch bg-white/[0.07] shrink-0 mx-1" />
+      <div className="w-px self-stretch bg-white/[0.07] shrink-0 mx-0.5 sm:mx-1" />
 
       {/* Win% */}
       <div className="text-center shrink-0">
         <div className="text-label mb-1">Win%</div>
-        <div className={`font-display text-2xl leading-none tabular-nums ${
+        <div className={`font-display text-xl sm:text-2xl leading-none tabular-nums ${
           me.gamesPlayed < 5 ? 'text-gray-600' : pctNum >= 60 ? 'text-green-400' : pctNum >= 45 ? 'text-white' : 'text-red-400'
         }`}>
           {me.gamesPlayed >= 5 ? `${winPct}%` : '—'}

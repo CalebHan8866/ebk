@@ -1685,8 +1685,22 @@ app.prepare().then(async () => {
           if (timer) clearTimeout(timer)
           pickTimers.delete(code)
           io.to(code).emit('partner-disconnected')
-          // Enforce cooldown so disconnecting players can't immediately rematch
-          if (room.source === 'online') recordMatchup(room.hostUserId, room.guestUserId)
+          // Award win to remaining player and loss to disconnector for online games
+          if (room.source === 'online') {
+            recordMatchup(room.hostUserId, room.guestUserId)
+            const disconnectorIsHost = room.hostSocketId === socket.id
+            const winner = disconnectorIsHost ? 'guest' : 'host'
+            // Give the winner enough series wins to clearly win the series
+            const winsNeeded = Math.ceil(room.series / 2)
+            if (winner === 'host') {
+              room.hostSeriesScore = Math.max(room.hostSeriesScore, winsNeeded)
+            } else {
+              room.guestSeriesScore = Math.max(room.guestSeriesScore, winsNeeded)
+            }
+            if (room.hostUserId) updateStatsAndUnlock(io, room.hostUserId, room.hostSocketId, winner === 'host', false, room.hostJCGames, true)
+            if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId!, winner === 'guest', false, room.guestJCGames, false)
+            saveGameRecords(room, winner)
+          }
           // scheduleRoomCleanup cleans up consecutiveTimeouts/pickTimerStartedAt/rooms
           scheduleRoomCleanup(code, io)
         }

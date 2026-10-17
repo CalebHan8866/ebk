@@ -100,8 +100,45 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+      <div className="min-h-screen py-10 px-4 animate-fade-in">
+        <div className="max-w-3xl mx-auto space-y-6">
+          <div className="flex items-center justify-between mb-8">
+            <div className="space-y-2">
+              <div className="h-10 w-40 rounded-xl bg-white/[0.07] animate-pulse" />
+              <div className="h-3 w-28 rounded bg-white/[0.04] animate-pulse" />
+            </div>
+            <div className="h-9 w-20 rounded-xl bg-white/[0.06] animate-pulse" />
+          </div>
+          <div className="profile-hero p-8">
+            <div className="flex items-center gap-6">
+              <div className="w-24 h-24 rounded-full bg-white/[0.08] animate-pulse shrink-0" />
+              <div className="flex-1 space-y-3">
+                <div className="h-8 w-48 rounded-xl bg-white/[0.08] animate-pulse" />
+                <div className="h-3 w-32 rounded bg-white/[0.05] animate-pulse" />
+              </div>
+              <div className="text-center space-y-2 shrink-0">
+                <div className="h-10 w-20 rounded-xl bg-white/[0.08] animate-pulse" />
+                <div className="h-3 w-12 rounded bg-white/[0.04] animate-pulse" />
+              </div>
+            </div>
+          </div>
+          <div className="card-stat p-6 space-y-4">
+            <div className="h-3 w-32 rounded bg-white/[0.05] animate-pulse" />
+            <div className="grid grid-cols-3 gap-3">
+              {[0,1,2].map(i => <div key={i} className="rounded-xl h-20 bg-white/[0.04] animate-pulse" />)}
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[0,1,2].map(i => <div key={i} className="rounded-xl h-16 bg-white/[0.03] animate-pulse" />)}
+            </div>
+            <div className="h-4 w-full rounded-full bg-white/[0.04] animate-pulse" />
+          </div>
+          <div className="card-surface p-6 space-y-4">
+            <div className="h-6 w-24 rounded bg-white/[0.07] animate-pulse" />
+            <div className="flex gap-3">
+              {[0,1,2].map(i => <div key={i} className="flex-1 h-20 rounded-xl bg-white/[0.04] animate-pulse" />)}
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -109,6 +146,7 @@ export default function ProfilePage() {
 
   const total = user.wins + user.losses + user.draws
   const winPct = total > 0 ? ((user.wins / total) * 100).toFixed(1) : '0.0'
+  const winPctNum = total > 0 ? (user.wins / total) * 100 : 0
 
   let unlockedBadgeIds: string[] = []
   let unlockedEmoteIds: string[] = []
@@ -118,7 +156,7 @@ export default function ProfilePage() {
   try { unlockedMilestoneIds = JSON.parse(user.unlockedMilestones) } catch { unlockedMilestoneIds = [] }
 
   return (
-    <div className="min-h-screen py-10 px-4">
+    <div className="min-h-screen py-10 px-4 animate-fade-in">
       <div className="max-w-3xl mx-auto">
 
         {/* Page header */}
@@ -135,27 +173,35 @@ export default function ProfilePage() {
         <div className="space-y-6">
 
           {/* Player identity card — elevated hero with glow */}
-          <div className="profile-hero p-8">
-            <div className="flex items-center gap-6">
-              {/* Avatar with win-streak ring */}
-              <div className={`w-24 h-24 bg-orange-600 rounded-full flex items-center justify-center shrink-0 shadow-xl shadow-orange-900/50 ${
-                user.winStreak >= 5 ? 'avatar-hot' : user.winStreak >= 2 ? 'avatar-win' : ''
-              }`}>
-                <span className="font-display text-5xl text-white leading-none">
-                  {user.username[0].toUpperCase()}
-                </span>
+          <div className="profile-hero p-5 sm:p-8">
+            {/* Mobile: avatar centered on top, info below. sm+: row layout */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+              {/* Avatar + win rate — side by side on mobile */}
+              <div className="flex items-center gap-4 sm:contents">
+                <div className={`w-20 h-20 sm:w-24 sm:h-24 bg-orange-600 rounded-full flex items-center justify-center shrink-0 shadow-xl shadow-orange-900/50 ${
+                  user.winStreak >= 5 ? 'avatar-hot' : user.winStreak >= 2 ? 'avatar-win' : ''
+                }`}>
+                  <span className="font-display text-4xl sm:text-5xl text-white leading-none">
+                    {user.username[0].toUpperCase()}
+                  </span>
+                </div>
+                {/* Win% — visible beside avatar on mobile, far right on sm+ */}
+                <div className="text-center sm:hidden shrink-0 ml-auto">
+                  <div className="font-display text-4xl text-orange-400 leading-none">{winPct}%</div>
+                  <div className="text-label mt-1">Win Rate</div>
+                </div>
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="font-display text-4xl text-white leading-none tracking-wider">{user.username.toUpperCase()}</h2>
-                <p className="text-label mt-2">{user.email}</p>
+                <h2 className="font-display text-3xl sm:text-4xl text-white leading-none tracking-wider truncate">{user.username.toUpperCase()}</h2>
+                <p className="text-label mt-2 truncate">{user.email}</p>
                 {user.winStreak >= 2 && (
                   <div className="inline-flex items-center gap-1.5 mt-3 bg-orange-950/50 border border-orange-800/40 rounded-full px-3 py-1">
                     <span className="text-orange-400 text-[11px] font-black tracking-wider uppercase">{user.winStreak} Win Streak</span>
                   </div>
                 )}
               </div>
-              {/* Win% circle badge */}
-              <div className="text-center shrink-0">
+              {/* Win% — hidden on mobile (shown above), visible on sm+ */}
+              <div className="hidden sm:block text-center shrink-0">
                 <div className="font-display text-4xl text-orange-400 leading-none">{winPct}%</div>
                 <div className="text-label mt-1">Win Rate</div>
               </div>
@@ -207,7 +253,7 @@ export default function ProfilePage() {
               <div className="budget-bar">
                 <div
                   className="budget-bar-fill"
-                  style={{ width: `${winPct}%` }}
+                  style={{ width: `${winPctNum}%` }}
                 />
               </div>
             </div>
