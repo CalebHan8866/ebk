@@ -11,7 +11,9 @@ export async function GET() {
   try {
     const now = Date.now()
     if (cache && now - cache.at < CACHE_TTL) {
-      return NextResponse.json(cache.data)
+      return NextResponse.json(cache.data, {
+        headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=60' },
+      })
     }
     const players = await prisma.player.findMany({
       select: {
@@ -33,7 +35,9 @@ export async function GET() {
       },
     })
     cache = { data: players, at: now }
-    return NextResponse.json(players)
+    return NextResponse.json(players, {
+      headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=60' },
+    })
   } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }

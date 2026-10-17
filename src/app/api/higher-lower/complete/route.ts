@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { BADGES } from '@/lib/accessories'
-import { verifyGameToken } from '../start/route'
+import { verifyGameToken } from '@/lib/higher-lower-token'
 
 const HL_BADGE_IDS = ['hl_10', 'hl_25', 'hl_gauntlet']
 

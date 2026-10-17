@@ -998,6 +998,13 @@ app.prepare().then(async () => {
   const io = new SocketServer(httpServer, {
     cors: { origin: process.env.APP_URL || 'http://localhost:3000', methods: ['GET', 'POST'] },
     path: '/socket.io',
+    // Railway kills idle TCP connections after 30 s.
+    // pingInterval=20 000 ensures a heartbeat packet is sent every 20 s,
+    // keeping the connection alive before Railway's 30 s idle cutoff.
+    // pingTimeout=25 000 gives the client 25 s to respond before the server
+    // considers it disconnected — generous for lossy mobile connections.
+    pingInterval: 20_000,
+    pingTimeout: 25_000,
   })
 
   // ─── Socket.IO error logging ─────────────────────────────────────────────────

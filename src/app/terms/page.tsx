@@ -1,4 +1,10 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
+
+export const metadata: Metadata = {
+  title: 'Terms of Service — EBK',
+  description: 'Read the terms and conditions for using EBK, the live head-to-head NBA draft game.',
+}
 
 export default function TermsPage() {
   return (

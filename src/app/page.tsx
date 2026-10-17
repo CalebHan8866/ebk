@@ -1,4 +1,19 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
+
+export const metadata: Metadata = {
+  title: 'EBK — Elite Ball Knowledge | Free NBA Draft Game',
+  description: 'Play EBK free: a real-time head-to-head NBA snake draft where lower career stats win. No download, no credit card — jump in a live game in 30 seconds.',
+  openGraph: {
+    title: 'EBK — Elite Ball Knowledge | Free NBA Draft Game',
+    description: 'Play EBK free: a real-time head-to-head NBA snake draft where lower career stats win. No download, no credit card — jump in a live game in 30 seconds.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'EBK — Elite Ball Knowledge | Free NBA Draft Game',
+    description: 'Play EBK free: a real-time head-to-head NBA snake draft where lower career stats win. No download, no credit card — jump in a live game in 30 seconds.',
+  },
+}
 
 const TICKER = [
   { value: '3,247', label: 'NBA players' },

@@ -1,4 +1,10 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy — EBK',
+  description: 'Learn how EBK collects, uses, and protects your personal information.',
+}
 
 export default function PrivacyPage() {
   return (

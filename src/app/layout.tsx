@@ -34,6 +34,12 @@ export const metadata: Metadata = {
     images: [{ url: '/ebk-logo.svg', width: 400, height: 400 }],
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'EBK - Elite Ball Knowledge',
+    description: 'Live head-to-head NBA draft game. Draft the worst career stats to win.',
+    images: ['/ebk-logo.svg'],
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
