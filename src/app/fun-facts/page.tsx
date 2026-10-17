@@ -456,60 +456,109 @@ export default function FunFactsPage() {
     <div className="min-h-screen py-10 px-4">
       <div className="max-w-md mx-auto">
 
-        {/* Header */}
-        <div className="flex items-end justify-between mb-6">
+        {/* ── Header ─────────────────────────────────────────────── */}
+        <div className="flex items-end justify-between mb-8 animate-fade-up">
           <div>
             <p className="text-label mb-2">Player Earnings</p>
             <h1 className="font-display text-6xl text-white leading-none">
               FUN <span className="text-orange-500">FACTS</span>
             </h1>
-            <p className="text-gray-400 text-xs mt-2 font-bold">
+            <p className="text-white/35 text-xs mt-2 font-bold">
               <span className="font-display text-orange-400 text-lg">{filtered.length}</span>
               <span className="ml-1.5">players · earnings in perspective</span>
             </p>
           </div>
-          <Link href="/lobby" className="btn-secondary py-2 px-4 text-xs shrink-0">← Lobby</Link>
+          <Link
+            href="/lobby"
+            className="inline-flex items-center gap-1.5 text-white/40 hover:text-white/80 transition-colors text-sm group shrink-0"
+          >
+            <svg className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Lobby
+          </Link>
         </div>
 
-        {/* Search */}
-        <input
-          value={search}
-          onChange={e => handleSearch(e.target.value)}
-          placeholder="Search player or team..."
-          className="input-field mb-5"
-        />
+        {/* ── Search ─────────────────────────────────────────────── */}
+        <div className="relative mb-6 animate-fade-up-1">
+          <svg
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25 pointer-events-none"
+            fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
+          >
+            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+          </svg>
+          <input
+            value={search}
+            onChange={e => handleSearch(e.target.value)}
+            placeholder="Search player or team..."
+            className="input-field pl-10"
+          />
+          {search && (
+            <button
+              onClick={() => handleSearch('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/60 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
 
+        {/* ── Empty search result ─────────────────────────────────── */}
         {filtered.length === 0 ? (
-          <div className="card-surface rounded-2xl p-12 text-center">
-            <div className="empty-state-icon">🏀</div>
-            <p className="empty-state-title">No players found</p>
-            <p className="empty-state-body">&ldquo;{search}&rdquo; didn&apos;t match anyone</p>
+          <div className="card-accent animate-fade-up-2">
+            <div className="empty-state py-14">
+              <div className="empty-state-icon">🏀</div>
+              <p className="empty-state-title">No players found</p>
+              <p className="empty-state-body">&ldquo;{search}&rdquo; didn&apos;t match anyone</p>
+              <button
+                onClick={() => handleSearch('')}
+                className="btn-secondary mt-5 text-xs py-2 px-5"
+              >
+                Clear search
+              </button>
+            </div>
           </div>
         ) : (
           <>
-            {/* Player nav */}
-            <div className="flex items-center justify-between mb-3 px-1">
+            {/* ── Player nav bar ───────────────────────────────────── */}
+            <div className="flex items-center gap-3 mb-4 animate-fade-up-2">
               <button
                 onClick={prevPlayer}
-                className="w-10 h-10 rounded-xl card-surface border border-white/[0.07] text-gray-400 hover:text-white hover:border-white/20 flex items-center justify-center transition-all text-lg font-bold"
+                className="w-10 h-10 rounded-xl card-surface border border-white/[0.07] text-white/40 hover:text-white hover:border-white/20 flex items-center justify-center transition-all shrink-0"
+                aria-label="Previous player"
               >
-                ←
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
               </button>
-              <span className="text-label tabular-nums">
-                {cardIndex + 1} <span className="text-gray-700">/</span> {filtered.length}
-              </span>
+
+              <div className="flex-1 card-surface rounded-xl px-4 py-2.5 flex items-center justify-between">
+                <div className="min-w-0">
+                  <span className="text-white font-black text-sm truncate block">{current.firstName} {current.lastName}</span>
+                  <span className="text-label">{current.team}</span>
+                </div>
+                <span className="text-white/25 text-xs font-black tabular-nums shrink-0 ml-3">
+                  {cardIndex + 1}<span className="text-white/15"> / </span>{filtered.length}
+                </span>
+              </div>
+
               <button
                 onClick={nextPlayer}
-                className="w-10 h-10 rounded-xl card-surface border border-white/[0.07] text-gray-400 hover:text-white hover:border-white/20 flex items-center justify-center transition-all text-lg font-bold"
+                className="w-10 h-10 rounded-xl card-surface border border-white/[0.07] text-white/40 hover:text-white hover:border-white/20 flex items-center justify-center transition-all shrink-0"
+                aria-label="Next player"
               >
-                →
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
               </button>
             </div>
 
-            {/* Flip card */}
+            {/* ── Flip card ────────────────────────────────────────── */}
             <div
               className="relative cursor-pointer select-none"
-              style={{ perspective: '1200px', height: '480px' }}
+              style={{ perspective: '1200px', height: '500px' }}
               onClick={flipCard}
             >
               <div
@@ -522,20 +571,29 @@ export default function FunFactsPage() {
                   transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
                 }}
               >
-                {/* ── FRONT ─────────────────────────────────────────────────── */}
+                {/* ── FRONT ──────────────────────────────────────────────── */}
                 <div
                   style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
                   className="absolute inset-0 card-accent rounded-3xl p-6 flex flex-col overflow-hidden"
                 >
-                  {/* Top row */}
+                  {/* Top row: EBK score + position/team */}
                   <div className="flex items-start justify-between mb-5">
-                    <div className="card-stat rounded-xl px-3 py-2.5 text-center">
-                      <div className="font-display text-orange-400 text-3xl leading-none">{current.ebkScore.toFixed(1)}</div>
+                    <div className="card-stat rounded-xl px-4 py-3 text-center">
+                      <div className="font-display text-orange-400 text-4xl leading-none">{current.ebkScore.toFixed(1)}</div>
                       <div className="text-label mt-1">EBK Score</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-white font-black text-sm">{current.position}</div>
-                      <div className="text-gray-400 text-xs mt-1 font-bold">{current.team}</div>
+                      {/* Position badge */}
+                      <span className={`pos-badge inline-block mb-2 ${
+                        current.position === 'PG' ? 'pos-pg' :
+                        current.position === 'SG' ? 'pos-sg' :
+                        current.position === 'SF' ? 'pos-sf' :
+                        current.position === 'PF' ? 'pos-pf' : 'pos-c'
+                      }`}>
+                        {current.position}
+                      </span>
+                      <div className="text-white/50 text-xs font-bold">{current.team}</div>
+                      <div className="text-white/25 text-[10px] mt-0.5 font-bold">{current.yearFrom}–{current.yearTo}</div>
                     </div>
                   </div>
 
@@ -544,20 +602,19 @@ export default function FunFactsPage() {
                     <div className="text-white font-black leading-none mb-1" style={{ fontSize: 'clamp(2rem, 10vw, 3rem)' }}>
                       {current.firstName}
                     </div>
-                    <div className="text-orange-400 font-black leading-none mb-3" style={{ fontSize: 'clamp(2rem, 10vw, 3rem)' }}>
+                    <div className="text-orange-400 font-black leading-none mb-5" style={{ fontSize: 'clamp(2rem, 10vw, 3rem)' }}>
                       {current.lastName}
                     </div>
-                    <div className="text-gray-400 text-sm mb-5">{current.yearFrom}–{current.yearTo}</div>
 
                     {/* Career earnings block */}
-                    <div className="bg-gradient-to-r from-orange-950/60 to-[#0A0A0A] border border-orange-800/30 rounded-2xl px-4 py-3 mb-4">
-                      <div className="text-gray-400 text-[10px] uppercase tracking-widest mb-0.5">
+                    <div className="stat-highlight rounded-2xl px-4 py-3 mb-4">
+                      <div className="text-label mb-1">
                         {current.careerEarnings > 0 ? 'Career Earnings' : 'Est. Career Earnings'}
                       </div>
-                      <div className="text-orange-400 font-black text-3xl">{fmt(earnings)}</div>
+                      <div className="font-display text-orange-400 text-4xl leading-none">{fmt(earnings)}</div>
                     </div>
 
-                    {/* Quick stats */}
+                    {/* Career stats grid */}
                     <div className="grid grid-cols-4 gap-2">
                       {[
                         { l: 'GP',  v: current.careerGames.toLocaleString() },
@@ -565,8 +622,8 @@ export default function FunFactsPage() {
                         { l: 'RPG', v: current.careerRPG.toFixed(1) },
                         { l: 'APG', v: current.careerAPG.toFixed(1) },
                       ].map(s => (
-                        <div key={s.l} className="card-stat rounded-xl px-2 py-2.5 text-center">
-                          <div className="font-display text-white text-xl leading-none">{s.v}</div>
+                        <div key={s.l} className="card-stat rounded-xl px-2 py-3 text-center">
+                          <div className="font-display text-white text-2xl leading-none">{s.v}</div>
                           <div className="text-label mt-1">{s.l}</div>
                         </div>
                       ))}
@@ -574,12 +631,14 @@ export default function FunFactsPage() {
                   </div>
 
                   {/* Flip hint */}
-                  <div className="mt-4 text-center">
-                    <span className="text-gray-700 text-xs tracking-wide animate-pulse">tap to put it in perspective →</span>
+                  <div className="mt-5 flex items-center justify-center gap-2">
+                    <span className="w-1 h-1 rounded-full bg-orange-500/40 animate-pulse" />
+                    <span className="text-white/20 text-xs tracking-widest uppercase font-bold">tap to put in perspective</span>
+                    <span className="w-1 h-1 rounded-full bg-orange-500/40 animate-pulse" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
 
-                {/* ── BACK ──────────────────────────────────────────────────── */}
+                {/* ── BACK ───────────────────────────────────────────────── */}
                 <div
                   style={{
                     backfaceVisibility: 'hidden',
@@ -590,10 +649,10 @@ export default function FunFactsPage() {
                 >
                   {currentFact && (
                     <>
-                      {/* Player name + earnings mini header */}
+                      {/* Player name + earnings */}
                       <div className="flex items-start justify-between mb-5">
                         <div>
-                          <div className="text-gray-300 font-black text-sm">{current.firstName} {current.lastName}</div>
+                          <div className="text-white font-black text-sm">{current.firstName} {current.lastName}</div>
                           <div className={`text-xs font-bold mt-0.5 ${currentFact.accent}`}>{fmt(earnings)}</div>
                         </div>
                         <div className="text-4xl">{currentFact.emoji}</div>
@@ -604,39 +663,43 @@ export default function FunFactsPage() {
                         <div className={`font-black text-2xl leading-tight mb-4 ${currentFact.accent}`}>
                           {currentFact.headline}
                         </div>
-                        <p className="text-gray-100 text-base leading-relaxed">
+                        <p className="text-white/80 text-base leading-relaxed">
                           {currentFact.body}
                         </p>
                       </div>
 
-                      {/* Fact nav dots + prev/next */}
+                      {/* Fact nav */}
                       <div className="mt-5" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center gap-2 mb-3">
+                        <div className="flex items-center gap-2 mb-4">
                           <button
                             onClick={prevFact}
-                            className="bg-white/10 hover:bg-white/20 text-white font-black px-4 py-2.5 rounded-xl transition-colors text-base"
+                            className="w-11 h-11 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shrink-0"
+                            aria-label="Previous fact"
                           >
-                            ←
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                            </svg>
                           </button>
                           <button
                             onClick={nextFact}
-                            className="flex-1 bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-400 hover:to-orange-300 text-white font-black py-2.5 rounded-xl transition-all text-sm tracking-wide shadow-md shadow-orange-900/50"
+                            className="flex-1 btn-primary py-2.5 text-sm"
                           >
                             Next perspective →
                           </button>
                         </div>
-                        <div className="flex items-center justify-center gap-2">
+                        {/* Progress dots */}
+                        <div className="flex items-center justify-center gap-2 mb-2">
                           {facts.map((_, i) => (
                             <button
                               key={i}
                               onClick={e => { e.stopPropagation(); setFactIndex(i) }}
-                              className={`rounded-full transition-all ${i === factIndex ? 'w-4 h-2 bg-white' : 'w-2 h-2 bg-white/30 hover:bg-white/50'}`}
+                              className={`rounded-full transition-all ${i === factIndex ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/25 hover:bg-white/50'}`}
                             />
                           ))}
                         </div>
-                        <div className="text-center mt-2">
-                          <span className="text-white/30 text-[11px]">tap card to flip back</span>
-                        </div>
+                        <p className="text-center text-white/25 text-[11px] font-bold tracking-widest uppercase">
+                          Tap card to flip back
+                        </p>
                       </div>
                     </>
                   )}
@@ -644,18 +707,18 @@ export default function FunFactsPage() {
               </div>
             </div>
 
-            {/* Bottom nav buttons */}
+            {/* ── Bottom nav ───────────────────────────────────────── */}
             <div className="flex items-center gap-3 mt-5">
               <button onClick={prevPlayer} className="btn-secondary flex-1 py-3 text-sm">
-                ← Prev
+                ← Prev Player
               </button>
               <button onClick={nextPlayer} className="btn-primary flex-1 py-3 text-sm">
-                Next →
+                Next Player →
               </button>
             </div>
 
             {/* Disclaimer */}
-            <p className="text-center text-gray-700 text-[11px] mt-4 leading-relaxed px-2">
+            <p className="text-center text-white/20 text-[11px] mt-4 leading-relaxed px-2">
               {current?.careerEarnings > 0
                 ? 'Career earnings sourced from real NBA salary records.'
                 : 'Earnings are estimates based on era and performance — not official salary data.'}
