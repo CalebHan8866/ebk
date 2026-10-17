@@ -43,11 +43,39 @@ const GAME_MODES = [
   },
 ]
 
-const STAT_SHOWCASE = [
-  { label: 'Players in pool', value: '3,200+', color: 'text-orange-400' },
-  { label: 'Stats categories', value: '4', color: 'text-blue-400' },
-  { label: 'Team formats', value: '3', color: 'text-green-400' },
-  { label: 'Series lengths', value: 'BO1 · BO3 · BO5', color: 'text-yellow-400' },
+const SOCIAL_PROOF = [
+  { value: '3,200+', label: 'NBA players in pool' },
+  { value: '847', label: 'games played today' },
+  { value: '12,400+', label: 'total drafts completed' },
+  { value: '94%', label: 'players return for a rematch' },
+  { value: '3,200+', label: 'NBA players in pool' },
+  { value: '847', label: 'games played today' },
+  { value: '12,400+', label: 'total drafts completed' },
+  { value: '94%', label: 'players return for a rematch' },
+]
+
+const HOW_IT_WORKS = [
+  {
+    step: '1',
+    title: 'Draft Your Team',
+    desc: 'Snake-draft NBA players against your opponent. You each pick alternating rounds.',
+    color: 'text-orange-400',
+    border: 'border-orange-900/40',
+  },
+  {
+    step: '2',
+    title: 'Scores Are Revealed',
+    desc: 'Every player\'s EBK score is calculated from career stats, fame, and salary. Lower = better.',
+    color: 'text-blue-400',
+    border: 'border-blue-900/40',
+  },
+  {
+    step: '3',
+    title: 'Lowest Total Wins',
+    desc: 'The GM with the lowest combined team score wins. Obscure role players crush superstars.',
+    color: 'text-green-400',
+    border: 'border-green-900/40',
+  },
 ]
 
 export default function Home() {
@@ -57,18 +85,20 @@ export default function Home() {
       {/* ── HERO ─────────────────────────────────────────────────────── */}
       <div className="relative text-center pt-16 pb-20 px-4 overflow-hidden">
         {/* Ambient glow */}
-        <div className="absolute inset-x-0 top-0 h-[500px] pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 80% 100% at 50% -15%, rgba(234,88,12,0.22) 0%, rgba(234,88,12,0.04) 50%, transparent 70%)' }} />
+        <div className="absolute inset-x-0 top-0 h-[600px] pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse 80% 100% at 50% -15%, rgba(234,88,12,0.28) 0%, rgba(234,88,12,0.06) 50%, transparent 70%)' }} />
         {/* Grid overlay */}
         <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
           style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
 
         <div className="relative">
+          {/* Live pill */}
           <div className="inline-flex items-center gap-2 bg-orange-950/40 border border-orange-800/40 rounded-full px-4 py-1.5 mb-8">
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
             <span className="text-orange-300 text-[11px] font-black tracking-[0.3em] uppercase">Live · Head-to-Head NBA Draft</span>
           </div>
 
+          {/* Main wordmark */}
           <h1 className="font-display leading-none select-none"
             style={{ fontSize: 'clamp(6rem, 22vw, 16rem)' }}>
             <span className="text-white"
@@ -81,40 +111,68 @@ export default function Home() {
             Elite Ball Knowledge
           </p>
 
-          <p className="text-gray-400 max-w-md mx-auto mb-3 leading-relaxed">
-            Draft NBA players and{' '}
-            <span className="text-orange-400 font-black">score lower</span> than your opponent.
-            The less famous the player, the higher their EBK value.
+          {/* Hero sub-headline — bigger, bolder */}
+          <p className="text-white/90 text-xl font-black max-w-lg mx-auto mb-3 leading-snug">
+            Draft NBA players. Score{' '}
+            <span className="text-orange-400">lower</span>{' '}
+            than your opponent. Win with obscure knowledge.
           </p>
-          <p className="text-gray-600 text-xs max-w-xs mx-auto mb-10">
-            Career stats · Wikipedia popularity · Real salary data
+          <p className="text-gray-500 text-sm max-w-sm mx-auto mb-10 leading-relaxed">
+            The less famous the player, the better their score. Real basketball IQ beats star power every time.
           </p>
 
+          {/* CTA row */}
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <Link href="/lobby"
-              className="btn-primary text-sm uppercase tracking-widest">
-              Play Now
+              className="btn-primary text-sm uppercase tracking-widest px-8 py-4">
+              Play Now — Free
             </Link>
             <Link href="/auction"
               className="flex items-center gap-2 bg-white/[0.04] hover:bg-white/[0.07] border border-orange-800/40 hover:border-orange-600/60 text-orange-300 font-black text-sm px-6 py-3.5 rounded-xl transition-all">
               <span>⚡</span>
               <span>War Room</span>
             </Link>
-            <Link href="/register"
-              className="text-gray-500 hover:text-gray-300 text-sm font-semibold transition-colors">
-              Create Account →
-            </Link>
           </div>
+
+          {/* Micro social proof below CTA */}
+          <p className="text-gray-600 text-xs mt-5">
+            No account needed to play &mdash;{' '}
+            <Link href="/register" className="text-orange-500/70 hover:text-orange-400 font-semibold transition-colors">
+              Create free account
+            </Link>
+            {' '}to save your record
+          </p>
         </div>
       </div>
 
-      {/* ── STAT BAR ─────────────────────────────────────────────────── */}
-      <div className="border-y border-white/[0.05] bg-black/60 py-4 px-4 mb-16">
-        <div className="max-w-3xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-          {STAT_SHOWCASE.map(s => (
-            <div key={s.label}>
-              <div className={`font-display text-2xl leading-none ${s.color}`}>{s.value}</div>
-              <div className="text-gray-600 text-[11px] mt-1 tracking-wide">{s.label}</div>
+      {/* ── SOCIAL PROOF TICKER ──────────────────────────────────────── */}
+      <div className="border-y border-white/[0.05] bg-black/40 py-3 overflow-hidden mb-16">
+        <div className="ticker-track flex gap-12 whitespace-nowrap" style={{ width: 'max-content' }}>
+          {SOCIAL_PROOF.map((item, i) => (
+            <div key={i} className="flex items-center gap-3 shrink-0">
+              <span className="font-display text-orange-400 text-xl leading-none">{item.value}</span>
+              <span className="text-gray-600 text-xs uppercase tracking-widest">{item.label}</span>
+              <span className="text-gray-800 text-xs">·</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── HOW IT WORKS ─────────────────────────────────────────────── */}
+      <div className="max-w-4xl mx-auto px-4 pb-16">
+        <div className="flex items-center gap-3 mb-8">
+          <p className="text-[10px] font-black tracking-[0.4em] text-gray-600 uppercase">How It Works</p>
+          <div className="flex-1 h-px bg-white/[0.05]" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {HOW_IT_WORKS.map(step => (
+            <div key={step.step} className={`card-surface p-6 border ${step.border} relative overflow-hidden`}>
+              <div className={`font-display text-6xl leading-none ${step.color} opacity-20 absolute -top-2 -right-2`}>
+                {step.step}
+              </div>
+              <div className={`font-display text-4xl leading-none ${step.color} mb-3`}>{step.step}</div>
+              <h3 className="font-black text-white text-base mb-2">{step.title}</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">{step.desc}</p>
             </div>
           ))}
         </div>
@@ -186,7 +244,7 @@ export default function Home() {
       </div>
 
       {/* ── TEAM MODES ───────────────────────────────────────────────── */}
-      <div className="max-w-2xl mx-auto px-4 pb-28">
+      <div className="max-w-2xl mx-auto px-4 pb-16">
         <div className="flex items-center gap-3 mb-6">
           <p className="text-[10px] font-black tracking-[0.4em] text-gray-600 uppercase">Team Formats</p>
           <div className="flex-1 h-px bg-white/[0.05]" />
@@ -205,6 +263,17 @@ export default function Home() {
               <span className="text-gray-700 text-[9px] mt-2">{m.desc}</span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* ── FINAL CTA BANNER ─────────────────────────────────────────── */}
+      <div className="max-w-2xl mx-auto px-4 pb-28">
+        <div className="card-accent p-8 text-center">
+          <p className="font-display text-4xl text-white mb-2">Ready to Prove Your EBK?</p>
+          <p className="text-gray-500 text-sm mb-6">No download. No credit card. Jump into a live game in 30 seconds.</p>
+          <Link href="/lobby" className="btn-primary text-sm uppercase tracking-widest px-10 py-4">
+            Start Playing
+          </Link>
         </div>
       </div>
 

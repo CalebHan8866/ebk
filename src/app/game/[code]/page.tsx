@@ -172,6 +172,7 @@ function GameContent() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null)
   const [lastResult, setLastResult] = useState<GameResult | null>(null)
+  const [showConfetti, setShowConfetti] = useState(false)
   const [disconnected, setDisconnected] = useState(false)
   const [disconnectReason, setDisconnectReason] = useState<string | null>(null)
   // Emotes & accessories
@@ -237,6 +238,8 @@ function GameContent() {
     }
     const handleSeriesComplete = ({ room, seriesWinner }: { room: Room; seriesWinner: 'host' | 'guest' | 'draw' }) => {
       setRoom(room); setSeriesWinner(seriesWinner); setCurrentPickerInTimer(null); refreshUser()
+      // Trigger confetti if this player won
+      if (seriesWinner === role) { setShowConfetti(true); setTimeout(() => setShowConfetti(false), 4000) }
     }
     const handlePartnerDisconnected = () => { setDisconnected(true); setDisconnectReason(null) }
     const handleRoomError = ({ message }: { message: string }) => {
@@ -486,25 +489,65 @@ function GameContent() {
   if (room.status === 'complete' && seriesWinner !== null) {
     const iWon = seriesWinner === role
     const isDraw = seriesWinner === 'draw'
+
+    // Generate confetti pieces deterministically for SSR safety
+    const confettiPieces = iWon ? Array.from({ length: 60 }, (_, i) => ({
+      id: i,
+      left: `${(i * 17 + 5) % 100}%`,
+      delay: `${(i * 0.07) % 2}s`,
+      duration: `${2.5 + (i * 0.05) % 1.5}s`,
+      color: ['#f97316','#fbbf24','#4ade80','#60a5fa','#f472b6','#a78bfa'][i % 6],
+      size: `${8 + (i % 5) * 2}px`,
+      shape: i % 3 === 0 ? '50%' : '2px',
+    })) : []
+
     return (
       <div className="min-h-screen px-4 py-8 overflow-y-auto">
+        {/* Confetti overlay */}
+        {showConfetti && iWon && (
+          <div className="confetti-container">
+            {confettiPieces.map(p => (
+              <div key={p.id} className="confetti-piece" style={{
+                left: p.left,
+                width: p.size,
+                height: p.size,
+                backgroundColor: p.color,
+                borderRadius: p.shape,
+                animationDuration: p.duration,
+                animationDelay: p.delay,
+              }} />
+            ))}
+          </div>
+        )}
+
         <div className="max-w-4xl w-full mx-auto">
           <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
           {/* LEFT col: header + game-by-game */}
           <div>
           {/* Result header */}
           <div className="text-center mb-6">
-            <div className={`font-display leading-none mb-2 ${iWon ? 'text-orange-500' : isDraw ? 'text-gray-400' : 'text-gray-600'}`}
-              style={{ fontSize: 'clamp(4rem, 18vw, 7rem)' }}>
+            <div
+              className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text' : isDraw ? 'text-gray-400 animate-scale-in' : 'text-gray-500 animate-loss-drop'}`}
+              style={iWon ? { fontSize: 'clamp(5rem, 22vw, 9rem)' } : { fontSize: 'clamp(4rem, 18vw, 7rem)' }}>
               {iWon ? 'W' : isDraw ? 'DRAW' : 'L'}
             </div>
-            <div className="text-white font-black text-lg mb-1">
+            <div className={`font-black text-lg mb-1 ${iWon ? 'text-white' : isDraw ? 'text-gray-400' : 'text-gray-500'}`}>
               {iWon ? 'Series Win' : isDraw ? 'Series Draw' : 'Series Loss'}
             </div>
             <div className="text-orange-400 font-black text-2xl tracking-tight">
               {room.hostSeriesScore} <span className="text-gray-600">–</span> {room.guestSeriesScore}
             </div>
             <div className="text-gray-500 text-xs mt-1 truncate">{room.hostName} vs {room.guestName}</div>
+            {iWon && (
+              <div className="mt-3 inline-flex items-center gap-2 bg-orange-950/40 border border-orange-700/40 rounded-full px-4 py-1.5">
+                <span className="text-orange-300 text-xs font-black tracking-widest uppercase">Elite Ball Knowledge Confirmed</span>
+              </div>
+            )}
+            {!iWon && !isDraw && (
+              <div className="mt-3 inline-flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] rounded-full px-4 py-1.5">
+                <span className="text-gray-500 text-xs font-semibold">Study the player pool and run it back</span>
+              </div>
+            )}
           </div>
 
           {timeoutWarning && (
@@ -637,9 +680,30 @@ function GameContent() {
           </div>{/* end RIGHT col */}
           </div>{/* end lg:grid */}
 
-          <button onClick={() => router.push('/lobby')} className="btn-primary w-full mt-4 py-4 text-base font-display tracking-widest">
-            Play Again
-          </button>
+          {/* CTA — differentiate win vs loss */}
+          {iWon ? (
+            <div className="flex flex-col sm:flex-row gap-3 mt-4">
+              <button onClick={() => router.push('/lobby')} className="btn-primary flex-1 py-4 text-base font-display tracking-widest">
+                Play Again
+              </button>
+              <button onClick={() => router.push('/lobby')} className="btn-secondary flex-1 py-4 text-sm font-black uppercase tracking-widest">
+                Find New Opponent
+              </button>
+            </div>
+          ) : isDraw ? (
+            <button onClick={() => router.push('/lobby')} className="btn-primary w-full mt-4 py-4 text-base font-display tracking-widest">
+              Rematch
+            </button>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-3 mt-4">
+              <button onClick={() => router.push('/lobby')} className="btn-primary flex-1 py-4 text-base font-display tracking-widest">
+                Rematch
+              </button>
+              <button onClick={() => router.push('/practice')} className="btn-secondary flex-1 py-4 text-sm font-black uppercase tracking-widest">
+                Practice Draft
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -671,11 +735,12 @@ function GameContent() {
           <div>
           {/* Result header */}
           <div className="text-center mb-4">
-            <div className={`font-display leading-none mb-2 ${iWon ? 'text-orange-500' : isDraw ? 'text-gray-400' : 'text-gray-600'}`}
-              style={{ fontSize: 'clamp(4rem, 18vw, 7rem)' }}>
+            <div
+              className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text' : isDraw ? 'text-gray-400 animate-scale-in' : 'text-gray-500 animate-loss-drop'}`}
+              style={iWon ? { fontSize: 'clamp(5rem, 20vw, 8rem)' } : { fontSize: 'clamp(4rem, 18vw, 7rem)' }}>
               {iWon ? 'W' : isDraw ? 'D' : 'L'}
             </div>
-            <div className="text-white font-black text-lg">
+            <div className={`font-black text-lg ${iWon ? 'text-white' : isDraw ? 'text-gray-400' : 'text-gray-500'}`}>
               {iWon ? `Game ${effectiveLastResult.game} — You Win` : isDraw ? `Game ${effectiveLastResult.game} — Draw` : `Game ${effectiveLastResult.game} — You Lose`}
             </div>
           </div>

@@ -518,6 +518,22 @@ export default function LobbyPage() {
         {/* ── ONLINE MODE ─────────────────────────────────────────────────── */}
         {mainTab === 'online' && (
           <>
+            {/* First-time user onboarding hint */}
+            {!authLoading && user && user.wins === 0 && user.losses === 0 && (
+              <div className="card-surface border border-orange-900/40 rounded-2xl px-5 py-4 mb-5 flex items-start gap-4 animate-slide-up">
+                <div className="w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-orange-400 text-base">★</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-black text-sm mb-0.5">Welcome to the Lobby</p>
+                  <p className="text-gray-500 text-xs leading-relaxed">
+                    Post a game to get matched with an opponent, or join an open game from the browser on the right.
+                    Draft obscure NBA players — lower EBK score wins.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Login gate */}
             {!authLoading && !user && (
               <div className="card-surface rounded-2xl px-8 py-14 text-center max-w-md mx-auto">

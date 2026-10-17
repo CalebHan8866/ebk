@@ -2,6 +2,20 @@
 import { useState } from 'react'
 import Link from 'next/link'
 
+function FieldStatus({ valid, touched }: { valid: boolean; touched: boolean }) {
+  if (!touched) return null
+  if (valid) return (
+    <svg className="w-4 h-4 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+    </svg>
+  )
+  return (
+    <svg className="w-4 h-4 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  )
+}
+
 export default function RegisterPage() {
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
@@ -9,6 +23,29 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
+
+  // Touched state for inline validation
+  const [touchedUsername, setTouchedUsername] = useState(false)
+  const [touchedEmail, setTouchedEmail] = useState(false)
+  const [touchedPassword, setTouchedPassword] = useState(false)
+
+  const validUsername = username.length >= 3 && username.length <= 20
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  const validPassword = password.length >= 6
+
+  // Password strength
+  const passwordStrength = (() => {
+    if (password.length === 0) return 0
+    let score = 0
+    if (password.length >= 6) score++
+    if (password.length >= 10) score++
+    if (/[A-Z]/.test(password)) score++
+    if (/[0-9]/.test(password)) score++
+    if (/[^A-Za-z0-9]/.test(password)) score++
+    return score
+  })()
+  const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong'][passwordStrength]
+  const strengthColor = ['', 'bg-red-500', 'bg-yellow-500', 'bg-yellow-400', 'bg-green-400', 'bg-green-500'][passwordStrength]
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -33,7 +70,7 @@ export default function RegisterPage() {
   if (done) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="card-surface p-10 max-w-sm w-full text-center">
+        <div className="card-surface p-10 max-w-sm w-full text-center animate-scale-in">
           <div className="w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mx-auto mb-5">
             <svg className="w-7 h-7 text-orange-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
@@ -60,12 +97,24 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-sm">
+
+        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="font-display text-6xl text-white leading-none mb-1"
             style={{ textShadow: '0 0 60px rgba(249,115,22,0.3)' }}>
             EBK
           </h1>
           <p className="text-[10px] font-bold tracking-[0.4em] text-gray-600 uppercase">Create Your Account</p>
+        </div>
+
+        {/* Value prop chips — what you unlock by registering */}
+        <div className="flex items-center justify-center gap-2 flex-wrap mb-6">
+          {['Track your W/L record', 'Unlock badges', 'Save your drafts'].map(item => (
+            <span key={item} className="inline-flex items-center gap-1 bg-orange-950/30 border border-orange-900/40 rounded-full px-3 py-1 text-[10px] text-orange-300/80 font-semibold">
+              <span className="text-green-400">✓</span>
+              {item}
+            </span>
+          ))}
         </div>
 
         <div className="card-surface p-8">
@@ -75,25 +124,83 @@ export default function RegisterPage() {
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
+
+            {/* Username */}
             <div>
               <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Username</label>
-              <input type="text" value={username} onChange={e => setUsername(e.target.value)}
-                required minLength={3} maxLength={20}
-                className="input-field" placeholder="YourTag23" />
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  onBlur={() => setTouchedUsername(true)}
+                  required minLength={3} maxLength={20}
+                  className={`input-field pr-9 ${touchedUsername ? (validUsername ? 'valid' : 'invalid') : ''}`}
+                  placeholder="YourTag23"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <FieldStatus valid={validUsername} touched={touchedUsername} />
+                </span>
+              </div>
+              {touchedUsername && !validUsername && (
+                <p className="text-red-400 text-[10px] mt-1 ml-1">3–20 characters required</p>
+              )}
             </div>
+
+            {/* Email */}
             <div>
               <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Email</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-                className="input-field" placeholder="you@example.com" />
+              <div className="relative flex items-center">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  onBlur={() => setTouchedEmail(true)}
+                  required
+                  className={`input-field pr-9 ${touchedEmail ? (validEmail ? 'valid' : 'invalid') : ''}`}
+                  placeholder="you@example.com"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <FieldStatus valid={validEmail} touched={touchedEmail} />
+                </span>
+              </div>
             </div>
+
+            {/* Password */}
             <div>
               <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Password</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                required minLength={6}
-                className="input-field" placeholder="Min 6 characters" />
+              <div className="relative flex items-center">
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  onBlur={() => setTouchedPassword(true)}
+                  required minLength={6}
+                  className={`input-field pr-9 ${touchedPassword ? (validPassword ? 'valid' : 'invalid') : ''}`}
+                  placeholder="Min 6 characters"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <FieldStatus valid={validPassword} touched={touchedPassword} />
+                </span>
+              </div>
+              {/* Password strength meter */}
+              {password.length > 0 && (
+                <div className="mt-2">
+                  <div className="flex gap-1 mb-1">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <div
+                        key={i}
+                        className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= passwordStrength ? strengthColor : 'bg-white/10'}`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-gray-500">{strengthLabel}</p>
+                </div>
+              )}
             </div>
+
             <button type="submit" disabled={loading} className="btn-primary w-full text-sm uppercase mt-2">
-              {loading ? 'Creating account…' : 'Create Account'}
+              {loading ? 'Creating account…' : 'Create Free Account'}
             </button>
           </form>
           <p className="text-center text-gray-600 text-sm mt-6">

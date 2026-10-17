@@ -9,10 +9,15 @@ function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [touchedEmail, setTouchedEmail] = useState(false)
+  const [touchedPassword, setTouchedPassword] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const justVerified = searchParams.get('verified') === '1'
   const { setUser } = useAuth()
+
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  const validPassword = password.length >= 6
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -41,7 +46,10 @@ function LoginForm() {
   return (
     <div className="card-surface p-8">
       {justVerified && (
-        <div className="bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl p-3 mb-6 text-sm">
+        <div className="bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl p-3 mb-6 text-sm flex items-center gap-2">
+          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+          </svg>
           Email verified — you can now log in.
         </div>
       )}
@@ -53,8 +61,30 @@ function LoginForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Email</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-            className="input-field" placeholder="you@example.com" />
+          <div className="relative flex items-center">
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onBlur={() => setTouchedEmail(true)}
+              required
+              className={`input-field pr-9 ${touchedEmail ? (validEmail ? 'valid' : 'invalid') : ''}`}
+              placeholder="you@example.com"
+            />
+            {touchedEmail && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                {validEmail ? (
+                  <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+              </span>
+            )}
+          </div>
         </div>
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -63,8 +93,30 @@ function LoginForm() {
               Forgot password?
             </Link>
           </div>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
-            className="input-field" placeholder="••••••••" />
+          <div className="relative flex items-center">
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onBlur={() => setTouchedPassword(true)}
+              required
+              className={`input-field pr-9 ${touchedPassword ? (validPassword ? 'valid' : 'invalid') : ''}`}
+              placeholder="••••••••"
+            />
+            {touchedPassword && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                {validPassword ? (
+                  <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+              </span>
+            )}
+          </div>
         </div>
         <button type="submit" disabled={loading} className="btn-primary w-full text-sm uppercase mt-2">
           {loading ? 'Signing in…' : 'Sign In'}
