@@ -219,9 +219,10 @@ async function main() {
 
       if (!DRY_RUN) {
         // Update ALL DB entries for this player (they share the same career total)
+        // Use updateMany to avoid P2025 throws if a stale id is no longer in DB
         for (const p of players) {
           if (Math.abs(p.careerEarnings - earnings) > 10_000) {
-            await prisma.player.update({ where: { id: p.id }, data: { careerEarnings: earnings } })
+            await prisma.player.updateMany({ where: { id: p.id }, data: { careerEarnings: earnings } })
           }
         }
       }

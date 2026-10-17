@@ -291,12 +291,20 @@ async function main() {
       const r = rank === -1 ? N - 1 : rank
       return parseFloat((100 - (r / (N - 1)) * 100).toFixed(1))
     }
+    const percentileRank = (arr: number[], val: number): number => {
+      const sorted = [...arr].sort((a, b) => a - b)
+      const below = sorted.filter(v => v < val).length
+      return parseFloat(((below / Math.max(1, N - 1)) * 100).toFixed(1))
+    }
     const games = allPlayers.map(p => p.careerGames)
     const ppgs  = allPlayers.map(p => p.careerPPG)
     const rpgs  = allPlayers.map(p => p.careerRPG)
     const apgs  = allPlayers.map(p => p.careerAPG)
     // Use stored careerMPG (set by scrape-bbref.ts); new StatMuse-only players default to 0.
     const mpgs  = allPlayers.map(p => p.careerMPG)
+    // Popularity percentile — re-apply the same penalty as scrape-popularity.ts
+    // so running update-season.ts doesn't wipe out the popularity-adjusted scores.
+    const views = allPlayers.map(p => p.wikiViews)
 
     let rescored = 0
     for (const p of allPlayers) {
@@ -306,7 +314,10 @@ async function main() {
       const apgScore = invertedPct(apgs,  p.careerAPG)
       const mpgScore = invertedPct(mpgs,  p.careerMPG)
       // Match scrape-bbref.ts weights: GP 20% · PPG 25% · MPG 20% · RPG 18% · APG 17%
-      const ebkScore = parseFloat((gpScore * 0.20 + ppgScore * 0.25 + mpgScore * 0.20 + rpgScore * 0.18 + apgScore * 0.17).toFixed(1))
+      const statScore = gpScore * 0.20 + ppgScore * 0.25 + mpgScore * 0.20 + rpgScore * 0.18 + apgScore * 0.17
+      // Re-apply popularity penalty (mirrors scrape-popularity.ts Phase 2)
+      const popularityPct = p.wikiViews > 0 ? percentileRank(views, p.wikiViews) : 0
+      const ebkScore = parseFloat(Math.max(0, Math.min(100, statScore - popularityPct * 0.20)).toFixed(1))
       try {
         await prisma.player.update({
           where: { id: p.id },
