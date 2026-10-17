@@ -21,6 +21,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL ?? 'https://ebkgame.com'),
   title: 'EBK - Elite Ball Knowledge',
   description: 'Live head-to-head NBA draft game. Draft the worst career stats to win.',
   icons: {
