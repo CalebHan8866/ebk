@@ -799,6 +799,7 @@ function buildAuctionStateForSocket(room: AuctionRoom) {
     teamSize: room.teamSize,
     totalBudget: room.totalBudget,
     maxPlayers: room.maxPlayers,
+    hostSocketId: room.hostSocketId,
     participants: room.participants.map(p => ({
       socketId: p.socketId,
       name: p.name,

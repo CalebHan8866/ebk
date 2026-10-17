@@ -58,6 +58,7 @@ interface AuctionState {
   teamSize: number
   totalBudget: number
   maxPlayers: number
+  hostSocketId: string
   participants: Participant[]
   currentPlayer: CurrentPlayer | null
   currentBid: number
@@ -247,7 +248,7 @@ export default function AuctionRoomPage() {
   }, [code, guestName])
 
   const me = auctionState?.participants.find(p => p.socketId === mySocketId)
-  const isHost = auctionState && mySocketId === auctionState.participants[0]?.socketId
+  const isHost = auctionState && mySocketId === auctionState.hostSocketId
   const canBid = phase === 'bidding' && me && me.budget >= bidAmount && me.rosterCount < (auctionState?.teamSize ?? 0)
   const amLeading = auctionState?.currentBidderSocketId === mySocketId
   const tradeTargetParticipant = auctionState?.participants.find(p => p.socketId === tradeTarget)
