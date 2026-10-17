@@ -16,35 +16,36 @@ export default function Home() {
     <div className="min-h-screen animate-fade-in">
 
       {/* ── HERO ─────────────────────────────────────────────────────── */}
-      <div className="relative text-center pt-6 sm:pt-16 pb-6 sm:pb-16 px-4 overflow-hidden">
+      <div className="relative text-center pt-8 sm:pt-16 pb-8 sm:pb-16 px-4 overflow-hidden">
         {/* Ambient glow */}
-        <div className="absolute inset-x-0 top-0 h-[400px] pointer-events-none"
+        <div className="absolute inset-x-0 top-0 h-[500px] pointer-events-none"
           style={{ background: 'radial-gradient(ellipse 80% 100% at 50% -15%, rgba(234,88,12,0.28) 0%, rgba(234,88,12,0.06) 50%, transparent 70%)' }} />
 
         <div className="relative">
           {/* Main wordmark */}
-          <h1 className="font-display leading-none select-none text-[5rem] sm:text-[10rem] md:text-[14rem]">
+          <h1 className="font-display leading-none select-none"
+            style={{ fontSize: 'clamp(4.5rem, 20vw, 16rem)' }}>
             <span className="text-white"
               style={{ textShadow: '0 0 160px rgba(249,115,22,0.5), 0 0 60px rgba(249,115,22,0.25), 0 0 20px rgba(249,115,22,0.1)' }}>
               EBK
             </span>
           </h1>
 
-          <p className="text-[10px] font-bold tracking-[0.4em] text-gray-400 uppercase -mt-1 mb-3 sm:mb-5">
+          <p className="text-[11px] font-bold tracking-[0.45em] text-gray-400 uppercase -mt-1 mb-4 sm:mb-6">
             Elite Ball Knowledge
           </p>
 
-          <p className="text-white/90 text-base sm:text-2xl font-black max-w-sm mx-auto mb-5 sm:mb-10 leading-snug tracking-wide uppercase">
-            Draft NBA Players.{' '}
+          <p className="text-white/90 text-lg sm:text-2xl font-black max-w-md mx-auto mb-6 sm:mb-10 leading-snug tracking-wide uppercase">
+            Draft NBA Players.<br />
             <span className="text-orange-400">Score lower. Win.</span>
           </p>
 
           <Link href="/lobby"
-            className="btn-primary text-sm uppercase tracking-widest px-8 py-3">
+            className="btn-primary text-sm uppercase tracking-widest px-8 sm:px-10 py-3 sm:py-4">
             Play Now — Free
           </Link>
 
-          <p className="text-gray-500 text-xs mt-3 sm:mt-5">
+          <p className="text-gray-500 text-xs mt-4">
             No account needed &mdash;{' '}
             <Link href="/register" className="text-orange-500/70 hover:text-orange-400 font-semibold transition-colors">
               sign up free

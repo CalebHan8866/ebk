@@ -56,8 +56,8 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Center nav links */}
-        <div className="flex items-center gap-6 flex-1">
+        {/* Center nav links — hidden on mobile */}
+        <div className="hidden sm:flex items-center gap-6 flex-1">
           {navLink('/lobby', 'Play')}
           {navLink('/leaderboard', 'Leaderboard')}
           {navLink('/fun-facts', 'Fun Facts')}
@@ -100,7 +100,7 @@ export default function Navbar() {
                 className="text-sm font-bold text-gray-400 hover:text-white transition-colors tracking-wide">
                 Sign In
               </Link>
-              <Link href="/register" className="btn-primary py-2 px-5 text-xs">
+              <Link href="/register" className="btn-primary py-1.5 px-3 sm:py-2 sm:px-5 text-xs">
                 Sign Up
               </Link>
             </>
