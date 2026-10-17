@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { getSocket } from '@/lib/socket'
 import { useAuth } from '@/context/AuthContext'
 
@@ -122,6 +123,11 @@ export default function AuctionPage() {
 
   return (
     <div className="min-h-screen px-4 py-8 md:py-14 max-w-2xl mx-auto animate-fade-in">
+
+      {/* ── BACK ───────────────────────────────────────────────────── */}
+      <Link href="/lobby" className="text-gray-500 hover:text-white transition-colors text-sm mb-6 flex items-center gap-1 w-fit">
+        ← Back
+      </Link>
 
       {/* ── HEADER ─────────────────────────────────────────────────── */}
       <div className="text-center mb-10">

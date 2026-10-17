@@ -474,27 +474,27 @@ export default function LobbyPage() {
     <div className="min-h-screen py-8 px-4 animate-fade-in">
       <div className="max-w-5xl mx-auto">
 
+        {/* ── Back button (own row, only when inside a mode) ──────────────── */}
+        {mainTab && (
+          <button onClick={() => { setMainTab(null); setError('') }}
+            className="text-gray-500 hover:text-white transition-colors text-sm mb-4 flex items-center gap-1">
+            ← Back
+          </button>
+        )}
+
         {/* ── Page header ─────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3 min-w-0">
-            {mainTab && (
-              <button onClick={() => { setMainTab(null); setError('') }}
-                className="text-gray-400 hover:text-white transition-colors text-sm font-bold shrink-0">
-                ← Back
-              </button>
-            )}
-            <div className="min-w-0">
-              <p className="text-label mb-1">Head-to-Head Draft</p>
-              <h1 className="font-display text-4xl sm:text-7xl text-white leading-none tracking-wide truncate">
-                <span className="text-orange-500">
-                  {mainTab === 'online' ? 'O' : mainTab === 'friends' ? 'F' : 'L'}
-                </span>
-                {mainTab === 'online' ? 'NLINE' : mainTab === 'friends' ? 'RIENDS' : 'OBBY'}
-              </h1>
-            </div>
+          <div className="min-w-0">
+            <p className="text-label mb-1">Head-to-Head Draft</p>
+            <h1 className="font-display text-4xl sm:text-7xl text-white leading-none tracking-wide truncate">
+              <span className="text-orange-500">
+                {mainTab === 'online' ? 'O' : mainTab === 'friends' ? 'F' : 'L'}
+              </span>
+              {mainTab === 'online' ? 'NLINE' : mainTab === 'friends' ? 'RIENDS' : 'OBBY'}
+            </h1>
           </div>
 
-          {/* User identity chip — hide on mobile when inside a mode (navbar covers it) */}
+          {/* User identity chip — hide on mobile */}
           {!authLoading && user && (
             <Link href="/profile"
               className="hidden sm:flex items-center gap-2.5 px-3 py-2 rounded-xl card-surface border border-white/[0.07] hover:border-orange-700/40 hover:bg-orange-950/20 transition-all group shrink-0">
@@ -559,7 +559,7 @@ export default function LobbyPage() {
                   <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-orange-600 text-white tracking-widest">NEW</span>
                 </div>
                 <div className="font-display text-3xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">War Room</div>
-                <div className="text-gray-400 text-sm leading-relaxed">Live salary-cap auction vs 2–6 GMs.</div>
+                <div className="text-gray-400 text-sm leading-relaxed">Salary-cap auction draft.</div>
                 <div className="mt-4 text-orange-500 text-xs font-black opacity-0 group-hover:opacity-100 transition-opacity">Enter →</div>
               </Link>
 
@@ -623,13 +623,9 @@ export default function LobbyPage() {
 
             {/* Sign-in prompt for guests */}
             {!authLoading && !user && (
-              <div className="card-surface rounded-2xl px-6 py-5 mb-4 flex items-center justify-between gap-4 border border-orange-900/30">
-                <p className="text-gray-400 text-sm">
-                  <span className="text-white font-bold">Sign in</span> to post games, track your record, and earn badges.
-                </p>
-                <div className="flex gap-2 shrink-0">
-                  <Link href="/login" className="btn-secondary py-1.5 px-4 text-xs">Sign In</Link>
-                  <Link href="/register" className="btn-primary py-1.5 px-4 text-xs">Sign Up</Link>
+              <div className="mb-4 flex items-center gap-3 text-xs text-gray-500">
+                <span><Link href="/login" className="text-orange-400 hover:text-orange-300 font-bold transition-colors">Sign in</Link> to post games and track your record.</span>
+                <Link href="/register" className="btn-primary py-1.5 px-3 text-xs shrink-0">Sign Up Free</Link>
                 </div>
               </div>
             )}
