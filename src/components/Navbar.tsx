@@ -57,6 +57,7 @@ export default function Navbar() {
         {/* Nav links + auth */}
         <div className="flex items-center gap-5">
           {navLink('/lobby', 'Play')}
+          {navLink('/auction', 'War Room')}
           {navLink('/leaderboard', 'Leaderboard')}
 
           {user ? (

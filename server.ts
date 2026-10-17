@@ -170,6 +170,7 @@ interface PlayerData {
   ebkScore: number
   yearFrom: number
   yearTo: number
+  careerEarnings: number
 }
 
 interface QueueEntry {
@@ -203,6 +204,54 @@ interface GameListing {
   series: SeriesLength
 }
 
+interface AuctionParticipant {
+  socketId: string
+  userId: string | null
+  name: string
+  budget: number
+  roster: number[]
+  paidPrices: Record<number, number>
+}
+
+interface TradeOffer {
+  id: string
+  fromSocketId: string
+  fromName: string
+  toSocketId: string
+  toName: string
+  offeredPlayerIds: number[]
+  requestedPlayerIds: number[]
+  createdAt: number
+}
+
+type AuctionStatus = 'waiting' | 'bidding' | 'steal-window' | 'trading' | 'complete'
+
+interface AuctionRoom {
+  code: string
+  hostSocketId: string
+  maxPlayers: number
+  teamSize: number
+  totalBudget: number
+  status: AuctionStatus
+  participants: AuctionParticipant[]
+  playerPool: PlayerData[]
+  currentPlayerIndex: number
+  currentPlayer: PlayerData | null
+  currentBid: number
+  currentBidderSocketId: string | null
+  currentBidderName: string | null
+  lastWinnerSocketId: string | null
+  lastWinnerName: string | null
+  lastWonAmount: number
+  stealInitiated: boolean
+  bidTimer: ReturnType<typeof setTimeout> | null
+  bidDeadline: number
+  tradeOffers: TradeOffer[]
+  tradeDeadline: number | null
+  tradeTimer: ReturnType<typeof setTimeout> | null
+  bidLog: Array<{ name: string; amount: number; action: 'bid' | 'steal' | 'won' | 'pass' | 'trade' }>
+}
+
 // ─── Room Store ──────────────────────────────────────────────────────────────
 
 const rooms = new Map<string, Room>()
@@ -220,6 +269,7 @@ const recentMatchups = new Map<string, Map<string, number>>()
 const matchupCount = new Map<string, Map<string, number>>()
 let allPlayers: PlayerData[] = []
 let playerById = new Map<number, PlayerData>() // fast O(1) lookup by id
+const auctionRooms = new Map<string, AuctionRoom>()
 // Seed DB uses id=71; after scrape-bbref runs it gets a hash-based ID — resolve dynamically.
 let JAMESON_CURRY_ID = 71
 function refreshJCId() {
@@ -656,6 +706,143 @@ function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
   startPickTimer(io, room)
 }
 
+// ─── Auction helpers ──────────────────────────────────────────────────────────
+
+function broadcastAuctionState(io: SocketServer, room: AuctionRoom) {
+  const state = {
+    code: room.code,
+    status: room.status,
+    teamSize: room.teamSize,
+    totalBudget: room.totalBudget,
+    maxPlayers: room.maxPlayers,
+    participants: room.participants.map(p => ({
+      socketId: p.socketId,
+      name: p.name,
+      budget: p.budget,
+      rosterCount: p.roster.length,
+      roster: p.roster.map(id => {
+        const player = room.playerPool.find(pp => pp.id === id)
+        return player ? {
+          id: player.id, firstName: player.firstName, lastName: player.lastName,
+          position: player.position, ebkScore: player.ebkScore, paidPrice: p.paidPrices[id],
+        } : null
+      }).filter(Boolean),
+    })),
+    currentPlayer: room.currentPlayer ? {
+      id: room.currentPlayer.id, firstName: room.currentPlayer.firstName,
+      lastName: room.currentPlayer.lastName, team: room.currentPlayer.team,
+      position: room.currentPlayer.position, careerGames: room.currentPlayer.careerGames,
+      careerPPG: room.currentPlayer.careerPPG, careerRPG: room.currentPlayer.careerRPG,
+      careerAPG: room.currentPlayer.careerAPG, ebkScore: room.currentPlayer.ebkScore,
+      yearFrom: room.currentPlayer.yearFrom, yearTo: room.currentPlayer.yearTo,
+    } : null,
+    currentBid: room.currentBid,
+    currentBidderSocketId: room.currentBidderSocketId,
+    currentBidderName: room.currentBidderName,
+    lastWinnerSocketId: room.lastWinnerSocketId,
+    lastWinnerName: room.lastWinnerName,
+    lastWonAmount: room.lastWonAmount,
+    stealInitiated: room.stealInitiated,
+    bidDeadline: room.bidDeadline,
+    tradeOffers: room.tradeOffers,
+    tradeDeadline: room.tradeDeadline,
+    playerIndex: room.currentPlayerIndex,
+    poolSize: room.playerPool.length,
+    bidLog: room.bidLog.slice(-25),
+  }
+  for (const p of room.participants) {
+    io.to(p.socketId).emit('auction:state', state)
+  }
+}
+
+function advanceAuction(io: SocketServer, room: AuctionRoom) {
+  const wonIds = new Set(room.participants.flatMap(p => p.roster))
+  room.currentPlayerIndex++
+  while (room.currentPlayerIndex < room.playerPool.length) {
+    const candidate = room.playerPool[room.currentPlayerIndex]
+    if (!wonIds.has(candidate.id)) {
+      const needsMore = room.participants.some(p => p.roster.length < room.teamSize && p.budget >= 1)
+      if (!needsMore) break
+      room.currentPlayer = candidate
+      room.currentBid = 0
+      room.currentBidderSocketId = null
+      room.currentBidderName = null
+      room.lastWinnerSocketId = null
+      room.lastWinnerName = null
+      room.stealInitiated = false
+      room.status = 'bidding'
+      room.bidDeadline = Date.now() + 25000
+      if (room.bidTimer) clearTimeout(room.bidTimer)
+      room.bidTimer = setTimeout(() => handleAuctionBidExpiry(io, room), 25000)
+      broadcastAuctionState(io, room)
+      return
+    }
+    room.currentPlayerIndex++
+  }
+  startAuctionTradePhase(io, room)
+}
+
+function handleAuctionBidExpiry(io: SocketServer, room: AuctionRoom) {
+  if (room.currentBid === 0 || !room.currentBidderSocketId || !room.currentPlayer) {
+    room.bidLog.push({ name: 'Nobody', amount: 0, action: 'pass' })
+    advanceAuction(io, room)
+    return
+  }
+  const winner = room.participants.find(p => p.socketId === room.currentBidderSocketId)
+  if (!winner || !room.currentPlayer) { advanceAuction(io, room); return }
+  winner.roster.push(room.currentPlayer.id)
+  winner.paidPrices[room.currentPlayer.id] = room.currentBid
+  winner.budget -= room.currentBid
+  room.bidLog.push({ name: winner.name, amount: room.currentBid, action: 'won' })
+  room.lastWinnerSocketId = winner.socketId
+  room.lastWinnerName = winner.name
+  room.lastWonAmount = room.currentBid
+  room.stealInitiated = false
+  room.status = 'steal-window'
+  room.bidDeadline = Date.now() + 10000
+  broadcastAuctionState(io, room)
+  if (room.bidTimer) clearTimeout(room.bidTimer)
+  room.bidTimer = setTimeout(() => advanceAuction(io, room), 10000)
+}
+
+function startAuctionTradePhase(io: SocketServer, room: AuctionRoom) {
+  room.status = 'trading'
+  room.currentPlayer = null
+  room.bidDeadline = 0
+  if (room.bidTimer) clearTimeout(room.bidTimer)
+  room.bidTimer = null
+  room.tradeDeadline = Date.now() + 3 * 60 * 1000
+  if (room.tradeTimer) clearTimeout(room.tradeTimer)
+  room.tradeTimer = setTimeout(() => finishAuction(io, room), 3 * 60 * 1000)
+  broadcastAuctionState(io, room)
+}
+
+function finishAuction(io: SocketServer, room: AuctionRoom) {
+  room.status = 'complete'
+  if (room.bidTimer) clearTimeout(room.bidTimer)
+  if (room.tradeTimer) clearTimeout(room.tradeTimer)
+  const results = room.participants.map(p => ({
+    socketId: p.socketId,
+    name: p.name,
+    ebkTotal: Math.round(p.roster.reduce((sum, pid) => {
+      const player = room.playerPool.find(pp => pp.id === pid)
+      return sum + (player?.ebkScore ?? 0)
+    }, 0) * 10) / 10,
+    rosterCount: p.roster.length,
+    budgetSpent: room.totalBudget - p.budget,
+    roster: p.roster.map(id => {
+      const player = room.playerPool.find(pp => pp.id === id)
+      return player ? { id: player.id, firstName: player.firstName, lastName: player.lastName,
+        position: player.position, ebkScore: player.ebkScore, paidPrice: p.paidPrices[id] } : null
+    }).filter(Boolean),
+  })).sort((a, b) => b.ebkTotal - a.ebkTotal)
+  broadcastAuctionState(io, room)
+  for (const p of room.participants) {
+    io.to(p.socketId).emit('auction:complete', { results })
+  }
+  setTimeout(() => { auctionRooms.delete(room.code) }, 30 * 60 * 1000)
+}
+
 // ─── Server ──────────────────────────────────────────────────────────────────
 
 app.prepare().then(async () => {
@@ -664,7 +851,7 @@ app.prepare().then(async () => {
     id: true, firstName: true, lastName: true, team: true,
     position: true, positions: true, careerGames: true,
     careerPPG: true, careerRPG: true, careerAPG: true, careerMPG: true,
-    ebkScore: true, yearFrom: true, yearTo: true,
+    ebkScore: true, yearFrom: true, yearTo: true, careerEarnings: true,
   } as const
   allPlayers = await prisma.player.findMany({ select: playerSelect })
   playerById = new Map(allPlayers.map(p => [p.id, p]))
@@ -1158,6 +1345,181 @@ app.prepare().then(async () => {
       }
     })
 
+    // ── Auction Events ─────────────────────────────────────────────────────
+
+    socket.on('auction:create', ({ teamSize, maxPlayers, userName }: { teamSize: number; maxPlayers: number; userName: string }) => {
+      if (![5, 8, 12].includes(teamSize) || maxPlayers < 2 || maxPlayers > 6) {
+        socket.emit('auction:error', { message: 'Invalid settings' }); return
+      }
+      if (allPlayers.length === 0) {
+        socket.emit('auction:error', { message: 'Server still loading' }); return
+      }
+      let code = Math.random().toString(36).substring(2, 8).toUpperCase()
+      while (auctionRooms.has(code)) code = Math.random().toString(36).substring(2, 8).toUpperCase()
+
+      const budget = teamSize === 5 ? 125 : teamSize === 8 ? 175 : 250
+      const validPlayers = allPlayers.filter(p => p.ebkScore > 5)
+      const shuffled = [...validPlayers].sort(() => Math.random() - 0.5)
+      const poolSize = maxPlayers * teamSize * 2
+      const pool = shuffled.slice(0, Math.min(poolSize, shuffled.length))
+      const userId: string | null = (socket.data as { userId?: string })?.userId ?? null
+
+      const room: AuctionRoom = {
+        code, hostSocketId: socket.id, maxPlayers, teamSize, totalBudget: budget,
+        status: 'waiting',
+        participants: [{ socketId: socket.id, userId, name: userName, budget, roster: [], paidPrices: {} }],
+        playerPool: pool, currentPlayerIndex: -1, currentPlayer: null,
+        currentBid: 0, currentBidderSocketId: null, currentBidderName: null,
+        lastWinnerSocketId: null, lastWinnerName: null, lastWonAmount: 0,
+        stealInitiated: false, bidTimer: null, bidDeadline: 0,
+        tradeOffers: [], tradeDeadline: null, tradeTimer: null, bidLog: [],
+      }
+      auctionRooms.set(code, room)
+      socket.join(`auction:${code}`)
+      socket.emit('auction:created', { code })
+      broadcastAuctionState(io, room)
+    })
+
+    socket.on('auction:join', ({ code, userName }: { code: string; userName: string }) => {
+      const room = auctionRooms.get(code.toUpperCase())
+      if (!room) { socket.emit('auction:error', { message: 'Room not found' }); return }
+      if (room.status !== 'waiting') { socket.emit('auction:error', { message: 'Auction already in progress' }); return }
+      if (room.participants.length >= room.maxPlayers) { socket.emit('auction:error', { message: 'Room is full' }); return }
+      if (room.participants.some(p => p.socketId === socket.id)) {
+        socket.join(`auction:${room.code}`)
+        broadcastAuctionState(io, room); return
+      }
+      const userId: string | null = (socket.data as { userId?: string })?.userId ?? null
+      room.participants.push({ socketId: socket.id, userId, name: userName, budget: room.totalBudget, roster: [], paidPrices: {} })
+      socket.join(`auction:${room.code}`)
+      socket.emit('auction:joined', { code: room.code })
+      broadcastAuctionState(io, room)
+    })
+
+    socket.on('auction:start', ({ code }: { code: string }) => {
+      const room = auctionRooms.get(code)
+      if (!room || room.status !== 'waiting') return
+      if (socket.id !== room.hostSocketId) { socket.emit('auction:error', { message: 'Only the host can start' }); return }
+      if (room.participants.length < 2) { socket.emit('auction:error', { message: 'Need at least 2 players to start' }); return }
+      advanceAuction(io, room)
+    })
+
+    socket.on('auction:bid', ({ code, amount }: { code: string; amount: number }) => {
+      const room = auctionRooms.get(code)
+      if (!room || room.status !== 'bidding') return
+      const bidder = room.participants.find(p => p.socketId === socket.id)
+      if (!bidder) return
+      if (!Number.isInteger(amount) || amount <= room.currentBid) {
+        socket.emit('auction:error', { message: `Bid must be more than $${room.currentBid}M` }); return
+      }
+      if (bidder.budget < amount) { socket.emit('auction:error', { message: 'Not enough budget' }); return }
+      if (bidder.roster.length >= room.teamSize) { socket.emit('auction:error', { message: 'Roster is full' }); return }
+
+      room.currentBid = amount
+      room.currentBidderSocketId = socket.id
+      room.currentBidderName = bidder.name
+
+      const remaining = room.bidDeadline - Date.now()
+      if (remaining < 10000) {
+        room.bidDeadline = Date.now() + 10000
+        if (room.bidTimer) clearTimeout(room.bidTimer)
+        room.bidTimer = setTimeout(() => handleAuctionBidExpiry(io, room), 10000)
+      }
+
+      room.bidLog.push({ name: bidder.name, amount, action: 'bid' })
+      broadcastAuctionState(io, room)
+    })
+
+    socket.on('auction:steal', ({ code, playerIdToSteal }: { code: string; playerIdToSteal: number }) => {
+      const room = auctionRooms.get(code)
+      if (!room || room.status !== 'steal-window') return
+      if (room.stealInitiated) { socket.emit('auction:error', { message: 'Steal already used this round' }); return }
+      const stealer = room.participants.find(p => p.socketId === socket.id)
+      if (!stealer) return
+      const owner = room.participants.find(p => p.roster.includes(playerIdToSteal))
+      if (!owner || owner.socketId === socket.id) { socket.emit('auction:error', { message: 'Invalid steal target' }); return }
+      const originalPrice = owner.paidPrices[playerIdToSteal] ?? 1
+      const stealPrice = Math.ceil(originalPrice * 1.5)
+      if (stealer.budget < stealPrice) { socket.emit('auction:error', { message: `Need $${stealPrice}M to steal` }); return }
+      if (stealer.roster.length >= room.teamSize) { socket.emit('auction:error', { message: 'Roster is full' }); return }
+
+      stealer.budget -= stealPrice
+      stealer.roster.push(playerIdToSteal)
+      stealer.paidPrices[playerIdToSteal] = stealPrice
+      owner.roster = owner.roster.filter(id => id !== playerIdToSteal)
+      owner.budget += originalPrice
+      delete owner.paidPrices[playerIdToSteal]
+
+      room.stealInitiated = true
+      room.bidLog.push({ name: stealer.name, amount: stealPrice, action: 'steal' })
+      broadcastAuctionState(io, room)
+
+      if (room.bidTimer) clearTimeout(room.bidTimer)
+      room.bidTimer = setTimeout(() => advanceAuction(io, room), 3000)
+    })
+
+    socket.on('auction:trade-offer', ({ code, toSocketId, offeredPlayerIds, requestedPlayerIds }: {
+      code: string; toSocketId: string; offeredPlayerIds: number[]; requestedPlayerIds: number[]
+    }) => {
+      const room = auctionRooms.get(code)
+      if (!room || room.status !== 'trading') return
+      const from = room.participants.find(p => p.socketId === socket.id)
+      const to = room.participants.find(p => p.socketId === toSocketId)
+      if (!from || !to) return
+      if (!offeredPlayerIds.every(id => from.roster.includes(id))) { socket.emit('auction:error', { message: "You don't own those players" }); return }
+      if (!requestedPlayerIds.every(id => to.roster.includes(id))) { socket.emit('auction:error', { message: "They don't own those players" }); return }
+
+      const offer: TradeOffer = {
+        id: Math.random().toString(36).substring(2, 10),
+        fromSocketId: socket.id, fromName: from.name,
+        toSocketId, toName: to.name,
+        offeredPlayerIds, requestedPlayerIds, createdAt: Date.now(),
+      }
+      room.tradeOffers = room.tradeOffers.filter(o => !(o.fromSocketId === socket.id && o.toSocketId === toSocketId))
+      room.tradeOffers.push(offer)
+      broadcastAuctionState(io, room)
+    })
+
+    socket.on('auction:trade-respond', ({ code, offerId, accept }: { code: string; offerId: string; accept: boolean }) => {
+      const room = auctionRooms.get(code)
+      if (!room || room.status !== 'trading') return
+      const offerIdx = room.tradeOffers.findIndex(o => o.id === offerId)
+      if (offerIdx === -1) return
+      const offer = room.tradeOffers[offerIdx]
+      if (offer.toSocketId !== socket.id) return
+      room.tradeOffers.splice(offerIdx, 1)
+
+      if (accept) {
+        const from = room.participants.find(p => p.socketId === offer.fromSocketId)
+        const to = room.participants.find(p => p.socketId === offer.toSocketId)
+        if (from && to) {
+          for (const id of offer.offeredPlayerIds) {
+            from.roster = from.roster.filter(r => r !== id)
+            to.roster.push(id); to.paidPrices[id] = from.paidPrices[id]; delete from.paidPrices[id]
+          }
+          for (const id of offer.requestedPlayerIds) {
+            to.roster = to.roster.filter(r => r !== id)
+            from.roster.push(id); from.paidPrices[id] = to.paidPrices[id]; delete to.paidPrices[id]
+          }
+          room.bidLog.push({ name: `${from.name} ↔ ${to.name}`, amount: 0, action: 'trade' })
+        }
+      }
+      broadcastAuctionState(io, room)
+    })
+
+    socket.on('auction:get-state', ({ code }: { code: string }) => {
+      const room = auctionRooms.get(code)
+      if (!room) { socket.emit('auction:error', { message: 'Room not found' }); return }
+      broadcastAuctionState(io, room)
+    })
+
+    socket.on('auction:finish-trading', ({ code }: { code: string }) => {
+      const room = auctionRooms.get(code)
+      if (!room || room.status !== 'trading' || socket.id !== room.hostSocketId) return
+      if (room.tradeTimer) clearTimeout(room.tradeTimer)
+      finishAuction(io, room)
+    })
+
     socket.on('disconnect', () => {
       emoteLastSent.delete(socket.id)
       // Remove any open listing by this socket
@@ -1205,6 +1567,22 @@ app.prepare().then(async () => {
       })
 
       pendingListingCreate.delete(socket.id)
+
+      // Auction rooms: remove from waiting, keep in active
+      auctionRooms.forEach((room) => {
+        const pIdx = room.participants.findIndex(p => p.socketId === socket.id)
+        if (pIdx === -1) return
+        if (room.status === 'waiting') {
+          room.participants.splice(pIdx, 1)
+          if (room.participants.length === 0) {
+            if (room.bidTimer) clearTimeout(room.bidTimer)
+            auctionRooms.delete(room.code)
+          } else {
+            if (room.hostSocketId === socket.id) room.hostSocketId = room.participants[0].socketId
+            broadcastAuctionState(io, room)
+          }
+        }
+      })
     })
   })
 

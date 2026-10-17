@@ -331,7 +331,7 @@ export default function LobbyPage() {
         {/* Higher/Lower solo mode */}
         <button
           onClick={() => router.push('/higher-lower')}
-          className="w-full rounded-xl px-5 py-4 text-left border border-white/5 bg-[#101010] hover:border-white/15 transition-all flex items-center justify-between mb-6"
+          className="w-full rounded-xl px-5 py-4 text-left border border-white/5 bg-[#101010] hover:border-white/15 transition-all flex items-center justify-between"
         >
           <div className="flex items-center gap-4">
             <div className="font-display text-xs text-orange-500/60 tracking-widest">04</div>
@@ -341,6 +341,21 @@ export default function LobbyPage() {
             </div>
           </div>
           <div className="text-gray-600 text-sm">→</div>
+        </button>
+
+        {/* War Room auction mode */}
+        <button
+          onClick={() => router.push('/auction')}
+          className="w-full rounded-xl px-5 py-4 text-left border border-orange-900/30 bg-orange-950/20 hover:border-orange-700/50 hover:bg-orange-950/30 transition-all flex items-center justify-between mb-6"
+        >
+          <div className="flex items-center gap-4">
+            <div className="font-display text-xs text-orange-500/60 tracking-widest">05</div>
+            <div>
+              <div className="font-black text-orange-300">⚡ War Room</div>
+              <div className="text-gray-500 text-xs mt-0.5">Multiplayer salary cap auction · bid, steal, trade</div>
+            </div>
+          </div>
+          <div className="text-orange-600 text-sm font-bold">NEW</div>
         </button>
 
         {/* ── ONLINE MODE ─────────────────────────────────────────────────── */}
