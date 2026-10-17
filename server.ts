@@ -1528,15 +1528,33 @@ app.prepare().then(async () => {
       })
     })
 
-    socket.on('use-emote', ({ code, emoteText }: { code: string; emoteText: string }) => {
+    socket.on('use-emote', async ({ code, emoteText }: { code: string; emoteText: string }) => {
       const room = rooms.get(code)
       if (!room || room.status !== 'drafting') return
       const isHost = socket.id === room.hostSocketId
       const isGuest = socket.id === room.guestSocketId
       if (!isHost && !isGuest) return
       // Validate emoteText against the known emote texts to prevent arbitrary string injection
-      const validEmoteTexts = new Set(EMOTES.map(e => e.text))
-      if (!validEmoteTexts.has(emoteText)) return
+      const emoteEntry = EMOTES.find(e => e.text === emoteText)
+      if (!emoteEntry) return
+
+      // Enforce unlock gate: verify the sender actually owns this emote.
+      // Authenticated users: check their unlockedEmotes list from DB.
+      // Anonymous users: only allow free emotes (winsRequired === 0).
+      const userId = socket.data.userId as string | null
+      if (userId) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { unlockedEmotes: true },
+        }).catch(() => null)
+        let unlocked: string[] = []
+        try { unlocked = JSON.parse(dbUser?.unlockedEmotes || '[]') } catch { unlocked = [] }
+        if (!unlocked.includes(emoteEntry.id)) return
+      } else {
+        // Anonymous players may only use emotes with winsRequired === 0
+        if (emoteEntry.winsRequired > 0) return
+      }
+
       const now = Date.now()
       const last = emoteLastSent.get(socket.id) ?? 0
       if (now - last < 3000) return // 3s cooldown
