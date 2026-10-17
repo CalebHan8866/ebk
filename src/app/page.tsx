@@ -73,18 +73,18 @@ export default function Home() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="card-accent p-6">
             <div className="font-display text-5xl text-orange-400 leading-none mb-4">1</div>
-            <h3 className="font-black text-white text-base mb-2 tracking-wide">Snake Draft</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">Take turns picking NBA players against your opponent — any era, any position.</p>
+            <h3 className="font-black text-white text-base mb-1 tracking-wide">Snake Draft</h3>
+            <p className="text-gray-400 text-xs font-black uppercase tracking-wide">Pick. Alternate. Any era.</p>
           </div>
           <div className="card-accent p-6">
             <div className="font-display text-5xl text-orange-400 leading-none mb-4">2</div>
-            <h3 className="font-black text-white text-base mb-2 tracking-wide">EBK Score Revealed</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">Each player's score combines career stats, fame, and salary. Lower is better — role players beat superstars.</p>
+            <h3 className="font-black text-white text-base mb-1 tracking-wide">EBK Score Revealed</h3>
+            <p className="text-gray-400 text-xs font-black uppercase tracking-wide">Stats + fame + salary. Lower is better.</p>
           </div>
           <div className="card-accent p-6">
             <div className="font-display text-5xl text-orange-400 leading-none mb-4">3</div>
-            <h3 className="font-black text-white text-base mb-2 tracking-wide">Lowest Score Wins</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">The GM with the lowest team total wins. Real basketball IQ beats star power every time.</p>
+            <h3 className="font-black text-white text-base mb-1 tracking-wide">Lowest Score Wins</h3>
+            <p className="text-gray-400 text-xs font-black uppercase tracking-wide">Hidden gems beat superstars.</p>
           </div>
         </div>
       </div>
