@@ -37,25 +37,57 @@ interface MatchInfo {
   isHost: boolean
 }
 
+// ── Small reusable components ────────────────────────────────────────────────
+
 function BadgeChip({ badgeId }: { badgeId: string }) {
   const badge = BADGES.find(b => b.id === badgeId)
   if (!badge) return null
   return (
-    <span className={`text-xs font-black px-1.5 py-0.5 rounded border ${badge.bgClass} ${badge.textClass} ${badge.borderClass}`}>
+    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border ${badge.bgClass} ${badge.textClass} ${badge.borderClass}`}>
       {badge.label}
     </span>
   )
 }
 
-const MODE_LABEL: Record<TeamMode, string> = { starter5: 'Starter 5', bench8: 'Bench 8', full12: 'Full 12' }
-const MODE_SUB: Record<TeamMode, string> = { starter5: '5 players', bench8: '8 players', full12: '12 players' }
-function seriesLabel(s: SeriesLength) { return s === 1 ? '1 Game' : `Best of ${s}` }
+/** Colored circle with initials — deterministic color per username */
+function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' }) {
+  const palette = ['bg-orange-600', 'bg-blue-600', 'bg-emerald-600', 'bg-violet-600', 'bg-rose-600']
+  const color = palette[name.charCodeAt(0) % palette.length]
+  const sz = size === 'lg' ? 'w-14 h-14 text-base' : size === 'sm' ? 'w-7 h-7 text-[10px]' : 'w-9 h-9 text-xs'
+  return (
+    <div className={`${sz} ${color} rounded-full flex items-center justify-center font-black text-white shrink-0 select-none`}>
+      {name.slice(0, 2).toUpperCase()}
+    </div>
+  )
+}
+
+// ── Constants ────────────────────────────────────────────────────────────────
+
+const MODE_LABEL: Record<TeamMode, string> = {
+  starter5: 'Starter 5',
+  bench8: 'Bench 8',
+  full12: 'Full 12',
+}
+const MODE_DESC: Record<TeamMode, string> = {
+  starter5: 'Draft 5 players',
+  bench8: 'Draft 8 players',
+  full12: 'Draft 12 players',
+}
+function seriesLabel(s: SeriesLength) {
+  return s === 1 ? '1 Game' : `Best of ${s}`
+}
+function winPct(wins: number, losses: number) {
+  const total = wins + losses
+  return total > 0 ? `${Math.round((wins / total) * 100)}%` : '—'
+}
+
+// ── Main component ───────────────────────────────────────────────────────────
 
 export default function LobbyPage() {
   const [mainTab, setMainTab] = useState<'online' | 'friends'>('online')
   const { user, loading: authLoading } = useAuth()
 
-  // ── Online state ──────────────────────────────────────────────────────────
+  // Online matchmaking state
   const [onlineState, setOnlineState] = useState<OnlineState>('idle')
   const [listings, setListings] = useState<GameListing[]>([])
   const [myListingCode, setMyListingCode] = useState<string | null>(null)
@@ -68,18 +100,18 @@ export default function LobbyPage() {
   const selfDeclinedRef = useRef(false)
   const listingErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // create form
-  const [showCreate, setShowCreate] = useState(false)
+  // Create game options
   const [createTeamMode, setCreateTeamMode] = useState<TeamMode>('starter5')
   const [createSeries, setCreateSeries] = useState<SeriesLength>(1)
 
-  // ── Friends state ─────────────────────────────────────────────────────────
+  // Play with friends state
   const [friendsTab, setFriendsTab] = useState<'create' | 'join'>('create')
   const [teamMode, setTeamMode] = useState<TeamMode>('starter5')
   const [series, setSeries] = useState<SeriesLength>(1)
   const [difficulty, setDifficulty] = useState<Difficulty>('casual')
   const [joinCode, setJoinCode] = useState('')
   const [userName, setUserName] = useState(user?.username || '')
+
   const [error, setError] = useState('')
   const [listingError, setListingError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -92,7 +124,7 @@ export default function LobbyPage() {
     if (user?.username) setUserName(user.username)
   }, [user])
 
-  // ── Socket listeners ──────────────────────────────────────────────────────
+  // ── Socket lifecycle ───────────────────────────────────────────────────────
   useEffect(() => {
     const socket = getSocket()
 
@@ -101,7 +133,6 @@ export default function LobbyPage() {
     const handleListingCreated = ({ code }: { code: string }) => {
       setMyListingCode(code)
       setOnlineState('listing')
-      setShowCreate(false)
     }
 
     const handleListingExpired = () => {
@@ -113,10 +144,10 @@ export default function LobbyPage() {
     const handleListingError = ({ message }: { message: string }) => {
       setListingError(message)
       if (listingErrorTimerRef.current) clearTimeout(listingErrorTimerRef.current)
-      listingErrorTimerRef.current = setTimeout(() => setListingError(''), 3000)
+      listingErrorTimerRef.current = setTimeout(() => setListingError(''), 4000)
     }
 
-    const handleMatchFound = (info: MatchInfo & { opponentTeamMode: TeamMode; opponentSeries: SeriesLength; myTeamMode: TeamMode; mySeries: SeriesLength }) => {
+    const handleMatchFound = (info: MatchInfo) => {
       setMatchInfo(info)
       setMatchCode(info.code)
       setMyListingCode(null)
@@ -151,7 +182,6 @@ export default function LobbyPage() {
       setOnlineState('idle')
       setMatchInfo(null)
       setMyListingCode(null)
-      // Don't show an error if this player was the one who declined
       if (!selfDeclinedRef.current) setError(reason)
       selfDeclinedRef.current = false
     }
@@ -164,8 +194,6 @@ export default function LobbyPage() {
     socket.on('ready-update', handleReadyUpdate)
     socket.on('draft-started', handleDraftStarted)
     socket.on('match-cancelled', handleMatchCancelled)
-
-    // Fetch current listings on mount
     socket.emit('get-listings')
 
     return () => {
@@ -182,11 +210,12 @@ export default function LobbyPage() {
     }
   }, [router, user])
 
+  // ── Handlers ───────────────────────────────────────────────────────────────
+
   function handlePostGame() {
     if (!user) return
     setListingError('')
-    const socket = getSocket()
-    socket.emit('create-listing', {
+    getSocket().emit('create-listing', {
       userName: user.username,
       teamMode: createTeamMode,
       series: createSeries,
@@ -195,8 +224,7 @@ export default function LobbyPage() {
 
   function handleCancelListing() {
     if (!myListingCode) return
-    const socket = getSocket()
-    socket.emit('cancel-listing', { code: myListingCode })
+    getSocket().emit('cancel-listing', { code: myListingCode })
     setMyListingCode(null)
     setOnlineState('idle')
   }
@@ -204,8 +232,7 @@ export default function LobbyPage() {
   function handleJoinListing(code: string) {
     if (!user) return
     setListingError('')
-    const socket = getSocket()
-    socket.emit('join-listing', { code, userName: user.username })
+    getSocket().emit('join-listing', { code, userName: user.username })
   }
 
   function handleAccept() {
@@ -257,13 +284,12 @@ export default function LobbyPage() {
       clearTimeout(timeout)
       socket.off('room-error', onError)
       socket.off('draft-started', onJoinSuccess)
-      setError(message); setLoading(false)
+      setError(message)
+      setLoading(false)
     }
     const onJoinSuccess = () => {
       clearTimeout(timeout)
       socket.off('room-error', onError)
-      // handleDraftStarted in the useEffect will handle navigation;
-      // we just need to clean up these one-shot listeners.
     }
     const timeout = setTimeout(() => {
       socket.off('room-error', onError)
@@ -277,391 +303,591 @@ export default function LobbyPage() {
   }
 
   const displayName = user?.username || userName
+  const myReady = matchInfo ? (matchInfo.isHost ? hostReady : guestReady) : false
+  const oppReady = matchInfo ? (matchInfo.isHost ? guestReady : hostReady) : false
 
-  return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-lg">
-        <div className="text-center mb-8">
-          <h1 className="font-display text-6xl text-orange-500 leading-none">EBK</h1>
-          <p className="text-gray-600 text-xs tracking-widest uppercase mt-1">Elite Ball Knowledge</p>
-          <div className="flex items-center justify-center gap-4 mt-3">
-            <Link href="/leaderboard" className="text-gray-500 hover:text-orange-400 text-xs font-bold transition-colors">Leaderboard</Link>
-            <span className="text-gray-700 text-xs">·</span>
-            <Link href="/history" className="text-gray-500 hover:text-orange-400 text-xs font-bold transition-colors">My History</Link>
-            <span className="text-gray-700 text-xs">·</span>
-            <Link href="/fun-facts" className="text-gray-500 hover:text-orange-400 text-xs font-bold transition-colors">Fun Facts</Link>
+  // ── MATCH FOUND — full-page takeover ──────────────────────────────────────
+  if (onlineState === 'found' && matchInfo) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md animate-slide-up">
+
+          {matchInfo.grudgeMatch && (
+            <div className="mb-4 rounded-xl py-2.5 px-4 text-center border border-red-500/30 bg-red-900/20">
+              <span className="text-red-400 font-black text-sm tracking-widest uppercase">Grudge Match</span>
+              <span className="text-gray-500 text-xs ml-2">You&apos;ve played before</span>
+            </div>
+          )}
+
+          <div className="card-accent rounded-2xl overflow-hidden">
+            {/* Header strip */}
+            <div className="px-6 py-5 text-center border-b border-white/5">
+              <div className="text-label mb-1">Game Found</div>
+              <div className="font-display text-5xl text-white leading-none">MATCH UP</div>
+              <div className={`text-sm font-black mt-2 tabular-nums ${
+                countdown <= 10 ? 'text-red-400' : countdown <= 20 ? 'text-yellow-400' : 'text-gray-500'
+              }`}>
+                {countdown > 0 ? `Auto-cancels in ${countdown}s` : 'Processing...'}
+              </div>
+            </div>
+
+            {/* VS layout */}
+            <div className="grid grid-cols-[1fr_48px_1fr] items-center gap-0 px-5 py-5">
+              {/* You */}
+              <div className={`rounded-2xl p-4 text-center transition-all ${
+                myReady ? 'bg-green-500/10 border border-green-500/20' : 'bg-white/[0.03] border border-white/5'
+              }`}>
+                <div className="flex justify-center mb-2">
+                  <Avatar name={displayName} size="lg" />
+                </div>
+                <div className="text-white font-black text-sm truncate leading-tight">{displayName}</div>
+                {user && (
+                  <div className="flex items-center justify-center gap-1.5 mt-1 flex-wrap">
+                    <BadgeChip badgeId={matchInfo.myBadge} />
+                  </div>
+                )}
+                {user && (
+                  <div className="text-gray-500 text-xs mt-1">
+                    {user.wins}W {user.losses}L
+                    <span className="text-gray-700 ml-1">· {winPct(user.wins, user.losses)}</span>
+                  </div>
+                )}
+                {matchInfo.myStreak >= 3 && (
+                  <div className="text-orange-400 text-xs font-black mt-1">🔥 {matchInfo.myStreak} streak</div>
+                )}
+                {myReady && (
+                  <div className="mt-2 text-green-400 text-[10px] font-black uppercase tracking-wide">Ready</div>
+                )}
+              </div>
+
+              {/* VS divider */}
+              <div className="flex flex-col items-center gap-1">
+                <div className="w-px h-8 bg-white/5" />
+                <div className="font-display text-xl text-gray-700 leading-none">VS</div>
+                <div className="w-px h-8 bg-white/5" />
+              </div>
+
+              {/* Opponent */}
+              <div className={`rounded-2xl p-4 text-center transition-all ${
+                oppReady ? 'bg-green-500/10 border border-green-500/20' : 'bg-white/[0.03] border border-white/5'
+              }`}>
+                <div className="flex justify-center mb-2">
+                  <Avatar name={matchInfo.opponentName} size="lg" />
+                </div>
+                <div className="text-white font-black text-sm truncate leading-tight">{matchInfo.opponentName}</div>
+                <div className="flex items-center justify-center gap-1.5 mt-1 flex-wrap">
+                  <BadgeChip badgeId={matchInfo.opponentBadge} />
+                </div>
+                <div className="text-gray-500 text-xs mt-1">
+                  {matchInfo.opponentRecord.wins}W {matchInfo.opponentRecord.losses}L
+                  <span className="text-gray-700 ml-1">· {winPct(matchInfo.opponentRecord.wins, matchInfo.opponentRecord.losses)}</span>
+                </div>
+                {matchInfo.opponentStreak >= 3 && (
+                  <div className="text-orange-400 text-xs font-black mt-1">🔥 {matchInfo.opponentStreak} streak</div>
+                )}
+                {oppReady && (
+                  <div className="mt-2 text-green-400 text-[10px] font-black uppercase tracking-wide">Ready</div>
+                )}
+              </div>
+            </div>
+
+            {/* Game details */}
+            <div className="mx-5 mb-5 bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between">
+              <span className="text-label">Format</span>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-white font-black">{MODE_LABEL[matchInfo.proposedTeamMode]}</span>
+                <span className="text-gray-700">·</span>
+                <span className="text-gray-400">{seriesLabel(matchInfo.proposedSeries)}</span>
+                <span className="text-gray-700">·</span>
+                <span className="text-yellow-400 font-black">EBK</span>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="px-5 pb-5 grid grid-cols-2 gap-3">
+              <button onClick={handleDecline} className="btn-secondary py-3 text-sm">
+                Decline
+              </button>
+              <button
+                onClick={handleAccept}
+                disabled={myReady}
+                className={`py-3 rounded-xl font-black text-sm uppercase tracking-wider transition-all ${
+                  myReady
+                    ? 'bg-green-600/30 text-green-400 border border-green-500/20 cursor-default'
+                    : 'btn-primary'
+                }`}
+              >
+                {myReady ? 'Accepted ✓' : 'Accept'}
+              </button>
+            </div>
+
+            {(myReady || oppReady) && !(myReady && oppReady) && (
+              <p className="text-center text-gray-600 text-xs pb-4">
+                Waiting for {myReady ? matchInfo.opponentName : displayName} to accept...
+              </p>
+            )}
           </div>
         </div>
+      </div>
+    )
+  }
 
+  // ── MAIN LOBBY ─────────────────────────────────────────────────────────────
+  return (
+    <div className="min-h-screen py-8 px-4">
+      <div className="max-w-5xl mx-auto">
+
+        {/* ── Page header ─────────────────────────────────────────────────── */}
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <h1 className="font-display text-5xl text-orange-500 leading-none">LOBBY</h1>
+            <p className="text-gray-600 text-xs tracking-widest uppercase mt-1">Elite Ball Knowledge</p>
+          </div>
+
+          {/* User identity chip */}
+          {!authLoading && user && (
+            <Link href="/profile" className="flex items-center gap-3 group">
+              <div className="text-right">
+                <div className="text-white font-black text-sm group-hover:text-orange-400 transition-colors leading-tight">
+                  {user.username}
+                </div>
+                <div className="text-gray-500 text-xs mt-0.5">
+                  {user.wins}W {user.losses}L
+                  {(user.wins + user.losses) > 0 && (
+                    <span className="text-gray-700 ml-1.5">{winPct(user.wins, user.losses)}</span>
+                  )}
+                </div>
+              </div>
+              <Avatar name={user.username} />
+            </Link>
+          )}
+          {!authLoading && !user && (
+            <div className="flex gap-2">
+              <Link href="/login" className="btn-secondary py-2 px-5 text-xs">Sign In</Link>
+              <Link href="/register" className="btn-primary py-2 px-5 text-xs">Sign Up</Link>
+            </div>
+          )}
+        </div>
+
+        {/* Global error banner */}
         {error && (
-          <div className="bg-red-900/40 border border-red-500/50 text-red-300 rounded-lg p-3 mb-4 text-sm text-center">
-            {error}
-            <button onClick={() => setError('')} className="ml-2 text-red-400 hover:text-red-200">✕</button>
+          <div className="bg-red-900/30 border border-red-500/40 text-red-300 rounded-xl px-4 py-3 mb-5 text-sm flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={() => setError('')} className="text-red-500 hover:text-red-300 ml-3 shrink-0">✕</button>
           </div>
         )}
 
-        {/* Main Mode Tabs */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        {/* ── Main tab bar ────────────────────────────────────────────────── */}
+        <div className="flex gap-1 p-1 bg-white/[0.04] border border-white/[0.06] rounded-2xl mb-6">
           <button
             onClick={() => { setMainTab('online'); setError('') }}
-            className={`rounded-xl p-5 text-left border transition-all ${mainTab === 'online' ? 'border-orange-500 bg-orange-600/10' : 'border-white/5 bg-[#101010] hover:border-white/15'}`}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-black transition-all ${
+              mainTab === 'online'
+                ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'
+                : 'text-gray-500 hover:text-gray-300'
+            }`}
           >
-            <div className="font-display text-xs text-orange-500/60 tracking-widest mb-2">01</div>
-            <div className="font-black text-white">Online</div>
-            <div className="text-gray-500 text-xs mt-1">Browse or post open games</div>
+            Online Play
           </button>
           <button
             onClick={() => { setMainTab('friends'); setError('') }}
-            className={`rounded-xl p-5 text-left border transition-all ${mainTab === 'friends' ? 'border-orange-500 bg-orange-600/10' : 'border-white/5 bg-[#101010] hover:border-white/15'}`}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-black transition-all ${
+              mainTab === 'friends'
+                ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'
+                : 'text-gray-500 hover:text-gray-300'
+            }`}
           >
-            <div className="font-display text-xs text-orange-500/60 tracking-widest mb-2">02</div>
-            <div className="font-black text-white">Friends</div>
-            <div className="text-gray-500 text-xs mt-1">Create or join a private room</div>
-          </button>
-          <button
-            onClick={() => router.push('/practice')}
-            className="rounded-xl p-5 text-left border border-white/5 bg-[#101010] hover:border-white/15 transition-all"
-          >
-            <div className="font-display text-xs text-orange-500/60 tracking-widest mb-2">03</div>
-            <div className="font-black text-white">Practice</div>
-            <div className="text-gray-500 text-xs mt-1">Solo draft, no timer</div>
+            Play with Friends
           </button>
         </div>
 
-        {/* Higher/Lower solo mode */}
-        <button
-          onClick={() => router.push('/higher-lower')}
-          className="w-full rounded-xl px-5 py-4 text-left border border-white/5 bg-[#101010] hover:border-white/15 transition-all flex items-center justify-between"
-        >
-          <div className="flex items-center gap-4">
-            <div className="font-display text-xs text-orange-500/60 tracking-widest">04</div>
-            <div>
-              <div className="font-black text-white">Higher / Lower</div>
-              <div className="text-gray-500 text-xs mt-0.5">Guess EBK scores solo — beat your streak</div>
-            </div>
-          </div>
-          <div className="text-gray-600 text-sm">→</div>
-        </button>
-
-        {/* War Room auction mode */}
-        <button
-          onClick={() => router.push('/auction')}
-          className="w-full rounded-xl px-5 py-4 text-left border border-orange-900/30 bg-orange-950/20 hover:border-orange-700/50 hover:bg-orange-950/30 transition-all flex items-center justify-between mb-6"
-        >
-          <div className="flex items-center gap-4">
-            <div className="font-display text-xs text-orange-500/60 tracking-widest">05</div>
-            <div>
-              <div className="font-black text-orange-300">⚡ War Room</div>
-              <div className="text-gray-500 text-xs mt-0.5">Multiplayer salary cap auction · bid, steal, trade</div>
-            </div>
-          </div>
-          <div className="text-orange-600 text-sm font-bold">NEW</div>
-        </button>
-
         {/* ── ONLINE MODE ─────────────────────────────────────────────────── */}
         {mainTab === 'online' && (
-          <div className="bg-[#101010] border border-white/5 rounded-xl overflow-hidden">
-
+          <>
             {/* Login gate */}
             {!authLoading && !user && (
-              <div className="p-6 text-center py-8">
-                <div className="text-white font-black text-lg mb-2">Sign in to play online</div>
-                <p className="text-gray-600 text-sm mb-6">An account is required to track your record and join games.</p>
+              <div className="card-surface rounded-2xl px-8 py-14 text-center max-w-md mx-auto">
+                <div className="font-display text-4xl text-white leading-none mb-3">SIGN IN TO PLAY</div>
+                <p className="text-gray-500 text-sm mb-7 leading-relaxed">
+                  Create a free account to track your record,<br />earn badges, and compete on the leaderboard.
+                </p>
                 <div className="flex gap-3 justify-center">
-                  <Link href="/login" className="bg-orange-600 hover:bg-orange-700 text-white font-black px-6 py-3 rounded-xl transition-colors">Sign In</Link>
-                  <Link href="/register" className="bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-white font-black px-6 py-3 rounded-xl transition-colors">Sign Up</Link>
+                  <Link href="/login" className="btn-primary px-8">Sign In</Link>
+                  <Link href="/register" className="btn-secondary px-8">Sign Up</Link>
                 </div>
               </div>
             )}
 
-            {/* Game browser */}
-            {user && onlineState === 'idle' && !showCreate && (
-              <div>
-                {/* Header */}
-                <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-white/5">
-                  <div>
-                    <div className="text-white font-black text-sm">Open Games</div>
-                    <div className="text-gray-600 text-xs mt-0.5">{listings.length} available · EBK mode</div>
-                  </div>
-                  <button
-                    onClick={() => setShowCreate(true)}
-                    className="bg-orange-600 hover:bg-orange-700 text-white font-black text-sm px-4 py-2 rounded-lg transition-colors"
-                  >
-                    + Create
-                  </button>
-                </div>
+            {/* Two-column layout (post game + browser) */}
+            {user && (onlineState === 'idle' || onlineState === 'listing') && (
+              <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-5">
 
-                {listingError && (
-                  <div className="mx-4 mt-3 bg-red-900/40 border border-red-500/40 text-red-300 rounded-lg px-3 py-2 text-xs text-center">
-                    {listingError}
-                  </div>
-                )}
+                {/* Left column: post / listing status */}
+                {onlineState === 'idle' && (
+                  <div className="card-surface rounded-2xl p-5 flex flex-col gap-4">
+                    <div className="text-label">Post a Game</div>
 
-                {/* Listings */}
-                <div className="divide-y divide-white/5 max-h-[360px] overflow-y-auto">
-                  {listings.length === 0 ? (
-                    <div className="text-center py-12 px-6">
-                      <div className="text-gray-600 font-black text-sm mb-2">No open games</div>
-                      <div className="text-gray-700 text-xs">Be the first — create a game above</div>
-                    </div>
-                  ) : (
-                    listings.map(l => (
-                      <div key={l.code} className="flex items-center gap-3 px-5 py-4 hover:bg-white/[0.02] transition-colors">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-white font-black text-sm truncate">{l.hostName}</span>
-                            <BadgeChip badgeId={l.hostBadge} />
-                            {l.hostStreak >= 3 && <span className="text-xs font-black text-orange-400" title={`${l.hostStreak}-game win streak`}>🔥{l.hostStreak}</span>}
-                          </div>
-                          <div className="text-gray-500 text-xs mt-0.5">
-                            {l.hostRecord.wins}W {l.hostRecord.losses}L
-                            <span className="text-gray-700 mx-1.5">·</span>
-                            {MODE_LABEL[l.teamMode]}
-                            <span className="text-gray-700 mx-1.5">·</span>
-                            {seriesLabel(l.series)}
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleJoinListing(l.code)}
-                          className="bg-orange-600 hover:bg-orange-700 text-white font-black text-xs px-4 py-2 rounded-lg transition-colors shrink-0"
-                        >
-                          Join
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {/* Your record */}
-                <div className="px-5 py-3 border-t border-white/5 flex items-center justify-between">
-                  <div className="text-gray-600 text-xs">{user.username} · {user.wins}W {user.losses}L</div>
-                  <div className="text-orange-500 text-xs font-bold">EBK</div>
-                </div>
-              </div>
-            )}
-
-            {/* Create game form */}
-            {user && onlineState === 'idle' && showCreate && (
-              <div className="p-5 space-y-4">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="text-white font-black">Create Game</div>
-                  <button onClick={() => setShowCreate(false)} className="text-gray-500 hover:text-white text-xs">✕ Cancel</button>
-                </div>
-
-                <div>
-                  <label className="block text-gray-500 text-xs mb-2 uppercase tracking-wide">Team Mode</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(['starter5', 'bench8', 'full12'] as TeamMode[]).map(val => (
-                      <button key={val} onClick={() => setCreateTeamMode(val)}
-                        className={`rounded-lg p-2.5 text-center border transition-all ${createTeamMode === val ? 'border-orange-500 bg-orange-600/20 text-orange-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                        <div className="font-black text-sm">{MODE_LABEL[val]}</div>
-                        <div className="text-xs opacity-60 mt-0.5">{MODE_SUB[val]}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-gray-500 text-xs mb-2 uppercase tracking-wide">Series</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {([1, 3, 5] as SeriesLength[]).map(s => (
-                      <button key={s} onClick={() => setCreateSeries(s)}
-                        className={`rounded-lg p-2.5 text-center text-sm font-black border transition-all ${createSeries === s ? 'border-orange-500 bg-orange-600/20 text-orange-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                        {seriesLabel(s)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <button onClick={handlePostGame} className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black py-3 rounded-xl transition-colors">
-                  Post Game
-                </button>
-              </div>
-            )}
-
-            {/* Your listing is live */}
-            {user && onlineState === 'listing' && (
-              <div className="p-6">
-                <div className="text-center mb-5">
-                  <div className="font-display text-2xl text-orange-500 leading-none mb-1">Game Posted</div>
-                  <div className="text-gray-500 text-xs">Waiting for an opponent to join</div>
-                </div>
-
-                <div className="bg-[#0A0A0A] rounded-2xl p-4 mb-5">
-                  <div className="flex items-center justify-between mb-3">
+                    {/* Team mode selector */}
                     <div>
-                      <div className="text-white font-black">{user.username}</div>
-                      <div className="text-gray-500 text-xs mt-0.5">{user.wins}W {user.losses}L</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-orange-400 font-black text-sm">{MODE_LABEL[createTeamMode]}</div>
-                      <div className="text-gray-500 text-xs">{seriesLabel(createSeries)}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
-                    <span className="text-green-400 text-xs font-bold">Visible to all players</span>
-                  </div>
-                </div>
-
-                <button onClick={handleCancelListing} className="w-full bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-gray-400 hover:text-white font-black py-3 rounded-xl transition-colors">
-                  Cancel
-                </button>
-              </div>
-            )}
-
-            {/* Match found — pre-game lobby */}
-            {user && onlineState === 'found' && matchInfo && (
-              <div className="p-5 space-y-4">
-                {matchInfo.grudgeMatch && (
-                  <div className="bg-red-900/30 border border-red-500/40 rounded-xl py-2 px-4 text-center">
-                    <span className="text-red-400 font-black text-sm tracking-widest uppercase">Grudge Match</span>
-                    <span className="text-gray-500 text-xs ml-2">You&apos;ve played before</span>
-                  </div>
-                )}
-                <div className="text-center">
-                  <div className="font-display text-3xl text-orange-500 leading-none mb-1">Match Found</div>
-                  <div className={`text-xs font-bold tabular-nums ${countdown <= 10 ? 'text-red-400' : countdown <= 20 ? 'text-yellow-400' : 'text-gray-500'}`}>
-                    {countdown > 0 ? `Auto-starts in ${countdown}s` : 'Starting...'}
-                  </div>
-                </div>
-
-                {/* Players */}
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: 'You', name: displayName, record: `${user.wins}W ${user.losses}L`, badge: matchInfo.myBadge, streak: matchInfo.myStreak, ready: matchInfo.isHost ? hostReady : guestReady, accent: 'text-orange-400' },
-                    { label: 'Opponent', name: matchInfo.opponentName, record: `${matchInfo.opponentRecord.wins}W ${matchInfo.opponentRecord.losses}L`, badge: matchInfo.opponentBadge, streak: matchInfo.opponentStreak, ready: matchInfo.isHost ? guestReady : hostReady, accent: 'text-blue-400' },
-                  ].map(side => (
-                    <div key={side.label} className="bg-[#0A0A0A] rounded-2xl p-4 text-center">
-                      <div className={`${side.accent} text-xs uppercase tracking-widest mb-2 font-bold`}>{side.label}</div>
-                      <div className="flex items-center justify-center gap-2 mb-1">
-                        <span className="text-white font-black text-sm truncate">{side.name}</span>
-                        <BadgeChip badgeId={side.badge} />
+                      <div className="text-label mb-2">Team Size</div>
+                      <div className="space-y-2">
+                        {(['starter5', 'bench8', 'full12'] as TeamMode[]).map(val => (
+                          <button
+                            key={val}
+                            onClick={() => setCreateTeamMode(val)}
+                            className={`w-full flex items-center justify-between rounded-xl px-4 py-3 border transition-all ${
+                              createTeamMode === val
+                                ? 'border-orange-500/60 bg-orange-600/10'
+                                : 'border-white/[0.05] bg-white/[0.02] hover:border-white/[0.12]'
+                            }`}
+                          >
+                            <div className="text-left">
+                              <div className={`font-black text-sm ${createTeamMode === val ? 'text-orange-400' : 'text-white'}`}>
+                                {MODE_LABEL[val]}
+                              </div>
+                              <div className="text-gray-600 text-xs">{MODE_DESC[val]}</div>
+                            </div>
+                            <div className={`w-4 h-4 rounded-full border-2 transition-all shrink-0 ${
+                              createTeamMode === val ? 'border-orange-500 bg-orange-500' : 'border-gray-700'
+                            }`} />
+                          </button>
+                        ))}
                       </div>
-                      <div className="text-gray-500 text-xs">{side.record}</div>
-                      {side.streak >= 3 && <div className="mt-1 text-orange-400 text-xs font-black">🔥 {side.streak}-game streak</div>}
-                      {side.ready && <div className="mt-1 text-green-400 text-xs font-bold">Ready</div>}
                     </div>
-                  ))}
-                </div>
 
-                {/* Game settings */}
-                <div className="bg-[#0A0A0A] rounded-2xl px-4 py-3 flex items-center justify-between">
-                  <div className="text-gray-500 text-xs">Game</div>
-                  <div className="text-white font-black text-sm">
-                    {MODE_LABEL[matchInfo.proposedTeamMode]}
-                    <span className="text-gray-600 mx-1.5">·</span>
-                    {seriesLabel(matchInfo.proposedSeries)}
-                    <span className="text-gray-600 mx-1.5">·</span>
-                    <span className="text-yellow-400">EBK</span>
+                    {/* Series selector */}
+                    <div>
+                      <div className="text-label mb-2">Series</div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {([1, 3, 5] as SeriesLength[]).map(s => (
+                          <button
+                            key={s}
+                            onClick={() => setCreateSeries(s)}
+                            className={`rounded-xl py-2.5 text-center font-black text-sm border transition-all ${
+                              createSeries === s
+                                ? 'border-orange-500/60 bg-orange-600/10 text-orange-400'
+                                : 'border-white/[0.05] text-gray-400 hover:border-white/[0.12]'
+                            }`}
+                          >
+                            {seriesLabel(s)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Error */}
+                    {listingError && (
+                      <div className="bg-red-900/20 border border-red-500/30 text-red-400 rounded-xl px-3 py-2 text-xs text-center">
+                        {listingError}
+                      </div>
+                    )}
+
+                    <button onClick={handlePostGame} className="btn-primary w-full mt-auto">
+                      Post Game
+                    </button>
+                  </div>
+                )}
+
+                {onlineState === 'listing' && (
+                  <div className="card-accent rounded-2xl p-5 flex flex-col gap-4">
+                    {/* Live indicator */}
+                    <div className="flex items-center gap-2">
+                      <div className="live-dot" />
+                      <span className="text-green-400 text-xs font-black uppercase tracking-widest">Game Live</span>
+                    </div>
+
+                    {/* Host row */}
+                    <div className="flex items-center gap-3">
+                      <Avatar name={user.username} />
+                      <div>
+                        <div className="text-white font-black">{user.username}</div>
+                        <div className="text-gray-500 text-xs">{user.wins}W {user.losses}L · {winPct(user.wins, user.losses)}</div>
+                      </div>
+                    </div>
+
+                    {/* Game details */}
+                    <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl divide-y divide-white/[0.04]">
+                      <div className="flex items-center justify-between px-4 py-2.5">
+                        <span className="text-gray-600 text-xs">Format</span>
+                        <span className="text-white font-black text-sm">{MODE_LABEL[createTeamMode]}</span>
+                      </div>
+                      <div className="flex items-center justify-between px-4 py-2.5">
+                        <span className="text-gray-600 text-xs">Series</span>
+                        <span className="text-gray-300 text-sm">{seriesLabel(createSeries)}</span>
+                      </div>
+                    </div>
+
+                    <p className="text-gray-600 text-xs text-center leading-relaxed">
+                      Your game is visible to all players.<br />Waiting for someone to join...
+                    </p>
+
+                    {listingError && (
+                      <div className="bg-red-900/20 border border-red-500/30 text-red-400 rounded-xl px-3 py-2 text-xs text-center">
+                        {listingError}
+                      </div>
+                    )}
+
+                    <button onClick={handleCancelListing} className="btn-secondary w-full mt-auto">
+                      Cancel Game
+                    </button>
+                  </div>
+                )}
+
+                {/* Right column: game browser */}
+                <div className="card-surface rounded-2xl overflow-hidden flex flex-col">
+                  {/* Browser header */}
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.05] shrink-0">
+                    <div>
+                      <div className="text-white font-black text-sm">Open Games</div>
+                      <div className="text-gray-600 text-xs mt-0.5">
+                        {listings.length > 0
+                          ? `${listings.length} game${listings.length !== 1 ? 's' : ''} waiting`
+                          : 'No open games right now'}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="live-dot" />
+                      <span className="text-gray-600 text-xs">Live</span>
+                    </div>
+                  </div>
+
+                  {/* Listings */}
+                  <div className="flex-1 overflow-y-auto">
+                    {listings.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                        <div className="text-5xl mb-3 opacity-20">🏀</div>
+                        <div className="text-gray-500 font-black text-sm">No open games</div>
+                        <div className="text-gray-700 text-xs mt-1">
+                          Post a game on the left to be the first
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-white/[0.04] max-h-[400px]">
+                        {listings.map(l => (
+                          <div key={l.code} className="flex items-center gap-4 px-5 py-4 hover:bg-white/[0.02] transition-colors">
+                            <Avatar name={l.hostName} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <span className="text-white font-black text-sm truncate">{l.hostName}</span>
+                                <BadgeChip badgeId={l.hostBadge} />
+                                {l.hostStreak >= 3 && (
+                                  <span className="text-orange-400 text-xs font-black">🔥{l.hostStreak}</span>
+                                )}
+                              </div>
+                              <div className="text-gray-500 text-xs">
+                                {l.hostRecord.wins}W {l.hostRecord.losses}L
+                                <span className="text-gray-700 mx-1">·</span>
+                                {winPct(l.hostRecord.wins, l.hostRecord.losses)}
+                              </div>
+                            </div>
+                            {/* Format badge */}
+                            <div className="text-right shrink-0 hidden sm:block">
+                              <div className="text-gray-300 text-xs font-bold">{MODE_LABEL[l.teamMode]}</div>
+                              <div className="text-gray-600 text-xs">{seriesLabel(l.series)}</div>
+                            </div>
+                            <button
+                              onClick={() => handleJoinListing(l.code)}
+                              disabled={onlineState === 'listing'}
+                              className="bg-orange-600 hover:bg-orange-500 active:bg-orange-700 disabled:opacity-30 text-white font-black text-xs px-4 py-2 rounded-lg transition-colors shrink-0"
+                            >
+                              Join
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer row */}
+                  <div className="px-5 py-3 border-t border-white/[0.05] flex items-center justify-between shrink-0">
+                    <span className="text-gray-600 text-xs">
+                      Playing as <span className="text-gray-400 font-bold">{user.username}</span>
+                    </span>
+                    <Link href="/history" className="text-orange-500 hover:text-orange-400 text-xs font-bold transition-colors">
+                      My History →
+                    </Link>
                   </div>
                 </div>
-
-                {/* Accept / Decline */}
-                <div className="grid grid-cols-2 gap-3">
-                  <button onClick={handleDecline} className="bg-[#1a1a1a] hover:bg-[#222] border border-white/10 text-gray-400 hover:text-white font-black py-3 rounded-xl transition-colors">
-                    Decline
-                  </button>
-                  <button onClick={handleAccept} className="bg-orange-600 hover:bg-orange-700 text-white font-black py-3 rounded-xl transition-colors">
-                    Accept
-                  </button>
-                </div>
-
-                {(hostReady || guestReady) && !(hostReady && guestReady) && (
-                  <p className="text-center text-gray-600 text-xs">
-                    Waiting for {(matchInfo.isHost ? guestReady : hostReady) ? displayName : matchInfo.opponentName} to accept...
-                  </p>
-                )}
               </div>
             )}
-          </div>
+          </>
         )}
 
-        {/* ── PLAY WITH FRIENDS MODE ──────────────────────────────────────── */}
+        {/* ── PLAY WITH FRIENDS ────────────────────────────────────────────── */}
         {mainTab === 'friends' && (
-          <div className="bg-[#101010] border border-white/5 rounded-xl overflow-hidden">
-            <div className="flex">
-              <button onClick={() => setFriendsTab('create')} className={`flex-1 py-3 font-bold text-sm transition-colors ${friendsTab === 'create' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+          <div className="max-w-md mx-auto">
+            {/* Sub-tab toggle */}
+            <div className="flex gap-1 p-1 bg-white/[0.04] border border-white/[0.06] rounded-2xl mb-5">
+              <button
+                onClick={() => setFriendsTab('create')}
+                className={`flex-1 rounded-xl py-2 text-sm font-black transition-all ${
+                  friendsTab === 'create' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
                 Create Room
               </button>
-              <button onClick={() => setFriendsTab('join')} className={`flex-1 py-3 font-bold text-sm transition-colors ${friendsTab === 'join' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+              <button
+                onClick={() => setFriendsTab('join')}
+                className={`flex-1 rounded-xl py-2 text-sm font-black transition-all ${
+                  friendsTab === 'join' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
                 Join Room
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="card-surface rounded-2xl p-6">
+              {/* Name input for guests */}
               {!user && (
-                <div>
-                  <label className="block text-gray-400 text-xs mb-1 uppercase tracking-wide">Your Name</label>
-                  <input value={userName} onChange={e => setUserName(e.target.value)} placeholder="Enter your name"
-                    className="w-full bg-[#0A0A0A] border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-orange-500" />
+                <div className="mb-5">
+                  <label className="text-label block mb-2">Your Name</label>
+                  <input
+                    value={userName}
+                    onChange={e => setUserName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="input-field"
+                  />
                 </div>
               )}
 
               {friendsTab === 'create' && (
-                <>
+                <div className="space-y-5">
+                  {/* Team mode */}
                   <div>
-                    <label className="block text-gray-400 text-xs mb-2 uppercase tracking-wide">Team Mode</label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="text-label mb-2">Team Size</div>
+                    <div className="space-y-2">
                       {(['starter5', 'bench8', 'full12'] as TeamMode[]).map(val => (
-                        <button key={val} onClick={() => setTeamMode(val)}
-                          className={`rounded-lg p-2.5 text-center text-xs border transition-all ${teamMode === val ? 'border-orange-500 bg-orange-600/20 text-orange-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                          <div className="font-black text-sm">{MODE_LABEL[val]}</div>
-                          <div className="text-gray-500">{MODE_SUB[val]}</div>
+                        <button
+                          key={val}
+                          onClick={() => setTeamMode(val)}
+                          className={`w-full flex items-center justify-between rounded-xl px-4 py-3 border transition-all ${
+                            teamMode === val
+                              ? 'border-orange-500/60 bg-orange-600/10'
+                              : 'border-white/[0.05] bg-white/[0.02] hover:border-white/[0.12]'
+                          }`}
+                        >
+                          <div className="text-left">
+                            <div className={`font-black text-sm ${teamMode === val ? 'text-orange-400' : 'text-white'}`}>
+                              {MODE_LABEL[val]}
+                            </div>
+                            <div className="text-gray-600 text-xs">{MODE_DESC[val]}</div>
+                          </div>
+                          <div className={`w-4 h-4 rounded-full border-2 transition-all shrink-0 ${
+                            teamMode === val ? 'border-orange-500 bg-orange-500' : 'border-gray-700'
+                          }`} />
                         </button>
                       ))}
                     </div>
                   </div>
+
+                  {/* Series */}
                   <div>
-                    <label className="block text-gray-400 text-xs mb-2 uppercase tracking-wide">Series</label>
+                    <div className="text-label mb-2">Series</div>
                     <div className="grid grid-cols-3 gap-2">
                       {([1, 3, 5] as SeriesLength[]).map(s => (
-                        <button key={s} onClick={() => setSeries(s)}
-                          className={`rounded-lg p-2.5 text-center text-sm font-black border transition-all ${series === s ? 'border-orange-500 bg-orange-600/20 text-orange-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
+                        <button
+                          key={s}
+                          onClick={() => setSeries(s)}
+                          className={`rounded-xl py-2.5 text-center font-black text-sm border transition-all ${
+                            series === s
+                              ? 'border-orange-500/60 bg-orange-600/10 text-orange-400'
+                              : 'border-white/[0.05] text-gray-400 hover:border-white/[0.12]'
+                          }`}
+                        >
                           {seriesLabel(s)}
                         </button>
                       ))}
                     </div>
                   </div>
+
+                  {/* Difficulty */}
                   <div>
-                    <label className="block text-gray-400 text-xs mb-2 uppercase tracking-wide">Mode</label>
+                    <div className="text-label mb-2">Mode</div>
                     <div className="grid grid-cols-2 gap-2">
-                      <button onClick={() => setDifficulty('casual')}
-                        className={`rounded-lg p-3 text-center border transition-all ${difficulty === 'casual' ? 'border-orange-500 bg-orange-600/20 text-orange-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                        <div className="font-black text-sm">Casual</div>
-                        <div className="text-xs opacity-70 mt-0.5">Stats shown</div>
+                      <button
+                        onClick={() => setDifficulty('casual')}
+                        className={`rounded-xl p-3.5 text-center border transition-all ${
+                          difficulty === 'casual'
+                            ? 'border-orange-500/60 bg-orange-600/10'
+                            : 'border-white/[0.05] bg-white/[0.02] hover:border-white/[0.12]'
+                        }`}
+                      >
+                        <div className={`font-black text-sm ${difficulty === 'casual' ? 'text-orange-400' : 'text-white'}`}>
+                          Casual
+                        </div>
+                        <div className="text-gray-600 text-xs mt-0.5">Stats shown</div>
                       </button>
-                      <button onClick={() => setDifficulty('ebk')}
-                        className={`rounded-lg p-3 text-center border transition-all ${difficulty === 'ebk' ? 'border-yellow-500 bg-yellow-600/10 text-yellow-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                        <div className="font-black text-sm">EBK</div>
-                        <div className="text-xs opacity-70 mt-0.5">Blind picks</div>
+                      <button
+                        onClick={() => setDifficulty('ebk')}
+                        className={`rounded-xl p-3.5 text-center border transition-all ${
+                          difficulty === 'ebk'
+                            ? 'border-yellow-500/60 bg-yellow-600/10'
+                            : 'border-white/[0.05] bg-white/[0.02] hover:border-white/[0.12]'
+                        }`}
+                      >
+                        <div className={`font-black text-sm ${difficulty === 'ebk' ? 'text-yellow-400' : 'text-white'}`}>
+                          EBK Mode
+                        </div>
+                        <div className="text-gray-600 text-xs mt-0.5">Blind picks</div>
                       </button>
                     </div>
                   </div>
-                  <button onClick={handleCreate} disabled={loading}
-                    className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-black py-3 rounded-xl transition-colors">
+
+                  <button onClick={handleCreate} disabled={loading} className="btn-primary w-full">
                     {loading ? 'Creating...' : 'Create Room'}
                   </button>
-                </>
+                </div>
               )}
 
               {friendsTab === 'join' && (
-                <>
+                <div className="space-y-5">
                   <div>
-                    <label className="block text-gray-400 text-xs mb-1 uppercase tracking-wide">Room Code</label>
-                    <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                      placeholder="6-letter code" maxLength={6}
-                      className="w-full bg-[#0A0A0A] border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm font-mono uppercase tracking-widest focus:outline-none focus:border-orange-500" />
+                    <div className="text-label mb-2">Room Code</div>
+                    <input
+                      value={joinCode}
+                      onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                      placeholder="XXXXXX"
+                      maxLength={6}
+                      className="input-field font-mono text-center text-xl tracking-[0.4em] uppercase"
+                    />
                   </div>
-                  <button onClick={handleJoin} disabled={loading}
-                    className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-black py-3 rounded-xl transition-colors">
+                  <button onClick={handleJoin} disabled={loading} className="btn-primary w-full">
                     {loading ? 'Joining...' : 'Join Room'}
                   </button>
-                </>
+                </div>
               )}
             </div>
           </div>
         )}
+
+        {/* ── Other game modes ────────────────────────────────────────────── */}
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Link href="/higher-lower"
+            className="card-surface rounded-xl px-5 py-4 flex items-center justify-between group transition-all hover:border-white/[0.12]">
+            <div>
+              <div className="text-white font-black text-sm group-hover:text-orange-400 transition-colors">Higher / Lower</div>
+              <div className="text-gray-600 text-xs mt-0.5">Solo — beat your streak</div>
+            </div>
+            <div className="text-gray-600 group-hover:text-gray-300 transition-colors text-sm">→</div>
+          </Link>
+          <Link href="/auction"
+            className="rounded-xl px-5 py-4 flex items-center justify-between border border-orange-900/40 bg-orange-950/20 hover:border-orange-700/50 hover:bg-orange-950/30 transition-all group">
+            <div>
+              <div className="text-orange-300 font-black text-sm">War Room</div>
+              <div className="text-gray-600 text-xs mt-0.5">Multiplayer salary auction</div>
+            </div>
+            <span className="text-[10px] font-black text-orange-600 bg-orange-900/40 border border-orange-800/50 px-2 py-0.5 rounded">NEW</span>
+          </Link>
+          <Link href="/practice"
+            className="card-surface rounded-xl px-5 py-4 flex items-center justify-between group transition-all hover:border-white/[0.12]">
+            <div>
+              <div className="text-white font-black text-sm group-hover:text-orange-400 transition-colors">Practice</div>
+              <div className="text-gray-600 text-xs mt-0.5">Solo draft, no pressure</div>
+            </div>
+            <div className="text-gray-600 group-hover:text-gray-300 transition-colors text-sm">→</div>
+          </Link>
+        </div>
+
       </div>
     </div>
   )

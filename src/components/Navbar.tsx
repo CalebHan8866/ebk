@@ -63,22 +63,27 @@ export default function Navbar() {
           {user ? (
             <>
               <Link href="/profile"
-                className="flex items-center gap-1.5 text-sm font-semibold text-gray-300 hover:text-white transition-colors">
-                <span>{user.username}</span>
-                {equippedBadgeObjects.map(badge => (
-                  <span key={badge.id}
-                    className={['inline-flex items-center justify-center w-5 h-5 rounded border', badge.bgClass, badge.borderClass].join(' ')}
-                    title={badge.name}>
-                    <img src={badge.icon} alt={badge.name} className="w-3.5 h-3.5" />
-                  </span>
-                ))}
-                <span className="text-gray-600 text-xs tabular-nums">
-                  {user.wins}–{user.losses}
-                </span>
+                className="flex items-center gap-2 group">
+                <div className="text-right">
+                  <div className="flex items-center gap-1.5 justify-end">
+                    <span className="text-sm font-bold text-gray-300 group-hover:text-white transition-colors leading-none">
+                      {user.username}
+                    </span>
+                    {equippedBadgeObjects.slice(0, 2).map(badge => (
+                      <span key={badge.id}
+                        className={`text-[9px] font-black px-1 py-0.5 rounded border leading-none ${badge.bgClass} ${badge.textClass} ${badge.borderClass}`}>
+                        {badge.label}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="text-[11px] text-gray-600 tabular-nums text-right mt-0.5 leading-none">
+                    {user.wins}W {user.losses}L
+                  </div>
+                </div>
               </Link>
               <button onClick={handleLogout}
-                className="text-xs font-bold text-gray-500 hover:text-gray-300 transition-colors tracking-wide">
-                Sign Out
+                className="text-xs font-bold text-gray-600 hover:text-gray-300 transition-colors">
+                Out
               </button>
             </>
           ) : (
