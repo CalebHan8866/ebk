@@ -34,19 +34,25 @@ export default function AuctionPage() {
   const [errorMsg, setErrorMsg] = useState('')
   const [guestName, setGuestName] = useState('')
   const [isHost, setIsHost] = useState(false)
+  const [mySocketId, setMySocketId] = useState('')
   const [copied, setCopied] = useState(false)
 
   const userName = user?.username || guestName
 
   useEffect(() => {
     const socket = getSocket()
+    setMySocketId(socket.id || '')
+
+    const onConnect = () => setMySocketId(socket.id || '')
 
     const onCreated = ({ code: c }: { code: string }) => {
+      setMySocketId(socket.id || '')
       setCode(c)
       setIsHost(true)
       setPhase('waiting')
     }
     const onJoined = ({ code: c }: { code: string }) => {
+      setMySocketId(socket.id || '')
       setCode(c)
       setIsHost(false)
       setPhase('waiting')
@@ -62,12 +68,14 @@ export default function AuctionPage() {
       setTimeout(() => setErrorMsg(''), 4000)
     }
 
+    socket.on('connect', onConnect)
     socket.on('auction:created', onCreated)
     socket.on('auction:joined', onJoined)
     socket.on('auction:state', onState)
     socket.on('auction:error', onError)
 
     return () => {
+      socket.off('connect', onConnect)
       socket.off('auction:created', onCreated)
       socket.off('auction:joined', onJoined)
       socket.off('auction:state', onState)
@@ -372,26 +380,41 @@ export default function AuctionPage() {
             </div>
 
             <div className="space-y-2">
-              {participants.map((p, i) => (
-                <div
-                  key={p.socketId || i}
-                  className="flex items-center gap-3 bg-white/[0.03] rounded-xl px-4 py-3 animate-slide-up"
-                >
-                  <div className="w-9 h-9 rounded-full bg-orange-600/20 border border-orange-500/30 flex items-center justify-center font-display text-orange-400 text-lg shrink-0">
-                    {p.name?.[0]?.toUpperCase() ?? '?'}
+              {participants.map((p, i) => {
+                const isMe = p.socketId === mySocketId
+                const isRoomHost = i === 0
+                return (
+                  <div
+                    key={p.socketId || i}
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3 border animate-slide-up transition-all ${
+                      isMe
+                        ? 'bg-orange-950/30 border-orange-500/25'
+                        : 'bg-white/[0.03] border-transparent'
+                    }`}
+                  >
+                    <div className={`w-9 h-9 rounded-full border flex items-center justify-center font-display text-lg shrink-0 ${
+                      isMe ? 'bg-orange-600 text-white border-orange-500/50' : 'bg-orange-600/20 border-orange-500/30 text-orange-400'
+                    }`}>
+                      {p.name?.[0]?.toUpperCase() ?? '?'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-white font-bold block truncate">{p.name}</span>
+                      {isRoomHost && (
+                        <span className="text-orange-400/60 text-[10px] font-bold uppercase tracking-widest">
+                          {isMe ? 'Host · You' : 'Host'}
+                        </span>
+                      )}
+                      {!isRoomHost && isMe && (
+                        <span className="text-orange-400/60 text-[10px] font-bold uppercase tracking-widest">You</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                      <span className="text-green-400 text-[10px] font-bold">READY</span>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-white font-bold block truncate">{p.name}</span>
-                    {i === 0 && (
-                      <span className="text-orange-400/70 text-[10px] font-bold uppercase tracking-widest">Host</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                    <span className="text-green-400 text-[10px] font-bold">READY</span>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
 
               {/* Empty slots */}
               {Array.from({ length: maxPlayers - participants.length }).map((_, i) => (

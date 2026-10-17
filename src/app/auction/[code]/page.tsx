@@ -536,33 +536,42 @@ export default function AuctionRoomPage() {
         </div>
         <div className="card-accent p-6 space-y-3 mb-6 animate-fade-up-1">
           <p className="text-label tracking-[0.2em] text-center mb-4">GMs in Room</p>
-          {auctionState.participants.map((p, i) => (
-            <div
-              key={p.socketId}
-              className={`flex items-center gap-3 rounded-xl px-4 py-3 border transition-all animate-stagger-item ${
-                p.socketId === mySocketId
-                  ? 'bg-orange-950/30 border-orange-500/25'
-                  : 'bg-white/[0.025] border-white/[0.05]'
-              }`}
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center font-display text-sm shrink-0 ${
-                p.socketId === mySocketId ? 'bg-orange-600 text-white' : 'bg-white/[0.08] text-white/60'
-              }`}>
-                {p.name[0]?.toUpperCase()}
+          {auctionState.participants.map((p, i) => {
+            const isMe = p.socketId === mySocketId
+            const isRoomHost = i === 0  // server always keeps host at index 0
+            return (
+              <div
+                key={p.socketId}
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 border transition-all animate-stagger-item ${
+                  isMe
+                    ? 'bg-orange-950/30 border-orange-500/25'
+                    : 'bg-white/[0.025] border-white/[0.05]'
+                }`}
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center font-display text-sm shrink-0 ${
+                  isMe ? 'bg-orange-600 text-white' : 'bg-white/[0.08] text-white/60'
+                }`}>
+                  {p.name[0]?.toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="font-bold text-white block truncate">{p.name}</span>
+                  {isRoomHost && (
+                    <span className="text-[10px] font-bold text-orange-400/60 uppercase tracking-widest">
+                      {isMe ? 'Host · You' : 'Host'}
+                    </span>
+                  )}
+                </div>
+                {!isRoomHost && isMe && (
+                  <span className="text-[10px] font-black text-orange-400 bg-orange-950/50 border border-orange-500/30 rounded px-1.5 py-0.5 uppercase tracking-wider shrink-0">You</span>
+                )}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                  <span className="text-green-400 text-[10px] font-bold">READY</span>
+                </div>
               </div>
-              <span className="font-bold text-white flex-1 truncate">{p.name}</span>
-              {p.socketId === mySocketId && (
-                <span className="text-[10px] font-black text-orange-400 bg-orange-950/50 border border-orange-500/30 rounded px-1.5 py-0.5 uppercase tracking-wider shrink-0">You</span>
-              )}
-              {i === 0 && p.socketId !== mySocketId && (
-                <span className="text-[10px] font-black text-white/25 uppercase tracking-wider shrink-0">Host</span>
-              )}
-              {i === 0 && p.socketId === mySocketId && (
-                <span className="text-[10px] font-black text-white/25 uppercase tracking-wider shrink-0">Host</span>
-              )}
-            </div>
-          ))}
+            )
+          })}
           {auctionState.participants.length < 2 && (
             <div className="text-center pt-2 pb-1">
               <div className="flex items-center justify-center gap-2 text-white/25 text-xs">
