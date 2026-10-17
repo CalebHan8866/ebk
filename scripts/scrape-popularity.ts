@@ -69,11 +69,16 @@ async function searchWikipediaTitle(firstName: string, lastName: string): Promis
   }
 }
 
-/** Fetch total Wikipedia pageviews for a given article over ~2 years (monthly) */
+/** Fetch total Wikipedia pageviews for a given article over ~3 years (monthly).
+ *  The window rolls forward dynamically so re-runs always cover recent seasons. */
 async function fetchWikiPageviews(title: string): Promise<number> {
   // URL-encode title (spaces → underscores per Wikimedia convention)
   const encodedTitle = encodeURIComponent(title.replace(/ /g, '_'))
-  const url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/${encodedTitle}/monthly/2022010100/2024010100`
+  const now = new Date()
+  const end = new Date(now.getFullYear(), now.getMonth(), 1) // first day of current month
+  const start = new Date(end.getFullYear() - 3, end.getMonth(), 1) // 3 years ago
+  const fmt = (d: Date) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}0100`
+  const url = `https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/${encodedTitle}/monthly/${fmt(start)}/${fmt(end)}`
 
   try {
     const { data } = await axios.get(url, { headers: HEADERS, timeout: 10_000 })
