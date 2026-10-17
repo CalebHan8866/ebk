@@ -869,7 +869,7 @@ function GameContent() {
     })
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] py-6 px-4 relative">
+    <div className="min-h-screen py-6 px-4 relative">
       {/* Opponent emote popup */}
       {opponentEmote && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
