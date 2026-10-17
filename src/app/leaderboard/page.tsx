@@ -420,27 +420,33 @@ export default function LeaderboardPage() {
       <div className="max-w-2xl mx-auto">
 
         {/* ── Page header ── */}
-        <div className="flex items-start justify-between mb-2">
+        <div className="flex items-end justify-between mb-4">
           <div>
-            <h1 className="font-display text-5xl text-orange-500 leading-none tracking-wide">Leaderboard</h1>
-            <p className="text-gray-400 text-sm mt-1 tabular-nums">{totalPlayers} players ranked</p>
+            <p className="text-label mb-2">EBK Rankings</p>
+            <h1 className="font-display text-6xl sm:text-7xl text-white leading-none tracking-wide">
+              LEADER<span className="text-orange-500">BOARD</span>
+            </h1>
+            <p className="text-gray-400 text-xs mt-2 tabular-nums font-bold">
+              <span className="font-display text-orange-400 text-lg">{totalPlayers}</span>
+              <span className="ml-1.5">players ranked</span>
+            </p>
           </div>
-          <Link href="/lobby" className="text-gray-400 hover:text-white text-sm transition-colors mt-1">← Lobby</Link>
-        </div>
-
-        {/* ── Live indicator ── */}
-        <div className="flex items-center gap-2 mb-5 text-xs text-gray-400">
-          <span className="live-dot" />
-          <span className="tabular-nums">
-            Live · updates every 30s{lastUpdated ? ` · ${lastUpdated.toLocaleTimeString()}` : ''}
-          </span>
+          <div className="flex flex-col items-end gap-2">
+            <Link href="/lobby" className="btn-secondary py-2 px-4 text-xs">← Lobby</Link>
+            <div className="flex items-center gap-1.5 text-xs text-gray-400">
+              <span className="live-dot" />
+              <span className="tabular-nums text-[10px] font-bold">
+                Live{lastUpdated ? ` · ${lastUpdated.toLocaleTimeString()}` : ''}
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* ── My rank banner ── */}
         {me && <MyRankBanner me={me} totalPlayers={totalPlayers} />}
 
         {/* ── Sort tabs ── */}
-        <div className="flex gap-2 mb-6">
+        <div className="tab-pill mb-6">
           {([
             ['wins',      'Most Wins'],
             ['winPct',    'Win %'],
@@ -449,9 +455,7 @@ export default function LeaderboardPage() {
             <button
               key={key}
               onClick={() => setSort(key)}
-              className={`px-4 py-2 rounded-xl text-xs font-black transition-colors uppercase tracking-widest ${
-                sort === key ? 'bg-orange-600 text-white' : 'card-surface text-gray-400 hover:text-white'
-              }`}
+              className={`tab-pill-item${sort === key ? ' active' : ''}`}
             >
               {label}
             </button>
@@ -463,9 +467,8 @@ export default function LeaderboardPage() {
             {/* ── Podium — top 3 ── */}
             {top3.length >= 2 && (
               <div className="mb-8">
-                <div className="flex items-center gap-3 mb-4">
-                  <p className="text-[10px] font-black tracking-[0.4em] text-gray-400 uppercase">Top Performers</p>
-                  <div className="flex-1 h-px bg-white/[0.05]" />
+                <div className="section-divider mb-4">
+                  <p className="text-label">Top Performers</p>
                 </div>
                 <div className="grid grid-cols-3 gap-2 items-end px-2">
                   {top3.map((u, i) => (
