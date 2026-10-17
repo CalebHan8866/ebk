@@ -44,8 +44,8 @@ function BadgeIcons({ equippedBadges }: { equippedBadges: string }) {
   )
 }
 
-const rankColors = ['text-yellow-400', 'text-gray-300', 'text-orange-600']
-const rankBg    = ['border-yellow-900/40', 'border-gray-700/40', 'border-orange-900/40']
+const rankColors = ['text-yellow-400', 'text-gray-300', 'text-orange-500']
+const rankBg    = ['bg-yellow-950/20 border-yellow-700/40', 'bg-gray-900/40 border-gray-600/40', 'bg-orange-950/20 border-orange-800/40']
 
 function rankLabel(i: number) {
   if (i === 0) return '🥇'
@@ -84,8 +84,9 @@ export default function LeaderboardPage() {
   const sorted = [...users].sort((a, b) => {
     if (sort === 'wins') return b.wins - a.wins
     if (sort === 'winStreak') return b.winStreak - a.winStreak
-    const pctA = a.gamesPlayed > 0 ? a.wins / a.gamesPlayed : 0
-    const pctB = b.gamesPlayed > 0 ? b.wins / b.gamesPlayed : 0
+    // Win%: require >= 5 games; players with fewer sort to the bottom
+    const pctA = a.gamesPlayed >= 5 ? a.wins / a.gamesPlayed : -1
+    const pctB = b.gamesPlayed >= 5 ? b.wins / b.gamesPlayed : -1
     return pctB - pctA
   })
 
@@ -168,12 +169,12 @@ export default function LeaderboardPage() {
                     isMe
                       ? 'bg-orange-950/30 border-orange-600/50 ring-1 ring-orange-600/30'
                       : isTop3
-                        ? `bg-[#0d0d0d]${rankBg[i]}`
-                        : 'bg-[#0d0d0d]border-white/5',
+                        ? rankBg[i]
+                        : 'bg-[#0d0d0d] border-white/5',
                   ].join(' ')}
                 >
                   {/* Rank */}
-                  <div className={`w-8 text-center font-black text-base shrink-0 ${isTop3 ? rankColors[i] : 'text-gray-600'}`}>
+                  <div className={`w-8 text-center font-black shrink-0 ${isTop3 ? `text-2xl ${rankColors[i]} drop-shadow` : 'text-base text-gray-600'}`}>
                     {rankLabel(i)}
                   </div>
 

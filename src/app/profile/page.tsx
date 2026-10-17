@@ -124,48 +124,66 @@ export default function ProfilePage() {
         {/* Header */}
         <div className="card-surface rounded-2xl p-8">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-orange-600 rounded-full flex items-center justify-center text-2xl font-black text-white">
+            <div className="w-16 h-16 bg-orange-600 rounded-full flex items-center justify-center text-2xl font-black text-white shrink-0">
               {user.username[0].toUpperCase()}
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-black text-white">{user.username}</h1>
-              <p className="text-gray-400 text-sm">
-                Member since {new Date(user.createdAt).toLocaleDateString()}
+              <p className="text-orange-400/80 text-xs font-bold uppercase tracking-widest mt-0.5">
+                Member since {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </p>
             </div>
           </div>
 
           {/* Stats row */}
           <div className="bg-black/30 rounded-xl p-5">
-            <h2 className="text-gray-400 text-xs uppercase tracking-widest mb-4">Career Stats</h2>
-            <div className="grid grid-cols-3 sm:grid-cols-7 gap-3 text-center mb-4">
+            <h2 className="text-gray-500 text-[10px] uppercase tracking-[0.2em] mb-4 font-bold">Career Overview</h2>
+            <div className="grid grid-cols-3 sm:grid-cols-7 gap-3 text-center mb-5">
               <div>
-                <div className="text-3xl font-black text-green-400">{user.wins}</div>
-                <div className="text-gray-500 text-xs mt-0.5">W</div>
+                <div className="font-display text-4xl text-green-400 leading-none">{user.wins}</div>
+                <div className="text-gray-500 text-xs mt-1">W</div>
               </div>
               <div>
-                <div className="text-3xl font-black text-red-400">{user.losses}</div>
-                <div className="text-gray-500 text-xs mt-0.5">L</div>
+                <div className="font-display text-4xl text-red-400 leading-none">{user.losses}</div>
+                <div className="text-gray-500 text-xs mt-1">L</div>
               </div>
               <div>
-                <div className="text-3xl font-black text-yellow-400">{user.draws}</div>
-                <div className="text-gray-500 text-xs mt-0.5">D</div>
+                <div className="font-display text-4xl text-yellow-400 leading-none">{user.draws}</div>
+                <div className="text-gray-500 text-xs mt-1">D</div>
               </div>
               <div>
-                <div className="text-3xl font-black text-gray-300">{user.gamesPlayed}</div>
-                <div className="text-gray-500 text-xs mt-0.5">Games</div>
+                <div className="font-display text-4xl text-gray-300 leading-none">{user.gamesPlayed}</div>
+                <div className="text-gray-500 text-xs mt-1">Games</div>
               </div>
               <div>
-                <div className="text-3xl font-black text-orange-400">{user.winStreak}</div>
-                <div className="text-gray-500 text-xs mt-0.5">Streak</div>
+                <div className="font-display text-4xl text-orange-400 leading-none">{user.winStreak}</div>
+                <div className="text-gray-500 text-xs mt-1">Streak</div>
               </div>
               <div>
-                <div className="text-3xl font-black text-orange-300">{user.maxWinStreak}</div>
-                <div className="text-gray-500 text-xs mt-0.5">Best</div>
+                <div className="font-display text-4xl text-orange-300 leading-none">{user.maxWinStreak}</div>
+                <div className="text-gray-500 text-xs mt-1">Best</div>
               </div>
               <div>
-                <div className="text-3xl font-black text-blue-400">{winPct}%</div>
-                <div className="text-gray-500 text-xs mt-0.5">Win%</div>
+                <div className="font-display text-4xl text-blue-400 leading-none">{winPct}%</div>
+                <div className="text-gray-500 text-xs mt-1">Win%</div>
+              </div>
+            </div>
+
+            {/* Win rate progress bar */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-gray-500 text-[10px] uppercase tracking-wider font-bold">Win Rate</span>
+                <span className="text-white text-xs font-black">{winPct}%</span>
+              </div>
+              <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full transition-all duration-700"
+                  style={{ width: `${winPct}%` }}
+                />
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-gray-700 text-[10px]">0%</span>
+                <span className="text-gray-700 text-[10px]">100%</span>
               </div>
             </div>
             {user.firstPickGames > 0 && (
