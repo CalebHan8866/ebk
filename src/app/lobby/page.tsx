@@ -89,6 +89,7 @@ export default function LobbyPage() {
 
   // Socket connection state
   const [socketFailed, setSocketFailed] = useState(false)
+  const [socketDisconnected, setSocketDisconnected] = useState(false)
 
   // Online matchmaking state
   const [onlineState, setOnlineState] = useState<OnlineState>('idle')
@@ -147,7 +148,7 @@ export default function LobbyPage() {
     const handleListingExpired = () => {
       setOnlineState('idle')
       setMyListingCode(null)
-      setListingError('Your game listing expired after 10 minutes')
+      setListingError('Your game listing expired — no one joined in 10 minutes. Post again to keep looking.')
     }
 
     const handleListingError = ({ message }: { message: string }) => {
@@ -198,12 +199,17 @@ export default function LobbyPage() {
     const handleConnectError = () => {
       setSocketFailed(true)
     }
+    const handleDisconnect = () => {
+      setSocketDisconnected(true)
+    }
     const handleReconnect = () => {
       setSocketFailed(false)
+      setSocketDisconnected(false)
       socket.emit('get-listings')
     }
 
     socket.on('connect', handleReconnect)
+    socket.on('disconnect', handleDisconnect)
     socket.on('connect_error', handleConnectError)
     socket.on('listings-updated', handleListingsUpdated)
     socket.on('listing-created', handleListingCreated)
@@ -217,6 +223,7 @@ export default function LobbyPage() {
 
     return () => {
       socket.off('connect', handleReconnect)
+      socket.off('disconnect', handleDisconnect)
       socket.off('connect_error', handleConnectError)
       socket.off('listings-updated', handleListingsUpdated)
       socket.off('listing-created', handleListingCreated)
@@ -521,6 +528,14 @@ export default function LobbyPage() {
           )}
         </div>
 
+        {/* Network disconnect banner */}
+        {socketDisconnected && !socketFailed && (
+          <div className="bg-yellow-900/30 border border-yellow-600/40 text-yellow-300 rounded-xl px-4 py-3 mb-5 text-sm flex items-center gap-3 animate-slide-up">
+            <span className="w-3.5 h-3.5 rounded-full border-2 border-yellow-400/60 border-t-yellow-300 animate-spin shrink-0" />
+            <span>Connection lost — reconnecting…</span>
+          </div>
+        )}
+
         {/* Global error banner */}
         {error && (
           <div className="bg-red-900/30 border border-red-500/40 text-red-300 rounded-xl px-4 py-3 mb-5 text-sm flex items-center justify-between animate-slide-up">
@@ -819,7 +834,7 @@ export default function LobbyPage() {
                         <div className="empty-state-body">Post a game on the left to be the first</div>
                       </div>
                     ) : (
-                      <div className="divide-y divide-white/[0.04] max-h-[400px] overflow-y-auto">
+                      <div className="divide-y divide-white/[0.04]">
                         {listings.map((l, idx) => (
                           <div
                             key={l.code}
