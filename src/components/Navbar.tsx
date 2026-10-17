@@ -54,8 +54,7 @@ export default function Navbar() {
         {/* Center nav links */}
         <div className="flex items-center gap-6 flex-1">
           {navLink('/lobby', 'Play')}
-          {navLink('/auction', 'War Room')}
-          <span className="hidden sm:block">{navLink('/leaderboard', 'Leaderboard')}</span>
+          {navLink('/leaderboard', 'Leaderboard')}
           <span className="hidden md:block">{navLink('/fun-facts', 'Fun Facts')}</span>
         </div>
 
