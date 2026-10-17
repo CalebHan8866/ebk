@@ -19,7 +19,7 @@ function VerifyContent() {
   }, [success, setUser])
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4">
       <div className="text-center max-w-md">
         {success ? (
           <>
@@ -49,7 +49,7 @@ function VerifyContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center text-gray-400">Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-gray-400">Loading...</div>}>
       <VerifyContent />
     </Suspense>
   )

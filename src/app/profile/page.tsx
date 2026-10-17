@@ -100,7 +100,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
       </div>
     )
@@ -118,11 +118,11 @@ export default function ProfilePage() {
   try { unlockedMilestoneIds = JSON.parse(user.unlockedMilestones) } catch { unlockedMilestoneIds = [] }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] py-10 px-4">
+    <div className="min-h-screen py-10 px-4">
       <div className="max-w-3xl mx-auto space-y-6">
 
         {/* Header */}
-        <div className="bg-[#111827] rounded-2xl p-8">
+        <div className="card-surface rounded-2xl p-8">
           <div className="flex items-center gap-4 mb-6">
             <div className="w-16 h-16 bg-orange-600 rounded-full flex items-center justify-center text-2xl font-black text-white">
               {user.username[0].toUpperCase()}
@@ -136,7 +136,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Stats row */}
-          <div className="bg-[#0A0A0A] rounded-xl p-5">
+          <div className="bg-black/30 rounded-xl p-5">
             <h2 className="text-gray-400 text-xs uppercase tracking-widest mb-4">Career Stats</h2>
             <div className="grid grid-cols-3 sm:grid-cols-7 gap-3 text-center mb-4">
               <div>

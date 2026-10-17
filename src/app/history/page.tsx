@@ -31,14 +31,14 @@ export default function HistoryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] py-10 px-4">
+    <div className="min-h-screen  py-10 px-4">
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}
@@ -51,7 +51,7 @@ export default function HistoryPage() {
         </div>
 
         {records.length === 0 ? (
-          <div className="bg-[#111] border border-white/5 rounded-2xl p-12 text-center">
+          <div className="card-surface rounded-2xl p-12 text-center">
             <div className="text-4xl mb-3">🏀</div>
             <p className="text-gray-500 font-bold">No games yet</p>
             <p className="text-gray-600 text-sm mt-1">Play online to start tracking your history</p>
@@ -69,7 +69,7 @@ export default function HistoryPage() {
               const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 
               return (
-                <div key={r.id} className={`bg-[#111] border rounded-xl px-4 py-3 flex items-center gap-4 ${
+                <div key={r.id} className={`card-surface rounded-xl px-4 py-3 flex items-center gap-4 ${
                   isWin ? 'border-green-900/50' : isDraw ? 'border-yellow-900/30' : 'border-white/5'
                 }`}>
                   {/* Result pill */}

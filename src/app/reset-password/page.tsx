@@ -38,75 +38,71 @@ function ResetContent() {
 
   if (!token) {
     return (
-      <div className="text-center">
-        <div className="text-white font-black text-xl mb-3">Invalid Link</div>
+      <div className="text-center py-2">
+        <h2 className="font-black text-white text-lg mb-2">Invalid Link</h2>
         <p className="text-gray-400 text-sm mb-6">This reset link is missing or invalid.</p>
-        <Link href="/forgot-password" className="text-orange-400 hover:text-orange-300 text-sm font-semibold">Request a new one</Link>
+        <Link href="/forgot-password" className="text-orange-400 hover:text-orange-300 text-sm font-semibold transition-colors">
+          Request a new one →
+        </Link>
+      </div>
+    )
+  }
+
+  if (done) {
+    return (
+      <div className="text-center py-2">
+        <div className="w-12 h-12 rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto mb-4">
+          <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h2 className="font-black text-white text-lg mb-2">Password Reset!</h2>
+        <p className="text-gray-400 text-sm">Redirecting you to login…</p>
       </div>
     )
   }
 
   return (
     <>
-      {done ? (
-        <div className="text-center">
-          <div className="text-white font-black text-xl mb-3">Password Reset!</div>
-          <p className="text-gray-400 text-sm">Redirecting you to login...</p>
+      <h2 className="font-black text-white text-lg mb-1">New Password</h2>
+      <p className="text-gray-500 text-sm mb-6">Choose a new password for your account.</p>
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 mb-5 text-sm">
+          {error}
         </div>
-      ) : (
-        <>
-          <h2 className="text-2xl font-bold text-white mb-2">New Password</h2>
-          <p className="text-gray-500 text-sm mb-6">Choose a new password for your account.</p>
-          {error && (
-            <div className="bg-red-900/50 border border-red-500 text-red-300 rounded-lg p-3 mb-4 text-sm">{error}</div>
-          )}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-gray-400 text-sm mb-1">New Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                placeholder="••••••••"
-                className="w-full bg-[#0A0A0A] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-400 text-sm mb-1">Confirm Password</label>
-              <input
-                type="password"
-                value={confirm}
-                onChange={e => setConfirm(e.target.value)}
-                required
-                placeholder="••••••••"
-                className="w-full bg-[#0A0A0A] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-colors"
-            >
-              {loading ? 'Resetting...' : 'Reset Password'}
-            </button>
-          </form>
-        </>
       )}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">New Password</label>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+            required placeholder="••••••••" className="input-field" />
+        </div>
+        <div>
+          <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Confirm Password</label>
+          <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)}
+            required placeholder="••••••••" className="input-field" />
+        </div>
+        <button type="submit" disabled={loading} className="btn-primary w-full text-sm uppercase">
+          {loading ? 'Resetting…' : 'Reset Password'}
+        </button>
+      </form>
     </>
   )
 }
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center px-4 py-16">
+      <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="font-display text-5xl text-orange-500 leading-none">EBK</h1>
-          <p className="text-gray-400 text-sm">Elite Ball Knowledge</p>
+          <h1 className="font-display text-6xl text-white leading-none mb-1"
+            style={{ textShadow: '0 0 60px rgba(249,115,22,0.3)' }}>
+            EBK
+          </h1>
+          <p className="text-[10px] font-bold tracking-[0.4em] text-gray-600 uppercase">Reset Password</p>
         </div>
-        <div className="bg-[#111827] rounded-2xl p-8">
-          <Suspense fallback={<div className="text-gray-400 text-center">Loading...</div>}>
+        <div className="card-surface p-8">
+          <Suspense fallback={<div className="text-gray-500 text-center text-sm">Loading…</div>}>
             <ResetContent />
           </Suspense>
         </div>
