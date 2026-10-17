@@ -1545,6 +1545,15 @@ app.prepare().then(async () => {
         const from = room.participants.find(p => p.socketId === offer.fromSocketId)
         const to = room.participants.find(p => p.socketId === offer.toSocketId)
         if (from && to) {
+          // Re-validate ownership at accept time to prevent double-ownership when a
+          // player appeared in multiple concurrent trade offers and one already executed.
+          const fromStillOwns = offer.offeredPlayerIds.every(id => from.roster.includes(id))
+          const toStillOwns = offer.requestedPlayerIds.every(id => to.roster.includes(id))
+          if (!fromStillOwns || !toStillOwns) {
+            socket.emit('auction:error', { message: 'Trade is no longer valid — a player was already traded away' })
+            broadcastAuctionState(io, room)
+            return
+          }
           for (const id of offer.offeredPlayerIds) {
             from.roster = from.roster.filter(r => r !== id)
             to.roster.push(id); to.paidPrices[id] = from.paidPrices[id]; delete from.paidPrices[id]
@@ -1638,7 +1647,7 @@ app.prepare().then(async () => {
 
       pendingListingCreate.delete(socket.id)
 
-      // Auction rooms: remove from waiting, keep in active
+      // Auction rooms: remove from waiting, keep in active for reconnection
       auctionRooms.forEach((room) => {
         const pIdx = room.participants.findIndex(p => p.socketId === socket.id)
         if (pIdx === -1) return
@@ -1650,6 +1659,16 @@ app.prepare().then(async () => {
           } else {
             if (room.hostSocketId === socket.id) room.hostSocketId = room.participants[0].socketId
             broadcastAuctionState(io, room)
+          }
+        } else if (room.status !== 'complete') {
+          // Active room: mark the participant as disconnected but keep their slot.
+          // If ALL participants are now disconnected, tear down timers and delete the
+          // room — nobody is coming back and the timers would otherwise fire forever.
+          const allGone = room.participants.every(p => !io.sockets.sockets.has(p.socketId))
+          if (allGone) {
+            if (room.bidTimer) clearTimeout(room.bidTimer)
+            if (room.tradeTimer) clearTimeout(room.tradeTimer)
+            auctionRooms.delete(room.code)
           }
         }
       })

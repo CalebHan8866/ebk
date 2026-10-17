@@ -305,6 +305,19 @@ export default function AuctionRoomPage() {
   }
 
   // ── Results / Complete ─────────────────────────────────────────────────────
+  // Fallback: complete state with no results yet — show a brief loading indicator
+  // rather than the generic spinner with no way out (e.g. auction:complete arrived
+  // before the auction:state that carries finalResults).
+  if (phase === 'complete' && results.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <div className="w-10 h-10 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-white/40 text-sm tracking-widest">LOADING FINAL RESULTS...</p>
+        <Link href="/auction" className="mt-4 text-white/30 text-xs hover:text-white/60 underline">Back to lobby</Link>
+      </div>
+    )
+  }
+
   if (phase === 'complete' && results.length > 0) {
     const medals = ['🥇', '🥈', '🥉']
     const medalBg = [
