@@ -524,8 +524,8 @@ function GameContent() {
 
           {/* Game-by-game breakdown */}
           {room.gameResults.length > 0 && (
-            <div className="bg-[#111] rounded-3xl p-4 mb-4">
-              <div className="text-gray-600 text-xs uppercase tracking-widest mb-3">Game by Game</div>
+            <div className="card-surface rounded-3xl p-4 mb-4">
+              <div className="text-gray-500 text-xs uppercase tracking-widest mb-3 font-bold">Game by Game</div>
               <div className="space-y-2">
                 {room.gameResults.map(r => {
                   const myTotal = role === 'host' ? r.hostTotal : r.guestTotal
@@ -533,8 +533,10 @@ function GameContent() {
                   const gameWon = r.winner === role
                   const gameDraw = r.winner === 'draw'
                   return (
-                    <div key={r.game} className="flex items-center bg-[#0A0A0A] rounded-2xl px-3 py-2.5 gap-2">
-                      <div className="w-10 shrink-0 text-gray-600 text-xs font-bold">G{r.game}</div>
+                    <div key={r.game} className={`flex items-center rounded-2xl px-3 py-2.5 gap-2 border ${
+                      gameWon ? 'bg-green-950/20 border-green-900/30' : gameDraw ? 'bg-[#0d0d0d] border-white/[0.07]' : 'bg-[#0d0d0d] border-white/[0.07]'
+                    }`}>
+                      <div className="w-10 shrink-0 text-gray-500 text-xs font-black">G{r.game}</div>
                       <div className="flex-1 min-w-0">
                         <div className="text-white font-black text-sm">
                           {formatStat(myTotal, r.statMode)} <span className="text-gray-600">–</span> {formatStat(oppTotal, r.statMode)}
@@ -570,9 +572,9 @@ function GameContent() {
             const myLastTotal = role === 'host' ? lastGame.hostTotal : lastGame.guestTotal
             const oppLastTotal = role === 'host' ? lastGame.guestTotal : lastGame.hostTotal
             return (
-              <div className="bg-[#111827] rounded-2xl p-4 mb-4">
+              <div className="card-surface rounded-2xl p-4 mb-4">
                 <div className="flex justify-between items-center mb-3">
-                  <h2 className="text-gray-400 text-xs uppercase tracking-wide">Draft Recap — Game {lastGame.game}</h2>
+                  <h2 className="text-gray-400 text-xs uppercase tracking-wide font-bold">Draft Recap — Game {lastGame.game}</h2>
                   <span className="text-gray-600 text-xs">{STAT_LABELS[lastGame.statMode]}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -673,7 +675,7 @@ function GameContent() {
           </div>
 
           {/* Stat explanation */}
-          <div className="bg-[#111827] rounded-xl px-4 py-2.5 mb-4 text-center">
+          <div className="card-surface rounded-xl px-4 py-2.5 mb-4 text-center">
             <div className="text-gray-300 text-sm">Lower total <span className="text-orange-400 font-black">{STAT_LABELS[effectiveLastResult.statMode]}</span> wins</div>
             <div className="text-gray-600 text-xs mt-0.5">Add up every player&apos;s career {effectiveLastResult.statMode === 'games_played' ? 'games played' : effectiveLastResult.statMode.toUpperCase()} — lowest team total takes the game</div>
           </div>
@@ -702,14 +704,14 @@ function GameContent() {
 
           {/* Series score */}
           {room.series > 1 && (
-            <div className="bg-[#111] rounded-2xl px-4 py-3 mb-4 text-center">
-              <div className="text-gray-600 text-xs uppercase tracking-widest mb-1">Series</div>
-              <div className="flex items-center justify-center gap-2 flex-wrap">
-                <span className="text-white font-black text-lg truncate max-w-[100px]">{room.hostName}</span>
-                <span className="text-orange-400 font-black text-2xl">{room.hostSeriesScore}</span>
-                <span className="text-gray-600 text-xl">–</span>
-                <span className="text-orange-400 font-black text-2xl">{room.guestSeriesScore}</span>
-                <span className="text-white font-black text-lg truncate max-w-[100px]">{room.guestName}</span>
+            <div className="card-surface rounded-2xl px-4 py-3 mb-4 text-center">
+              <div className="text-gray-500 text-xs uppercase tracking-widest mb-2 font-bold">Series</div>
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                <span className="text-gray-300 font-black text-base truncate max-w-[100px]">{room.hostName}</span>
+                <span className="text-orange-400 font-display text-3xl leading-none tracking-tight">{room.hostSeriesScore}</span>
+                <span className="text-gray-600 text-base font-bold">–</span>
+                <span className="text-orange-400 font-display text-3xl leading-none tracking-tight">{room.guestSeriesScore}</span>
+                <span className="text-gray-300 font-black text-base truncate max-w-[100px]">{room.guestName}</span>
               </div>
             </div>
           )}
@@ -717,8 +719,8 @@ function GameContent() {
 
           {/* RIGHT col: Draft Recap */}
           <div>
-          <div className="bg-[#111827] rounded-2xl p-4 mb-4">
-            <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Draft Recap — Game {effectiveLastResult.game}</h2>
+          <div className="card-surface rounded-2xl p-4 mb-4">
+            <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3 font-bold">Draft Recap — Game {effectiveLastResult.game}</h2>
             <div className="grid grid-cols-2 gap-2">
               {/* My team */}
               <div>
@@ -891,17 +893,32 @@ function GameContent() {
             </div>
           </div>
           {room.series > 1 && (
-            <div className="bg-[#111827] rounded-xl px-4 py-2 text-sm">
-              <span className="text-white font-black">{room.hostName} {room.hostSeriesScore}</span>
-              <span className="text-gray-500 mx-2">–</span>
-              <span className="text-white font-black">{room.guestSeriesScore} {room.guestName}</span>
+            <div className="card-surface rounded-xl px-4 py-2 text-sm flex items-center gap-2">
+              <span className="text-gray-400 font-bold truncate max-w-[80px]">{room.hostName}</span>
+              <span className="text-orange-400 font-display text-xl leading-none tracking-tight">{room.hostSeriesScore}</span>
+              <span className="text-gray-600 text-xs font-bold">–</span>
+              <span className="text-orange-400 font-display text-xl leading-none tracking-tight">{room.guestSeriesScore}</span>
+              <span className="text-gray-400 font-bold truncate max-w-[80px]">{room.guestName}</span>
             </div>
           )}
         </div>
 
         {/* Turn Banner */}
-        <div className={`rounded-xl p-3 mb-4 text-center font-bold ${isMyTurn ? 'bg-orange-600/20 border border-orange-500 text-orange-400' : 'bg-gray-800/40 border border-gray-700 text-gray-400'}`}>
-          {isMyTurn ? 'YOUR PICK' : `${currentPicker === 'host' ? room.hostName : room.guestName}'s pick...`}
+        <div className={`rounded-xl mb-4 text-center transition-all ${
+          isMyTurn
+            ? 'bg-orange-600/20 border-2 border-orange-500 py-4 shadow-[0_0_24px_rgba(234,88,12,0.35)]'
+            : 'bg-gray-800/40 border border-gray-700 py-3'
+        }`}>
+          {isMyTurn ? (
+            <div>
+              <div className="font-display text-orange-400 tracking-widest leading-none" style={{ fontSize: 'clamp(1.5rem, 6vw, 2.25rem)' }}>YOUR PICK</div>
+              <div className="text-orange-300/70 text-xs mt-1 tracking-wide uppercase">Select a player from the pool</div>
+            </div>
+          ) : (
+            <div className="text-gray-400 font-bold text-sm py-0.5">
+              {currentPicker === 'host' ? room.hostName : room.guestName}&apos;s pick...
+            </div>
+          )}
         </div>
 
         {/* Mobile: teams side by side on top. Desktop: 4-col grid */}
@@ -909,7 +926,7 @@ function GameContent() {
         {/* Teams row — always visible, compact on mobile */}
         <div className="grid grid-cols-2 gap-2 mb-4 lg:hidden">
           {/* My Team (mobile) */}
-          <div className="bg-[#111827] rounded-2xl p-3">
+          <div className="bg-orange-950/20 border border-orange-900/30 rounded-2xl p-3">
             <div className="text-orange-400 font-black text-xs mb-2 truncate">
               {myName2} <span className="text-gray-500 font-normal">({myPicks.length}/{teamSize})</span>
             </div>
@@ -946,7 +963,7 @@ function GameContent() {
           </div>
 
           {/* Opponent Team (mobile) */}
-          <div className="bg-[#111827] rounded-2xl p-3">
+          <div className="bg-blue-950/10 border border-blue-900/20 rounded-2xl p-3">
             <div className="text-blue-400 font-black text-xs mb-2 truncate">
               {oppName} <span className="text-gray-500 font-normal">({oppPicks.length}/{teamSize})</span>
             </div>
@@ -971,7 +988,7 @@ function GameContent() {
         {/* Player pool (mobile: full width, desktop: inside 4-col grid) */}
         <div className="lg:grid lg:grid-cols-4 lg:gap-4">
           {/* My Team (desktop only) */}
-          <div className="hidden lg:block bg-[#111827] rounded-2xl p-4">
+          <div className="hidden lg:block bg-orange-950/20 border border-orange-900/30 rounded-2xl p-4">
             <h3 className="text-white font-black text-sm mb-3">
               {myName2} <span className="text-gray-500 font-normal">({myPicks.length}/{teamSize})</span>
             </h3>
@@ -1055,7 +1072,7 @@ function GameContent() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search player or team..."
-                className="w-full bg-[#111827] border border-gray-700 rounded-lg pl-8 pr-8 py-2 text-white text-sm focus:outline-none focus:border-orange-500 placeholder-gray-600"
+                className="w-full bg-[#0d0d0d] border border-white/[0.07] rounded-lg pl-8 pr-8 py-2 text-white text-sm focus:outline-none focus:border-orange-500 placeholder-gray-600"
               />
               {searchQuery && (
                 <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-xs">✕</button>
@@ -1063,7 +1080,7 @@ function GameContent() {
             </div>
 
             {/* Position availability banner */}
-            <div className="flex items-center gap-2 mb-2 bg-[#111827] rounded-lg px-3 py-2 flex-wrap">
+            <div className="flex items-center gap-2 mb-2 card-surface rounded-lg px-3 py-2 flex-wrap">
               {isStarterSlot ? (
                 <>
                   <span className="text-gray-400 text-xs shrink-0">Still need:</span>
@@ -1080,7 +1097,7 @@ function GameContent() {
             <div className="flex gap-1.5 mb-3 flex-wrap">
               {room.difficulty !== 'ebk' && ['ALL', 'PG', 'SG', 'SF', 'PF', 'C'].map(pos => (
                 <button key={pos} onClick={() => setFilterPos(pos)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${filterPos === pos ? 'bg-orange-600 text-white' : 'bg-[#111827] text-gray-400 hover:text-white'}`}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${filterPos === pos ? 'bg-orange-600 text-white' : 'bg-[#0d0d0d] border border-white/[0.07] text-gray-400 hover:text-white'}`}
                 >
                   {pos}
                 </button>
@@ -1116,7 +1133,7 @@ function GameContent() {
             )}
 
             {!isMyTurn ? (
-              <div className="flex flex-col items-center justify-center h-64 rounded-2xl bg-[#111827] border border-gray-700">
+              <div className="flex flex-col items-center justify-center h-64 rounded-2xl card-surface border border-gray-700">
                 <div className="w-8 h-8 rounded-full border-2 border-gray-500 border-t-transparent animate-spin mb-4"></div>
                 <div className="text-white font-black text-lg">{oppName} is picking...</div>
                 <div className="text-gray-500 text-sm mt-1">Hang tight</div>
@@ -1167,10 +1184,10 @@ function GameContent() {
                         key={player.id}
                         className={`w-full rounded-xl px-3 py-2.5 text-left transition-all ${
                           isSelected
-                            ? 'bg-orange-600/30 border-2 border-orange-500'
+                            ? 'bg-orange-600/25 border-2 border-orange-500 shadow-[0_0_16px_rgba(234,88,12,0.25)]'
                             : canPick
-                            ? 'bg-[#111827] hover:bg-[#1e2d45] hover:border-orange-500 border-2 border-transparent cursor-pointer'
-                            : 'bg-[#0D0D0D] border-2 border-transparent opacity-50'
+                            ? 'bg-[#0d0d0d] border-2 border-white/[0.07] hover:bg-orange-950/20 hover:border-orange-600/50 cursor-pointer'
+                            : 'bg-[#0d0d0d] border-2 border-transparent opacity-40'
                         }`}
                       >
                         <button
@@ -1221,7 +1238,7 @@ function GameContent() {
           </div>
 
           {/* Opponent Team (desktop only) */}
-          <div className="hidden lg:block bg-[#111827] rounded-2xl p-4">
+          <div className="hidden lg:block bg-blue-950/10 border border-blue-900/20 rounded-2xl p-4">
             <h3 className="text-white font-black text-sm mb-3">
               {oppName} <span className="text-gray-500 font-normal">({oppPicks.length}/{teamSize})</span>
             </h3>
