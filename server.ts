@@ -1022,7 +1022,10 @@ app.prepare().then(async () => {
     }, 500)
   })
 
-  // Verify JWT from httpOnly cookie on every connection — no client changes needed
+  // Verify JWT from httpOnly cookie on every connection — no client changes needed.
+  // tokenVersion is stored on socket.data so that sensitive game-join handlers can
+  // re-verify the version against the DB when the user claims an authenticated slot,
+  // catching the case where a password change happened after the socket connected.
   io.use(async (socket, next) => {
     const cookieHeader = socket.handshake.headers.cookie || ''
     const match = cookieHeader.match(/(?:^|;\s*)ebk-token=([^;]+)/)
@@ -1030,6 +1033,7 @@ app.prepare().then(async () => {
     const payload = token ? await verifyToken(token) : null
     socket.data.userId = payload?.userId ?? null
     socket.data.username = payload?.username ?? null
+    socket.data.tokenVersion = payload?.tokenVersion ?? null
     next()
   })
 
@@ -1309,8 +1313,18 @@ app.prepare().then(async () => {
       const hostRecord = { wins: 0, losses: 0, draws: 0 }
       let hostStreak = 0
       if (userId) {
-        const u = await prisma.user.findUnique({ where: { id: userId }, select: { wins: true, losses: true, draws: true, winStreak: true } }).catch(() => null)
-        if (u) { hostRecord.wins = u.wins; hostRecord.losses = u.losses; hostRecord.draws = u.draws; hostStreak = u.winStreak }
+        // Re-verify tokenVersion here — the socket middleware only runs at connect time,
+        // so a password change mid-session would not be caught without this check.
+        const u = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { wins: true, losses: true, draws: true, winStreak: true, tokenVersion: true },
+        }).catch(() => null)
+        if (!u || u.tokenVersion !== (socket.data.tokenVersion as number | null)) {
+          pendingListingCreate.delete(socket.id)
+          socket.emit('listing-error', { message: 'Session expired. Please refresh and sign in again.' })
+          return
+        }
+        hostRecord.wins = u.wins; hostRecord.losses = u.losses; hostRecord.draws = u.draws; hostStreak = u.winStreak
       }
 
       // Guard: if the socket disconnected while we were awaiting Prisma, don't create a ghost listing
@@ -1390,7 +1404,16 @@ app.prepare().then(async () => {
       gameListings.delete(code)
       io.to('lobby').emit('listings-updated', { listings: Array.from(gameListings.values()) })
 
-      const guestUser = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { wins: true, losses: true, draws: true, equippedBadge: true, winStreak: true } }).catch(() => null) : null
+      // Re-verify tokenVersion — piggybacked onto the DB query we'd make anyway.
+      // Guards against a stolen session cookie or a password change mid-session.
+      const guestUser = userId ? await prisma.user.findUnique({
+        where: { id: userId },
+        select: { wins: true, losses: true, draws: true, equippedBadge: true, winStreak: true, tokenVersion: true },
+      }).catch(() => null) : null
+      if (userId && (!guestUser || guestUser.tokenVersion !== (socket.data.tokenVersion as number | null))) {
+        socket.emit('listing-error', { message: 'Session expired. Please refresh and sign in again.' })
+        return
+      }
       const guestRecord = { wins: guestUser?.wins || 0, losses: guestUser?.losses || 0, draws: guestUser?.draws || 0 }
       const guestBadge = guestUser?.equippedBadge || ''
       const guestStreak = guestUser?.winStreak || 0

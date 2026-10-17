@@ -37,3 +37,22 @@ export async function verifyToken(token: string) {
     return null
   }
 }
+
+/**
+ * Decode and cryptographically verify the JWT without hitting the database.
+ * Returns the raw claims (including tokenVersion) if the signature is valid,
+ * or null if the token is missing, malformed, or expired.
+ *
+ * Use this in routes that will fetch the full user record themselves anyway
+ * (e.g. GET /api/auth/me) — the caller is responsible for checking that
+ * claims.tokenVersion matches the DB value, which they can do in the same
+ * query used to load the user, eliminating a redundant round-trip.
+ */
+export async function decodeToken(token: string) {
+  try {
+    const { payload } = await jwtVerify(token, secret)
+    return payload as { userId: string; username: string; tokenVersion: number }
+  } catch {
+    return null
+  }
+}
