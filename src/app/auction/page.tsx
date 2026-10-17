@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSocket } from '@/lib/socket'
 import { useAuth } from '@/context/AuthContext'
@@ -37,58 +37,42 @@ export default function AuctionPage() {
 
   const userName = user?.username || guestName
 
-  const setupSocket = useCallback(() => {
+  useEffect(() => {
     const socket = getSocket()
 
-    socket.on('auction:created', ({ code: c }: { code: string }) => {
+    const onCreated = ({ code: c }: { code: string }) => {
       setCode(c)
       setIsHost(true)
       setPhase('waiting')
-    })
-
-    socket.on('auction:joined', ({ code: c }: { code: string }) => {
+    }
+    const onJoined = ({ code: c }: { code: string }) => {
       setCode(c)
       setIsHost(false)
       setPhase('waiting')
-    })
-
-    socket.on('auction:state', (state: { status: string; participants: ParticipantInfo[] }) => {
+    }
+    const onState = (state: { status: string; participants: ParticipantInfo[]; code: string }) => {
       setParticipants(state.participants)
       if (state.status !== 'waiting') {
-        const roomCode = code || (state as unknown as { code: string }).code
-        if (roomCode) router.push(`/auction/${roomCode}`)
+        if (state.code) router.push(`/auction/${state.code}`)
       }
-    })
-
-    socket.on('auction:error', ({ message }: { message: string }) => {
+    }
+    const onError = ({ message }: { message: string }) => {
       setErrorMsg(message)
       setTimeout(() => setErrorMsg(''), 4000)
-    })
+    }
+
+    socket.on('auction:created', onCreated)
+    socket.on('auction:joined', onJoined)
+    socket.on('auction:state', onState)
+    socket.on('auction:error', onError)
 
     return () => {
-      socket.off('auction:created')
-      socket.off('auction:joined')
-      socket.off('auction:state')
-      socket.off('auction:error')
+      socket.off('auction:created', onCreated)
+      socket.off('auction:joined', onJoined)
+      socket.off('auction:state', onState)
+      socket.off('auction:error', onError)
     }
-  }, [code, router])
-
-  useEffect(() => {
-    const cleanup = setupSocket()
-    return cleanup
-  }, [setupSocket])
-
-  useEffect(() => {
-    if (!code) return
-    const socket = getSocket()
-    socket.off('auction:state')
-    socket.on('auction:state', (state: { status: string; participants: ParticipantInfo[]; code: string }) => {
-      setParticipants(state.participants)
-      if (state.status !== 'waiting') {
-        router.push(`/auction/${state.code}`)
-      }
-    })
-  }, [code, router])
+  }, [router])
 
   function handleCreate() {
     if (!userName.trim()) { setErrorMsg('Enter a display name'); return }
@@ -111,7 +95,17 @@ export default function AuctionPage() {
   }
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(code)
+    try {
+      await navigator.clipboard.writeText(code)
+    } catch {
+      // fallback for non-HTTPS or older browsers
+      const el = document.createElement('textarea')
+      el.value = code
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      document.body.removeChild(el)
+    }
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
