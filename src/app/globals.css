@@ -2,14 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Fonts ─────────────────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap');
-
 /* ── Base ───────────────────────────────────────────────────────────────────── */
 body {
   background-color: #0a0a0f;
   color: #f0f0f5;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
   background-image:
     radial-gradient(ellipse 120% 50% at 50% -5%, rgba(234,88,12,0.14) 0%, transparent 65%);
   background-attachment: fixed;
@@ -18,7 +15,7 @@ body {
 
 /* ── Display font ────────────────────────────────────────────────────────────── */
 .font-display {
-  font-family: 'Bebas Neue', 'Barlow Condensed', system-ui, sans-serif;
+  font-family: var(--font-bebas), 'Barlow Condensed', system-ui, sans-serif;
   letter-spacing: 0.04em;
 }
 
@@ -33,8 +30,8 @@ body {
 
 /* Elevated card with orange top-border accent */
 .card-accent {
-  background: #111118;
-  border: 1px solid rgba(255,255,255,0.07);
+  background: #181818;
+  border: 1px solid rgba(255,255,255,0.09);
   border-radius: 16px;
   position: relative;
   overflow: hidden;
@@ -50,7 +47,7 @@ body {
 
 /* Stats display card — high contrast, deeper bg */
 .card-stat {
-  background: linear-gradient(135deg, #141420 0%, #0f0f1a 100%);
+  background: linear-gradient(135deg, #181818 0%, #111118 100%);
   border: 1px solid rgba(255,255,255,0.09);
   border-radius: 16px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.5);
@@ -126,7 +123,7 @@ body {
 }
 
 /* ── Typography scales ──────────────────────────────────────────────────────── */
-.stat-mega { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.02em; line-height: 1; }
+.stat-mega { font-family: var(--font-bebas), sans-serif; letter-spacing: 0.02em; line-height: 1; }
 .text-label { font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.35); }
 
 /* ── Position badges ────────────────────────────────────────────────────────── */
@@ -196,7 +193,9 @@ body {
 .animate-fade-in { animation: fade-in 0.2s ease forwards; }
 @keyframes scale-in { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
 .animate-scale-in { animation: scale-in 0.2s ease forwards; }
-@keyframes countdown-shrink { from { width: 100%; } to { width: 0%; } }
+/* transform: scaleX() runs on the GPU compositor — no layout thrash */
+@keyframes countdown-shrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.countdown-shrink-bar { transform-origin: left center; }
 
 /* ── Number pop — bid amounts and stats animate when they change ─────────────── */
 @keyframes num-pop { 0% { transform: scale(1); } 40% { transform: scale(1.15); } 100% { transform: scale(1); } }
@@ -436,7 +435,7 @@ body {
   border-left: 1px solid rgba(255,255,255,0.08);
   border-right: 1px solid rgba(255,255,255,0.08);
   text-align: center;
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: var(--font-bebas), sans-serif;
   font-size: 32px;
   letter-spacing: 0.04em;
   color: #fff;
@@ -500,7 +499,7 @@ body {
 
 /* ── Current bid display ──────────────────────────────────────────────────── */
 .bid-hero {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: var(--font-bebas), sans-serif;
   font-size: clamp(3rem, 10vw, 5rem);
   line-height: 1;
   letter-spacing: 0.02em;

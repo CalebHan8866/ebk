@@ -78,7 +78,7 @@ function BadgeIcons({ equippedBadges }: { equippedBadges: string }) {
     <div className="flex gap-1 mt-0.5">
       {badges.map(b => (
         <div key={b.id} className="relative group">
-          <img src={b.icon} alt={b.name} className="w-3.5 h-3.5" />
+          <img src={b.icon} alt={b.name} className="w-3.5 h-3.5" loading="lazy" />
           <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-max max-w-[140px] rounded-lg bg-gray-900 border border-gray-700 px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-50">
             <div className="text-white text-[11px] font-black">{b.name}</div>
             <div className="text-gray-400 text-[10px] leading-snug">{b.description}</div>
@@ -181,7 +181,7 @@ function PodiumCard({ user, rank, isMe, totalPlayers }: { user: LeaderboardUser;
           <span className={`font-black truncate max-w-[80px] ${cfg.nameSize} ${cfg.rankColor}`}>{user.username}</span>
           {isMe && <span className="text-[8px] font-black text-orange-500 bg-orange-950 border border-orange-700/50 rounded px-1 py-[1px] leading-none">YOU</span>}
         </div>
-        <div className="text-[10px] text-gray-500 tabular-nums">{user.wins}W–{user.losses}L · {winPct}%</div>
+        <div className="text-[10px] text-gray-400 tabular-nums">{user.wins}W–{user.losses}L · {winPct}%</div>
         {user.winStreak >= 3 && (
           <div className="text-[9px] font-black text-orange-400 mt-0.5">🔥{user.winStreak}</div>
         )}
@@ -202,7 +202,7 @@ function PodiumCard({ user, rank, isMe, totalPlayers }: { user: LeaderboardUser;
 function WinPctBadge({ pct, gamesPlayed }: { pct: string; gamesPlayed: number }) {
   const n = parseFloat(pct)
   const color = gamesPlayed < 5
-    ? 'text-gray-600'
+    ? 'text-gray-400'
     : n >= 60
       ? 'text-green-400'
       : n >= 45
@@ -250,7 +250,7 @@ function LeaderboardRow({ user: u, rank, isMe, sort, totalPlayers, rowRef }: Row
     <div ref={rowRef} className={rowClass}>
       {/* Rank */}
       <div className="w-9 text-center shrink-0">
-        <span className="font-black text-sm tabular-nums text-gray-500">{rank}</span>
+        <span className="font-black text-sm tabular-nums text-gray-400">{rank}</span>
       </div>
 
       {/* Avatar */}
@@ -285,7 +285,7 @@ function LeaderboardRow({ user: u, rank, isMe, sort, totalPlayers, rowRef }: Row
 
       {/* L */}
       <div className="w-10 text-right shrink-0">
-        <span className="tabular-nums font-bold text-sm text-gray-500">{u.losses}</span>
+        <span className="tabular-nums font-bold text-sm text-gray-400">{u.losses}</span>
       </div>
 
       {/* WIN% */}
@@ -300,7 +300,7 @@ function LeaderboardRow({ user: u, rank, isMe, sort, totalPlayers, rowRef }: Row
             🔥{u.winStreak}
           </span>
         ) : (
-          <span className={`tabular-nums font-bold text-xs ${sort === 'winStreak' ? 'text-white' : 'text-gray-600'}`}>
+          <span className={`tabular-nums font-bold text-xs ${sort === 'winStreak' ? 'text-white' : 'text-gray-400'}`}>
             {u.winStreak}
           </span>
         )}
@@ -320,7 +320,7 @@ function MyRankBanner({ me, totalPlayers }: { me: MeRow; totalPlayers: number })
         <div className="text-label text-orange-500 mb-1">Your Standing</div>
         <div className="font-display text-4xl text-white leading-none tabular-nums">
           #{me.rank}
-          <span className="text-gray-600 text-lg font-normal ml-1.5">/ {totalPlayers}</span>
+          <span className="text-gray-400 text-lg font-normal ml-1.5">/ {totalPlayers}</span>
         </div>
       </div>
 
@@ -330,9 +330,9 @@ function MyRankBanner({ me, totalPlayers }: { me: MeRow; totalPlayers: number })
         <div className="text-label mb-1">Record</div>
         <div className="flex items-baseline gap-1 tabular-nums">
           <span className="font-display text-xl sm:text-2xl text-green-400 leading-none">{me.wins}</span>
-          <span className="text-gray-600 text-xs font-bold">W</span>
+          <span className="text-gray-400 text-xs font-bold">W</span>
           <span className="font-display text-xl sm:text-2xl text-red-400 leading-none">{me.losses}</span>
-          <span className="text-gray-600 text-xs font-bold">L</span>
+          <span className="text-gray-400 text-xs font-bold">L</span>
         </div>
       </div>
 
@@ -341,7 +341,7 @@ function MyRankBanner({ me, totalPlayers }: { me: MeRow; totalPlayers: number })
       <div className="text-center shrink-0">
         <div className="text-label mb-1">Win%</div>
         <div className={`font-display text-xl sm:text-2xl leading-none tabular-nums ${
-          me.gamesPlayed < 5 ? 'text-gray-600' : pctNum >= 60 ? 'text-green-400' : pctNum >= 45 ? 'text-white' : 'text-red-400'
+          me.gamesPlayed < 5 ? 'text-gray-400' : pctNum >= 60 ? 'text-green-400' : pctNum >= 45 ? 'text-white' : 'text-red-400'
         }`}>
           {me.gamesPlayed >= 5 ? `${winPct}%` : '—'}
         </div>
@@ -366,7 +366,7 @@ function EmptyState() {
       <div className="font-display text-5xl text-gray-800 leading-none">0</div>
       <div>
         <p className="font-black text-white text-base">No players ranked yet</p>
-        <p className="text-gray-500 text-sm mt-1">Be the first on the board</p>
+        <p className="text-gray-400 text-sm mt-1">Be the first on the board</p>
       </div>
       <Link href="/lobby" className="btn-primary mt-1 text-xs px-6 py-3">Play Now</Link>
     </div>
@@ -423,13 +423,13 @@ export default function LeaderboardPage() {
         <div className="flex items-start justify-between mb-2">
           <div>
             <h1 className="font-display text-5xl text-orange-500 leading-none tracking-wide">Leaderboard</h1>
-            <p className="text-gray-500 text-sm mt-1 tabular-nums">{totalPlayers} players ranked</p>
+            <p className="text-gray-400 text-sm mt-1 tabular-nums">{totalPlayers} players ranked</p>
           </div>
-          <Link href="/lobby" className="text-gray-500 hover:text-white text-sm transition-colors mt-1">← Lobby</Link>
+          <Link href="/lobby" className="text-gray-400 hover:text-white text-sm transition-colors mt-1">← Lobby</Link>
         </div>
 
         {/* ── Live indicator ── */}
-        <div className="flex items-center gap-2 mb-5 text-xs text-gray-600">
+        <div className="flex items-center gap-2 mb-5 text-xs text-gray-400">
           <span className="live-dot" />
           <span className="tabular-nums">
             Live · updates every 30s{lastUpdated ? ` · ${lastUpdated.toLocaleTimeString()}` : ''}
@@ -450,7 +450,7 @@ export default function LeaderboardPage() {
               key={key}
               onClick={() => setSort(key)}
               className={`px-4 py-2 rounded-xl text-xs font-black transition-colors uppercase tracking-widest ${
-                sort === key ? 'bg-orange-600 text-white' : 'card-surface text-gray-500 hover:text-white'
+                sort === key ? 'bg-orange-600 text-white' : 'card-surface text-gray-400 hover:text-white'
               }`}
             >
               {label}
@@ -464,7 +464,7 @@ export default function LeaderboardPage() {
             {top3.length >= 2 && (
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-4">
-                  <p className="text-[10px] font-black tracking-[0.4em] text-gray-600 uppercase">Top Performers</p>
+                  <p className="text-[10px] font-black tracking-[0.4em] text-gray-400 uppercase">Top Performers</p>
                   <div className="flex-1 h-px bg-white/[0.05]" />
                 </div>
                 <div className="grid grid-cols-3 gap-2 items-end px-2">
@@ -533,7 +533,7 @@ export default function LeaderboardPage() {
                 <RankChip user={me} rank={me.rank} totalPlayers={totalPlayers} />
               </div>
               <div className="text-right shrink-0 space-y-0.5">
-                <div className="text-xs font-black text-green-400 tabular-nums">{me.wins}W <span className="text-gray-600">·</span> <span className="text-red-400">{me.losses}L</span></div>
+                <div className="text-xs font-black text-green-400 tabular-nums">{me.wins}W <span className="text-gray-400">·</span> <span className="text-red-400">{me.losses}L</span></div>
                 <WinPctBadge pct={me.gamesPlayed > 0 ? ((me.wins / me.gamesPlayed) * 100).toFixed(1) : '0.0'} gamesPlayed={me.gamesPlayed} />
               </div>
             </div>

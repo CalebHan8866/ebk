@@ -268,7 +268,7 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="font-display text-5xl text-orange-500 leading-none tracking-wide">PROFILE</h1>
-            <p className="text-gray-600 text-[11px] tracking-[0.18em] uppercase mt-1.5">
+            <p className="text-gray-400 text-[11px] tracking-[0.18em] uppercase mt-1.5">
               Since {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
             </p>
           </div>
@@ -290,7 +290,7 @@ export default function ProfilePage() {
               className={`flex-1 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
                 activeTab === key
                   ? 'bg-orange-600 text-white shadow'
-                  : 'text-gray-500 hover:text-white'
+                  : 'text-gray-400 hover:text-white'
               }`}
             >
               {label}
@@ -395,7 +395,7 @@ export default function ProfilePage() {
                 <span className="text-label">First Pick Win%</span>
                 <div className="text-right">
                   <span className="text-white font-black text-sm">{user.firstPickWins}W / {user.firstPickGames}G</span>
-                  <span className="text-gray-500 text-xs ml-2">
+                  <span className="text-gray-400 text-xs ml-2">
                     ({user.firstPickGames > 0 ? ((user.firstPickWins / user.firstPickGames) * 100).toFixed(0) : 0}%)
                   </span>
                 </div>
@@ -407,7 +407,7 @@ export default function ProfilePage() {
           <div className="card-surface p-4 flex items-center justify-between rounded-xl">
             <div>
               <div className="font-black text-white text-sm">Game History</div>
-              <div className="text-gray-500 text-xs mt-0.5">See every match result</div>
+              <div className="text-gray-400 text-xs mt-0.5">See every match result</div>
             </div>
             <Link href="/history" className="text-orange-400 text-sm font-black hover:text-orange-300 transition-colors">View →</Link>
           </div>
@@ -471,7 +471,7 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-4 text-center">
-                  <div className="font-display text-3xl text-gray-600 leading-none">—</div>
+                  <div className="font-display text-3xl text-gray-400 leading-none">—</div>
                   <div className="text-label mt-1">1st Pick Win%</div>
                 </div>
               )}
@@ -524,7 +524,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="text-center pb-2">
-            <Link href="/history" className="text-gray-500 text-sm hover:text-orange-400 transition-colors">View game history →</Link>
+            <Link href="/history" className="text-gray-400 text-sm hover:text-orange-400 transition-colors">View game history →</Link>
           </div>
           </>}
 
@@ -533,7 +533,7 @@ export default function ProfilePage() {
           {/* Badges */}
           <div className="card-surface p-6">
             <h2 className="font-display text-2xl text-white tracking-wider leading-none mb-1">Badges</h2>
-            <p className="text-gray-500 text-xs mb-5">Badges are a mystery — keep playing to discover them. Tap to equip up to 3.</p>
+            <p className="text-gray-400 text-xs mb-5">Badges are a mystery — keep playing to discover them. Tap to equip up to 3.</p>
 
             {/* Equipped badge slots */}
             <div className="flex gap-3 mb-5">
@@ -547,7 +547,7 @@ export default function ProfilePage() {
                   ].join(' ')}>
                     {badge ? (
                       <div className="relative group flex flex-col items-center">
-                        <img src={badge.icon} alt={badge.name} className="w-8 h-8" />
+                        <img src={badge.icon} alt={badge.name} className="w-8 h-8" loading="lazy" />
                         <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[160px] rounded-lg bg-gray-900 border border-gray-700 px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50">
                           <div className="text-white text-xs font-black mb-0.5">{badge.name}</div>
                           <div className="text-gray-400 text-[11px] leading-snug">{badge.description}</div>
@@ -600,7 +600,7 @@ export default function ProfilePage() {
           {/* Emotes — still in badges tab */}
           <div className="card-surface p-6">
             <h2 className="font-display text-2xl text-white tracking-wider leading-none mb-1">Emotes</h2>
-            <p className="text-gray-500 text-xs mb-5">Send a quick message after a game. Equip one to use in matches.</p>
+            <p className="text-gray-400 text-xs mb-5">Send a quick message after a game. Equip one to use in matches.</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {EMOTES.map(emote => {
                 const unlocked = unlockedEmoteIds.includes(emote.id)
@@ -627,12 +627,12 @@ export default function ProfilePage() {
                       </span>
                     )}
                     {!unlocked && (
-                      <span className="absolute top-2 right-2 text-[10px] text-gray-600">
+                      <span className="absolute top-2 right-2 text-[10px] text-gray-400">
                         locked
                       </span>
                     )}
                     <div className="text-orange-400 font-black text-lg mb-1">{emote.label}</div>
-                    <div className={`text-sm font-semibold ${unlocked ? 'text-white' : 'text-gray-500'}`}>
+                    <div className={`text-sm font-semibold ${unlocked ? 'text-white' : 'text-gray-400'}`}>
                       {emote.text}
                     </div>
                     {!unlocked && (
@@ -653,7 +653,7 @@ export default function ProfilePage() {
           {/* Milestones */}
           <div className="card-surface p-6">
             <h2 className="font-display text-2xl text-white tracking-wider leading-none mb-1">Milestones</h2>
-            <p className="text-gray-500 text-xs mb-5">Track your progress across key achievements.</p>
+            <p className="text-gray-400 text-xs mb-5">Track your progress across key achievements.</p>
             <div className="space-y-2">
               {MILESTONES.map(milestone => {
                 const unlocked = unlockedMilestoneIds.includes(milestone.id)
@@ -676,10 +676,10 @@ export default function ProfilePage() {
                       {unlocked ? '✓' : ''}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <div className={`text-sm font-bold ${unlocked ? 'text-white' : 'text-gray-500'}`}>
+                      <div className={`text-sm font-bold ${unlocked ? 'text-white' : 'text-gray-400'}`}>
                         {milestone.name}
                       </div>
-                      <div className="text-xs text-gray-600 truncate">{milestone.description}</div>
+                      <div className="text-xs text-gray-400 truncate">{milestone.description}</div>
                     </div>
                     {!unlocked && req && (
                       <div className="text-label whitespace-nowrap shrink-0">
@@ -709,10 +709,10 @@ export default function ProfilePage() {
           {/* Change username */}
           <div className="card-surface p-6">
             <h2 className="font-display text-2xl text-white tracking-wider leading-none mb-1">Change Username</h2>
-            <p className="text-gray-500 text-xs mb-5">Letters, numbers, and underscores only · 3–20 characters</p>
+            <p className="text-gray-400 text-xs mb-5">Letters, numbers, and underscores only · 3–20 characters</p>
             <form onSubmit={handleUsernameChange} className="space-y-4">
               <div>
-                <label htmlFor="new-username" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">
+                <label htmlFor="new-username" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">
                   New Username
                 </label>
                 <input
@@ -744,10 +744,10 @@ export default function ProfilePage() {
           {/* Change password */}
           <div className="card-surface p-6">
             <h2 className="font-display text-2xl text-white tracking-wider leading-none mb-1">Change Password</h2>
-            <p className="text-gray-500 text-xs mb-5">Minimum 6 characters</p>
+            <p className="text-gray-400 text-xs mb-5">Minimum 6 characters</p>
             <form onSubmit={handlePasswordChange} className="space-y-4">
               <div>
-                <label htmlFor="current-password" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Current Password</label>
+                <label htmlFor="current-password" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">Current Password</label>
                 <input
                   id="current-password"
                   type="password"
@@ -759,7 +759,7 @@ export default function ProfilePage() {
                 />
               </div>
               <div>
-                <label htmlFor="new-password" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">New Password</label>
+                <label htmlFor="new-password" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">New Password</label>
                 <input
                   id="new-password"
                   type="password"
@@ -772,7 +772,7 @@ export default function ProfilePage() {
                 />
               </div>
               <div>
-                <label htmlFor="confirm-password" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Confirm New Password</label>
+                <label htmlFor="confirm-password" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">Confirm New Password</label>
                 <input
                   id="confirm-password"
                   type="password"
@@ -802,7 +802,7 @@ export default function ProfilePage() {
           {/* Delete account */}
           <div className="card-surface p-6 border border-red-900/30">
             <h2 className="font-display text-2xl text-red-400 tracking-wider leading-none mb-1">Danger Zone</h2>
-            <p className="text-gray-500 text-xs mb-5">Permanently delete your account and all game history. This cannot be undone.</p>
+            <p className="text-gray-400 text-xs mb-5">Permanently delete your account and all game history. This cannot be undone.</p>
             {!showDeleteForm ? (
               <button
                 onClick={() => setShowDeleteForm(true)}
@@ -813,7 +813,7 @@ export default function ProfilePage() {
             ) : (
               <form onSubmit={handleDeleteAccount} className="space-y-4">
                 <div>
-                  <label htmlFor="delete-password" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Confirm Password</label>
+                  <label htmlFor="delete-password" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">Confirm Password</label>
                   <input
                     id="delete-password"
                     type="password"
@@ -825,7 +825,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="delete-confirm-text" className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">
+                  <label htmlFor="delete-confirm-text" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">
                     Type <span className="text-red-400 font-black">DELETE</span> to confirm
                   </label>
                   <input
