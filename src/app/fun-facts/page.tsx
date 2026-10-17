@@ -443,12 +443,18 @@ export default function FunFactsPage() {
       <div className="max-w-md mx-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-end justify-between mb-6">
           <div>
-            <h1 className="font-display text-4xl text-orange-500 leading-none">Fun Facts</h1>
-            <p className="text-gray-400 text-xs mt-1">{filtered.length} players · earnings in perspective</p>
+            <p className="text-label mb-2">Player Earnings</p>
+            <h1 className="font-display text-6xl text-white leading-none">
+              FUN <span className="text-orange-500">FACTS</span>
+            </h1>
+            <p className="text-gray-400 text-xs mt-2 font-bold">
+              <span className="font-display text-orange-400 text-lg">{filtered.length}</span>
+              <span className="ml-1.5">players · earnings in perspective</span>
+            </p>
           </div>
-          <Link href="/lobby" className="text-gray-400 hover:text-white text-sm transition-colors">← Lobby</Link>
+          <Link href="/lobby" className="btn-secondary py-2 px-4 text-xs shrink-0">← Lobby</Link>
         </div>
 
         {/* Search */}
@@ -456,12 +462,14 @@ export default function FunFactsPage() {
           value={search}
           onChange={e => handleSearch(e.target.value)}
           placeholder="Search player or team..."
-          className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-orange-500 mb-5"
+          className="input-field mb-5"
         />
 
         {filtered.length === 0 ? (
-          <div className="bg-[#111] border border-white/5 rounded-2xl p-12 text-center">
-            <p className="text-gray-400">No players found for &ldquo;{search}&rdquo;</p>
+          <div className="card-surface rounded-2xl p-12 text-center">
+            <div className="empty-state-icon">🏀</div>
+            <p className="empty-state-title">No players found</p>
+            <p className="empty-state-body">&ldquo;{search}&rdquo; didn&apos;t match anyone</p>
           </div>
         ) : (
           <>
@@ -469,16 +477,16 @@ export default function FunFactsPage() {
             <div className="flex items-center justify-between mb-3 px-1">
               <button
                 onClick={prevPlayer}
-                className="w-10 h-10 rounded-xl bg-[#111] border border-white/5 text-gray-400 hover:text-white flex items-center justify-center transition-colors text-lg"
+                className="w-10 h-10 rounded-xl card-surface border border-white/[0.07] text-gray-400 hover:text-white hover:border-white/20 flex items-center justify-center transition-all text-lg font-bold"
               >
                 ←
               </button>
-              <span className="text-gray-400 text-xs font-bold tabular-nums">
-                {cardIndex + 1} / {filtered.length}
+              <span className="text-label tabular-nums">
+                {cardIndex + 1} <span className="text-gray-700">/</span> {filtered.length}
               </span>
               <button
                 onClick={nextPlayer}
-                className="w-10 h-10 rounded-xl bg-[#111] border border-white/5 text-gray-400 hover:text-white flex items-center justify-center transition-colors text-lg"
+                className="w-10 h-10 rounded-xl card-surface border border-white/[0.07] text-gray-400 hover:text-white hover:border-white/20 flex items-center justify-center transition-all text-lg font-bold"
               >
                 →
               </button>
@@ -503,17 +511,17 @@ export default function FunFactsPage() {
                 {/* ── FRONT ─────────────────────────────────────────────────── */}
                 <div
                   style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
-                  className="absolute inset-0 bg-[#111] border border-white/5 rounded-3xl p-6 flex flex-col overflow-hidden"
+                  className="absolute inset-0 card-accent rounded-3xl p-6 flex flex-col overflow-hidden"
                 >
                   {/* Top row */}
                   <div className="flex items-start justify-between mb-5">
-                    <div className="bg-black/40 rounded-xl px-3 py-2.5 text-center">
-                      <div className="text-orange-400 font-black text-2xl leading-none">{current.ebkScore.toFixed(1)}</div>
-                      <div className="text-gray-700 text-[9px] mt-0.5 uppercase tracking-wide">EBK</div>
+                    <div className="card-stat rounded-xl px-3 py-2.5 text-center">
+                      <div className="font-display text-orange-400 text-3xl leading-none">{current.ebkScore.toFixed(1)}</div>
+                      <div className="text-label mt-1">EBK Score</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-gray-400 text-sm font-bold">{current.position}</div>
-                      <div className="text-gray-400 text-xs mt-0.5">{current.team}</div>
+                      <div className="text-white font-black text-sm">{current.position}</div>
+                      <div className="text-gray-400 text-xs mt-1 font-bold">{current.team}</div>
                     </div>
                   </div>
 
@@ -543,9 +551,9 @@ export default function FunFactsPage() {
                         { l: 'RPG', v: current.careerRPG.toFixed(1) },
                         { l: 'APG', v: current.careerAPG.toFixed(1) },
                       ].map(s => (
-                        <div key={s.l} className="bg-black/40 rounded-lg px-2 py-2 text-center">
-                          <div className="text-white font-black text-sm leading-none">{s.v}</div>
-                          <div className="text-gray-400 text-[10px] mt-0.5">{s.l}</div>
+                        <div key={s.l} className="card-stat rounded-xl px-2 py-2.5 text-center">
+                          <div className="font-display text-white text-xl leading-none">{s.v}</div>
+                          <div className="text-label mt-1">{s.l}</div>
                         </div>
                       ))}
                     </div>
@@ -624,16 +632,10 @@ export default function FunFactsPage() {
 
             {/* Bottom nav buttons */}
             <div className="flex items-center gap-3 mt-5">
-              <button
-                onClick={prevPlayer}
-                className="flex-1 bg-[#111] border border-white/5 text-gray-400 hover:text-white font-black py-3 rounded-2xl transition-colors text-sm"
-              >
+              <button onClick={prevPlayer} className="btn-secondary flex-1 py-3 text-sm">
                 ← Prev
               </button>
-              <button
-                onClick={nextPlayer}
-                className="flex-1 bg-[#111] border border-white/5 text-gray-400 hover:text-white font-black py-3 rounded-2xl transition-colors text-sm"
-              >
+              <button onClick={nextPlayer} className="btn-primary flex-1 py-3 text-sm">
                 Next →
               </button>
             </div>
