@@ -102,7 +102,7 @@ function PosBadge({ pos }: { pos: string }) {
 }
 
 function TimerRing({ timeLeft, maxTime }: { timeLeft: number; maxTime: number }) {
-  const pct = maxTime > 0 ? timeLeft / maxTime : 0
+  const pct = maxTime > 0 ? Math.min(1, timeLeft / maxTime) : 0
   const r = 28
   const circ = 2 * Math.PI * r
   const offset = circ * (1 - pct)
@@ -158,6 +158,9 @@ export default function AuctionRoomPage() {
   // Timer countdown
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current)
+    // Reset timers immediately when deadlines change so there's no stale display
+    if (!auctionState?.bidDeadline || auctionState.bidDeadline <= 0) setTimeLeft(0)
+    if (!auctionState?.tradeDeadline) setTradeTimeLeft(0)
     intervalRef.current = setInterval(() => {
       if (auctionState?.bidDeadline && auctionState.bidDeadline > 0) {
         setTimeLeft(Math.max(0, Math.ceil((auctionState.bidDeadline - Date.now()) / 1000)))
@@ -891,6 +894,7 @@ export default function AuctionRoomPage() {
               {auctionState.participants.map(p => {
                 const budgetPct = (p.budget / auctionState.totalBudget) * 100
                 const isMe = p.socketId === mySocketId
+                const isRoomHost = p.socketId === auctionState.hostSocketId
                 return (
                   <div key={p.socketId} className={`gm-card ${isMe ? 'gm-card-me' : 'gm-card-other'}`}>
                     <div className="flex items-center gap-2 mb-2.5">
@@ -898,7 +902,8 @@ export default function AuctionRoomPage() {
                         {p.name[0]?.toUpperCase()}
                       </div>
                       <span className={`text-xs font-black truncate flex-1 ${isMe ? 'text-orange-300' : 'text-white'}`}>{p.name}</span>
-                      {isMe && <span className="text-[10px] font-black text-orange-400/70 uppercase tracking-wider shrink-0">You</span>}
+                      {isRoomHost && !isMe && <span className="text-[9px] font-bold text-white/25 uppercase tracking-wider shrink-0">Host</span>}
+                      {isMe && <span className="text-[10px] font-black text-orange-400/70 uppercase tracking-wider shrink-0">{isRoomHost ? 'Host · You' : 'You'}</span>}
                     </div>
                     {/* Budget bar */}
                     <div className="budget-bar mb-1.5">
@@ -1074,11 +1079,18 @@ export default function AuctionRoomPage() {
                   disabled={!canBid || amLeading}
                   className="btn-primary w-full text-lg font-display tracking-widest"
                 >
-                  {amLeading ? '🔒 Leading Bid' : `Bid $${bidAmount}M`}
+                  {amLeading
+                    ? '🔒 Leading Bid'
+                    : me && me.rosterCount >= (auctionState?.teamSize ?? 0)
+                    ? 'Roster Full'
+                    : me && me.budget < bidAmount
+                    ? 'Not Enough Budget'
+                    : `Bid $${bidAmount}M`}
                 </button>
                 <button
                   onClick={handlePass}
-                  disabled={amLeading}
+                  disabled={amLeading || auctionState.currentBid > 0}
+                  title={auctionState.currentBid > 0 ? 'Cannot pass after a bid has been placed' : undefined}
                   className="btn-secondary w-full text-sm"
                 >
                   Pass
@@ -1086,7 +1098,7 @@ export default function AuctionRoomPage() {
                 {me && (
                   <div className="flex items-center justify-between text-xs px-1">
                     <span className="text-label">Budget</span>
-                    <span className={`font-black ${me.budget < 10 ? 'text-red-400' : 'text-white/60'}`}>${me.budget}M</span>
+                    <span className={`font-black tabular-nums ${me.budget < 10 ? 'text-red-400' : 'text-white/60'}`}>${me.budget}M</span>
                   </div>
                 )}
               </div>
@@ -1112,7 +1124,7 @@ export default function AuctionRoomPage() {
                       <div className="text-label mb-0.5 tracking-[0.15em]">Steal Price</div>
                       <div className="font-display text-3xl text-yellow-400 leading-none">${stealPrice}M</div>
                     </div>
-                    <p className="text-white/25 text-xs mt-3">Tap ⚡ on any opponent&apos;s player in the roster panel to steal</p>
+                    <p className="text-white/25 text-xs mt-3">Click ⚡ on any opponent&apos;s player in the roster panel to steal</p>
                   </div>
                 )}
               </div>

@@ -937,7 +937,7 @@ function finishAuction(io: SocketServer, room: AuctionRoom) {
       return player ? { id: player.id, firstName: player.firstName, lastName: player.lastName,
         position: player.position, ebkScore: player.ebkScore, paidPrice: p.paidPrices[id] } : null
     }).filter(Boolean),
-  })).sort((a, b) => b.ebkTotal - a.ebkTotal)
+  })).sort((a, b) => a.ebkTotal - b.ebkTotal)  // lower EBK total = better draft = ranked first
   // Store results on the room so broadcastAuctionState can include them in the
   // auction:state payload. This prevents a blank-screen flash on the client when
   // auction:state (status:'complete') arrives before auction:complete is processed.
