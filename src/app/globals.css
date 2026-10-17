@@ -2,117 +2,191 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&display=swap');
+/* ── Fonts ─────────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
+/* ── Base ───────────────────────────────────────────────────────────────────── */
 body {
-  background-color: #080808;
-  color: white;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: #0a0a0f;
+  color: #f0f0f5;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-image:
-    radial-gradient(ellipse 140% 60% at 50% -5%, rgba(234, 88, 12, 0.13) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 30% at 85% 95%, rgba(234, 88, 12, 0.04) 0%, transparent 55%),
-    repeating-linear-gradient(
-      0deg,
-      transparent 0px,
-      transparent 79px,
-      rgba(255,255,255,0.012) 79px,
-      rgba(255,255,255,0.012) 80px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px,
-      transparent 79px,
-      rgba(255,255,255,0.007) 79px,
-      rgba(255,255,255,0.007) 80px
-    );
+    radial-gradient(ellipse 120% 50% at 50% -5%, rgba(234,88,12,0.14) 0%, transparent 65%);
   background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* ── Display font ────────────────────────────────────────────────────────────── */
 .font-display {
   font-family: 'Bebas Neue', 'Barlow Condensed', system-ui, sans-serif;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
-.pos-badge {
-  @apply text-xs font-bold px-1.5 py-0.5 rounded;
-}
-
-/* Premium input style */
-.input-field {
-  @apply w-full bg-[#0a0a0a] border border-white/[0.09] rounded-xl px-4 py-3 text-white
-         placeholder-gray-600 transition-all duration-200
-         focus:outline-none focus:border-orange-500/60 focus:ring-2 focus:ring-orange-500/10;
-}
-
-/* Orange CTA button with glow */
-.btn-primary {
-  @apply bg-orange-600 hover:bg-orange-500 text-white font-black tracking-wide
-         rounded-xl px-8 py-3.5 transition-all duration-200
-         shadow-lg shadow-orange-600/20 hover:shadow-orange-500/30 hover:scale-[1.02]
-         active:scale-[0.98];
-}
-
-/* Subtle card surface */
+/* ── Card surfaces ─────────────────────────────────────────────────────────── */
+/* Standard card */
 .card-surface {
-  @apply bg-[#0d0d0d] border border-white/[0.07] rounded-2xl;
+  background: #111118;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
 }
 
-/* Orange accent top-border card */
+/* Elevated card with orange top-border accent */
 .card-accent {
-  @apply bg-[#0d0d0d] border border-white/[0.07] rounded-2xl relative overflow-hidden;
+  background: #111118;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
 }
 .card-accent::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(249,115,22,0.7), transparent);
+  background: linear-gradient(90deg, transparent 5%, rgba(249,115,22,0.85) 40%, rgba(249,115,22,0.85) 60%, transparent 95%);
 }
 
-/* Stat display */
-.stat-block {
-  @apply text-center;
-}
-.stat-block .stat-value {
-  @apply font-display text-3xl leading-none;
-}
-.stat-block .stat-label {
-  @apply text-gray-500 text-xs mt-1 tracking-wide uppercase;
+/* Stats display card — high contrast, deeper bg */
+.card-stat {
+  background: linear-gradient(135deg, #141420 0%, #0f0f1a 100%);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
 }
 
-/* Position badge */
-.pos-pg { @apply bg-blue-900/40 text-blue-300 border-blue-700/40; }
-.pos-sg { @apply bg-cyan-900/40 text-cyan-300 border-cyan-700/40; }
-.pos-sf { @apply bg-green-900/40 text-green-300 border-green-700/40; }
-.pos-pf { @apply bg-yellow-900/40 text-yellow-300 border-yellow-700/40; }
-.pos-c  { @apply bg-red-900/40 text-red-300 border-red-700/40; }
-
-/* Tier badges */
-.tier-gold   { @apply bg-yellow-900/30 border-yellow-600/40 text-yellow-400; }
-.tier-silver { @apply bg-gray-800/60 border-gray-600/40 text-gray-300; }
-.tier-bronze { @apply bg-orange-950/40 border-orange-700/40 text-orange-500; }
-
-/* Live indicator dot */
-.live-dot {
-  @apply w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block;
+/* ── Inputs ────────────────────────────────────────────────────────────────── */
+.input-field {
+  width: 100%;
+  background: #0d0d14;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.15s;
+  outline: none;
+}
+.input-field::placeholder { color: rgba(255,255,255,0.2); }
+.input-field:focus {
+  border-color: rgba(249,115,22,0.5);
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.08);
 }
 
-/* Budget meter */
-.budget-bar {
-  @apply h-1.5 rounded-full bg-white/[0.05] overflow-hidden;
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ea580c;
+  color: #fff;
+  font-weight: 900;
+  font-family: inherit;
+  letter-spacing: 0.06em;
+  border-radius: 12px;
+  padding: 14px 32px;
+  font-size: 13px;
+  text-transform: uppercase;
+  transition: all 0.15s;
+  box-shadow: 0 4px 14px rgba(234,88,12,0.3);
+  cursor: pointer;
+  border: none;
 }
-.budget-bar-fill {
-  @apply h-full rounded-full transition-all duration-500;
-  background: linear-gradient(90deg, #ea580c, #f97316);
+.btn-primary:hover {
+  background: #f97316;
+  box-shadow: 0 4px 20px rgba(249,115,22,0.45);
+  transform: translateY(-1px);
+}
+.btn-primary:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(234,88,12,0.3); }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.04em;
+  border-radius: 12px;
+  padding: 13px 28px;
+  font-size: 13px;
+  transition: all 0.15s;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.2);
+  color: #fff;
 }
 
-/* War Room / Auction styles */
-.auction-card {
-  @apply card-surface border border-orange-900/20 hover:border-orange-800/40 transition-all;
+/* ── Typography scales ──────────────────────────────────────────────────────── */
+.stat-mega { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.02em; line-height: 1; }
+.text-label { font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.35); }
+
+/* ── Position badges ────────────────────────────────────────────────────────── */
+.pos-badge { font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 5px; border-width: 1px; border-style: solid; }
+.pos-pg { background: rgba(59,130,246,0.15); color: #93c5fd; border-color: rgba(59,130,246,0.3); }
+.pos-sg { background: rgba(6,182,212,0.15);  color: #67e8f9; border-color: rgba(6,182,212,0.3); }
+.pos-sf { background: rgba(34,197,94,0.15);  color: #86efac; border-color: rgba(34,197,94,0.3); }
+.pos-pf { background: rgba(234,179,8,0.15);  color: #fde047; border-color: rgba(234,179,8,0.3); }
+.pos-c  { background: rgba(239,68,68,0.15);  color: #fca5a5; border-color: rgba(239,68,68,0.3); }
+
+/* ── Rank tiers ─────────────────────────────────────────────────────────────── */
+.tier-gold   { background: rgba(234,179,8,0.12);  border-color: rgba(234,179,8,0.3);  color: #fde047; }
+.tier-silver { background: rgba(148,163,184,0.1); border-color: rgba(148,163,184,0.25); color: #cbd5e1; }
+.tier-bronze { background: rgba(234,88,12,0.1);   border-color: rgba(234,88,12,0.3);   color: #fb923c; }
+
+/* ── Result badges ──────────────────────────────────────────────────────────── */
+.result-win  { background: rgba(34,197,94,0.15);  color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
+.result-loss { background: rgba(239,68,68,0.1);   color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+.result-draw { background: rgba(234,179,8,0.1);   color: #fbbf24; border: 1px solid rgba(234,179,8,0.2); }
+
+/* ── Live dot ────────────────────────────────────────────────────────────────── */
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; display: inline-block; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.85); } }
+
+/* ── Budget meter ────────────────────────────────────────────────────────────── */
+.budget-bar { height: 4px; border-radius: 99px; background: rgba(255,255,255,0.06); overflow: hidden; }
+.budget-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #ea580c, #f97316); transition: width 0.5s ease; }
+
+/* ── Dividers ────────────────────────────────────────────────────────────────── */
+.section-divider { display: flex; align-items: center; gap: 12px; }
+.section-divider::before, .section-divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+
+/* ── Table rows ──────────────────────────────────────────────────────────────── */
+.table-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.1s;
+}
+.table-row:last-child { border-bottom: none; }
+.table-row:hover { background: rgba(255,255,255,0.025); }
+
+/* ── Scoreboard ────────────────────────────────────────────────────────────── */
+.scoreboard {
+  background: linear-gradient(135deg, #141420, #0f0f1a);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 16px 20px;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+/* ── War Room / Auction ─────────────────────────────────────────────────────── */
+.auction-card { background: #111118; border: 1px solid rgba(249,115,22,0.15); border-radius: 16px; }
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ── Animations ──────────────────────────────────────────────────────────────── */
+@keyframes slide-up { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+.animate-slide-up { animation: slide-up 0.25s ease forwards; }
+@keyframes glow-pulse { 0%,100% { box-shadow:0 0 20px rgba(234,88,12,0.2); } 50% { box-shadow:0 0 40px rgba(234,88,12,0.4); } }
+.animate-glow { animation: glow-pulse 3s ease infinite; }

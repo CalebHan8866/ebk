@@ -250,6 +250,16 @@ interface AuctionRoom {
   tradeDeadline: number | null
   tradeTimer: ReturnType<typeof setTimeout> | null
   bidLog: Array<{ name: string; amount: number; action: 'bid' | 'steal' | 'won' | 'pass' | 'trade' }>
+  finalResults: AuctionResult[] | null
+}
+
+interface AuctionResult {
+  socketId: string
+  name: string
+  ebkTotal: number
+  rosterCount: number
+  budgetSpent: number
+  roster: Array<{ id: number; firstName: string; lastName: string; position: string; ebkScore: number; paidPrice: number } | null>
 }
 
 // ─── Room Store ──────────────────────────────────────────────────────────────
@@ -749,6 +759,7 @@ function buildAuctionStateForSocket(room: AuctionRoom) {
     playerIndex: room.currentPlayerIndex,
     poolSize: room.playerPool.length,
     bidLog: room.bidLog.slice(-25),
+    finalResults: room.finalResults ?? null,
   }
 }
 
@@ -825,7 +836,7 @@ function finishAuction(io: SocketServer, room: AuctionRoom) {
   room.status = 'complete'
   if (room.bidTimer) clearTimeout(room.bidTimer)
   if (room.tradeTimer) clearTimeout(room.tradeTimer)
-  const results = room.participants.map(p => ({
+  const results: AuctionResult[] = room.participants.map(p => ({
     socketId: p.socketId,
     name: p.name,
     ebkTotal: Math.round(p.roster.reduce((sum, pid) => {
@@ -840,6 +851,10 @@ function finishAuction(io: SocketServer, room: AuctionRoom) {
         position: player.position, ebkScore: player.ebkScore, paidPrice: p.paidPrices[id] } : null
     }).filter(Boolean),
   })).sort((a, b) => b.ebkTotal - a.ebkTotal)
+  // Store results on the room so broadcastAuctionState can include them in the
+  // auction:state payload. This prevents a blank-screen flash on the client when
+  // auction:state (status:'complete') arrives before auction:complete is processed.
+  room.finalResults = results
   broadcastAuctionState(io, room)
   for (const p of room.participants) {
     io.to(p.socketId).emit('auction:complete', { results })
@@ -1376,7 +1391,7 @@ app.prepare().then(async () => {
         currentBid: 0, currentBidderSocketId: null, currentBidderName: null,
         lastWinnerSocketId: null, lastWinnerName: null, lastWonAmount: 0,
         stealInitiated: false, bidTimer: null, bidDeadline: 0,
-        tradeOffers: [], tradeDeadline: null, tradeTimer: null, bidLog: [],
+        tradeOffers: [], tradeDeadline: null, tradeTimer: null, bidLog: [], finalResults: null,
       }
       auctionRooms.set(code, room)
       socket.join(`auction:${code}`)
@@ -1387,6 +1402,20 @@ app.prepare().then(async () => {
     socket.on('auction:join', ({ code, userName }: { code: string; userName: string }) => {
       const room = auctionRooms.get(code.toUpperCase())
       if (!room) { socket.emit('auction:error', { message: 'Room not found' }); return }
+
+      // Allow a previous participant (same name) to reconnect even if auction has started.
+      // New socketId after reconnect won't match, so check by name first.
+      const existingByName = room.participants.find(p => p.name === userName)
+      if (existingByName && room.status !== 'waiting') {
+        const wasHost = existingByName.socketId === room.hostSocketId
+        existingByName.socketId = socket.id
+        if (wasHost) room.hostSocketId = socket.id
+        socket.join(`auction:${room.code}`)
+        socket.emit('auction:joined', { code: room.code })
+        broadcastAuctionState(io, room)
+        return
+      }
+
       if (room.status !== 'waiting') { socket.emit('auction:error', { message: 'Auction already in progress' }); return }
       if (room.participants.length >= room.maxPlayers) { socket.emit('auction:error', { message: 'Room is full' }); return }
       if (room.participants.some(p => p.socketId === socket.id)) {

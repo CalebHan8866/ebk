@@ -72,6 +72,7 @@ interface AuctionState {
   playerIndex: number
   poolSize: number
   bidLog: Array<{ name: string; amount: number; action: string }>
+  finalResults: AuctionResult[] | null
 }
 
 interface AuctionResult {
@@ -182,6 +183,11 @@ export default function AuctionRoomPage() {
       setAuctionState(state)
       const newPhase = state.status as AuctionPhase
       setPhase(newPhase === 'complete' ? 'complete' : newPhase)
+      // If the state already carries final results (status:'complete'), populate them
+      // immediately so the results screen renders without waiting for auction:complete.
+      if (state.status === 'complete' && state.finalResults && state.finalResults.length > 0) {
+        setResults(state.finalResults)
+      }
       if (state.bidDeadline > 0) {
         setTimeLeft(Math.max(0, Math.ceil((state.bidDeadline - Date.now()) / 1000)))
       }
@@ -612,6 +618,8 @@ export default function AuctionRoomPage() {
     const cp = auctionState.currentPlayer
     const lastWinner = auctionState.participants.find(p => p.socketId === auctionState.lastWinnerSocketId)
     const canSteal = phase === 'steal-window' && !auctionState.stealInitiated
+    // stealPrice is per-player: Math.ceil(paidPrice * 1.5). Compute inline in the roster map.
+    // This top-level stealPrice is only used for the steal-window info panel (last won player).
     const stealPrice = lastWinner ? Math.ceil(auctionState.lastWonAmount * 1.5) : 0
 
     return (
@@ -676,7 +684,7 @@ export default function AuctionRoomPage() {
                           </div>
                           {canSteal && p.socketId !== mySocketId && (
                             <div className="absolute bottom-full left-0 mb-1 bg-[#0d0d0d] border border-yellow-500/30 rounded-lg px-2 py-1 text-xs text-yellow-300 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10 transition-opacity">
-                              Steal for ${stealPrice}M
+                              Steal for ${Math.ceil(player.paidPrice * 1.5)}M
                             </div>
                           )}
                         </div>
