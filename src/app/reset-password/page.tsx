@@ -28,7 +28,7 @@ function ResetContent() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Something went wrong'); return }
       setDone(true)
-      setTimeout(() => router.push('/login'), 2500)
+      setTimeout(() => router.push('/lobby'), 2500)
     } catch {
       setError('Something went wrong')
     } finally {
@@ -57,7 +57,7 @@ function ResetContent() {
           </svg>
         </div>
         <h2 className="font-black text-white text-lg mb-2">Password Reset!</h2>
-        <p className="text-gray-400 text-sm">Redirecting you to login…</p>
+        <p className="text-gray-400 text-sm">You&apos;re logged in — heading to the lobby…</p>
       </div>
     )
   }
@@ -65,7 +65,7 @@ function ResetContent() {
   return (
     <>
       <h2 className="font-black text-white text-lg mb-1">New Password</h2>
-      <p className="text-gray-500 text-sm mb-6">Choose a new password for your account.</p>
+      <p className="text-gray-400 text-sm mb-6">Choose a new password for your account.</p>
       {error && (
         <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 mb-5 text-sm">
           {error}
@@ -73,12 +73,12 @@ function ResetContent() {
       )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">New Password</label>
+          <label className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">New Password</label>
           <input type="password" value={password} onChange={e => setPassword(e.target.value)}
             required placeholder="••••••••" className="input-field" />
         </div>
         <div>
-          <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Confirm Password</label>
+          <label className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">Confirm Password</label>
           <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)}
             required placeholder="••••••••" className="input-field" />
         </div>
@@ -99,10 +99,10 @@ export default function ResetPasswordPage() {
             style={{ textShadow: '0 0 60px rgba(249,115,22,0.3)' }}>
             EBK
           </h1>
-          <p className="text-[10px] font-bold tracking-[0.4em] text-gray-600 uppercase">Reset Password</p>
+          <p className="text-[10px] font-bold tracking-[0.4em] text-gray-400 uppercase">Reset Password</p>
         </div>
         <div className="card-surface p-8">
-          <Suspense fallback={<div className="text-gray-500 text-center text-sm">Loading…</div>}>
+          <Suspense fallback={<div className="text-gray-400 text-center text-sm">Loading…</div>}>
             <ResetContent />
           </Suspense>
         </div>

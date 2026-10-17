@@ -99,6 +99,9 @@ function QuickStats({ records }: { records: GameRecord[] }) {
 export default function HistoryPage() {
   const [records, setRecords] = useState<GameRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [hasMore, setHasMore] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -110,10 +113,29 @@ export default function HistoryPage() {
       .then(d => {
         if (!d) return
         if (d?.records) setRecords(d.records)
+        setNextCursor(d?.nextCursor ?? null)
+        setHasMore(d?.hasMore ?? false)
         setLoading(false)
       })
       .catch(() => setLoading(false))
   }, [router])
+
+  async function loadMore() {
+    if (!nextCursor || loadingMore) return
+    setLoadingMore(true)
+    try {
+      const res = await fetch(`/api/games/history?cursor=${encodeURIComponent(nextCursor)}`)
+      if (!res.ok) return
+      const d = await res.json()
+      if (d?.records) setRecords(prev => [...prev, ...d.records])
+      setNextCursor(d?.nextCursor ?? null)
+      setHasMore(d?.hasMore ?? false)
+    } catch {
+      // silently ignore — the user can retry by clicking again
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -142,7 +164,7 @@ export default function HistoryPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="font-display text-4xl text-orange-500 leading-none tracking-wide">History</h1>
-            <p className="text-gray-500 text-sm mt-1">Your last {records.length} game{records.length !== 1 ? 's' : ''}</p>
+            <p className="text-gray-500 text-sm mt-1">{records.length} game{records.length !== 1 ? 's' : ''}{hasMore ? ' loaded' : ''}</p>
           </div>
           <Link href="/lobby" className="text-gray-500 hover:text-white text-sm transition-colors">← Lobby</Link>
         </div>
@@ -222,9 +244,18 @@ export default function HistoryPage() {
               })}
             </div>
 
-            {/* Footer link */}
-            <div className="mt-8 text-center">
-              <Link href="/profile" className="text-gray-600 text-sm hover:text-orange-400 transition-colors">
+            {/* Load More / footer */}
+            <div className="mt-8 text-center space-y-4">
+              {hasMore && (
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="w-full py-3 rounded-xl border border-white/[0.08] text-gray-400 text-sm font-black uppercase tracking-wider hover:border-orange-500/50 hover:text-orange-400 transition-colors disabled:opacity-50"
+                >
+                  {loadingMore ? 'Loading…' : 'Load More'}
+                </button>
+              )}
+              <Link href="/profile" className="block text-gray-600 text-sm hover:text-orange-400 transition-colors">
                 View full stats on profile →
               </Link>
             </div>

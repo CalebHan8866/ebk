@@ -2,6 +2,8 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { cookies } from 'next/headers'
+import { createToken } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 import { rateLimit } from '@/lib/ratelimit'
 
@@ -23,7 +25,7 @@ export async function POST(request: NextRequest) {
         resetToken: token,
         resetTokenExpiry: { gt: new Date() },
       },
-      select: { id: true, tokenVersion: true },
+      select: { id: true, username: true, tokenVersion: true },
     })
 
     if (!user) {
@@ -52,6 +54,17 @@ export async function POST(request: NextRequest) {
       // Lost the race — another request already consumed this token
       return NextResponse.json({ error: 'Reset link is invalid or has expired.' }, { status: 400 })
     }
+
+    // Issue a fresh session cookie so the user is automatically logged in after
+    // resetting their password — no need to re-enter credentials on the login page.
+    const newToken = await createToken({ userId: user.id, username: user.username, tokenVersion: newVersion })
+    const cookieStore = await cookies()
+    cookieStore.set('ebk-token', newToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 60 * 60 * 24 * 7,
+    })
 
     return NextResponse.json({ message: 'Password reset successfully.' })
   } catch (e) {

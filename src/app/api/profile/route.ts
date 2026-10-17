@@ -67,6 +67,11 @@ export async function PATCH(request: NextRequest) {
     }
     if (containsProfanity(username)) return NextResponse.json({ error: 'Username contains disallowed words' }, { status: 400 })
 
+    // Reject a no-op change so the client sees a clear message instead of a silent success.
+    if (username === payload.username) {
+      return NextResponse.json({ error: 'That is already your username' }, { status: 400 })
+    }
+
     try {
       const user = await prisma.user.update({
         where: { id: payload.userId },
