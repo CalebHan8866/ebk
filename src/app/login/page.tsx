@@ -128,7 +128,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-16">
+    <div className="min-h-screen flex items-center justify-center px-4 py-16 animate-fade-in">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <h1 className="font-display text-6xl text-white leading-none mb-1"

@@ -536,22 +536,17 @@ export default function LobbyPage() {
             {/* Hero: Online Play */}
             <button
               onClick={() => { setMainTab('online'); setError('') }}
-              className="animate-fade-up-1 group w-full card-surface border border-white/[0.06] hover:border-orange-700/50 hover:bg-orange-950/10 rounded-2xl p-7 text-left transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-between gap-6"
+              className="animate-fade-up-1 group w-full card-surface border border-white/[0.06] hover:border-orange-700/50 hover:bg-orange-950/10 rounded-2xl p-7 text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
             >
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-label">Live</span>
-                  <div className="live-banner py-0.5 px-2" style={{ fontSize: 9 }}>
-                    <span className="live-dot" style={{ width: 5, height: 5 }} />
-                    ONLINE
-                  </div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-label">Live</span>
+                <div className="live-banner py-0.5 px-2" style={{ fontSize: 9 }}>
+                  <span className="live-dot" style={{ width: 5, height: 5 }} />
+                  ONLINE
                 </div>
-                <div className="font-display text-4xl sm:text-5xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">Online Play</div>
-                <div className="text-gray-500 text-xs font-black uppercase tracking-wide">Random opponent. Real-time. Win.</div>
               </div>
-              <div className="shrink-0 w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center group-hover:bg-orange-500/20 transition-all">
-                <span className="text-orange-400 text-xl font-black">→</span>
-              </div>
+              <div className="font-display text-4xl sm:text-5xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">Online Play</div>
+              <div className="text-gray-500 text-xs font-black uppercase tracking-wide">Random opponent. Real-time. Win.</div>
             </button>
 
             {/* Row: War Room + Play Friends */}
@@ -599,7 +594,7 @@ export default function LobbyPage() {
 
         {/* ── ONLINE MODE ─────────────────────────────────────────────────── */}
         {mainTab === 'online' && (
-          <>
+          <div className="animate-fade-up">
             {/* First-time user onboarding hint */}
             {!authLoading && user && user.wins === 0 && user.losses === 0 && (
               <div className="card-surface border border-orange-900/40 rounded-2xl px-5 py-4 mb-5 flex items-start gap-4 animate-slide-up">
@@ -883,12 +878,12 @@ export default function LobbyPage() {
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
 
         {/* ── PLAY WITH FRIENDS ────────────────────────────────────────────── */}
         {mainTab === 'friends' && (
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md mx-auto animate-fade-up">
             {/* Sub-tab toggle */}
             <div className="tab-pill mb-5">
               <button
