@@ -57,8 +57,11 @@ export default function AuctionPage() {
       setIsHost(false)
       setPhase('waiting')
     }
-    const onState = (state: { status: string; participants: ParticipantInfo[]; code: string }) => {
+    const onState = (state: { status: string; participants: ParticipantInfo[]; code: string; teamSize?: number; maxPlayers?: number; totalBudget?: number }) => {
       setParticipants(state.participants)
+      // Sync config from server so guests see the actual room settings, not their local defaults
+      if (state.teamSize && [5, 8, 12].includes(state.teamSize)) setTeamSize(state.teamSize as 5 | 8 | 12)
+      if (state.maxPlayers && state.maxPlayers >= 2 && state.maxPlayers <= 6) setMaxPlayers(state.maxPlayers as 2 | 3 | 4 | 5 | 6)
       if (state.status !== 'waiting') {
         if (state.code) router.push(`/auction/${state.code}`)
       }
