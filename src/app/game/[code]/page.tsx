@@ -445,15 +445,18 @@ function GameContent() {
   // Waiting for opponent
   if (room.status === 'waiting') {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center text-center px-4">
-        <div>
-          <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin mx-auto mb-4"></div>
-          <h2 className="text-3xl font-black text-white mb-2">Waiting for opponent...</h2>
-          <p className="text-gray-400 mb-6">Share this code with your opponent:</p>
-          <div className="bg-[#111827] border-2 border-orange-500 rounded-2xl px-10 py-6 mb-6 inline-block">
-            <div className="text-5xl font-black text-orange-400 tracking-[0.3em]">{room.code}</div>
+      <div className="min-h-screen flex items-center justify-center text-center px-4">
+        <div className="max-w-sm w-full">
+          <div className="inline-flex items-center gap-2 bg-orange-950/40 border border-orange-800/40 rounded-full px-4 py-1.5 mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+            <span className="text-orange-300 text-xs font-black tracking-widest uppercase">Waiting for opponent</span>
           </div>
-          <div className="text-gray-500 text-sm mt-2">
+          <div className="card-accent p-8 mb-4">
+            <p className="text-gray-500 text-xs tracking-widest uppercase mb-3">Room Code</p>
+            <div className="font-display text-6xl text-orange-400 tracking-[0.3em] mb-1">{room.code}</div>
+            <p className="text-gray-600 text-xs">Share this code with your opponent</p>
+          </div>
+          <div className="text-gray-600 text-sm">
             {room.teamMode === 'starter5' ? 'Starter 5' : room.teamMode === 'bench8' ? 'Bench 8' : 'Full Roster'} ·{' '}
             {room.series === 1 ? '1 Game' : `Best of ${room.series}`}
           </div>
@@ -478,7 +481,7 @@ function GameContent() {
     const iWon = seriesWinner === role
     const isDraw = seriesWinner === 'draw'
     return (
-      <div className="min-h-screen bg-[#0A0A0A] px-4 py-8 overflow-y-auto">
+      <div className="min-h-screen px-4 py-8 overflow-y-auto">
         <div className="max-w-4xl w-full mx-auto">
           <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
           {/* LEFT col: header + game-by-game */}
@@ -653,7 +656,7 @@ function GameContent() {
       : assignToSlots(oppPicks, playerById, requiredSlots)
 
     return (
-      <div className="min-h-screen bg-[#0A0A0A] px-4 py-8 overflow-y-auto">
+      <div className="min-h-screen px-4 py-8 overflow-y-auto">
         <div className="max-w-4xl w-full mx-auto">
           <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
           {/* LEFT: header + scores + series */}

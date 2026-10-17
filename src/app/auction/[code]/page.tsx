@@ -203,11 +203,17 @@ export default function AuctionRoomPage() {
     // Request state on mount
     socket.emit('auction:get-state', { code })
 
+    // Redirect to lobby if no state received within 6 seconds (not a participant)
+    const loadTimeout = setTimeout(() => {
+      setPhase(prev => prev === 'loading' ? 'error' : prev)
+    }, 6000)
+
     return () => {
       socket.off('connect')
       socket.off('auction:state')
       socket.off('auction:complete')
       socket.off('auction:error')
+      clearTimeout(loadTimeout)
     }
   }, [code])
 
