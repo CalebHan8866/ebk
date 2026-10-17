@@ -170,31 +170,40 @@ export default function ProfilePage() {
       setEquippedEmote(id)
     }
 
-    const res = await fetch('/api/accessories/equip', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, id }),
-    })
-    if (res.ok) {
-      // Sync user state so subsequent reverts have the correct baseline.
-      // Must recompute from user.equippedBadges (server baseline) not the stale closure.
-      if (type === 'badge') {
-        setUser(u => {
-          if (!u) return u
-          let ids: string[] = []
-          try { ids = JSON.parse(u.equippedBadges || '[]') } catch { ids = [] }
-          const updated = ids.includes(id) ? ids.filter(b => b !== id)
-            : ids.length < 3 ? [...ids, id] : [...ids.slice(1), id]
-          const newEquippedBadges = JSON.stringify(updated)
-          // Sync to AuthContext so Navbar badge display updates immediately
-          if (authUser) setAuthUser({ ...authUser, equippedBadges: newEquippedBadges })
-          return { ...u, equippedBadges: newEquippedBadges }
-        })
+    try {
+      const res = await fetch('/api/accessories/equip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, id }),
+      })
+      if (res.ok) {
+        // Sync user state so subsequent reverts have the correct baseline.
+        // Must recompute from user.equippedBadges (server baseline) not the stale closure.
+        if (type === 'badge') {
+          setUser(u => {
+            if (!u) return u
+            let ids: string[] = []
+            try { ids = JSON.parse(u.equippedBadges || '[]') } catch { ids = [] }
+            const updated = ids.includes(id) ? ids.filter(b => b !== id)
+              : ids.length < 3 ? [...ids, id] : [...ids.slice(1), id]
+            const newEquippedBadges = JSON.stringify(updated)
+            // Sync to AuthContext so Navbar badge display updates immediately
+            if (authUser) setAuthUser({ ...authUser, equippedBadges: newEquippedBadges })
+            return { ...u, equippedBadges: newEquippedBadges }
+          })
+        } else {
+          setUser(u => u ? { ...u, equippedEmote: id } : u)
+        }
       } else {
-        setUser(u => u ? { ...u, equippedEmote: id } : u)
+        // Revert on server-side failure
+        if (type === 'badge') {
+          try { setEquippedBadges(JSON.parse(user?.equippedBadges || '[]')) } catch { setEquippedBadges([]) }
+        } else {
+          setEquippedEmote(user?.equippedEmote ?? '')
+        }
       }
-    } else {
-      // Revert on failure
+    } catch {
+      // Revert optimistic update on network error
       if (type === 'badge') {
         try { setEquippedBadges(JSON.parse(user?.equippedBadges || '[]')) } catch { setEquippedBadges([]) }
       } else {
