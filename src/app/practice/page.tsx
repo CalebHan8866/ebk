@@ -278,37 +278,37 @@ function PracticeContent() {
 
           <div className="card-surface rounded-2xl p-6 space-y-5">
             <div>
-              <label className="block text-gray-400 text-xs mb-2 uppercase tracking-wide">Team Size</label>
+              <label className="text-label block mb-3">Team Size</label>
               <div className="grid grid-cols-3 gap-2">
                 {([['starter5', 'Starter 5', '5 players'], ['bench8', 'Bench 8', '8 players'], ['full12', 'Full 12', '12 players']] as const).map(([val, label, sub]) => (
                   <button key={val} onClick={() => setTeamMode(val)}
-                    className={`rounded-lg p-2.5 text-center text-xs border transition-all ${teamMode === val ? 'border-orange-500 bg-orange-600/20 text-orange-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                    <div className="font-black text-sm">{label}</div>
-                    <div className="text-gray-400">{sub}</div>
+                    className={`rounded-xl p-3 text-center border transition-all ${teamMode === val ? 'border-orange-500 bg-orange-600/20 text-orange-400 shadow-[0_0_12px_rgba(234,88,12,0.15)]' : 'border-white/[0.07] bg-white/[0.02] text-gray-400 hover:border-white/[0.15] hover:text-white'}`}>
+                    <div className={`font-black text-sm ${teamMode === val ? 'text-orange-400' : 'text-white'}`}>{label}</div>
+                    <div className="text-[11px] mt-0.5 opacity-60">{sub}</div>
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="block text-gray-400 text-xs mb-2 uppercase tracking-wide">Mode</label>
+              <label className="text-label block mb-3">Mode</label>
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={() => setDifficulty('casual')}
-                  className={`rounded-lg p-3 text-center border transition-all ${difficulty === 'casual' ? 'border-orange-500 bg-orange-600/20 text-orange-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                  <div className="font-black text-sm">Casual</div>
-                  <div className="text-xs opacity-70 mt-0.5">EBK scores shown</div>
+                  className={`rounded-xl p-3 text-center border transition-all ${difficulty === 'casual' ? 'border-orange-500 bg-orange-600/20 shadow-[0_0_12px_rgba(234,88,12,0.15)]' : 'border-white/[0.07] bg-white/[0.02] text-gray-400 hover:border-white/[0.15] hover:text-white'}`}>
+                  <div className={`font-black text-sm ${difficulty === 'casual' ? 'text-orange-400' : 'text-white'}`}>Casual</div>
+                  <div className="text-[11px] opacity-60 mt-0.5">EBK scores shown</div>
                 </button>
                 <button onClick={() => setDifficulty('ebk')}
-                  className={`rounded-lg p-3 text-center border transition-all ${difficulty === 'ebk' ? 'border-yellow-500 bg-yellow-600/10 text-yellow-400' : 'border-gray-700 text-gray-400 hover:border-gray-500'}`}>
-                  <div className="font-black text-sm">EBK</div>
-                  <div className="text-xs opacity-70 mt-0.5">No scores — blind picks</div>
+                  className={`rounded-xl p-3 text-center border transition-all ${difficulty === 'ebk' ? 'border-yellow-500 bg-yellow-600/10 shadow-[0_0_12px_rgba(234,179,8,0.12)]' : 'border-white/[0.07] bg-white/[0.02] text-gray-400 hover:border-white/[0.15] hover:text-white'}`}>
+                  <div className={`font-black text-sm ${difficulty === 'ebk' ? 'text-yellow-400' : 'text-white'}`}>EBK Mode</div>
+                  <div className="text-[11px] opacity-60 mt-0.5">Blind picks — no scores</div>
                 </button>
               </div>
             </div>
 
             <button
               onClick={() => { setPicks(Array(TEAM_SIZES[teamMode]).fill(null)); setSpunTeamsHistory([]); setScreen('draft') }}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black py-3 rounded-xl transition-colors text-lg">
+              className="btn-primary w-full py-4 text-base">
               Start Practice
             </button>
           </div>
@@ -447,28 +447,34 @@ function PracticeContent() {
               {/* Player Pool */}
               <div className="lg:col-span-3">
                 {/* Team Spinner */}
-                <div className={`rounded-xl p-3 mb-3 flex items-center gap-3 border-2 transition-all ${
-                  isSpinning ? 'border-yellow-500 bg-yellow-900/20' :
-                  spunTeam ? 'border-orange-500 bg-orange-900/20' : 'border-gray-700 bg-[#111]'
+                <div className={`rounded-xl p-3 mb-3 flex items-center gap-3 border-2 transition-all duration-300 ${
+                  isSpinning ? 'border-yellow-500/60 bg-yellow-900/15 shadow-[0_0_16px_rgba(234,179,8,0.12)]' :
+                  spunTeam   ? 'border-orange-500/60 bg-orange-900/15 shadow-[0_0_16px_rgba(249,115,22,0.1)]' : 'border-white/[0.08] bg-white/[0.02]'
                 }`}>
-                  <div className={`text-3xl font-black w-16 text-center shrink-0 ${isSpinning ? 'text-yellow-400 animate-pulse' : 'text-orange-400'}`}>
+                  <div className={`font-display text-4xl w-16 text-center shrink-0 leading-none transition-all ${isSpinning ? 'text-yellow-400 animate-pulse' : spunTeam ? 'text-orange-400' : 'text-gray-600'}`}>
                     {spinDisplay}
                   </div>
                   <div className="flex-1">
                     {isSpinning ? (
                       <div>
                         <div className="text-yellow-400 font-black text-sm">Spinning...</div>
-                        <div className="text-gray-400 text-xs">Your team is being assigned</div>
+                        <div className="text-label mt-0.5">Your team is being assigned</div>
                       </div>
                     ) : spunTeam && spunTeamInfo ? (
                       <div>
                         <div className="text-white font-black text-sm">{spunTeamInfo.city} {spunTeamInfo.name}</div>
-                        <div className="text-gray-400 text-xs">{filteredPlayers.length} available · Pick from this team only</div>
+                        <div className="text-label mt-0.5">{filteredPlayers.length} available · Pick from this team only</div>
                       </div>
                     ) : (
-                      <div className="text-gray-400 text-sm">Loading teams...</div>
+                      <div className="text-gray-500 text-sm">Loading teams...</div>
                     )}
                   </div>
+                  {spunTeam && !isSpinning && (
+                    <div className="live-banner shrink-0 text-[9px]">
+                      <span className="live-dot" />
+                      PICK
+                    </div>
+                  )}
                 </div>
 
                 {/* Search */}
@@ -506,7 +512,15 @@ function PracticeContent() {
                 <div className="flex gap-1.5 mb-2 flex-wrap">
                   {difficulty !== 'ebk' && ['ALL', 'PG', 'SG', 'SF', 'PF', 'C'].map(pos => (
                     <button key={pos} onClick={() => setFilterPos(pos)}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${filterPos === pos ? 'bg-orange-600 text-white' : 'bg-[#111] text-gray-400 hover:text-white'}`}>
+                      className={`pos-badge transition-all ${
+                        pos === 'ALL'
+                          ? filterPos === pos ? 'bg-orange-600/30 border-orange-500/60 text-orange-300' : 'bg-white/[0.04] border-white/[0.08] text-gray-400 hover:text-white'
+                          : pos === 'PG' ? (filterPos === pos ? 'pos-pg ring-1 ring-blue-400/40' : 'bg-transparent border-blue-500/20 text-blue-500/50 hover:pos-pg')
+                          : pos === 'SG' ? (filterPos === pos ? 'pos-sg ring-1 ring-cyan-400/40' : 'bg-transparent border-cyan-500/20 text-cyan-500/50 hover:pos-sg')
+                          : pos === 'SF' ? (filterPos === pos ? 'pos-sf ring-1 ring-green-400/40' : 'bg-transparent border-green-500/20 text-green-500/50 hover:pos-sf')
+                          : pos === 'PF' ? (filterPos === pos ? 'pos-pf ring-1 ring-yellow-400/40' : 'bg-transparent border-yellow-500/20 text-yellow-500/50 hover:pos-pf')
+                          : (filterPos === pos ? 'pos-c ring-1 ring-red-400/40' : 'bg-transparent border-red-500/20 text-red-500/50 hover:pos-c')
+                      }`}>
                       {pos}
                     </button>
                   ))}
@@ -612,70 +626,62 @@ function PracticeContent() {
       <div className="max-w-2xl mx-auto">
 
         {/* EBK Score + Grade */}
-        <div className="card-surface rounded-2xl p-6 mb-5 text-center">
-          <div className="text-gray-400 text-xs uppercase tracking-widest mb-3">EBK Score</div>
+        <div className="card-accent rounded-2xl p-6 mb-5 text-center animate-scale-in">
+          <div className="text-label mb-3">Practice Result</div>
           <div className={`font-display leading-none mb-1 ${gradeColor}`} style={{ fontSize: 'clamp(5rem, 22vw, 8rem)' }}>
             {grade}
           </div>
-          <div className={`font-black text-lg mb-4 ${gradeColor}`}>{gradeLabel}</div>
+          <div className={`font-black text-lg mb-5 ${gradeColor}`}>{gradeLabel}</div>
+
+          {/* Score comparison row */}
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="card-surface rounded-xl p-3 text-center">
+              <div className={`font-display text-3xl leading-none tabular-nums ${gradeColor}`}>{totalEBK.toFixed(1)}</div>
+              <div className="text-label mt-1.5">Your EBK</div>
+            </div>
+            <div className="card-surface rounded-xl p-3 text-center flex flex-col items-center justify-center">
+              <div className={`font-display text-2xl leading-none tabular-nums ${gradeColor}`}>{pct.toFixed(0)}%</div>
+              <div className="text-label mt-1.5">of Optimal</div>
+            </div>
+            <div className="card-surface rounded-xl p-3 text-center">
+              <div className="font-display text-3xl leading-none text-gray-400 tabular-nums">{bestEBK.toFixed(1)}</div>
+              <div className="text-label mt-1.5">Best Possible</div>
+            </div>
+          </div>
 
           {/* Score bar */}
-          <div className="bg-[#0A0A0A] rounded-xl p-4 mb-3">
-            <div className="flex justify-between text-xs text-gray-400 mb-2">
-              <span>Your EBK</span>
-              <span>Best Possible</span>
-            </div>
-            <div className="w-full bg-gray-800 rounded-full h-3 mb-2 overflow-hidden">
-              <div
-                className={`h-3 rounded-full transition-all ${
-                  pct >= 85 ? 'bg-green-500' : pct >= 70 ? 'bg-blue-500' : pct >= 55 ? 'bg-yellow-500' : pct >= 40 ? 'bg-orange-500' : 'bg-red-500'
-                }`}
-                style={{ width: `${Math.min(pct, 100)}%` }}
-              />
-            </div>
-            <div className="flex justify-between items-baseline">
-              <span className={`font-black text-2xl ${gradeColor}`}>{totalEBK.toFixed(1)}</span>
-              <span className="text-gray-400 text-xs">{pct.toFixed(1)}% of optimal</span>
-              <span className="font-black text-2xl text-gray-400">{bestEBK.toFixed(1)}</span>
-            </div>
+          <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden mb-1">
+            <div
+              className={`h-full rounded-full transition-all duration-700 ${
+                pct >= 85 ? 'bg-gradient-to-r from-green-600 to-green-400' : pct >= 70 ? 'bg-gradient-to-r from-blue-600 to-blue-400' : pct >= 55 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400' : pct >= 40 ? 'bg-gradient-to-r from-orange-700 to-orange-400' : 'bg-gradient-to-r from-red-700 to-red-500'
+              }`}
+              style={{ width: `${Math.min(pct, 100)}%` }}
+            />
           </div>
-
-          <div className="text-gray-400 text-xs">
-            EBK score = career stats weighted by impact · higher is better
-          </div>
+          <div className="text-label text-center">EBK = career stats weighted by impact</div>
         </div>
 
         {/* Roster */}
-        <div className="card-surface rounded-2xl p-4 mb-5">
+        <div className="card-surface rounded-2xl p-4 mb-5 animate-fade-up-1">
           <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Your Roster</h2>
           <div className="space-y-2">
             {requiredSlots.map((slotPos, i) => {
               const p = pickedPlayersBySlot[i]
               if (!p) return null
               return (
-                <div key={i} className="bg-[#0A0A0A] rounded-lg px-3 py-2.5">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`font-bold text-xs w-7 shrink-0 ${slotPos === 'BENCH' ? 'text-gray-400' : 'text-orange-400'}`}>
-                      {slotPos === 'BENCH' ? 'BN' : slotPos}
-                    </span>
-                    <span className="text-white text-sm font-bold truncate flex-1" title={`${p.firstName} ${p.lastName}`}>{p.firstName} {p.lastName}</span>
-                    <span className={`text-xs font-black shrink-0 ${
-                      p.ebkScore >= 80 ? 'text-green-400' :
-                      p.ebkScore >= 60 ? 'text-yellow-400' :
-                      p.ebkScore >= 40 ? 'text-orange-400' : 'text-red-400'
-                    }`}>{p.ebkScore.toFixed(1)}</span>
+                <div key={i} className="draft-slot draft-slot-filled rounded-lg px-3 py-2.5 flex items-center gap-2">
+                  <span className={`font-display text-sm w-8 shrink-0 leading-none ${slotPos === 'BENCH' ? 'text-gray-500' : 'text-orange-400'}`}>
+                    {slotPos === 'BENCH' ? 'BN' : slotPos}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-white text-sm font-bold truncate">{p.firstName} {p.lastName}</div>
+                    <div className="text-gray-500 text-[11px]">{p.team} · {p.careerGames}GP · {p.careerPPG.toFixed(1)}P/{p.careerRPG.toFixed(1)}R/{p.careerAPG.toFixed(1)}A</div>
                   </div>
-                  <div className="flex items-center gap-2 pl-9 flex-wrap">
-                    <span className="text-gray-400 text-xs">{p.team} · {p.yearFrom}–{p.yearTo}</span>
-                    <span className="text-gray-700 text-xs">·</span>
-                    <span className="text-gray-400 text-xs">{p.careerGames}GP</span>
-                    <span className="text-gray-700 text-xs">·</span>
-                    <span className="text-gray-400 text-xs">{p.careerPPG.toFixed(1)}P</span>
-                    <span className="text-gray-700 text-xs">·</span>
-                    <span className="text-gray-400 text-xs">{p.careerRPG.toFixed(1)}R</span>
-                    <span className="text-gray-700 text-xs">·</span>
-                    <span className="text-gray-400 text-xs">{p.careerAPG.toFixed(1)}A</span>
-                  </div>
+                  <div className={`font-display text-xl leading-none shrink-0 tabular-nums ${
+                    p.ebkScore >= 80 ? 'text-green-400' :
+                    p.ebkScore >= 60 ? 'text-yellow-400' :
+                    p.ebkScore >= 40 ? 'text-orange-400' : 'text-red-400'
+                  }`}>{p.ebkScore.toFixed(1)}</div>
                 </div>
               )
             })}
@@ -701,13 +707,12 @@ function PracticeContent() {
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 animate-fade-up-2">
           <button onClick={() => { const newPicks = Array(TEAM_SIZES[teamMode]).fill(null); setPicks(newPicks); setSpunTeamsHistory([]); setScreen('draft'); triggerSpin(players, newPicks) }}
-            className="flex-1 bg-[#111] hover:bg-[#1e2d45] text-white font-black py-3 rounded-xl transition-colors border border-gray-700">
+            className="btn-secondary flex-1">
             Draft Again
           </button>
-          <button onClick={reset}
-            className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-black py-3 rounded-xl transition-colors">
+          <button onClick={reset} className="btn-primary flex-1">
             Change Settings
           </button>
         </div>

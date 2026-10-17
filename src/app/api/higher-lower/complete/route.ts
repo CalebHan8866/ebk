@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { BADGES } from '@/lib/accessories'
+import { verifyGameToken } from '../start/route'
 
 const HL_BADGE_IDS = ['hl_10', 'hl_25', 'hl_gauntlet']
 
@@ -24,10 +25,19 @@ export async function POST(request: NextRequest) {
     const payload = await verifyToken(token)
     if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    let body: { milestone: string; streak?: number; complete?: boolean }
+    let body: { milestone: string; streak?: number; complete?: boolean; gameToken?: string }
     try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid body' }, { status: 400 }) }
 
-    const { milestone, streak, complete } = body
+    const { milestone, streak, complete, gameToken } = body
+
+    // Require a valid server-issued game session token. This prevents callers from
+    // directly POSTing badge claims without having started a game session via
+    // GET /api/higher-lower/start — the token is HMAC-signed with a server secret
+    // and expires after 30 minutes, so it cannot be forged or reused across sessions.
+    if (!gameToken || typeof gameToken !== 'string' || !verifyGameToken(gameToken, payload.userId)) {
+      return NextResponse.json({ error: 'Invalid or expired game session' }, { status: 403 })
+    }
+
     if (!milestone || !HL_BADGE_IDS.includes(milestone)) {
       return NextResponse.json({ error: 'Invalid milestone' }, { status: 400 })
     }

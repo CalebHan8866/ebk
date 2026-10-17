@@ -49,6 +49,9 @@ export default function HigherLowerPage() {
   const badgeClearRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isMounted = useRef(true)
   const isGuessingRef = useRef(false)
+  // Server-issued game session token — required when claiming a badge to prove
+  // this request originated from an actual game session rather than a direct API call.
+  const gameTokenRef = useRef<string | null>(null)
 
   useEffect(() => {
     isMounted.current = true
@@ -63,10 +66,21 @@ export default function HigherLowerPage() {
     const saved = typeof window !== 'undefined' ? parseInt(localStorage.getItem('hl_best') || '0') : 0
     setBestStreak(saved)
 
-    fetch('/api/players')
-      .then(r => r.json())
-      .then((all: Player[]) => {
+    // Fetch players and (in parallel, if logged in) a server-side game session token.
+    // The game token is passed back with badge claims so the server can verify the
+    // claim comes from a real game session rather than a crafted direct API call.
+    const playersFetch = fetch('/api/players').then(r => r.json())
+    const tokenFetch: Promise<string | null> = user
+      ? fetch('/api/higher-lower/start')
+          .then(r => r.ok ? r.json() : null)
+          .then(d => d?.gameToken ?? null)
+          .catch(() => null)
+      : Promise.resolve(null)
+
+    Promise.all([playersFetch, tokenFetch])
+      .then(([all, gameToken]: [Player[], string | null]) => {
         if (!isMounted.current) return
+        if (gameToken) gameTokenRef.current = gameToken
         const filtered = all.filter(p => p.careerGames >= 80 && p.ebkScore >= 5 && p.ebkScore <= 88)
         const byGames = [...filtered].sort((a, b) => b.careerGames - a.careerGames).slice(0, 200)
         setAllPlayers(byGames)
@@ -75,6 +89,7 @@ export default function HigherLowerPage() {
         setScreen('playing')
       })
       .catch(() => { if (isMounted.current) setScreen('error') })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function tryUnlock(milestone: string, currentStreak: number) {
@@ -85,7 +100,7 @@ export default function HigherLowerPage() {
       const res = await fetch('/api/higher-lower/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ milestone, streak: currentStreak, complete: isGauntlet }),
+        body: JSON.stringify({ milestone, streak: currentStreak, complete: isGauntlet, gameToken: gameTokenRef.current }),
       })
       if (!isMounted.current) return
       if (!res.ok) {
