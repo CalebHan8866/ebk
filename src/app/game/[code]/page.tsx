@@ -808,13 +808,13 @@ function GameContent() {
 
           {/* CTA */}
           {role === 'host' ? (
-            <button onClick={startNextGame} className="btn-primary w-full mt-2 py-4 text-base font-display tracking-widest">
+            <button onClick={startNextGame} className="btn-primary w-full mt-2 py-4 text-base font-display tracking-widest animate-glow">
               Start Game {room.currentGame + 1}
             </button>
           ) : (
             <div className="card-surface rounded-2xl py-4 px-6 text-center mt-2 flex items-center justify-center gap-3">
-              <span className="w-4 h-4 rounded-full border-2 border-orange-500 border-t-transparent animate-spin shrink-0"></span>
-              <span className="text-gray-400 text-sm">Waiting for <span className="text-white font-bold">{room.hostName}</span>...</span>
+              <span className="w-4 h-4 rounded-full border-2 border-orange-500/50 border-t-orange-400 animate-spin shrink-0" />
+              <span className="text-gray-400 text-sm">Waiting for <span className="text-white font-bold">{room.hostName}</span> to start...</span>
             </div>
           )}
         </div>
@@ -1177,35 +1177,39 @@ function GameContent() {
                 className="input-field pl-9 pr-8 py-2.5 text-sm rounded-xl"
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} aria-label="Clear search" className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors text-xs">✕</button>
+                <button onClick={() => setSearchQuery('')} aria-label="Clear search" className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 active:text-white transition-colors text-xs w-5 h-5 flex items-center justify-center rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50">✕</button>
               )}
             </div>
 
             {/* Position availability banner */}
-            <div className="flex items-center gap-2 mb-2 card-surface rounded-lg px-3 py-2 flex-wrap">
+            <div className="flex items-center gap-2 mb-2 bg-white/[0.025] border border-white/[0.06] rounded-lg px-3 py-2 flex-wrap">
               {isStarterSlot ? (
                 <>
-                  <span className="text-gray-400 text-xs shrink-0">Still need:</span>
+                  <span className="text-label shrink-0">Need:</span>
                   {remainingStarterPositions.map(pos => (
-                    <span key={pos} className="text-xs font-black px-2 py-0.5 rounded bg-orange-600 text-white">{pos}</span>
+                    <span key={pos} className="text-[10px] font-black px-2 py-0.5 rounded-md bg-orange-600/90 text-white shadow-sm">{pos}</span>
                   ))}
                 </>
               ) : (
-                <span className="text-gray-400 text-xs">Bench slot — any player</span>
+                <span className="text-label">Bench — any player eligible</span>
               )}
             </div>
 
             {/* Position filter — hidden in EBK mode */}
-            <div className="flex gap-1.5 mb-3 flex-wrap">
+            <div className="flex items-center gap-1.5 mb-3 flex-wrap">
               {room.difficulty !== 'ebk' && ['ALL', 'PG', 'SG', 'SF', 'PF', 'C'].map(pos => (
                 <button key={pos} onClick={() => setFilterPos(pos)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${filterPos === pos ? 'bg-orange-600 text-white' : 'bg-[#0d0d0d] border border-white/[0.07] text-gray-400 hover:text-white'}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-black tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50 ${
+                    filterPos === pos
+                      ? 'bg-orange-600 text-white shadow-[0_2px_8px_rgba(234,88,12,0.35)]'
+                      : 'bg-white/[0.04] border border-white/[0.07] text-white/50 hover:text-white hover:border-white/20 hover:bg-white/[0.07]'
+                  }`}
                 >
                   {pos}
                 </button>
               ))}
-              <span className="ml-auto text-xs text-gray-400 self-center">
-                {room.difficulty === 'ebk' && searchQuery.length < 3 ? 'type 3+ letters to search' : `${filteredPlayers.length} players`}
+              <span className="ml-auto text-label self-center">
+                {room.difficulty === 'ebk' && searchQuery.length < 3 ? 'type 3+ letters' : `${filteredPlayers.length} available`}
               </span>
             </div>
 
@@ -1252,8 +1256,9 @@ function GameContent() {
                             const socket = getSocket()
                             socket.emit('use-emote', { code, emoteText: emote.text })
                           }}
-                          className="bg-[#1a1a2e] hover:bg-[#252540] border border-gray-700 hover:border-orange-500 text-white text-sm px-3 py-1.5 rounded-xl transition-all font-medium"
+                          className="bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.12] border border-white/[0.09] hover:border-orange-500/50 text-white text-sm px-3 py-1.5 rounded-xl transition-all font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50"
                           title={emote.label}
+                          aria-label={`Send emote: ${emote.label}`}
                         >
                           {emote.text}
                         </button>
@@ -1262,6 +1267,15 @@ function GameContent() {
                   </div>
                 )}
 
+                {filteredPlayers.length === 0 && !isSpinning && spunTeam && (
+                  <div className="empty-state">
+                    <div className="empty-state-icon">🔍</div>
+                    <div className="empty-state-title">No players found</div>
+                    <div className="empty-state-body">
+                      {searchQuery ? 'Try a different search term' : 'All eligible players have been picked'}
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-1 max-h-[50vh] overflow-y-auto pr-1">
                   {filteredPlayers.map((player, idx) => {
                     const playerPositions = player.positions.split(',')
@@ -1350,7 +1364,7 @@ function GameContent() {
                               <button
                                 key={slotIdx}
                                 onClick={e => { e.stopPropagation(); pickIntoSlot(slotIdx) }}
-                                className="bg-orange-600 hover:bg-orange-500 text-white text-xs font-black px-3 py-1.5 rounded-lg transition-colors"
+                                className="bg-orange-600 hover:bg-orange-500 active:bg-orange-700 text-white text-xs font-black px-3 py-1.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/70"
                               >
                                 {requiredSlots[slotIdx] === 'BENCH' ? 'BENCH' : requiredSlots[slotIdx]}
                               </button>

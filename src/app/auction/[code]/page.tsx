@@ -305,8 +305,14 @@ export default function AuctionRoomPage() {
   if (phase === 'loading') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <div className="w-10 h-10 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-white/40 text-sm tracking-widest">CONNECTING TO WAR ROOM...</p>
+        <div className="relative w-16 h-16">
+          <div className="absolute inset-0 rounded-full border-2 border-white/[0.05]" />
+          <div className="absolute inset-0 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+          <div className="absolute inset-3 rounded-full bg-orange-600/10 flex items-center justify-center">
+            <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+          </div>
+        </div>
+        <p className="text-label tracking-[0.3em]">CONNECTING TO WAR ROOM...</p>
       </div>
     )
   }
@@ -314,9 +320,15 @@ export default function AuctionRoomPage() {
   // ── Error ──────────────────────────────────────────────────────────────────
   if (phase === 'error') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-6">
-        <p className="text-red-400 text-lg font-bold">Room not found</p>
-        <Link href="/auction" className="btn-primary">Back to Lobby</Link>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4">
+        <div className="card-surface p-10 max-w-sm w-full text-center animate-scale-in">
+          <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto mb-4">
+            <span className="text-red-400 text-xl font-black">!</span>
+          </div>
+          <h2 className="font-display text-3xl text-white mb-2">ROOM NOT FOUND</h2>
+          <p className="text-gray-400 text-sm mb-6">This War Room doesn&apos;t exist or has already ended.</p>
+          <Link href="/auction" className="btn-primary w-full">Back to Lobby</Link>
+        </div>
       </div>
     )
   }
@@ -328,9 +340,12 @@ export default function AuctionRoomPage() {
   if (phase === 'complete' && results.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <div className="w-10 h-10 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-white/40 text-sm tracking-widest">LOADING FINAL RESULTS...</p>
-        <Link href="/auction" className="mt-4 text-white/30 text-xs hover:text-white/60 underline">Back to lobby</Link>
+        <div className="relative w-14 h-14">
+          <div className="absolute inset-0 rounded-full border-2 border-white/[0.05]" />
+          <div className="absolute inset-0 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+        </div>
+        <p className="text-label tracking-[0.3em]">LOADING FINAL RESULTS...</p>
+        <Link href="/auction" className="mt-2 text-white/25 text-xs hover:text-white/50 underline transition-colors">Back to lobby</Link>
       </div>
     )
   }
@@ -495,10 +510,10 @@ export default function AuctionRoomPage() {
         {/* ── Action row ── */}
         <div className="flex justify-center gap-3 flex-wrap">
           <Link href="/auction" className="btn-primary">Play Again</Link>
-          <Link href="/leaderboard" className="px-6 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/30 transition-all text-sm font-bold">
+          <Link href="/leaderboard" className="btn-secondary text-sm">
             Leaderboard
           </Link>
-          <Link href="/lobby" className="px-6 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/30 transition-all text-sm font-bold">
+          <Link href="/lobby" className="btn-secondary text-sm">
             Back to Lobby
           </Link>
         </div>
@@ -509,36 +524,66 @@ export default function AuctionRoomPage() {
   // ── Waiting ────────────────────────────────────────────────────────────────
   if (phase === 'waiting' && auctionState) {
     return (
-      <div className="min-h-screen px-4 py-10 max-w-xl mx-auto">
-        <div className="text-center mb-8">
-          <span className="font-display text-4xl text-orange-500">WAR ROOM</span>
-          <span className="ml-3 font-mono text-white/40">{code}</span>
+      <div className="min-h-screen px-4 py-10 max-w-xl mx-auto animate-fade-in">
+        <div className="text-center mb-8 animate-fade-up">
+          <div className="live-banner mx-auto w-fit mb-4">
+            <span className="live-dot" />
+            WAITING FOR PLAYERS
+          </div>
+          <h1 className="font-display text-5xl text-orange-500 tracking-wider leading-none">WAR ROOM</h1>
+          <div className="mt-2 font-mono text-white/30 text-sm border border-white/[0.07] bg-white/[0.02] rounded-lg px-3 py-1 inline-block tracking-widest">{code}</div>
         </div>
-        <div className="card-accent p-6 space-y-4 mb-6">
-          <p className="text-white/40 text-xs uppercase tracking-widest text-center">Players in Room</p>
+        <div className="card-accent p-6 space-y-3 mb-6 animate-fade-up-1">
+          <p className="text-label tracking-[0.2em] text-center mb-4">GMs in Room</p>
           {auctionState.participants.map((p, i) => (
-            <div key={p.socketId} className="flex items-center gap-3 bg-white/[0.03] rounded-xl px-4 py-3">
-              <div className="w-9 h-9 rounded-full bg-orange-600/20 border border-orange-500/30 flex items-center justify-center font-display text-orange-400">
+            <div
+              key={p.socketId}
+              className={`flex items-center gap-3 rounded-xl px-4 py-3 border transition-all animate-stagger-item ${
+                p.socketId === mySocketId
+                  ? 'bg-orange-950/30 border-orange-500/25'
+                  : 'bg-white/[0.025] border-white/[0.05]'
+              }`}
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center font-display text-sm shrink-0 ${
+                p.socketId === mySocketId ? 'bg-orange-600 text-white' : 'bg-white/[0.08] text-white/60'
+              }`}>
                 {p.name[0]?.toUpperCase()}
               </div>
-              <span className="font-bold text-white">{p.name}</span>
-              {p.socketId === mySocketId && <span className="ml-auto text-xs text-orange-400 font-bold">(You)</span>}
-              {i === 0 && p.socketId !== mySocketId && <span className="ml-auto text-xs text-white/30">Host</span>}
+              <span className="font-bold text-white flex-1 truncate">{p.name}</span>
+              {p.socketId === mySocketId && (
+                <span className="text-[10px] font-black text-orange-400 bg-orange-950/50 border border-orange-500/30 rounded px-1.5 py-0.5 uppercase tracking-wider shrink-0">You</span>
+              )}
+              {i === 0 && p.socketId !== mySocketId && (
+                <span className="text-[10px] font-black text-white/25 uppercase tracking-wider shrink-0">Host</span>
+              )}
+              {i === 0 && p.socketId === mySocketId && (
+                <span className="text-[10px] font-black text-white/25 uppercase tracking-wider shrink-0">Host</span>
+              )}
             </div>
           ))}
+          {auctionState.participants.length < 2 && (
+            <div className="text-center pt-2 pb-1">
+              <div className="flex items-center justify-center gap-2 text-white/25 text-xs">
+                <span className="w-3 h-3 rounded-full border-2 border-white/20 border-t-white/50 animate-spin" />
+                Waiting for more players to join...
+              </div>
+            </div>
+          )}
         </div>
         {isHost ? (
           <button
             onClick={handleStart}
             disabled={(auctionState.participants.length ?? 0) < 2}
-            className={`btn-primary w-full text-lg font-display tracking-widest ${
-              (auctionState.participants.length ?? 0) < 2 ? 'opacity-40 cursor-not-allowed hover:scale-100' : ''
-            }`}
+            className="btn-primary w-full text-lg font-display tracking-widest"
           >
-            Start Auction
+            {(auctionState.participants.length ?? 0) < 2 ? 'Waiting for Players...' : 'Start Auction'}
           </button>
         ) : (
-          <div className="text-center text-white/30 text-sm">Waiting for host to start...</div>
+          <div className="flex items-center justify-center gap-2 text-white/30 text-sm py-3">
+            <span className="w-4 h-4 rounded-full border-2 border-orange-500/40 border-t-orange-400 animate-spin shrink-0" />
+            Waiting for host to start...
+          </div>
         )}
       </div>
     )
@@ -598,7 +643,11 @@ export default function AuctionRoomPage() {
                 </button>
               ))}
               {(!me?.roster || me.roster.length === 0) && (
-                <p className="text-white/20 text-sm text-center py-4">No players yet</p>
+                <div className="empty-state py-6">
+                  <div className="empty-state-icon">🏀</div>
+                  <div className="empty-state-title">No players yet</div>
+                  <div className="empty-state-body">Win some bids to build your roster</div>
+                </div>
               )}
             </div>
           </div>
@@ -620,13 +669,9 @@ export default function AuctionRoomPage() {
                       setTradeTarget(tradeTarget === gm.socketId ? null : gm.socketId)
                       setSelectedToRequest([])
                     }}
-                    className={`text-xs px-3 py-1.5 rounded-lg border font-bold transition-all ${
-                      tradeTarget === gm.socketId
-                        ? 'bg-orange-600/30 border-orange-500/50 text-orange-300'
-                        : 'bg-white/[0.05] border-white/10 text-white/50 hover:text-white hover:border-white/30'
-                    }`}
+                    className={tradeTarget === gm.socketId ? 'btn-secondary text-xs py-2 px-4' : 'btn-primary text-xs py-2 px-4'}
                   >
-                    {tradeTarget === gm.socketId ? 'Proposing...' : 'Propose Trade'}
+                    {tradeTarget === gm.socketId ? '✕ Cancel' : '↔ Propose Trade'}
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -647,7 +692,9 @@ export default function AuctionRoomPage() {
                       <span className="text-orange-400">{p.ebkScore.toFixed(1)}</span>
                     </button>
                   ))}
-                  {gm.roster.length === 0 && <span className="text-white/20 text-xs">Empty roster</span>}
+                  {gm.roster.length === 0 && (
+                    <span className="text-white/20 text-xs italic">No players drafted</span>
+                  )}
                 </div>
 
                 {/* Trade offer UI for this GM */}
@@ -672,11 +719,7 @@ export default function AuctionRoomPage() {
                     <button
                       onClick={handleSendTradeOffer}
                       disabled={selectedToOffer.length === 0 || selectedToRequest.length === 0}
-                      className={`w-full py-2 rounded-lg text-sm font-bold border transition-all ${
-                        selectedToOffer.length > 0 && selectedToRequest.length > 0
-                          ? 'bg-orange-600/20 border-orange-500/40 text-orange-300 hover:bg-orange-600/30'
-                          : 'bg-white/[0.03] border-white/[0.07] text-white/20 cursor-not-allowed'
-                      }`}
+                      className="btn-primary w-full text-sm"
                     >
                       Send Trade Offer
                     </button>
@@ -720,13 +763,13 @@ export default function AuctionRoomPage() {
                       <div className="flex flex-col gap-2 shrink-0">
                         <button
                           onClick={() => handleTradeRespond(offer.id, true)}
-                          className="px-4 py-2 bg-green-600/20 border border-green-500/40 text-green-400 rounded-lg text-sm font-bold hover:bg-green-600/30 transition-all"
+                          className="btn-primary text-xs py-2.5 px-4"
                         >
                           Accept
                         </button>
                         <button
                           onClick={() => handleTradeRespond(offer.id, false)}
-                          className="px-4 py-2 bg-red-600/10 border border-red-500/30 text-red-400 rounded-lg text-sm font-bold hover:bg-red-600/20 transition-all"
+                          className="btn-danger text-xs py-2.5 px-4"
                         >
                           Decline
                         </button>
@@ -754,16 +797,17 @@ export default function AuctionRoomPage() {
         )}
 
         {/* Bid log / End trading */}
-        <div className="mt-6 flex items-center justify-between">
+        <div className="mt-6 flex items-center justify-between gap-4">
           {isHost && (
             <button
               onClick={handleFinishTrading}
-              className="px-6 py-3 bg-white/[0.05] border border-white/10 text-white/60 hover:text-white hover:border-white/30 rounded-xl text-sm font-bold transition-all"
+              className="btn-secondary text-sm"
             >
               End Trading Early
             </button>
           )}
-          <div className="ml-auto text-white/30 text-sm">
+          <div className={`${isHost ? '' : 'ml-auto'} flex items-center gap-2 text-white/40 text-sm font-mono`}>
+            <span className="live-dot" />
             {tradeMinutes}:{tradeSecs.toString().padStart(2, '0')} remaining
           </div>
         </div>
@@ -1005,18 +1049,14 @@ export default function AuctionRoomPage() {
                 <button
                   onClick={handleBid}
                   disabled={!canBid || amLeading}
-                  className={`btn-primary w-full text-lg font-display tracking-widest ${
-                    (!canBid || amLeading) ? 'opacity-40 cursor-not-allowed hover:transform-none hover:shadow-none' : ''
-                  }`}
+                  className="btn-primary w-full text-lg font-display tracking-widest"
                 >
-                  {amLeading ? 'Leading Bid' : `Bid $${bidAmount}M`}
+                  {amLeading ? '🔒 Leading Bid' : `Bid $${bidAmount}M`}
                 </button>
                 <button
                   onClick={handlePass}
                   disabled={amLeading}
-                  className={`w-full py-2.5 rounded-xl border border-white/10 text-white/40 hover:text-white/70 hover:border-white/25 text-sm font-bold transition-all ${
-                    amLeading ? 'opacity-30 cursor-not-allowed' : ''
-                  }`}
+                  className="btn-secondary w-full text-sm"
                 >
                   Pass
                 </button>
@@ -1109,8 +1149,9 @@ export default function AuctionRoomPage() {
   // Catch-all: unexpected phase/state combination — show spinner with escape hatch
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-      <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-      <Link href="/auction" className="mt-4 text-white/30 text-xs hover:text-white/60 underline">Back to lobby</Link>
+      <div className="w-10 h-10 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+      <p className="text-label tracking-[0.25em]">RECONNECTING...</p>
+      <Link href="/auction" className="mt-2 text-white/25 text-xs hover:text-white/50 underline transition-colors">Back to lobby</Link>
     </div>
   )
 }

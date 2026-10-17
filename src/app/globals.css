@@ -99,6 +99,7 @@ body {
 }
 .btn-primary:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(234,88,12,0.3); }
 .btn-primary:focus-visible { outline: 2px solid rgba(249,115,22,0.7); outline-offset: 3px; }
+.btn-primary:disabled { opacity: 0.38; cursor: not-allowed; transform: none; box-shadow: none; pointer-events: none; }
 
 .btn-secondary {
   display: inline-flex;
@@ -124,6 +125,7 @@ body {
 }
 .btn-secondary:active { background: rgba(255,255,255,0.08); }
 .btn-secondary:focus-visible { outline: 2px solid rgba(255,255,255,0.3); outline-offset: 3px; }
+.btn-secondary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; pointer-events: none; }
 
 /* ── Typography scales ──────────────────────────────────────────────────────── */
 .stat-mega { font-family: var(--font-bebas), sans-serif; letter-spacing: 0.02em; line-height: 1; }
@@ -270,6 +272,41 @@ body {
   background-clip: text;
   animation: shimmer 2s linear infinite;
 }
+
+/* ── Skeleton loader ─────────────────────────────────────────────────────────── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 800px 100%;
+  animation: skeleton-shimmer 1.6s ease infinite;
+  border-radius: 8px;
+}
+
+/* ── Danger button ────────────────────────────────────────────────────────────── */
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239,68,68,0.15);
+  color: #f87171;
+  font-weight: 900;
+  font-family: inherit;
+  letter-spacing: 0.04em;
+  border-radius: 12px;
+  padding: 13px 28px;
+  font-size: 13px;
+  transition: all 0.15s;
+  cursor: pointer;
+  border: 1px solid rgba(239,68,68,0.3);
+  touch-action: manipulation;
+}
+.btn-danger:hover { background: rgba(239,68,68,0.25); border-color: rgba(239,68,68,0.5); color: #fca5a5; }
+.btn-danger:active { background: rgba(239,68,68,0.3); }
+.btn-danger:focus-visible { outline: 2px solid rgba(239,68,68,0.5); outline-offset: 3px; }
+.btn-danger:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
 
 /* ── Focus ring — consistent across all interactive elements ─────────────────── */
 *:focus-visible {
