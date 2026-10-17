@@ -25,7 +25,18 @@ import axios from 'axios'
 import * as cheerio from 'cheerio'
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+let prisma = new PrismaClient()
+
+/** Reconnect if Railway has closed the idle connection */
+async function ensureConnected() {
+  try {
+    await prisma.$queryRaw`SELECT 1`
+  } catch {
+    await prisma.$disconnect().catch(() => {})
+    prisma = new PrismaClient()
+    await prisma.$connect()
+  }
+}
 
 const DRY_RUN    = process.env.DRY_RUN    === '1'
 const DELAY_MS   = parseInt(process.env.DELAY_MS   ?? '2200', 10) || 2200
@@ -195,6 +206,9 @@ async function main() {
   let errors   = 0
 
   for (let i = START_IDX; i < uniqueHrefs.length; i++) {
+    // Reconnect every 50 players — Railway drops idle connections after ~5 min
+    if (i % 50 === 0) await ensureConnected()
+
     const href    = uniqueHrefs[i]
     const players = hrefToPlayers.get(href)!
     const label   = `${players[0].firstName} ${players[0].lastName}`
@@ -219,10 +233,19 @@ async function main() {
 
       if (!DRY_RUN) {
         // Update ALL DB entries for this player (they share the same career total)
-        // Use updateMany to avoid P2025 throws if a stale id is no longer in DB
         for (const p of players) {
           if (Math.abs(p.careerEarnings - earnings) > 10_000) {
-            await prisma.player.updateMany({ where: { id: p.id }, data: { careerEarnings: earnings } })
+            // Retry once on connection drop (P1017)
+            for (let attempt = 0; attempt < 2; attempt++) {
+              try {
+                await prisma.player.updateMany({ where: { id: p.id }, data: { careerEarnings: earnings } })
+                break
+              } catch (e: any) {
+                if (e?.code === 'P1017' && attempt === 0) {
+                  await ensureConnected()
+                } else { throw e }
+              }
+            }
           }
         }
       }

@@ -20,7 +20,17 @@
 import axios from 'axios'
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+let prisma = new PrismaClient()
+
+async function ensureConnected() {
+  try {
+    await prisma.$queryRaw`SELECT 1`
+  } catch {
+    await prisma.$disconnect().catch(() => {})
+    prisma = new PrismaClient()
+    await prisma.$connect()
+  }
+}
 
 const START_IDX = parseInt(process.env.START_INDEX ?? '0', 10) || 0
 const DRY_RUN   = process.env.DRY_RUN === '1'
@@ -139,6 +149,9 @@ async function main() {
   console.log(`Starting at index: ${START_IDX}`)
   console.log(`Estimated time: ~${Math.round((uniqueNames.length - START_IDX) * DELAY_MS / 60000)} minutes\n`)
 
+  // Reconnect counter — Railway drops idle connections after ~5 min
+  let opsSinceReconnect = 0
+
   // Pre-populate from DB for names we can skip (wikiViews already set > 0 on
   // ANY player record with that name means we already fetched it)
   for (const p of allPlayers) {
@@ -153,6 +166,7 @@ async function main() {
   let notFound = 0
 
   for (let i = START_IDX; i < uniqueNames.length; i++) {
+    if (++opsSinceReconnect % 50 === 0) await ensureConnected()
     const { firstName, lastName, key } = uniqueNames[i]
 
     // Already in cache from DB
@@ -185,10 +199,15 @@ async function main() {
         .map(p => p.id)
 
       if (ids.length > 0) {
-        await prisma.player.updateMany({
-          where: { id: { in: ids } },
-          data:  { wikiViews: views },
-        })
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            await prisma.player.updateMany({ where: { id: { in: ids } }, data: { wikiViews: views } })
+            break
+          } catch (e: any) {
+            if (e?.code === 'P1017' && attempt === 0) await ensureConnected()
+            else throw e
+          }
+        }
       }
     }
 
