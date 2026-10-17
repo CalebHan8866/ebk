@@ -32,20 +32,25 @@ export default function RegisterPage() {
 
   if (done) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <div className="text-6xl mb-4">📧</div>
-          <h1 className="text-3xl font-black text-white mb-3">Check Your Email</h1>
-          <p className="text-gray-400 mb-4">
-            We sent a verification link to <span className="text-orange-400">{email}</span>.
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="card-surface p-10 max-w-sm w-full text-center">
+          <div className="w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mx-auto mb-5">
+            <svg className="w-7 h-7 text-orange-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+            </svg>
+          </div>
+          <h2 className="font-black text-white text-xl mb-2">Check Your Inbox</h2>
+          <p className="text-gray-400 text-sm mb-1 leading-relaxed">
+            We sent a verification link to
           </p>
+          <p className="text-orange-400 font-semibold text-sm mb-6">{email}</p>
           {process.env.NODE_ENV === 'development' && (
-            <p className="text-gray-500 text-sm mb-8">
-              Dev mode: link is in the <strong className="text-gray-300">server terminal</strong>.
+            <p className="text-gray-600 text-xs mb-6">
+              Dev mode: link is in the <strong className="text-gray-400">server terminal</strong>.
             </p>
           )}
-          <Link href="/login" className="text-orange-400 hover:text-orange-300 font-semibold">
-            Go to Login
+          <Link href="/login" className="text-orange-400 hover:text-orange-300 font-semibold text-sm transition-colors">
+            Go to Login →
           </Link>
         </div>
       </div>
@@ -53,41 +58,49 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center px-4 py-16">
+      <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="font-display text-5xl text-orange-500 leading-none">EBK</h1>
-          <p className="text-gray-400 text-sm">Create Your Account</p>
+          <h1 className="font-display text-6xl text-white leading-none mb-1"
+            style={{ textShadow: '0 0 60px rgba(249,115,22,0.3)' }}>
+            EBK
+          </h1>
+          <p className="text-[10px] font-bold tracking-[0.4em] text-gray-600 uppercase">Create Your Account</p>
         </div>
-        <div className="bg-[#111827] rounded-2xl p-8">
-          <h2 className="text-2xl font-bold text-white mb-6">Join EBK</h2>
-          {error && <div className="bg-red-900/50 border border-red-500 text-red-300 rounded-lg p-3 mb-4 text-sm">{error}</div>}
+
+        <div className="card-surface p-8">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 mb-6 text-sm">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-gray-400 text-sm mb-1">Username</label>
-              <input type="text" value={username} onChange={e => setUsername(e.target.value)} required minLength={3}
-                className="w-full bg-[#0A0A0A] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
-                placeholder="YourTag23" />
+              <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Username</label>
+              <input type="text" value={username} onChange={e => setUsername(e.target.value)}
+                required minLength={3} maxLength={20}
+                className="input-field" placeholder="YourTag23" />
             </div>
             <div>
-              <label className="block text-gray-400 text-sm mb-1">Email</label>
+              <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Email</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-                className="w-full bg-[#0A0A0A] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
-                placeholder="you@example.com" />
+                className="input-field" placeholder="you@example.com" />
             </div>
             <div>
-              <label className="block text-gray-400 text-sm mb-1">Password</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6}
-                className="w-full bg-[#0A0A0A] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500"
-                placeholder="Min 6 characters" />
+              <label className="block text-gray-500 text-xs font-semibold tracking-wide uppercase mb-2">Password</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                required minLength={6}
+                className="input-field" placeholder="Min 6 characters" />
             </div>
-            <button type="submit" disabled={loading}
-              className="w-full bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-colors">
-              {loading ? 'Creating account...' : 'Create Account'}
+            <button type="submit" disabled={loading} className="btn-primary w-full text-sm uppercase mt-2">
+              {loading ? 'Creating account…' : 'Create Account'}
             </button>
           </form>
-          <p className="text-center text-gray-400 text-sm mt-4">
-            Already have an account? <Link href="/login" className="text-orange-400 hover:text-orange-300">Login</Link>
+          <p className="text-center text-gray-600 text-sm mt-6">
+            Already have an account?{' '}
+            <Link href="/login" className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
+              Sign in
+            </Link>
           </p>
         </div>
       </div>
