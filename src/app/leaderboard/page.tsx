@@ -122,12 +122,12 @@ export default function LeaderboardPage() {
 
         {/* My rank banner (if logged in) */}
         {me && (
-          <div className="bg-orange-950/40 border border-orange-700/50 rounded-xl px-4 py-3 mb-5 flex items-center justify-between">
+          <div className="bg-orange-950/30 border border-orange-700/40 rounded-xl px-4 py-3 mb-5 flex items-center justify-between">
             <div>
               <span className="text-orange-400 font-black text-sm">Your rank</span>
-              <div className="text-white font-black text-2xl leading-none mt-0.5">
+              <div className="font-display text-3xl text-white leading-none mt-0.5">
                 #{me.rank}
-                <span className="text-gray-500 text-sm font-normal ml-1">/ {totalPlayers}</span>
+                <span className="text-gray-500 text-base font-normal ml-1">/ {totalPlayers}</span>
               </div>
             </div>
             <div className="text-right">
@@ -170,7 +170,7 @@ export default function LeaderboardPage() {
                       ? 'bg-orange-950/30 border-orange-600/50 ring-1 ring-orange-600/30'
                       : isTop3
                         ? rankBg[i]
-                        : 'bg-[#0d0d0d] border-white/5',
+                        : 'bg-white/[0.025] border-white/[0.07]',
                   ].join(' ')}
                 >
                   {/* Rank */}
