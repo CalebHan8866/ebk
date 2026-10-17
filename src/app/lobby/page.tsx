@@ -623,9 +623,13 @@ export default function LobbyPage() {
 
             {/* Sign-in prompt for guests */}
             {!authLoading && !user && (
-              <div className="mb-4 flex items-center gap-3 text-xs text-gray-500">
-                <span><Link href="/login" className="text-orange-400 hover:text-orange-300 font-bold transition-colors">Sign in</Link> to post games and track your record.</span>
-                <Link href="/register" className="btn-primary py-1.5 px-3 text-xs shrink-0">Sign Up Free</Link>
+              <div className="mb-5 card-surface rounded-2xl px-5 py-4 border border-orange-900/30">
+                <p className="font-display text-2xl text-white leading-none mb-1">One rule.</p>
+                <p className="text-gray-400 text-sm mb-4">Online Play requires an account — it's free, takes 30 seconds, and you'll never lose your record.</p>
+                <div className="flex gap-2">
+                  <Link href="/register" className="btn-primary py-2 px-5 text-xs">Create Free Account</Link>
+                  <Link href="/login" className="btn-secondary py-2 px-5 text-xs">Sign In</Link>
+                </div>
               </div>
             )}
 
