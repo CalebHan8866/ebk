@@ -142,14 +142,14 @@ export default function LeaderboardPage() {
         <div className="flex gap-2 mb-5">
           {([['wins', 'Most Wins'], ['winPct', 'Win %'], ['winStreak', 'Hot Streak']] as [SortKey, string][]).map(([key, label]) => (
             <button key={key} onClick={() => setSort(key)}
-              className={`px-4 py-2 rounded-xl text-sm font-black transition-colors ${sort === key ? 'bg-orange-600 text-white' : 'bg-[#111] text-gray-400 hover:text-white border border-white/5'}`}>
+              className={`px-4 py-2 rounded-xl text-sm font-black transition-colors ${sort === key ? 'bg-orange-600 text-white' : 'card-surface text-gray-400 hover:text-white'}`}>
               {label}
             </button>
           ))}
         </div>
 
         {sorted.length === 0 ? (
-          <div className="bg-[#111] border border-white/5 rounded-2xl p-12 text-center">
+          <div className="card-surface rounded-2xl p-12 text-center">
             <p className="text-gray-500 font-bold">No players yet</p>
           </div>
         ) : (
@@ -168,8 +168,8 @@ export default function LeaderboardPage() {
                     isMe
                       ? 'bg-orange-950/30 border-orange-600/50 ring-1 ring-orange-600/30'
                       : isTop3
-                        ? `bg-[#111] ${rankBg[i]}`
-                        : 'bg-[#111] border-white/5',
+                        ? `bg-[#0d0d0d]${rankBg[i]}`
+                        : 'bg-[#0d0d0d]border-white/5',
                   ].join(' ')}
                 >
                   {/* Rank */}

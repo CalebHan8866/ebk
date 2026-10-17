@@ -292,7 +292,7 @@ function PracticeContent() {
   // ── Setup ──────────────────────────────────────────────────────────────────
   if (screen === 'setup') {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4 py-10">
+      <div className="min-h-screen flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
           <button onClick={() => router.push('/lobby')} className="text-gray-500 hover:text-white text-sm mb-6 flex items-center gap-1">
             ← Back to Lobby
@@ -302,7 +302,7 @@ function PracticeContent() {
             <p className="text-gray-500 text-sm mt-2">Draft solo — no pressure, no timer</p>
           </div>
 
-          <div className="bg-[#111827] rounded-2xl p-6 space-y-5">
+          <div className="card-surface rounded-2xl p-6 space-y-5">
             <div>
               <label className="block text-gray-400 text-xs mb-2 uppercase tracking-wide">Team Size</label>
               <div className="grid grid-cols-3 gap-2">
@@ -348,7 +348,7 @@ function PracticeContent() {
     const isDone = filledCount >= teamSize
 
     return (
-      <div className="min-h-screen bg-[#0A0A0A] py-6 px-4">
+      <div className="min-h-screen py-6 px-4">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
@@ -373,7 +373,7 @@ function PracticeContent() {
             <>
             {/* Mobile: compact team strip on top */}
           <div className="lg:hidden mb-4">
-            <div className="bg-[#111827] rounded-2xl p-3">
+            <div className="card-surface rounded-2xl p-3">
               <div className="text-orange-400 font-black text-xs mb-2">
                 Your Team <span className="text-gray-500 font-normal">({filledCount}/{teamSize})</span>
               </div>
@@ -419,7 +419,7 @@ function PracticeContent() {
 
           <div className="lg:grid lg:grid-cols-4 lg:gap-4">
             {/* My Team (desktop only) */}
-            <div className="hidden lg:block bg-[#111827] rounded-2xl p-4">
+            <div className="hidden lg:block card-surface rounded-2xl p-4">
               <h3 className="text-white font-black text-sm mb-3">
                 Your Team <span className="text-gray-500 font-normal">({filledCount}/{teamSize})</span>
               </h3>
@@ -475,7 +475,7 @@ function PracticeContent() {
                 {/* Team Spinner */}
                 <div className={`rounded-xl p-3 mb-3 flex items-center gap-3 border-2 transition-all ${
                   isSpinning ? 'border-yellow-500 bg-yellow-900/20' :
-                  spunTeam ? 'border-orange-500 bg-orange-900/20' : 'border-gray-700 bg-[#111827]'
+                  spunTeam ? 'border-orange-500 bg-orange-900/20' : 'border-gray-700 bg-[#111]'
                 }`}>
                   <div className={`text-3xl font-black w-16 text-center shrink-0 ${isSpinning ? 'text-yellow-400 animate-pulse' : 'text-orange-400'}`}>
                     {spinDisplay}
@@ -505,7 +505,7 @@ function PracticeContent() {
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     placeholder="Search player or team..."
-                    className="w-full bg-[#111827] border border-gray-700 rounded-lg pl-8 pr-8 py-2 text-white text-sm focus:outline-none focus:border-orange-500 placeholder-gray-600"
+                    className="w-full bg-[#111] border border-gray-700 rounded-lg pl-8 pr-8 py-2 text-white text-sm focus:outline-none focus:border-orange-500 placeholder-gray-600"
                   />
                   {searchQuery && (
                     <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-xs">✕</button>
@@ -514,7 +514,7 @@ function PracticeContent() {
 
                 {/* Position availability banner */}
                 {!isDone && (
-                  <div className="flex items-center gap-2 mb-2 bg-[#111827] rounded-lg px-3 py-2 flex-wrap">
+                  <div className="flex items-center gap-2 mb-2 card-surface rounded-lg px-3 py-2 flex-wrap">
                     {isStarterSlot ? (
                       <>
                         <span className="text-gray-400 text-xs shrink-0">Still need:</span>
@@ -532,7 +532,7 @@ function PracticeContent() {
                 <div className="flex gap-1.5 mb-2 flex-wrap">
                   {difficulty !== 'ebk' && ['ALL', 'PG', 'SG', 'SF', 'PF', 'C'].map(pos => (
                     <button key={pos} onClick={() => setFilterPos(pos)}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${filterPos === pos ? 'bg-orange-600 text-white' : 'bg-[#111827] text-gray-400 hover:text-white'}`}>
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${filterPos === pos ? 'bg-orange-600 text-white' : 'bg-[#111] text-gray-400 hover:text-white'}`}>
                       {pos}
                     </button>
                   ))}
@@ -546,7 +546,7 @@ function PracticeContent() {
                   <div className="flex gap-1.5 mb-3 flex-wrap">
                     {([['games_played', 'GP'], ['ppg', 'PPG'], ['rpg', 'RPG'], ['apg', 'APG']] as const).map(([val, label]) => (
                       <button key={val} onClick={() => setStatMode(val)}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${statMode === val ? 'bg-blue-600 text-white' : 'bg-[#111827] text-gray-400 hover:text-white'}`}>
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${statMode === val ? 'bg-blue-600 text-white' : 'bg-[#111] text-gray-400 hover:text-white'}`}>
                         {label}
                       </button>
                     ))}
@@ -581,7 +581,7 @@ function PracticeContent() {
                           isSelected
                             ? 'bg-orange-600/30 border-2 border-orange-500 cursor-pointer'
                             : canSelect
-                            ? 'bg-[#111827] hover:bg-[#1e2d45] hover:border-orange-500 border-2 border-transparent cursor-pointer'
+                            ? 'bg-[#111] hover:bg-[#1e2d45] hover:border-orange-500 border-2 border-transparent cursor-pointer'
                             : 'bg-[#0D0D0D] border-2 border-transparent cursor-default opacity-40'
                         }`}
                       >
@@ -634,11 +634,11 @@ function PracticeContent() {
   const { grade, label: gradeLabel, color: gradeColor } = getGrade(pct)
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] py-10 px-4">
+    <div className="min-h-screen py-10 px-4">
       <div className="max-w-2xl mx-auto">
 
         {/* EBK Score + Grade */}
-        <div className="bg-[#111827] rounded-2xl p-6 mb-5 text-center">
+        <div className="card-surface rounded-2xl p-6 mb-5 text-center">
           <div className="text-gray-400 text-xs uppercase tracking-widest mb-3">EBK Score</div>
           <div className={`font-display leading-none mb-1 ${gradeColor}`} style={{ fontSize: 'clamp(5rem, 22vw, 8rem)' }}>
             {grade}
@@ -672,7 +672,7 @@ function PracticeContent() {
         </div>
 
         {/* Roster */}
-        <div className="bg-[#111827] rounded-2xl p-4 mb-5">
+        <div className="card-surface rounded-2xl p-4 mb-5">
           <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Your Roster</h2>
           <div className="space-y-2">
             {requiredSlots.map((slotPos, i) => {
@@ -713,7 +713,7 @@ function PracticeContent() {
         </div>
 
         {/* Totals */}
-        <div className="bg-[#111827] rounded-2xl p-5 mb-6">
+        <div className="card-surface rounded-2xl p-5 mb-6">
           <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Team Totals</h2>
           <div className="grid grid-cols-2 gap-3">
             {(Object.entries(STAT_LABELS) as [string, string][]).map(([key, label]) => (
@@ -729,7 +729,7 @@ function PracticeContent() {
 
         <div className="flex gap-3">
           <button onClick={() => { const newPicks = Array(TEAM_SIZES[teamMode]).fill(null); setPicks(newPicks); setSpunTeamsHistory([]); setScreen('draft'); triggerSpin(players, newPicks) }}
-            className="flex-1 bg-[#111827] hover:bg-[#1e2d45] text-white font-black py-3 rounded-xl transition-colors border border-gray-700">
+            className="flex-1 bg-[#111] hover:bg-[#1e2d45] text-white font-black py-3 rounded-xl transition-colors border border-gray-700">
             Draft Again
           </button>
           <button onClick={reset}
@@ -745,7 +745,7 @@ function PracticeContent() {
 export default function PracticePage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin"></div>
       </div>
     }>

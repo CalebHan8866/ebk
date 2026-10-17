@@ -279,7 +279,7 @@ export default function LobbyPage() {
   const displayName = user?.username || userName
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
           <h1 className="font-display text-6xl text-orange-500 leading-none">EBK</h1>

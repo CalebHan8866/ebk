@@ -188,7 +188,7 @@ export default function HigherLowerPage() {
 
   if (screen === 'loading') {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
       </div>
     )
@@ -203,7 +203,7 @@ export default function HigherLowerPage() {
       ? (challenger.ebkScore > current.ebkScore ? 'HIGHER' : challenger.ebkScore < current.ebkScore ? 'LOWER' : 'THE SAME')
       : ''
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
           <div className="text-6xl mb-4">💀</div>
           <h1 className="font-display text-5xl text-white leading-none mb-3">Game Over</h1>
@@ -244,7 +244,7 @@ export default function HigherLowerPage() {
 
   if (screen === 'complete') {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
           {claimStatus === 'unlocked' && unlockedBadge && (
             <div className="mb-6 bg-yellow-900/30 border border-yellow-500/50 rounded-2xl px-6 py-4">
@@ -279,7 +279,7 @@ export default function HigherLowerPage() {
 
   if (!current || !challenger) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-gray-500">No players available</div>
       </div>
     )
@@ -292,7 +292,7 @@ export default function HigherLowerPage() {
   const isTie = isRevealing && lastTied
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] px-4 py-8">
+    <div className="min-h-screen px-4 py-8">
       {unlockedBadge && (
         <div className="fixed top-4 right-4 z-50 bg-yellow-900/95 border border-yellow-500 rounded-2xl px-5 py-4 shadow-2xl max-w-[220px]">
           <div className="text-yellow-500 text-[10px] font-black uppercase tracking-widest mb-1">Badge Unlocked!</div>
@@ -322,7 +322,7 @@ export default function HigherLowerPage() {
             </div>
           </div>
 
-          <div className="relative h-3 bg-[#0A0A0A] rounded-full mb-6">
+          <div className="relative h-3 bg-black/40 rounded-full mb-6">
             <div
               className="absolute h-full rounded-full bg-gradient-to-r from-orange-700 to-orange-400 transition-all duration-500"
               style={{ width: `${progressPct}%` }}
@@ -367,7 +367,7 @@ export default function HigherLowerPage() {
               <div>{current.careerGames} GP</div>
               <div>{current.careerPPG.toFixed(1)} PPG · {current.careerRPG.toFixed(1)} RPG · {current.careerAPG.toFixed(1)} APG</div>
             </div>
-            <div className="bg-[#0A0A0A] rounded-xl px-3 py-2.5 text-center">
+            <div className="bg-black/40 rounded-xl px-3 py-2.5 text-center">
               <div className="text-orange-400 font-black text-2xl leading-none">{current.ebkScore.toFixed(1)}</div>
               <div className="text-gray-700 text-[10px] mt-0.5">EBK Score</div>
             </div>
@@ -403,7 +403,7 @@ export default function HigherLowerPage() {
                   <div>??? GP</div>
                   <div>??.? PPG · ??.? RPG · ??.? APG</div>
                 </div>
-                <div className="bg-[#0A0A0A] rounded-xl px-3 py-2.5 text-center">
+                <div className="bg-black/40 rounded-xl px-3 py-2.5 text-center">
                   <div className="text-gray-700 font-black text-2xl leading-none">???</div>
                   <div className="text-gray-800 text-[10px] mt-0.5">EBK Score</div>
                 </div>

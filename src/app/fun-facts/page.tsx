@@ -425,7 +425,7 @@ export default function FunFactsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
       </div>
     )
@@ -439,7 +439,7 @@ export default function FunFactsPage() {
     : 0
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] py-10 px-4">
+    <div className="min-h-screen py-10 px-4">
       <div className="max-w-md mx-auto">
 
         {/* Header */}
@@ -507,7 +507,7 @@ export default function FunFactsPage() {
                 >
                   {/* Top row */}
                   <div className="flex items-start justify-between mb-5">
-                    <div className="bg-[#0A0A0A] rounded-xl px-3 py-2.5 text-center">
+                    <div className="bg-black/40 rounded-xl px-3 py-2.5 text-center">
                       <div className="text-orange-400 font-black text-2xl leading-none">{current.ebkScore.toFixed(1)}</div>
                       <div className="text-gray-700 text-[9px] mt-0.5 uppercase tracking-wide">EBK</div>
                     </div>
@@ -543,7 +543,7 @@ export default function FunFactsPage() {
                         { l: 'RPG', v: current.careerRPG.toFixed(1) },
                         { l: 'APG', v: current.careerAPG.toFixed(1) },
                       ].map(s => (
-                        <div key={s.l} className="bg-[#0A0A0A] rounded-lg px-2 py-2 text-center">
+                        <div key={s.l} className="bg-black/40 rounded-lg px-2 py-2 text-center">
                           <div className="text-white font-black text-sm leading-none">{s.v}</div>
                           <div className="text-gray-600 text-[10px] mt-0.5">{s.l}</div>
                         </div>
