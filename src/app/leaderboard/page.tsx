@@ -348,7 +348,7 @@ export default function LeaderboardPage() {
   if (loading) return <SkeletonScreen />
 
   return (
-    <div className="min-h-screen py-10 px-4">
+    <div className="min-h-screen py-10 px-4 animate-fade-in">
       <div className="max-w-2xl mx-auto">
 
         {/* ── Page header ── */}
@@ -402,14 +402,19 @@ export default function LeaderboardPage() {
             {/* Rows — rendered inside the card so last-child border-bottom fires */}
             <div className="px-2 py-1.5 space-y-0.5">
               {sorted.map((u, i) => (
-                <LeaderboardRow
+                <div
                   key={u.id}
-                  user={u}
-                  rank={i + 1}
-                  isMe={me?.id === u.id}
-                  sort={sort}
-                  rowRef={me?.id === u.id ? meRowRef : undefined}
-                />
+                  className="animate-slide-up"
+                  style={{ animationDelay: `${Math.min(i * 30, 300)}ms`, animationFillMode: 'both' }}
+                >
+                  <LeaderboardRow
+                    user={u}
+                    rank={i + 1}
+                    isMe={me?.id === u.id}
+                    sort={sort}
+                    rowRef={me?.id === u.id ? meRowRef : undefined}
+                  />
+                </div>
               ))}
             </div>
           </div>

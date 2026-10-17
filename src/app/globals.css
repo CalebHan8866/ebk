@@ -93,6 +93,7 @@ body {
   box-shadow: 0 4px 14px rgba(234,88,12,0.3);
   cursor: pointer;
   border: none;
+  touch-action: manipulation;
 }
 .btn-primary:hover {
   background: #f97316;
@@ -116,6 +117,7 @@ body {
   transition: all 0.15s;
   cursor: pointer;
   border: 1px solid rgba(255,255,255,0.12);
+  touch-action: manipulation;
 }
 .btn-secondary:hover {
   background: rgba(255,255,255,0.05);
@@ -195,6 +197,13 @@ body {
 @keyframes scale-in { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
 .animate-scale-in { animation: scale-in 0.2s ease forwards; }
 @keyframes countdown-shrink { from { width: 100%; } to { width: 0%; } }
+
+/* ── Number pop — bid amounts and stats animate when they change ─────────────── */
+@keyframes num-pop { 0% { transform: scale(1); } 40% { transform: scale(1.15); } 100% { transform: scale(1); } }
+.animate-num-pop { animation: num-pop 0.25s ease forwards; }
+
+/* ── Stagger utility (used inline via style animationDelay) ─────────────────── */
+.animate-stagger-item { animation: slide-up 0.25s ease forwards; opacity: 0; }
 
 /* ── Tab pill (segmented control) ─────────────────────────────────────────────── */
 .tab-pill {
@@ -329,8 +338,9 @@ body {
   overflow: hidden;
 }
 .bid-stepper-btn {
-  width: 48px;
-  font-size: 20px;
+  width: 56px;
+  min-width: 56px;
+  font-size: 22px;
   font-weight: 700;
   color: rgba(255,255,255,0.6);
   background: transparent;
@@ -338,8 +348,12 @@ body {
   cursor: pointer;
   transition: all 0.15s;
   flex-shrink: 0;
+  /* Larger tap zone on touch devices */
+  min-height: 56px;
+  touch-action: manipulation;
 }
 .bid-stepper-btn:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.bid-stepper-btn:active { background: rgba(255,255,255,0.1); }
 .bid-stepper-input {
   flex: 1;
   background: transparent;
@@ -348,11 +362,19 @@ body {
   border-right: 1px solid rgba(255,255,255,0.08);
   text-align: center;
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 28px;
+  font-size: 32px;
   letter-spacing: 0.04em;
   color: #fff;
   outline: none;
-  padding: 8px 0;
+  padding: 10px 0;
+  min-height: 56px;
+  /* Disable iOS number spinners */
+  -moz-appearance: textfield;
+}
+.bid-stepper-input::-webkit-outer-spin-button,
+.bid-stepper-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 /* ── Milestone progress row ────────────────────────────────────────────────── */

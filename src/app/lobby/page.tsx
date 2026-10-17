@@ -90,6 +90,7 @@ export default function LobbyPage() {
   // Online matchmaking state
   const [onlineState, setOnlineState] = useState<OnlineState>('idle')
   const [listings, setListings] = useState<GameListing[]>([])
+  const [listingsLoaded, setListingsLoaded] = useState(false)
   const [myListingCode, setMyListingCode] = useState<string | null>(null)
   const [matchInfo, setMatchInfo] = useState<MatchInfo | null>(null)
   const [matchCode, setMatchCode] = useState('')
@@ -128,7 +129,10 @@ export default function LobbyPage() {
   useEffect(() => {
     const socket = getSocket()
 
-    const handleListingsUpdated = ({ listings: l }: { listings: GameListing[] }) => setListings(l)
+    const handleListingsUpdated = ({ listings: l }: { listings: GameListing[] }) => {
+      setListings(l)
+      setListingsLoaded(true)
+    }
 
     const handleListingCreated = ({ code }: { code: string }) => {
       setMyListingCode(code)
@@ -445,7 +449,7 @@ export default function LobbyPage() {
 
   // ── MAIN LOBBY ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen py-8 px-4">
+    <div className="min-h-screen py-8 px-4 animate-fade-in">
       <div className="max-w-5xl mx-auto">
 
         {/* ── Page header ─────────────────────────────────────────────────── */}
@@ -663,7 +667,21 @@ export default function LobbyPage() {
 
                   {/* Listings */}
                   <div className="flex-1 overflow-y-auto">
-                    {listings.length === 0 ? (
+                    {!listingsLoaded ? (
+                      /* Skeleton shimmer while waiting for first socket event */
+                      <div className="divide-y divide-white/[0.04] px-5">
+                        {[0,1,2].map(i => (
+                          <div key={i} className="flex items-center gap-4 py-4 animate-pulse">
+                            <div className="w-9 h-9 rounded-full bg-white/[0.08] shrink-0" />
+                            <div className="flex-1 space-y-1.5">
+                              <div className="h-3.5 w-28 rounded bg-white/[0.08]" />
+                              <div className="h-2.5 w-16 rounded bg-white/[0.05]" />
+                            </div>
+                            <div className="h-8 w-14 rounded-xl bg-white/[0.06] shrink-0" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : listings.length === 0 ? (
                       <div className="empty-state">
                         <div className="empty-state-icon">🏀</div>
                         <div className="empty-state-title">No open games</div>
@@ -671,8 +689,12 @@ export default function LobbyPage() {
                       </div>
                     ) : (
                       <div className="divide-y divide-white/[0.04] max-h-[400px] overflow-y-auto">
-                        {listings.map(l => (
-                          <div key={l.code} className="flex items-center gap-4 px-5 py-4 hover:bg-white/[0.025] transition-colors group">
+                        {listings.map((l, idx) => (
+                          <div
+                            key={l.code}
+                            className="flex items-center gap-4 px-5 py-4 hover:bg-white/[0.025] transition-colors group animate-slide-up"
+                            style={{ animationDelay: `${idx * 40}ms`, animationFillMode: 'both' }}
+                          >
                             <div className={l.hostStreak >= 3 ? 'avatar-hot rounded-full' : ''}>
                               <Avatar name={l.hostName} />
                             </div>

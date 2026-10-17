@@ -304,9 +304,11 @@ export default function ProfilePage() {
             </div>
 
             {unlockedBadgeIds.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-2">🔒</div>
-                <p className="text-gray-600 text-sm">No badges yet — keep playing</p>
+              <div className="empty-state">
+                <div className="empty-state-icon">🏅</div>
+                <div className="empty-state-title">No badges unlocked yet</div>
+                <div className="empty-state-body">Win games to discover hidden badges</div>
+                <Link href="/lobby" className="btn-primary py-2.5 px-6 text-xs mt-4">Play to Unlock</Link>
               </div>
             ) : (
               <div className="flex flex-wrap gap-2">

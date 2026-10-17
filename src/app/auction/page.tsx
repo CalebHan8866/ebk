@@ -127,7 +127,7 @@ export default function AuctionPage() {
   const cfg = TEAM_SIZE_CONFIG[teamSize]
 
   return (
-    <div className="min-h-screen px-4 py-8 md:py-14 max-w-2xl mx-auto">
+    <div className="min-h-screen px-4 py-8 md:py-14 max-w-2xl mx-auto animate-fade-in">
 
       {/* ── HEADER ─────────────────────────────────────────────────── */}
       <div className="text-center mb-10">

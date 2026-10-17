@@ -7,6 +7,7 @@ import { getSocket } from '@/lib/socket'
 import { useAuth } from '@/context/AuthContext'
 
 type AuctionPhase = 'loading' | 'waiting' | 'bidding' | 'steal-window' | 'trading' | 'complete' | 'error'
+type WarRoomPanel = 'bid' | 'rosters' | 'log'
 
 interface RosterPlayer {
   id: number
@@ -145,6 +146,7 @@ export default function AuctionRoomPage() {
   const [tradeTarget, setTradeTarget] = useState<string | null>(null)
   const [selectedToOffer, setSelectedToOffer] = useState<number[]>([])
   const [selectedToRequest, setSelectedToRequest] = useState<number[]>([])
+  const [mobilePanel, setMobilePanel] = useState<WarRoomPanel>('bid')
   // If the user is authenticated, always use their username so the server can reliably
   // re-seat them on reconnect (the server matches by name + userId). For unauthenticated
   // users, use a ref-stable random name generated once at mount.
@@ -342,23 +344,23 @@ export default function AuctionRoomPage() {
     ]
 
     return (
-      <div className="min-h-screen px-4 py-10 max-w-4xl mx-auto">
-        <div className="text-center mb-10">
-          <h1 className="font-display text-5xl text-orange-500 tracking-wider mb-1">FINAL ROSTERS</h1>
+      <div className="min-h-screen px-4 py-8 sm:py-10 max-w-4xl mx-auto animate-fade-in">
+        <div className="text-center mb-8 sm:mb-10">
+          <h1 className="font-display text-4xl sm:text-5xl text-orange-500 tracking-wider mb-1">FINAL ROSTERS</h1>
           <p className="text-white/40 text-sm">War Room · {code}</p>
         </div>
 
         <div className="space-y-4 mb-10">
           {results.map((r, i) => (
-            <div key={r.socketId} className={`card-surface border ${medalBg[i] || 'border-white/[0.07]'} p-5`}>
-              <div className="flex items-center gap-4 mb-4">
-                <span className="text-3xl">{medals[i] || `#${i + 1}`}</span>
-                <div className="flex-1">
-                  <p className="font-bold text-lg text-white">{r.name}</p>
-                  <p className="text-white/40 text-sm">${r.budgetSpent}M spent · {r.rosterCount} players</p>
+            <div key={r.socketId} className={`card-surface border ${medalBg[i] || 'border-white/[0.07]'} p-4 sm:p-5 animate-slide-up`} style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}>
+              <div className="flex items-center gap-3 sm:gap-4 mb-4">
+                <span className="text-2xl sm:text-3xl shrink-0">{medals[i] || `#${i + 1}`}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-base sm:text-lg text-white truncate">{r.name}</p>
+                  <p className="text-white/40 text-xs sm:text-sm">${r.budgetSpent}M spent · {r.rosterCount} players</p>
                 </div>
-                <div className="text-right">
-                  <p className="font-display text-3xl text-orange-400">{r.ebkTotal}</p>
+                <div className="text-right shrink-0">
+                  <p className="font-display text-2xl sm:text-3xl text-orange-400">{r.ebkTotal}</p>
                   <p className="text-white/30 text-xs uppercase tracking-widest">EBK Score</p>
                 </div>
               </div>
@@ -685,9 +687,30 @@ export default function AuctionRoomPage() {
           </div>
         )}
 
+        {/* Mobile panel switcher — only visible below lg */}
+        <div className="lg:hidden flex gap-0 border-b border-white/[0.07] bg-black/30">
+          {([
+            ['bid', '🏷 Bid'],
+            ['rosters', '👥 GMs'],
+            ['log', '📋 Log'],
+          ] as [WarRoomPanel, string][]).map(([panel, label]) => (
+            <button
+              key={panel}
+              onClick={() => setMobilePanel(panel)}
+              className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider transition-colors ${
+                mobilePanel === panel
+                  ? 'text-orange-400 border-b-2 border-orange-500'
+                  : 'text-white/40 border-b-2 border-transparent'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-0 overflow-hidden">
           {/* Left: Rosters */}
-          <aside className="lg:col-span-1 border-r border-white/[0.07] p-4 overflow-y-auto">
+          <aside className={`lg:col-span-1 border-r border-white/[0.07] p-4 overflow-y-auto ${mobilePanel !== 'rosters' ? 'hidden lg:block' : ''}`}>
             <p className="text-label tracking-[0.18em] mb-4">Rosters</p>
             <div className="space-y-3">
               {auctionState.participants.map(p => {
@@ -741,7 +764,7 @@ export default function AuctionRoomPage() {
           </aside>
 
           {/* Center: Auction */}
-          <main className="lg:col-span-2 flex flex-col items-center justify-center p-6 gap-6">
+          <main className={`lg:col-span-2 flex flex-col items-center justify-center p-4 sm:p-6 gap-4 sm:gap-6 ${mobilePanel !== 'bid' ? 'hidden lg:flex' : ''}`}>
             {/* Status badge */}
             <div className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold tracking-widest ${
               phase === 'steal-window'
@@ -785,7 +808,10 @@ export default function AuctionRoomPage() {
 
             {/* Current bid */}
             <div className="text-center">
-              <div className={`bid-hero ${auctionState.currentBid > 0 ? (amLeading ? 'text-orange-400' : 'text-white') : 'text-white/20'}`}>
+              <div
+                key={auctionState.currentBid}
+                className={`bid-hero animate-num-pop ${auctionState.currentBid > 0 ? (amLeading ? 'text-orange-400' : 'text-white') : 'text-white/20'}`}
+              >
                 {auctionState.currentBid > 0 ? `$${auctionState.currentBid}M` : '–––'}
               </div>
               {auctionState.currentBidderName ? (
@@ -802,14 +828,15 @@ export default function AuctionRoomPage() {
 
             {/* Bid controls */}
             {phase === 'bidding' && (
-              <div className="w-full max-w-xs space-y-3">
+              <div className="w-full max-w-xs sm:max-w-xs space-y-3 px-2 sm:px-0">
                 {/* Quick-add chips */}
                 <div className="flex gap-2 justify-center">
                   {[1, 5, 10].map(bump => (
                     <button
                       key={bump}
                       onClick={() => setBidAmount(prev => Math.min(me?.budget ?? prev, prev + bump))}
-                      className="flex-1 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/50 text-xs font-black hover:bg-white/[0.08] hover:text-white/80 transition-all"
+                      className="flex-1 py-2.5 sm:py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/60 text-sm sm:text-xs font-black hover:bg-white/[0.08] hover:text-white/80 active:bg-white/[0.12] transition-all touch-action-manipulation"
+                      style={{ touchAction: 'manipulation' }}
                     >
                       +{bump}
                     </button>
@@ -823,6 +850,8 @@ export default function AuctionRoomPage() {
                   >−</button>
                   <input
                     type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={bidAmount}
                     min={auctionState.currentBid + 1}
                     max={me?.budget ?? 0}
@@ -881,7 +910,7 @@ export default function AuctionRoomPage() {
           </main>
 
           {/* Right: Bid log */}
-          <aside className="lg:col-span-1 border-l border-white/[0.07] p-4 flex flex-col">
+          <aside className={`lg:col-span-1 border-l border-white/[0.07] p-4 flex flex-col ${mobilePanel !== 'log' ? 'hidden lg:flex' : ''}`}>
             <p className="font-display text-sm text-white/40 tracking-widest mb-4">BID LOG</p>
             <div className="flex-1 overflow-y-auto space-y-1.5">
               {auctionState.bidLog.map((entry, i) => (
