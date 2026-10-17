@@ -206,7 +206,7 @@ export default function HigherLowerPage() {
           <div className="font-display text-7xl text-red-500/80 leading-none mb-3 select-none">RIP</div>
           <h1 className="font-display text-5xl text-white leading-none mb-3">Game Over</h1>
           {current && challenger && (
-            <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+            <p className="text-gray-400 text-sm mb-6 leading-relaxed">
               <span className="text-white font-bold">{challenger.firstName} {challenger.lastName}</span>
               {' '}had{' '}
               <span className="text-orange-400 font-bold">{correctDir} EBK</span>
@@ -258,11 +258,11 @@ export default function HigherLowerPage() {
           <h1 className="font-display text-5xl text-orange-500 leading-none mb-2">The Gauntlet</h1>
           <p className="text-gray-400 mb-1">You ran the full {totalComparisons}-question gauntlet.</p>
 
-          {!user && <p className="text-gray-600 text-sm mb-6">Log in to claim the one-of-a-kind badge.</p>}
-          {user && claimStatus === 'pending' && <p className="text-gray-600 text-sm mb-6">Claiming your badge...</p>}
-          {user && claimStatus === 'already' && <p className="text-gray-500 text-sm mb-6">You&apos;ve already earned this badge.</p>}
+          {!user && <p className="text-gray-400 text-sm mb-6">Log in to claim the one-of-a-kind badge.</p>}
+          {user && claimStatus === 'pending' && <p className="text-gray-400 text-sm mb-6">Claiming your badge...</p>}
+          {user && claimStatus === 'already' && <p className="text-gray-400 text-sm mb-6">You&apos;ve already earned this badge.</p>}
           {user && claimStatus === 'failed' && <p className="text-red-700 text-sm mb-6">Couldn&apos;t claim badge — try refreshing.</p>}
-          {user && claimStatus === null && <p className="text-gray-600 text-sm mb-6">Claiming your badge...</p>}
+          {user && claimStatus === null && <p className="text-gray-400 text-sm mb-6">Claiming your badge...</p>}
 
           <div className="card-accent p-6 mb-6">
             <div className="font-display text-6xl text-orange-400 leading-none">{streak}</div>
@@ -285,7 +285,7 @@ export default function HigherLowerPage() {
   if (!current || !challenger) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-500">No players available</div>
+        <div className="text-gray-400">No players available</div>
       </div>
     )
   }
@@ -311,9 +311,9 @@ export default function HigherLowerPage() {
 
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <Link href="/lobby" className="text-gray-500 hover:text-white text-sm transition-colors">← Lobby</Link>
+          <Link href="/lobby" className="text-gray-400 hover:text-white text-sm transition-colors">← Lobby</Link>
           <h1 className="font-display text-2xl text-orange-500 leading-none">Higher or Lower</h1>
-          <div className="text-gray-600 text-xs tabular-nums">{idx + 1} / {totalComparisons}</div>
+          <div className="text-gray-400 text-xs tabular-nums">{idx + 1} / {totalComparisons}</div>
         </div>
 
         {/* Streak bar */}
@@ -321,11 +321,11 @@ export default function HigherLowerPage() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="font-display text-4xl text-white leading-none tabular-nums">{streak}</span>
-              <span className="text-gray-600 text-sm">streak</span>
+              <span className="text-gray-400 text-sm">streak</span>
               {streak >= 3 && <span className="text-lg">🔥</span>}
             </div>
             <div className="text-right">
-              <span className="text-gray-600 text-xs">Best: </span>
+              <span className="text-gray-400 text-xs">Best: </span>
               <span className="text-white font-black text-sm">{bestStreak}</span>
               {!user && <div className="text-gray-700 text-[10px]">log in to save badges</div>}
             </div>
@@ -341,7 +341,7 @@ export default function HigherLowerPage() {
             <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center"
                  style={{ left: `${badge10Pct}%` }}>
               <div className={`w-3.5 h-3.5 rounded-full border-2 transition-colors ${streak >= 10 ? 'bg-cyan-400 border-cyan-300' : 'bg-[#1a1a1a] border-gray-700'}`} />
-              <span className="absolute top-5 text-[9px] text-gray-600 whitespace-nowrap">10</span>
+              <span className="absolute top-5 text-[9px] text-gray-400 whitespace-nowrap">10</span>
             </div>
             {/* Milestone: 25 */}
             <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center"
@@ -387,8 +387,8 @@ export default function HigherLowerPage() {
             <div className="font-black text-white text-base leading-tight mb-0.5">
               {current.firstName} {current.lastName}
             </div>
-            <div className="text-gray-600 text-xs mb-4">{current.team} · {current.position}</div>
-            <div className="text-gray-600 text-xs space-y-0.5 mb-4">
+            <div className="text-gray-400 text-xs mb-4">{current.team} · {current.position}</div>
+            <div className="text-gray-400 text-xs space-y-0.5 mb-4">
               <div>{current.careerGames} GP</div>
               <div>{current.careerPPG.toFixed(1)} PPG · {current.careerRPG.toFixed(1)} RPG · {current.careerAPG.toFixed(1)} APG</div>
             </div>
@@ -409,11 +409,11 @@ export default function HigherLowerPage() {
             <div className="font-black text-white text-base leading-tight mb-0.5">
               {challenger.firstName} {challenger.lastName}
             </div>
-            <div className="text-gray-600 text-xs mb-4">{challenger.team} · {challenger.position}</div>
+            <div className="text-gray-400 text-xs mb-4">{challenger.team} · {challenger.position}</div>
 
             {isRevealing ? (
               <>
-                <div className="text-gray-600 text-xs space-y-0.5 mb-4">
+                <div className="text-gray-400 text-xs space-y-0.5 mb-4">
                   <div>{challenger.careerGames} GP</div>
                   <div>{challenger.careerPPG.toFixed(1)} PPG · {challenger.careerRPG.toFixed(1)} RPG · {challenger.careerAPG.toFixed(1)} APG</div>
                 </div>

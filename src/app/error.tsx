@@ -21,7 +21,7 @@ export default function GlobalError({
           <span className="text-red-400 text-xl font-black">!</span>
         </div>
         <h2 className="font-display text-3xl text-white mb-2">Something went wrong</h2>
-        <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+        <p className="text-gray-400 text-sm mb-6 leading-relaxed">
           An unexpected error occurred. Try again or return to the lobby.
         </p>
         <div className="flex flex-col gap-3">
@@ -31,7 +31,7 @@ export default function GlobalError({
           >
             Try Again
           </button>
-          <Link href="/" className="text-gray-500 hover:text-white text-sm transition-colors">
+          <Link href="/" className="text-gray-400 hover:text-white text-sm transition-colors">
             Back to Home
           </Link>
         </div>

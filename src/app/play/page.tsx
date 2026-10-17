@@ -173,7 +173,7 @@ function PlayGame() {
                           ? resultPlayer.stat.toLocaleString()
                           : resultPlayer.stat.toFixed(1)}
                       </p>
-                      <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-gray-500">
+                      <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-gray-400">
                         <div><span className="text-gray-400">{player.careerGames}</span> GP</div>
                         <div><span className="text-gray-400">{player.careerPPG}</span> PPG</div>
                         <div><span className="text-gray-400">{player.careerRPG}</span> RPG</div>
@@ -183,7 +183,7 @@ function PlayGame() {
                     <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                       {['GP', 'PPG', 'POS'].map((label, i) => (
                         <div key={label} className="bg-[#0A0A0A] rounded-lg p-2">
-                          <div className="text-xs text-gray-500">{label}</div>
+                          <div className="text-xs text-gray-400">{label}</div>
                           <div className="font-bold text-gray-300 text-sm">
                             {i === 2 ? player.position : '?'}
                           </div>
@@ -224,7 +224,7 @@ function PlayGame() {
         )}
 
         <div className="mt-10 text-center">
-          <Link href="/register" className="text-gray-500 text-sm hover:text-orange-400">
+          <Link href="/register" className="text-gray-400 text-sm hover:text-orange-400">
             Create an account to save your record →
           </Link>
         </div>

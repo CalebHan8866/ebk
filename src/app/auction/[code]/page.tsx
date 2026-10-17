@@ -368,13 +368,13 @@ export default function AuctionRoomPage() {
 
         {/* ── Header — ESPN-style recap banner ── */}
         <div className="text-center mb-10">
-          <p className="text-[10px] font-black tracking-[0.5em] text-gray-600 uppercase mb-3">
+          <p className="text-[10px] font-black tracking-[0.5em] text-gray-400 uppercase mb-3">
             War Room · {code} · Draft Recap
           </p>
           <h1 className="font-display text-5xl sm:text-6xl text-white tracking-wider leading-none mb-2">
             DRAFT <span className="text-orange-500">COMPLETE</span>
           </h1>
-          <p className="text-gray-500 text-sm">{results.length} GMs · {results[0]?.rosterCount} players each</p>
+          <p className="text-gray-400 text-sm">{results.length} GMs · {results[0]?.rosterCount} players each</p>
         </div>
 
         {/* ── Winner spotlight ── */}
@@ -392,7 +392,7 @@ export default function AuctionRoomPage() {
                     <span className="ml-3 text-sm text-orange-400 font-sans font-black align-middle">YOU</span>
                   )}
                 </h2>
-                <p className="text-gray-500 text-sm mt-1">
+                <p className="text-gray-400 text-sm mt-1">
                   EBK Total:{' '}
                   <span className="text-yellow-400 font-black text-xl">{sortedByScore[0].ebkTotal.toFixed(1)}</span>
                 </p>
@@ -405,7 +405,7 @@ export default function AuctionRoomPage() {
         <div className="space-y-4 mb-10">
           {sortedByScore.map((r, i) => {
             const style = PODIUM_STYLES[i] || {
-              medal: `#${i+1}`, border: 'border-white/[0.07]', bg: '', glow: '', rank: 'text-gray-500', nameSize: 'text-base',
+              medal: `#${i+1}`, border: 'border-white/[0.07]', bg: '', glow: '', rank: 'text-gray-400', nameSize: 'text-base',
             }
             const grade = getDraftGrade(r.ebkTotal, i)
             const totalBudget = auctionState?.totalBudget ?? 100
@@ -435,10 +435,10 @@ export default function AuctionRoomPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500 flex-wrap">
+                    <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400 flex-wrap">
                       <span>${r.budgetSpent}M spent</span>
                       <span className="text-gray-700">·</span>
-                      <span className={budgetRemaining <= 5 ? 'text-red-400' : 'text-gray-500'}>${budgetRemaining}M left</span>
+                      <span className={budgetRemaining <= 5 ? 'text-red-400' : 'text-gray-400'}>${budgetRemaining}M left</span>
                       <span className="text-gray-700">·</span>
                       <span>{r.rosterCount} players</span>
                     </div>
@@ -465,6 +465,7 @@ export default function AuctionRoomPage() {
                   {r.roster.filter(Boolean).map(p => (
                     <div
                       key={p.id}
+                      title={`${p.firstName} ${p.lastName}`}
                       className="flex items-center gap-1.5 bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.06] rounded-lg px-2.5 py-1.5 transition-colors"
                     >
                       <PosBadge pos={p.position} />
@@ -477,10 +478,10 @@ export default function AuctionRoomPage() {
 
                 {/* Best value callout */}
                 {bestVal && (
-                  <div className="flex items-center gap-2 pt-3 border-t border-white/[0.05] text-xs text-gray-500 flex-wrap">
+                  <div className="flex items-center gap-2 pt-3 border-t border-white/[0.05] text-xs text-gray-400 flex-wrap">
                     <span className="text-green-400 font-black shrink-0">⚡ Best Value:</span>
                     <span className="text-white font-bold">{bestVal.firstName[0]}. {bestVal.lastName}</span>
-                    <span className="text-gray-600">{bestVal.ebkScore.toFixed(1)} EBK for ${bestVal.paidPrice}M</span>
+                    <span className="text-gray-400">{bestVal.ebkScore.toFixed(1)} EBK for ${bestVal.paidPrice}M</span>
                     <span className="text-green-500/70 ml-auto font-black tabular-nums">
                       {(bestVal.ebkScore / bestVal.paidPrice).toFixed(2)}/M
                     </span>
@@ -591,7 +592,7 @@ export default function AuctionRoomPage() {
                   }`}
                 >
                   <PosBadge pos={p.position} />
-                  <span className="flex-1 text-left text-white text-sm font-bold">{p.firstName} {p.lastName}</span>
+                  <span className="flex-1 text-left text-white text-sm font-bold truncate" title={`${p.firstName} ${p.lastName}`}>{p.firstName} {p.lastName}</span>
                   <span className="text-orange-400 text-xs">{p.ebkScore.toFixed(1)}</span>
                   <span className="text-white/30 text-xs">${p.paidPrice}M</span>
                 </button>

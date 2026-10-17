@@ -446,9 +446,9 @@ export default function FunFactsPage() {
         <div className="flex items-center justify-between mb-5">
           <div>
             <h1 className="font-display text-4xl text-orange-500 leading-none">Fun Facts</h1>
-            <p className="text-gray-600 text-xs mt-1">{filtered.length} players · earnings in perspective</p>
+            <p className="text-gray-400 text-xs mt-1">{filtered.length} players · earnings in perspective</p>
           </div>
-          <Link href="/lobby" className="text-gray-500 hover:text-white text-sm transition-colors">← Lobby</Link>
+          <Link href="/lobby" className="text-gray-400 hover:text-white text-sm transition-colors">← Lobby</Link>
         </div>
 
         {/* Search */}
@@ -461,7 +461,7 @@ export default function FunFactsPage() {
 
         {filtered.length === 0 ? (
           <div className="bg-[#111] border border-white/5 rounded-2xl p-12 text-center">
-            <p className="text-gray-500">No players found for &ldquo;{search}&rdquo;</p>
+            <p className="text-gray-400">No players found for &ldquo;{search}&rdquo;</p>
           </div>
         ) : (
           <>
@@ -473,7 +473,7 @@ export default function FunFactsPage() {
               >
                 ←
               </button>
-              <span className="text-gray-600 text-xs font-bold tabular-nums">
+              <span className="text-gray-400 text-xs font-bold tabular-nums">
                 {cardIndex + 1} / {filtered.length}
               </span>
               <button
@@ -513,7 +513,7 @@ export default function FunFactsPage() {
                     </div>
                     <div className="text-right">
                       <div className="text-gray-400 text-sm font-bold">{current.position}</div>
-                      <div className="text-gray-600 text-xs mt-0.5">{current.team}</div>
+                      <div className="text-gray-400 text-xs mt-0.5">{current.team}</div>
                     </div>
                   </div>
 
@@ -525,11 +525,11 @@ export default function FunFactsPage() {
                     <div className="text-orange-400 font-black leading-none mb-3" style={{ fontSize: 'clamp(2rem, 10vw, 3rem)' }}>
                       {current.lastName}
                     </div>
-                    <div className="text-gray-500 text-sm mb-5">{current.yearFrom}–{current.yearTo}</div>
+                    <div className="text-gray-400 text-sm mb-5">{current.yearFrom}–{current.yearTo}</div>
 
                     {/* Career earnings block */}
                     <div className="bg-gradient-to-r from-orange-950/60 to-[#0A0A0A] border border-orange-800/30 rounded-2xl px-4 py-3 mb-4">
-                      <div className="text-gray-500 text-[10px] uppercase tracking-widest mb-0.5">
+                      <div className="text-gray-400 text-[10px] uppercase tracking-widest mb-0.5">
                         {current.careerEarnings > 0 ? 'Career Earnings' : 'Est. Career Earnings'}
                       </div>
                       <div className="text-orange-400 font-black text-3xl">{fmt(earnings)}</div>
@@ -545,7 +545,7 @@ export default function FunFactsPage() {
                       ].map(s => (
                         <div key={s.l} className="bg-black/40 rounded-lg px-2 py-2 text-center">
                           <div className="text-white font-black text-sm leading-none">{s.v}</div>
-                          <div className="text-gray-600 text-[10px] mt-0.5">{s.l}</div>
+                          <div className="text-gray-400 text-[10px] mt-0.5">{s.l}</div>
                         </div>
                       ))}
                     </div>

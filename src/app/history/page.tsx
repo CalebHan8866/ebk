@@ -164,16 +164,16 @@ export default function HistoryPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="font-display text-4xl text-orange-500 leading-none tracking-wide">History</h1>
-            <p className="text-gray-500 text-sm mt-1">{records.length} game{records.length !== 1 ? 's' : ''}{hasMore ? ' loaded' : ''}</p>
+            <p className="text-gray-400 text-sm mt-1">{records.length} game{records.length !== 1 ? 's' : ''}{hasMore ? ' loaded' : ''}</p>
           </div>
-          <Link href="/lobby" className="text-gray-500 hover:text-white text-sm transition-colors">← Lobby</Link>
+          <Link href="/lobby" className="text-gray-400 hover:text-white text-sm transition-colors">← Lobby</Link>
         </div>
 
         {records.length === 0 ? (
           <div className="card-surface rounded-2xl p-12 text-center">
             <div className="text-4xl mb-3">🏀</div>
-            <p className="text-gray-500 font-bold">No games yet</p>
-            <p className="text-gray-600 text-sm mt-1">Play online to start tracking your history</p>
+            <p className="text-gray-400 font-bold">No games yet</p>
+            <p className="text-gray-400 text-sm mt-1">Play online to start tracking your history</p>
             <Link href="/lobby" className="inline-block mt-5 bg-orange-600 hover:bg-orange-700 text-white font-black px-6 py-3 rounded-xl transition-colors">
               Play Now
             </Link>
@@ -211,7 +211,7 @@ export default function HistoryPage() {
                           <span className="text-[9px] font-black text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Online</span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5 text-gray-500 text-xs">
+                      <div className="flex items-center gap-2 mt-0.5 text-gray-400 text-xs">
                         <span>{MODE_LABEL[r.teamMode] || r.teamMode}</span>
                         {r.series > 1 && <><span className="text-gray-700">·</span><span>Bo{r.series}</span></>}
                         {r.statCategory && <><span className="text-gray-700">·</span><span className="text-gray-400">{r.statCategory}</span></>}
@@ -225,19 +225,19 @@ export default function HistoryPage() {
                           <div className={`font-black text-base leading-none tabular-nums ${cfg.textColor}`}>
                             {r.mySeriesScore}–{r.oppSeriesScore}
                           </div>
-                          <div className="text-gray-600 text-[10px] mt-0.5">series</div>
+                          <div className="text-gray-400 text-[10px] mt-0.5">series</div>
                         </>
                       ) : (r.myScore !== undefined && r.myScore !== null) ? (
                         <>
                           <div className="font-black text-sm leading-none tabular-nums text-white">
                             <span className={cfg.textColor}>{r.myScore?.toFixed(1)}</span>
-                            <span className="text-gray-600 mx-1">vs</span>
+                            <span className="text-gray-400 mx-1">vs</span>
                             <span className="text-gray-400">{r.oppScore?.toFixed(1)}</span>
                           </div>
-                          <div className="text-gray-600 text-[10px] mt-0.5">EBK score</div>
+                          <div className="text-gray-400 text-[10px] mt-0.5">EBK score</div>
                         </>
                       ) : null}
-                      <div className="text-gray-600 text-[10px] mt-0.5 tabular-nums">{ago}</div>
+                      <div className="text-gray-400 text-[10px] mt-0.5 tabular-nums">{ago}</div>
                     </div>
                   </div>
                 )
@@ -255,7 +255,7 @@ export default function HistoryPage() {
                   {loadingMore ? 'Loading…' : 'Load More'}
                 </button>
               )}
-              <Link href="/profile" className="block text-gray-600 text-sm hover:text-orange-400 transition-colors">
+              <Link href="/profile" className="block text-gray-400 text-sm hover:text-orange-400 transition-colors">
                 View full stats on profile →
               </Link>
             </div>
