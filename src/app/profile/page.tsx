@@ -387,35 +387,37 @@ export default function ProfilePage() {
           <div className="card-stat p-6">
             <h3 className="text-label mb-5 tracking-[0.18em]">Career Overview</h3>
 
-            {/* Primary W-L-D trio — big and bold */}
+            {/* Primary W-L-D trio — big and bold with stronger visual hierarchy */}
             <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="rounded-xl py-5 text-center bg-gradient-to-b from-green-950/50 to-green-950/20 border border-green-800/30">
-                <div className="font-display text-5xl text-green-400 leading-none">{user.wins}</div>
-                <div className="text-label mt-1.5 text-green-400/50">Wins</div>
+              <div className="rounded-xl py-5 text-center bg-gradient-to-b from-green-950/60 to-green-950/20 border border-green-700/40 shadow-[0_2px_12px_rgba(34,197,94,0.08)]">
+                <div className="font-display text-5xl text-green-400 leading-none animate-fade-up">{user.wins}</div>
+                <div className="text-label mt-2 text-green-400/60">Wins</div>
               </div>
-              <div className="rounded-xl py-5 text-center bg-gradient-to-b from-red-950/30 to-transparent border border-red-900/20">
-                <div className="font-display text-5xl text-red-400 leading-none">{user.losses}</div>
-                <div className="text-label mt-1.5 text-red-400/50">Losses</div>
+              <div className="rounded-xl py-5 text-center bg-gradient-to-b from-red-950/40 to-transparent border border-red-900/30 shadow-[0_2px_12px_rgba(239,68,68,0.06)]">
+                <div className="font-display text-5xl text-red-400 leading-none animate-fade-up-1">{user.losses}</div>
+                <div className="text-label mt-2 text-red-400/50">Losses</div>
               </div>
-              <div className="rounded-xl py-5 text-center bg-gradient-to-b from-yellow-950/30 to-transparent border border-yellow-900/20">
-                <div className="font-display text-5xl text-yellow-400 leading-none">{user.draws}</div>
-                <div className="text-label mt-1.5 text-yellow-400/50">Draws</div>
+              <div className="rounded-xl py-5 text-center bg-gradient-to-b from-yellow-950/40 to-transparent border border-yellow-900/25 shadow-[0_2px_12px_rgba(234,179,8,0.06)]">
+                <div className="font-display text-5xl text-yellow-400 leading-none animate-fade-up-2">{user.draws}</div>
+                <div className="text-label mt-2 text-yellow-400/50">Draws</div>
               </div>
             </div>
 
             {/* Secondary stats row */}
             <div className="grid grid-cols-3 gap-2 mb-5">
-              <div className="text-center py-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                <div className="font-display text-3xl text-gray-300 leading-none">{user.gamesPlayed}</div>
-                <div className="text-label mt-1">Played</div>
+              <div className="text-center py-3 bg-white/[0.025] rounded-xl border border-white/[0.05]">
+                <div className="font-display text-3xl text-gray-300 leading-none tabular-nums">{user.gamesPlayed}</div>
+                <div className="text-label mt-1.5">Played</div>
               </div>
-              <div className="text-center py-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                <div className={`font-display text-3xl leading-none ${user.winStreak >= 3 ? 'text-orange-400' : 'text-gray-400'}`}>{user.winStreak}</div>
-                <div className="text-label mt-1">Streak</div>
+              <div className={`text-center py-3 rounded-xl border transition-colors ${user.winStreak >= 3 ? 'bg-orange-950/30 border-orange-700/40 shadow-[0_0_12px_rgba(249,115,22,0.1)]' : 'bg-white/[0.025] border-white/[0.05]'}`}>
+                <div className={`font-display text-3xl leading-none tabular-nums ${user.winStreak >= 3 ? 'text-orange-400' : 'text-gray-400'}`}>
+                  {user.winStreak >= 3 ? `🔥${user.winStreak}` : user.winStreak}
+                </div>
+                <div className="text-label mt-1.5">Streak</div>
               </div>
-              <div className="text-center py-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                <div className="font-display text-3xl text-orange-300 leading-none">{user.maxWinStreak}</div>
-                <div className="text-label mt-1">Best Streak</div>
+              <div className="text-center py-3 bg-white/[0.025] rounded-xl border border-white/[0.05]">
+                <div className="font-display text-3xl text-orange-300 leading-none tabular-nums">{user.maxWinStreak}</div>
+                <div className="text-label mt-1.5">Best Streak</div>
               </div>
             </div>
 
@@ -423,13 +425,18 @@ export default function ProfilePage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-label tracking-[0.14em]">Win Rate</span>
-                <span className={`text-sm font-black ${winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-white' : 'text-red-400'}`}>{winPct}%</span>
+                <span className={`font-display text-xl leading-none tabular-nums ${winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-white' : 'text-red-400'}`}>{winPct}%</span>
               </div>
-              <div className="budget-bar" style={{ height: 6, borderRadius: 99 }}>
+              <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
                 <div
-                  className="budget-bar-fill"
-                  style={{ width: `${winPctNum}%`, borderRadius: 99 }}
+                  className={`h-full rounded-full transition-all duration-700 ${winPctNum >= 60 ? 'bg-gradient-to-r from-green-600 to-green-400' : winPctNum >= 45 ? 'bg-gradient-to-r from-orange-600 to-orange-400' : 'bg-gradient-to-r from-red-700 to-red-500'}`}
+                  style={{ width: `${winPctNum}%` }}
                 />
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-[9px] text-gray-700">0%</span>
+                <span className="text-[9px] text-gray-700">50%</span>
+                <span className="text-[9px] text-gray-700">100%</span>
               </div>
             </div>
 
@@ -696,42 +703,79 @@ export default function ProfilePage() {
           {activeTab === 'milestones' && <>
           {/* Milestones */}
           <div className="card-surface p-6">
-            <h2 className="font-display text-2xl text-white tracking-wider leading-none mb-1">Milestones</h2>
-            <p className="text-gray-400 text-xs mb-5">Track your progress across key achievements.</p>
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="font-display text-2xl text-white tracking-wider leading-none">Milestones</h2>
+              <span className="text-label">
+                {unlockedMilestoneIds.length} / {MILESTONES.length}
+              </span>
+            </div>
+            <p className="text-gray-400 text-xs mb-4">Track your progress across key achievements.</p>
+
+            {/* Overall progress bar */}
+            <div className="mb-5">
+              <div className="budget-bar">
+                <div
+                  className="budget-bar-fill transition-all duration-700"
+                  style={{ width: `${MILESTONES.length > 0 ? (unlockedMilestoneIds.length / MILESTONES.length) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              {MILESTONES.map(milestone => {
+              {MILESTONES.map((milestone, idx) => {
                 const unlocked = unlockedMilestoneIds.includes(milestone.id)
 
                 let req = ''
-                if (milestone.winsRequired) req = `${milestone.winsRequired} win${milestone.winsRequired > 1 ? 's' : ''}`
-                else if (milestone.gamesRequired) req = `${milestone.gamesRequired} game${milestone.gamesRequired > 1 ? 's' : ''} played`
-                else if (milestone.streakRequired) req = `${milestone.streakRequired}-win streak`
+                let progressPct = 0
+                if (milestone.winsRequired) {
+                  req = `${milestone.winsRequired} win${milestone.winsRequired > 1 ? 's' : ''}`
+                  progressPct = Math.min(100, (user.wins / milestone.winsRequired) * 100)
+                } else if (milestone.gamesRequired) {
+                  req = `${milestone.gamesRequired} game${milestone.gamesRequired > 1 ? 's' : ''} played`
+                  progressPct = Math.min(100, (user.gamesPlayed / milestone.gamesRequired) * 100)
+                } else if (milestone.streakRequired) {
+                  req = `${milestone.streakRequired}-win streak`
+                  progressPct = Math.min(100, (user.maxWinStreak / milestone.streakRequired) * 100)
+                }
 
                 return (
                   <div
                     key={milestone.id}
-                    className={`milestone-row ${unlocked ? 'unlocked' : 'locked'}`}
+                    className={`milestone-row animate-slide-up ${unlocked ? 'unlocked' : 'locked'}`}
+                    style={{ animationDelay: `${Math.min(idx * 25, 250)}ms`, animationFillMode: 'both' }}
                   >
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black border flex-shrink-0 transition-all ${
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black border flex-shrink-0 transition-all ${
                       unlocked
-                        ? 'bg-green-500/20 border-green-500/60 text-green-400'
-                        : 'bg-white/[0.03] border-white/10 text-gray-700'
+                        ? 'bg-green-500/20 border-green-500/60 text-green-400 shadow-[0_0_8px_rgba(34,197,94,0.2)]'
+                        : 'bg-white/[0.03] border-white/10 text-gray-600'
                     }`}>
-                      {unlocked ? '✓' : ''}
+                      {unlocked ? '✓' : <span className="text-[9px]">○</span>}
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className={`text-sm font-bold ${unlocked ? 'text-white' : 'text-gray-400'}`}>
                         {milestone.name}
                       </div>
-                      <div className="text-xs text-gray-400 truncate">{milestone.description}</div>
+                      <div className="text-xs text-gray-500 truncate">{milestone.description}</div>
+                      {/* Progress micro-bar for locked milestones close to completion */}
+                      {!unlocked && progressPct > 0 && (
+                        <div className="mt-1.5 h-1 rounded-full bg-white/[0.06] overflow-hidden w-24">
+                          <div
+                            className="h-full rounded-full bg-orange-500/60 transition-all duration-500"
+                            style={{ width: `${progressPct}%` }}
+                          />
+                        </div>
+                      )}
                     </div>
                     {!unlocked && req && (
-                      <div className="text-label whitespace-nowrap shrink-0">
-                        {req}
+                      <div className="text-label whitespace-nowrap shrink-0 text-right">
+                        <div>{req}</div>
+                        {progressPct > 0 && (
+                          <div className="text-orange-500/60 mt-0.5">{Math.floor(progressPct)}%</div>
+                        )}
                       </div>
                     )}
                     {unlocked && (
-                      <div className="text-[10px] font-black text-green-400/60 uppercase tracking-wider shrink-0">Done</div>
+                      <div className="text-[10px] font-black text-green-400/70 uppercase tracking-wider shrink-0">Done ✓</div>
                     )}
                   </div>
                 )
