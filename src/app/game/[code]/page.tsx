@@ -537,6 +537,9 @@ function GameContent() {
               {room.hostSeriesScore} <span className="text-gray-400">–</span> {room.guestSeriesScore}
             </div>
             <div className="text-gray-400 text-xs mt-1 truncate">{room.hostName} vs {room.guestName}</div>
+            <div className="text-gray-600 text-[11px] mt-1">
+              Lower team total {STAT_CATEGORY_LABELS[room.statCategory] ?? 'stat'} wins each game
+            </div>
             {iWon && (
               <div className="mt-3 inline-flex items-center gap-2 bg-orange-950/40 border border-orange-700/40 rounded-full px-4 py-1.5">
                 <span className="text-orange-300 text-xs font-black tracking-widest uppercase">Elite Ball Knowledge Confirmed</span>
