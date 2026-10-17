@@ -3,6 +3,7 @@ import { parse } from 'url'
 import next from 'next'
 import { Server as SocketServer } from 'socket.io'
 import { PrismaClient } from '@prisma/client'
+import crypto from 'crypto'
 import { BADGES, EMOTES, MILESTONES } from './src/lib/accessories'
 import { verifyToken } from './src/lib/auth'
 import { validateEnv } from './src/lib/validateEnv'
@@ -335,6 +336,9 @@ const pendingListingCreate = new Set<string>() // socketId → in-flight guard
 // Per-socket bid throttle: socketId → { count, windowStart }
 // Allows max 5 bids per second per socket to prevent DoS spam
 const bidThrottle = new Map<string, { count: number; windowStart: number }>()
+// Per-socket join-room throttle: socketId → { count, windowStart }
+// Allows max 10 join attempts per minute per socket to prevent room-code brute-force
+const joinRoomThrottle = new Map<string, { count: number; windowStart: number }>()
 // cooldown: userId → Map(opponentId → timestamp of last game end)
 const recentMatchups = new Map<string, Map<string, number>>()
 // grudge: userId → Map(opponentId → total games played together)
@@ -522,7 +526,7 @@ function scheduleRoomCleanup(code: string, ioRef?: SocketServer) {
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   let code = ''
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)]
+  for (let i = 0; i < 6; i++) code += chars[crypto.randomInt(chars.length)]
   return code
 }
 
@@ -1073,6 +1077,7 @@ app.prepare().then(async () => {
     }) => {
       if (!['starter5', 'bench8', 'full12'].includes(teamMode)) return
       if (![1, 3, 5].includes(series)) return
+      if (!['casual', 'ebk'].includes(difficulty)) return
       if (allPlayers.length === 0) { socket.emit('room-error', { message: 'Server is still loading player data. Please try again in a minute.' }); return }
       userName = (userName ?? '').trim().slice(0, 20) || 'Player'
       const userId = socket.data.userId as string | null
@@ -1092,7 +1097,7 @@ app.prepare().then(async () => {
         guestName: null,
         teamMode,
         series,
-        difficulty: difficulty || 'casual',
+        difficulty,
         statCategory: resolvedStatCategory,
         source: 'friends',
         status: 'waiting',
@@ -1120,6 +1125,19 @@ app.prepare().then(async () => {
     socket.on('join-room', ({ code, userName }: {
       code: string, userName: string
     }) => {
+      // Rate limit: max 10 join-room attempts per minute per socket to prevent brute-force
+      const jrNow = Date.now()
+      const jrThrottle = joinRoomThrottle.get(socket.id)
+      if (jrThrottle && jrNow - jrThrottle.windowStart < 60_000) {
+        if (jrThrottle.count >= 10) {
+          socket.emit('room-error', { message: 'Too many join attempts. Please wait a moment.' })
+          return
+        }
+        jrThrottle.count++
+      } else {
+        joinRoomThrottle.set(socket.id, { count: 1, windowStart: jrNow })
+      }
+
       userName = (userName ?? '').trim().slice(0, 20) || 'Player'
       const userId = socket.data.userId as string | null
       const room = rooms.get(code.toUpperCase())
@@ -1562,11 +1580,12 @@ app.prepare().then(async () => {
       if (![5, 8, 12].includes(teamSize) || maxPlayers < 2 || maxPlayers > 6) {
         socket.emit('auction:error', { message: 'Invalid settings' }); return
       }
+      userName = (userName ?? '').trim().slice(0, 20) || 'Player'
       if (allPlayers.length === 0) {
         socket.emit('auction:error', { message: 'Server still loading' }); return
       }
-      let code = Math.random().toString(36).substring(2, 8).toUpperCase()
-      while (auctionRooms.has(code)) code = Math.random().toString(36).substring(2, 8).toUpperCase()
+      let code = generateCode()
+      while (auctionRooms.has(code)) code = generateCode()
 
       const budget = AUCTION_BUDGETS[teamSize] ?? 175
       const validPlayers = allPlayers.filter(p => p.ebkScore > 5)
@@ -1594,6 +1613,7 @@ app.prepare().then(async () => {
     })
 
     socket.on('auction:join', ({ code, userName }: { code: string; userName: string }) => {
+      userName = (userName ?? '').trim().slice(0, 20) || 'Player'
       const room = auctionRooms.get(code.toUpperCase())
       if (!room) { socket.emit('auction:error', { message: 'Room not found' }); return }
 
@@ -1882,6 +1902,7 @@ app.prepare().then(async () => {
     socket.on('disconnect', () => {
       emoteLastSent.delete(socket.id)
       bidThrottle.delete(socket.id)
+      joinRoomThrottle.delete(socket.id)
       // Remove any open listing by this socket
       for (const [code, listing] of gameListings.entries()) {
         if (listing.hostSocketId === socket.id) {
