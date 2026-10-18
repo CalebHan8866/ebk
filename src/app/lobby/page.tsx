@@ -495,15 +495,21 @@ export default function LobbyPage() {
 
             {/* Action buttons */}
             <div className="px-5 pb-5 grid grid-cols-2 gap-3">
-              <button onClick={handleDecline} className="btn-secondary py-4 text-sm">
+              <button
+                onClick={handleDecline}
+                disabled={countdown === 0}
+                className="btn-secondary py-4 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              >
                 Decline
               </button>
               <button
                 onClick={handleAccept}
-                disabled={myReady}
+                disabled={myReady || countdown === 0}
                 className={`py-4 rounded-xl font-black text-sm uppercase tracking-wider transition-all ${
                   myReady
                     ? 'bg-green-600/30 text-green-400 border border-green-500/30 cursor-default'
+                    : countdown === 0
+                    ? 'btn-primary opacity-40 cursor-not-allowed'
                     : 'btn-primary'
                 }`}
               >
