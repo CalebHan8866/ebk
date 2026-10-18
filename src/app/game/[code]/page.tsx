@@ -841,12 +841,11 @@ function GameContent() {
           <div>
           {/* Result header */}
           <div className="text-center mb-4">
-            {/* Game N of Y pill */}
-            <div className="inline-flex items-center gap-1.5 bg-white/[0.04] border border-white/[0.08] rounded-full px-3 py-1 mb-3">
-              <span className="text-label">Game {effectiveLastResult.game}</span>
-              {room.series > 1 && (
-                <span className="text-label">of {room.series}</span>
-              )}
+            {/* Game N of Y pill — prominent series progress label */}
+            <div className="inline-flex items-center gap-2 bg-orange-950/40 border border-orange-500/30 rounded-full px-4 py-1.5 mb-3">
+              <span className="font-display text-orange-400 text-base leading-none tracking-widest">
+                GAME {effectiveLastResult.game}{room.series > 1 ? ` OF ${room.series}` : ''}
+              </span>
             </div>
             <div
               className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-gray-500 animate-loss-drop'}`}
@@ -857,6 +856,61 @@ function GameContent() {
               {iWon ? 'YOU WIN' : isDraw ? 'DRAW' : 'YOU LOSE'}
             </div>
           </div>
+
+          {/* Series scoreboard — hero display when series > 1 */}
+          {room.series > 1 && (
+            <div className="scoreboard mb-4 animate-fade-up">
+              {/* Series label + progress pips */}
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-label tracking-[0.2em]">Series Score</span>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: room.series }, (_, i) => {
+                    const hostWins = room.hostSeriesScore ?? 0
+                    const guestWins = room.guestSeriesScore ?? 0
+                    const myWins = role === 'host' ? hostWins : guestWins
+                    const oppWins = role === 'host' ? guestWins : hostWins
+                    const filled = i < myWins ? 'me' : i < myWins + oppWins ? 'opp' : 'empty'
+                    return (
+                      <div
+                        key={i}
+                        className={`w-2.5 h-2.5 rounded-full transition-all ${
+                          filled === 'me'   ? 'bg-orange-400 shadow-[0_0_6px_rgba(249,115,22,0.6)]' :
+                          filled === 'opp'  ? 'bg-white/30' :
+                                             'bg-white/[0.07] border border-white/[0.12]'
+                        }`}
+                      />
+                    )
+                  })}
+                </div>
+              </div>
+              {/* Big score display */}
+              <div className="flex items-center justify-center gap-4">
+                <div className="text-center flex-1 min-w-0">
+                  <div className="text-white/40 text-[10px] font-black uppercase tracking-[0.15em] truncate mb-1">{room.hostName}</div>
+                  <div className={`font-display leading-none ${role === 'host' ? 'text-orange-400' : 'text-white/70'}`}
+                    style={{ fontSize: 'clamp(3rem, 12vw, 5rem)' }}>
+                    {room.hostSeriesScore}
+                  </div>
+                </div>
+                <div className="text-white/20 font-display text-4xl leading-none shrink-0">–</div>
+                <div className="text-center flex-1 min-w-0">
+                  <div className="text-white/40 text-[10px] font-black uppercase tracking-[0.15em] truncate mb-1">{room.guestName}</div>
+                  <div className={`font-display leading-none ${role === 'guest' ? 'text-orange-400' : 'text-white/70'}`}
+                    style={{ fontSize: 'clamp(3rem, 12vw, 5rem)' }}>
+                    {room.guestSeriesScore}
+                  </div>
+                </div>
+              </div>
+              {/* Next game label */}
+              {room.currentGame < room.series && (
+                <div className="mt-3 pt-3 border-t border-white/[0.06] text-center">
+                  <span className="text-label tracking-[0.15em]">
+                    Next up: Game {room.currentGame + 1} of {room.series}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Stat explanation */}
           <div className="card-surface rounded-xl px-4 py-2.5 mb-4 text-center">
@@ -873,8 +927,8 @@ function GameContent() {
                   isWinner
                     ? 'bg-gradient-to-b from-green-950/60 to-green-950/20 border-2 border-green-500/70 shadow-[0_0_24px_rgba(34,197,94,0.15)]'
                     : isDraw
-                    ? 'bg-[#111] border-2 border-yellow-700/40'
-                    : 'bg-[#0D0D0D] border-2 border-white/[0.05]'
+                    ? 'card-surface border-2 border-yellow-700/40'
+                    : 'card-surface border-2 border-white/[0.05]'
                 }`}>
                   {isWinner && !isDraw && (
                     <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-green-400/80 to-transparent" />
@@ -894,20 +948,6 @@ function GameContent() {
               )
             })}
           </div>
-
-          {/* Series score */}
-          {room.series > 1 && (
-            <div className="card-surface rounded-2xl px-4 py-3 mb-4 text-center">
-              <div className="text-gray-400 text-xs uppercase tracking-widest mb-2 font-bold">Series</div>
-              <div className="flex items-center justify-center gap-3 flex-wrap">
-                <span className="text-gray-300 font-black text-base truncate max-w-[100px]">{room.hostName}</span>
-                <span className="text-orange-400 font-display text-3xl leading-none tracking-tight">{room.hostSeriesScore}</span>
-                <span className="text-gray-400 text-base font-bold">–</span>
-                <span className="text-orange-400 font-display text-3xl leading-none tracking-tight">{room.guestSeriesScore}</span>
-                <span className="text-gray-300 font-black text-base truncate max-w-[100px]">{room.guestName}</span>
-              </div>
-            </div>
-          )}
           </div>{/* end LEFT col */}
 
           {/* RIGHT col: Draft Recap */}
@@ -1147,7 +1187,7 @@ function GameContent() {
                     {[0, 1, 2].map(i => (
                       <div
                         key={i}
-                        className="w-1.5 h-1.5 rounded-full bg-gray-500"
+                        className="w-1.5 h-1.5 rounded-full bg-white/[0.3]"
                         style={{ animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }}
                       />
                     ))}
@@ -1170,7 +1210,7 @@ function GameContent() {
                     {pickTimeLeft}
                     <span className="text-sm font-sans ml-0.5">s</span>
                   </div>
-                  <div className="w-20 bg-gray-800/80 rounded-full h-1.5">
+                  <div className="w-20 bg-white/[0.08] rounded-full h-1.5">
                     <div
                       className={`h-1.5 rounded-full transition-all duration-1000 ${
                         pickTimeLeft <= 5 ? 'bg-red-500' : pickTimeLeft <= 10 ? 'bg-yellow-400' : 'bg-green-500'
@@ -1199,7 +1239,7 @@ function GameContent() {
                     isCurrent
                       ? isMe
                         ? 'bg-orange-500 text-white shadow-[0_0_8px_rgba(234,88,12,0.6)] scale-110'
-                        : 'bg-gray-400 text-black scale-110'
+                        : 'bg-white/70 text-black scale-110'
                       : isPast
                       ? 'bg-white/[0.04] text-white/20'
                       : isMe
@@ -1264,10 +1304,10 @@ function GameContent() {
                         : isValidTarget
                         ? 'bg-orange-600/20 border border-orange-500 cursor-pointer'
                         : isBlocked
-                        ? 'bg-[#0A0A0A] border border-dashed border-gray-800 opacity-30'
+                        ? 'bg-white/[0.015] border border-dashed border-white/[0.08] opacity-30'
                         : pickedPlayer
-                        ? 'bg-[#0A0A0A]'
-                        : 'bg-[#0A0A0A] border border-dashed border-gray-700'
+                        ? 'bg-white/[0.03]'
+                        : 'bg-white/[0.015] border border-dashed border-white/[0.12]'
                     }`}
                   >
                     <span className={`font-bold w-6 shrink-0 text-[10px] ${isBench ? 'text-gray-400' : 'text-orange-400'}`}>{displayLabel}</span>
@@ -1296,8 +1336,8 @@ function GameContent() {
                     isNewPick
                       ? 'bg-blue-500/15 border border-blue-400/50 animate-slide-up'
                       : pickedPlayer
-                      ? 'bg-[#0A0A0A]'
-                      : 'bg-[#0A0A0A] border border-dashed border-gray-700'
+                      ? 'bg-white/[0.03]'
+                      : 'bg-white/[0.015] border border-dashed border-white/[0.12]'
                   }`}>
                     <span className={`font-bold w-6 shrink-0 text-[10px] ${isBench ? 'text-gray-400' : 'text-blue-400'}`}>{displayLabel}</span>
                     <span className={`truncate ${pickedPlayer ? (isNewPick ? 'text-blue-300' : 'text-white') : 'text-gray-400'}`} title={pickedPlayer ? `${pickedPlayer.firstName} ${pickedPlayer.lastName}` : undefined}>
@@ -1344,10 +1384,10 @@ function GameContent() {
                         : isValidTarget
                         ? 'bg-orange-600/20 border border-orange-500 cursor-pointer hover:bg-orange-600/40'
                         : isBlocked
-                        ? 'bg-[#0A0A0A] border border-dashed border-gray-800 opacity-30'
+                        ? 'bg-white/[0.015] border border-dashed border-white/[0.08] opacity-30'
                         : pickedPlayer
-                        ? 'bg-[#0A0A0A]'
-                        : 'bg-[#0A0A0A] border border-dashed border-gray-700'
+                        ? 'bg-white/[0.03]'
+                        : 'bg-white/[0.015] border border-dashed border-white/[0.12]'
                     }`}
                   >
                     <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-400' : 'text-orange-400'}`}>{displayLabel}</span>
@@ -1371,7 +1411,7 @@ function GameContent() {
             {/* Team Spinner */}
             <div className={`rounded-xl p-3 mb-3 flex items-center gap-3 border-2 transition-all ${
               isSpinning ? 'border-yellow-500 bg-yellow-900/20' :
-              spunTeam ? 'border-orange-500 bg-orange-900/20' : 'border-gray-700 bg-[#111827]'
+              spunTeam ? 'border-orange-500 bg-orange-900/20' : 'border-white/[0.12] bg-white/[0.025]'
             }`}>
               <div className={`text-3xl font-black w-16 text-center shrink-0 transition-all ${
                 isSpinning ? 'text-yellow-400 animate-pulse' : 'text-orange-400'
@@ -1468,10 +1508,10 @@ function GameContent() {
               <div className="flex flex-col items-center justify-center h-64 rounded-2xl card-surface border border-white/[0.05]">
                 {/* Pulsing ring instead of a janky spinner */}
                 <div className="relative w-14 h-14 mb-5">
-                  <div className="absolute inset-0 rounded-full border-2 border-gray-700" />
+                  <div className="absolute inset-0 rounded-full border-2 border-white/[0.12]" />
                   <div className="absolute inset-0 rounded-full border-2 border-gray-500 border-t-transparent animate-spin" />
-                  <div className="absolute inset-2 rounded-full bg-[#111118] flex items-center justify-center">
-                    <div className="w-2 h-2 rounded-full bg-gray-500 animate-pulse" />
+                  <div className="absolute inset-2 rounded-full bg-white/[0.04] flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-white/[0.25] animate-pulse" />
                   </div>
                 </div>
                 <div className="text-white font-black text-base tracking-wide">{oppName}</div>
@@ -1500,7 +1540,7 @@ function GameContent() {
                             const socket = getSocket()
                             socket.emit('use-emote', { code, emoteText: emote.text })
                           }}
-                          className="bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.12] border border-white/[0.09] hover:border-orange-500/50 text-white text-sm px-3 py-1.5 rounded-xl transition-all font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50"
+                          className="bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.12] border border-white/[0.09] hover:border-orange-500/50 text-white text-sm px-3 py-1.5 rounded-xl transition-all font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50 touch-manipulation"
                           title={emote.label}
                           aria-label={`Send emote: ${emote.label}`}
                         >
@@ -1553,7 +1593,7 @@ function GameContent() {
                         }`}
                       >
                         <button
-                          className="w-full flex items-center gap-3 px-3 py-2.5"
+                          className="w-full flex items-center gap-3 px-3 py-2.5 touch-manipulation"
                           onClick={() => canPick && selectAndPick(player.id)}
                           disabled={!canPick}
                         >
@@ -1639,8 +1679,8 @@ function GameContent() {
                     isNewPick
                       ? 'bg-blue-500/15 border border-blue-400/50 animate-slide-up'
                       : pickedPlayer
-                      ? 'bg-[#0A0A0A]'
-                      : 'bg-[#0A0A0A] border border-dashed border-gray-700'
+                      ? 'bg-white/[0.03]'
+                      : 'bg-white/[0.015] border border-dashed border-white/[0.12]'
                   }`}>
                     <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-400' : 'text-blue-400'}`}>{displayLabel}</span>
                     {pickedPlayer ? (
@@ -1665,7 +1705,7 @@ function GameContent() {
 export default function GamePage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400">Loading...</p>
