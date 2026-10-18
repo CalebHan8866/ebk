@@ -26,7 +26,17 @@ export async function POST(request: NextRequest) {
     if (!/^[a-zA-Z0-9_]+$/.test(username)) return NextResponse.json({ error: 'Username can only contain letters, numbers, and underscores' }, { status: 400 })
     if (containsProfanity(username)) return NextResponse.json({ error: 'Username contains disallowed words' }, { status: 400 })
 
-    const existing = await prisma.user.findFirst({ where: { OR: [{ email }, { username }] } })
+    // Case-insensitive username check: prevent "Admin" and "admin" from coexisting.
+    // The `mode: 'insensitive'` filter uses a case-insensitive collation/ILIKE so that
+    // homoglyph-free look-alike registrations (e.g. "Admin" vs "admin") are rejected.
+    const existing = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email },
+          { username: { equals: username, mode: 'insensitive' } },
+        ],
+      },
+    })
     if (existing) return NextResponse.json({ error: 'Username or email already taken' }, { status: 409 })
 
     const hashed = await bcrypt.hash(password, 12)

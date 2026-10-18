@@ -1088,6 +1088,14 @@ app.prepare().then(async () => {
     socket.on('create-room', ({ teamMode, series, difficulty, statCategory, userName }: {
       teamMode: TeamMode, series: SeriesLength, difficulty: Difficulty, statCategory?: StatCategory, userName: string
     }) => {
+      // Rate limit: max 5 room creations per minute per socket to prevent memory-exhaustion spam
+      const crNow0 = Date.now()
+      const crThrottle0 = createRoomThrottle.get(socket.id)
+      if (crThrottle0 && crNow0 - crThrottle0.windowStart < 60_000) {
+        if (crThrottle0.count >= 5) { socket.emit('room-error', { message: 'Too many rooms created. Please wait a moment.' }); return }
+        crThrottle0.count++
+      } else { createRoomThrottle.set(socket.id, { count: 1, windowStart: crNow0 }) }
+
       if (!['starter5', 'bench8', 'full12'].includes(teamMode)) return
       if (![1, 3, 5].includes(series)) return
       if (!['casual', 'ebk'].includes(difficulty)) return
@@ -1616,6 +1624,14 @@ app.prepare().then(async () => {
     // ── Auction Events ─────────────────────────────────────────────────────
 
     socket.on('auction:create', ({ teamSize, maxPlayers, userName }: { teamSize: number; maxPlayers: number; userName: string }) => {
+      // Rate limit: max 5 room creations per minute per socket (shared with create-room)
+      const acNow0 = Date.now()
+      const acThrottle0 = createRoomThrottle.get(socket.id)
+      if (acThrottle0 && acNow0 - acThrottle0.windowStart < 60_000) {
+        if (acThrottle0.count >= 5) { socket.emit('auction:error', { message: 'Too many rooms created. Please wait a moment.' }); return }
+        acThrottle0.count++
+      } else { createRoomThrottle.set(socket.id, { count: 1, windowStart: acNow0 }) }
+
       if (![5, 8, 12].includes(teamSize) || maxPlayers < 2 || maxPlayers > 6) {
         socket.emit('auction:error', { message: 'Invalid settings' }); return
       }
@@ -1942,6 +1958,7 @@ app.prepare().then(async () => {
       emoteLastSent.delete(socket.id)
       bidThrottle.delete(socket.id)
       joinRoomThrottle.delete(socket.id)
+      createRoomThrottle.delete(socket.id)
       // Remove any open listing by this socket
       for (const [code, listing] of gameListings.entries()) {
         if (listing.hostSocketId === socket.id) {

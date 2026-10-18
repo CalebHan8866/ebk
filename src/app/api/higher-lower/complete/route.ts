@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { BADGES } from '@/lib/accessories'
-import { verifyGameToken } from '@/lib/higher-lower-token'
+import { verifyAndConsumeGameToken } from '@/lib/higher-lower-token'
 
 const HL_BADGE_IDS = ['hl_10', 'hl_25', 'hl_gauntlet']
 
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     // directly POSTing badge claims without having started a game session via
     // GET /api/higher-lower/start — the token is HMAC-signed with a server secret
     // and expires after 30 minutes, so it cannot be forged or reused across sessions.
-    if (!gameToken || typeof gameToken !== 'string' || !verifyGameToken(gameToken, payload.userId)) {
+    if (!gameToken || typeof gameToken !== 'string' || !verifyAndConsumeGameToken(gameToken, payload.userId)) {
       return NextResponse.json({ error: 'Invalid or expired game session' }, { status: 403 })
     }
 

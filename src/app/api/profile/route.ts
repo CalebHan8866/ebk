@@ -68,8 +68,21 @@ export async function PATCH(request: NextRequest) {
     if (containsProfanity(username)) return NextResponse.json({ error: 'Username contains disallowed words' }, { status: 400 })
 
     // Reject a no-op change so the client sees a clear message instead of a silent success.
-    if (username === payload.username) {
+    // Compare case-insensitively so "Admin" → "admin" is also treated as a no-op.
+    if (username.toLowerCase() === payload.username?.toLowerCase()) {
       return NextResponse.json({ error: 'That is already your username' }, { status: 400 })
+    }
+
+    // Case-insensitive uniqueness check before the update to prevent "Admin" / "admin"
+    // collisions that the DB unique constraint (case-sensitive) would not catch.
+    const collision = await prisma.user.findFirst({
+      where: {
+        username: { equals: username, mode: 'insensitive' },
+        NOT: { id: payload.userId },
+      },
+    })
+    if (collision) {
+      return NextResponse.json({ error: 'Username is already taken' }, { status: 409 })
     }
 
     try {
