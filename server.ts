@@ -1447,20 +1447,20 @@ app.prepare().then(async () => {
         roomCleanupTimers.delete(roomCode)
       }
 
-      // Cancel any pending disconnect grace-period timer.  If the guest disconnected
-      // during the result screen but the grace timer hasn't fired yet (they may be
-      // reconnecting), we still need to decide here whether to start the next game or
-      // issue a forfeit.  Without this cancel, the timer could fire after the new draft
-      // begins and incorrectly mark the room as complete mid-draft.
-      const pendingGrace = partnerDisconnectTimers.get(roomCode)
-      if (pendingGrace) { clearTimeout(pendingGrace); partnerDisconnectTimers.delete(roomCode) }
+      // If the guest disconnected during the result screen and their 8-second grace
+      // period is still running, the host is clicking next-game while the guest may be
+      // mid-reconnect.  Do NOT cancel the grace timer yet — honour the full grace window.
+      // When the timer fires it will either forfeit (guest gone) or the guest's get-room
+      // will cancel it first and re-seat them.  Cancelling the cleanup timer above is safe:
+      // if the grace timer fires it calls scheduleRoomCleanup itself; if the guest reconnects
+      // the room continues normally without a cleanup timer until the next game ends.
+      if (partnerDisconnectTimers.has(roomCode)) return
 
-      // Guard: if the guest socket is no longer live, treat it as a forfeit rather than
-      // starting the next draft.  Without this check there is a race window where the
-      // host fires next-game before the server has processed the guest's disconnect —
-      // the draft starts, the guest auto-picks via the timer, and when the disconnect
-      // event eventually arrives the disconnect handler fires updateStatsAndUnlock again,
-      // doubling the stat write for both players.
+      // Guard: if the guest socket is no longer live (disconnected without a grace timer —
+      // e.g. host fires next-game before the server has processed the TCP close event),
+      // treat it as a forfeit.  Without this check the draft starts, the guest auto-picks
+      // via the pick timer, and when the disconnect event eventually arrives the disconnect
+      // handler fires updateStatsAndUnlock again, doubling the stat write for both players.
       if (!room.guestSocketId || !io.sockets.sockets.has(room.guestSocketId)) {
         room.status = 'complete'
         if (room.source === 'online') {
