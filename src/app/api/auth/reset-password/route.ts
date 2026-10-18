@@ -15,7 +15,9 @@ export async function POST(request: NextRequest) {
     const { success } = rateLimit(`reset-pw:${ip}`, 10, 60 * 60 * 1000) // 10 attempts per hour per IP
     if (!success) return noStore({ error: 'Too many attempts. Try again in an hour.' }, { status: 429 })
 
-    const { token, password } = await request.json()
+    let body: { token?: unknown; password?: unknown }
+    try { body = await request.json() } catch { return noStore({ error: 'Missing fields' }, { status: 400 }) }
+    const { token, password } = body
     if (!token || !password || typeof token !== 'string' || typeof password !== 'string') {
       return noStore({ error: 'Missing fields' }, { status: 400 })
     }
