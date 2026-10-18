@@ -377,18 +377,18 @@ export default function HigherLowerPage() {
             {/* Milestone: 10 */}
             <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center"
                  style={{ left: `${badge10Pct}%` }}>
-              <div className={`w-3.5 h-3.5 rounded-full border-2 transition-colors ${streak >= 10 ? 'bg-cyan-400 border-cyan-300' : 'bg-[#1a1a1a] border-gray-700'}`} />
+              <div className={`w-3.5 h-3.5 rounded-full border-2 transition-colors ${streak >= 10 ? 'bg-cyan-400 border-cyan-300' : 'bg-white/[0.05] border-white/[0.12]'}`} />
               <span className="absolute top-5 text-[9px] text-gray-400 whitespace-nowrap">10</span>
             </div>
             {/* Milestone: 25 */}
             <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center"
                  style={{ left: `${badge25Pct}%` }}>
-              <div className={`w-3.5 h-3.5 rounded-full border-2 transition-colors ${streak >= 25 ? 'bg-indigo-400 border-indigo-300' : 'bg-[#1a1a1a] border-gray-700'}`} />
+              <div className={`w-3.5 h-3.5 rounded-full border-2 transition-colors ${streak >= 25 ? 'bg-indigo-400 border-indigo-300' : 'bg-white/[0.05] border-white/[0.12]'}`} />
               <span className="absolute top-5 text-[9px] text-indigo-600 whitespace-nowrap">25</span>
             </div>
             {/* Milestone: Gauntlet */}
             <div className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center" style={{ right: 0 }}>
-              <div className={`w-3.5 h-3.5 rounded-full border-2 transition-colors ${streak >= totalComparisons ? 'bg-yellow-400 border-yellow-200' : 'bg-[#1a1a1a] border-gray-700'}`} />
+              <div className={`w-3.5 h-3.5 rounded-full border-2 transition-colors ${streak >= totalComparisons ? 'bg-yellow-400 border-yellow-200' : 'bg-white/[0.05] border-white/[0.12]'}`} />
               <span className="absolute top-5 right-0 text-[9px] text-yellow-600 whitespace-nowrap">⚡</span>
             </div>
           </div>
@@ -480,7 +480,7 @@ export default function HigherLowerPage() {
             {/* LOWER = blue — bigger career, better known */}
             <button
               onClick={() => guess('lower')}
-              className="group relative overflow-hidden bg-[#0c111f] hover:bg-blue-950/50 border border-blue-500/25 hover:border-blue-400/70 text-white font-black py-6 rounded-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-blue-900/30"
+              className="group relative overflow-hidden bg-blue-950/20 hover:bg-blue-950/50 border border-blue-500/25 hover:border-blue-400/70 text-white font-black py-6 rounded-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-blue-900/30 touch-manipulation"
             >
               <div className="font-display text-4xl text-blue-400 leading-none mb-1 group-hover:scale-110 transition-transform">▼</div>
               <div className="text-sm tracking-wider uppercase">Lower EBK</div>
@@ -490,7 +490,7 @@ export default function HigherLowerPage() {
             {/* HIGHER = orange — unknown gem, EBK brand color */}
             <button
               onClick={() => guess('higher')}
-              className="group relative overflow-hidden bg-[#1a0e05] hover:bg-orange-950/50 border border-orange-500/25 hover:border-orange-400/70 text-white font-black py-6 rounded-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-orange-900/30"
+              className="group relative overflow-hidden bg-orange-950/20 hover:bg-orange-950/50 border border-orange-500/25 hover:border-orange-400/70 text-white font-black py-6 rounded-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-orange-900/30 touch-manipulation"
             >
               <div className="font-display text-4xl text-orange-400 leading-none mb-1 group-hover:scale-110 transition-transform">▲</div>
               <div className="text-sm tracking-wider uppercase">Higher EBK</div>

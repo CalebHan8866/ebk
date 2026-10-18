@@ -216,6 +216,9 @@ body {
 @keyframes num-pop { 0% { transform: scale(1); } 40% { transform: scale(1.15); } 100% { transform: scale(1); } }
 .animate-num-pop { animation: num-pop 0.25s ease forwards; }
 
+/* ── Touch utility — prevents 300ms tap delay on mobile ─────────────────────── */
+.touch-manipulation { touch-action: manipulation; }
+
 /* ── Stagger utility (used inline via style animationDelay) ─────────────────── */
 .animate-stagger-item { animation: slide-up 0.25s ease forwards; opacity: 0; }
 
@@ -362,6 +365,7 @@ body {
   border: none;
   background: transparent;
   color: rgba(255,255,255,0.4);
+  touch-action: manipulation;
 }
 .tab-pill-item:hover { color: rgba(255,255,255,0.7); }
 .tab-pill-item.active {
@@ -412,6 +416,7 @@ body {
   border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.15s;
+  touch-action: manipulation;
 }
 .player-row:hover {
   background: rgba(255,255,255,0.04);

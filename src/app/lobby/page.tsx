@@ -709,7 +709,7 @@ export default function LobbyPage() {
                               <div className="text-gray-400 text-xs">{MODE_DESC[val]}</div>
                             </div>
                             <div className={`w-4 h-4 rounded-full border-2 transition-all shrink-0 ${
-                              createTeamMode === val ? 'border-orange-500 bg-orange-500' : 'border-gray-700'
+                              createTeamMode === val ? 'border-orange-500 bg-orange-500' : 'border-white/[0.2]'
                             }`} />
                           </button>
                         ))}
@@ -993,7 +993,7 @@ export default function LobbyPage() {
                             <div className="text-gray-400 text-xs">{MODE_DESC[val]}</div>
                           </div>
                           <div className={`w-4 h-4 rounded-full border-2 transition-all shrink-0 ${
-                            teamMode === val ? 'border-orange-500 bg-orange-500' : 'border-gray-700'
+                            teamMode === val ? 'border-orange-500 bg-orange-500' : 'border-white/[0.2]'
                           }`} />
                         </button>
                       ))}

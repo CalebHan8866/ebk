@@ -601,7 +601,7 @@ export default function ProfilePage() {
                     {badge ? (
                       <div className="relative group flex flex-col items-center">
                         <img src={badge.icon} alt={badge.name} className="w-8 h-8" loading="lazy" />
-                        <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[160px] rounded-lg bg-gray-900 border border-gray-700 px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                        <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[160px] rounded-lg bg-[#111118] border border-white/[0.1] px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50">
                           <div className="text-white text-xs font-black mb-0.5">{badge.name}</div>
                           <div className="text-gray-400 text-[11px] leading-snug">{badge.description}</div>
                         </div>
@@ -638,7 +638,7 @@ export default function ProfilePage() {
                     >
                       <img src={badge.icon} alt={badge.name} className="w-8 h-8" />
                       {/* Tooltip */}
-                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] rounded-lg bg-gray-900 border border-gray-700 px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] rounded-lg bg-[#111118] border border-white/[0.1] px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50">
                         <div className="text-white text-xs font-black mb-0.5">{badge.name}</div>
                         <div className="text-gray-400 text-[11px] leading-snug">{badge.description}</div>
                         {isEquipped && <div className="text-orange-400 text-[10px] font-bold mt-1">✓ equipped</div>}

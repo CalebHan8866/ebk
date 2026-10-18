@@ -79,7 +79,7 @@ function BadgeIcons({ equippedBadges }: { equippedBadges: string }) {
       {badges.map(b => (
         <div key={b.id} className="relative group">
           <img src={b.icon} alt={b.name} className="w-3.5 h-3.5" loading="lazy" />
-          <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-max max-w-[140px] rounded-lg bg-gray-900 border border-gray-700 px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+          <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-max max-w-[140px] rounded-lg bg-[#111118] border border-white/[0.1] px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-50">
             <div className="text-white text-[11px] font-black">{b.name}</div>
             <div className="text-gray-400 text-[10px] leading-snug">{b.description}</div>
           </div>

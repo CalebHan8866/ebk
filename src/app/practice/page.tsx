@@ -383,8 +383,8 @@ function PracticeContent() {
                         isValidTarget
                           ? 'bg-orange-600/20 border border-orange-500 cursor-pointer'
                           : pickedPlayer
-                          ? 'bg-[#0A0A0A]'
-                          : 'bg-[#0A0A0A] border border-dashed border-gray-700'
+                          ? 'bg-white/[0.03]'
+                          : 'bg-white/[0.015] border border-dashed border-white/[0.12]'
                       }`}
                     >
                       <span className={`font-bold w-6 shrink-0 text-[10px] ${isBench ? 'text-gray-400' : 'text-orange-400'}`}>
@@ -401,7 +401,7 @@ function PracticeContent() {
                 })}
               </div>
               {isDone && (
-                <button onClick={() => setScreen('result')} className="w-full mt-3 bg-green-600 hover:bg-green-700 text-white font-black py-2 rounded-xl text-sm transition-colors">
+                <button onClick={() => setScreen('result')} className="btn-primary w-full mt-3 py-2 text-sm">
                   See Results →
                 </button>
               )}
@@ -431,10 +431,10 @@ function PracticeContent() {
                         isValidTarget
                           ? 'bg-orange-600/20 border border-orange-500 cursor-pointer hover:bg-orange-600/40'
                           : isBlocked
-                          ? 'bg-[#0A0A0A] border border-dashed border-gray-800 opacity-30'
+                          ? 'bg-white/[0.015] border border-dashed border-white/[0.08] opacity-30'
                           : pickedPlayer
-                          ? 'bg-[#0A0A0A]'
-                          : 'bg-[#0A0A0A] border border-dashed border-gray-700'
+                          ? 'bg-white/[0.03]'
+                          : 'bg-white/[0.015] border border-dashed border-white/[0.12]'
                       }`}
                     >
                       <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-400' : 'text-orange-400'}`}>{displayLabel}</span>
@@ -502,7 +502,7 @@ function PracticeContent() {
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     placeholder="Search player or team..."
-                    className="w-full bg-[#111] border border-gray-700 rounded-lg pl-8 pr-8 py-2 text-white text-sm focus:outline-none focus:border-orange-500 placeholder-gray-600"
+                    className="input-field pl-8 pr-8 py-2 text-sm rounded-lg"
                   />
                   {searchQuery && (
                     <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-xs">✕</button>
@@ -551,7 +551,7 @@ function PracticeContent() {
                   <div className="flex gap-1.5 mb-3 flex-wrap">
                     {([['games_played', 'GP'], ['ppg', 'PPG'], ['rpg', 'RPG'], ['apg', 'APG']] as const).map(([val, label]) => (
                       <button key={val} onClick={() => setStatMode(val)}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${statMode === val ? 'bg-blue-600 text-white' : 'bg-[#111] text-gray-400 hover:text-white'}`}>
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all touch-manipulation ${statMode === val ? 'bg-blue-600 text-white' : 'bg-white/[0.04] border border-white/[0.07] text-white/50 hover:text-white'}`}>
                         {label}
                       </button>
                     ))}
@@ -586,8 +586,8 @@ function PracticeContent() {
                           isSelected
                             ? 'bg-orange-600/30 border-2 border-orange-500 cursor-pointer'
                             : canSelect
-                            ? 'bg-[#111] hover:bg-[#1e2d45] hover:border-orange-500 border-2 border-transparent cursor-pointer'
-                            : 'bg-[#0D0D0D] border-2 border-transparent cursor-default opacity-40'
+                            ? 'bg-white/[0.04] hover:bg-orange-950/25 hover:border-orange-500 border-2 border-transparent cursor-pointer'
+                            : 'bg-white/[0.015] border-2 border-transparent cursor-default opacity-40'
                         }`}
                       >
                         <div className="flex-1 min-w-0">
@@ -703,7 +703,7 @@ function PracticeContent() {
               )
             })}
           </div>
-          <div className="mt-3 border-t border-gray-800 pt-3 flex justify-between items-center px-1">
+          <div className="mt-3 border-t border-white/[0.06] pt-3 flex justify-between items-center px-1">
             <span className="text-gray-400 text-xs uppercase tracking-wide">Team EBK Total</span>
             <span className={`font-black text-lg ${gradeColor}`}>{totalEBK.toFixed(1)}</span>
           </div>
@@ -714,7 +714,7 @@ function PracticeContent() {
           <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Team Totals</h2>
           <div className="grid grid-cols-2 gap-3">
             {(Object.entries(STAT_LABELS) as [string, string][]).map(([key, label]) => (
-              <div key={key} className="bg-[#0A0A0A] rounded-xl p-4 text-center">
+              <div key={key} className="card-surface rounded-xl p-4 text-center">
                 <div className="text-gray-400 text-xs mb-1">{label}</div>
                 <div className="text-white font-black text-2xl">
                   {key === 'games_played' ? Math.round(totals[key as keyof typeof totals]) : (totals[key as keyof typeof totals]).toFixed(1)}
