@@ -3,9 +3,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 
-// Bulk-creates test users for load testing. Requires DEV_SECRET.
+// Bulk-creates test users for load testing. Dev-only + requires DEV_SECRET.
 // POST { secret, count, prefix }
 export async function POST(request: NextRequest) {
+  // Hard-block in production regardless of secrets — this route must never run live
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
   try {
     let body: { secret?: string; count?: number; prefix?: string }
     try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid body' }, { status: 400 }) }
@@ -36,8 +40,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE — wipe all load test accounts
+// DELETE — wipe all load test accounts (dev-only)
 export async function DELETE(request: NextRequest) {
+  // Hard-block in production regardless of secrets — this route must never run live
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
   try {
     let body: { secret?: string; prefix?: string }
     try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid body' }, { status: 400 }) }

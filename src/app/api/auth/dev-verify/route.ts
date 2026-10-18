@@ -3,8 +3,12 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
 import { noStore } from '@/lib/no-store'
 
-// Internal-only route for test account setup — protected by secret
+// Internal-only route for test account setup — protected by secret + dev-only guard
 export async function POST(request: NextRequest) {
+  // Hard-block in production regardless of secrets — this route must never run live
+  if (process.env.NODE_ENV === 'production') {
+    return noStore({ error: 'Not found' }, { status: 404 })
+  }
   try {
     let body: { email?: string; secret?: string }
     try { body = await request.json() } catch { return noStore({ error: 'Invalid body' }, { status: 400 }) }
