@@ -660,6 +660,53 @@ textarea:focus-visible {
 }
 .animate-vs-enter { animation: vs-enter 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
 
+/* ── EBK Wordmark glow — layered drop-shadows for premium depth ──────────── */
+@keyframes ebk-glow-breathe {
+  0%,100% { filter: drop-shadow(0 0 60px rgba(249,115,22,0.55)) drop-shadow(0 0 120px rgba(234,88,12,0.25)); }
+  50%      { filter: drop-shadow(0 0 90px rgba(249,115,22,0.75)) drop-shadow(0 0 180px rgba(234,88,12,0.40)); }
+}
+.ebk-wordmark-glow {
+  animation: shimmer 2.2s linear infinite, ebk-glow-breathe 3.5s ease-in-out infinite;
+}
+
+/* ── How it works cards — subtle lift on hover ──────────────────────────── */
+.how-it-works-card {
+  transition: transform 0.2s cubic-bezier(0.22,1,0.36,1), box-shadow 0.2s ease;
+}
+.how-it-works-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.55), 0 0 0 1px rgba(249,115,22,0.12);
+}
+.how-it-works-card .how-it-works-step {
+  transition: color 0.2s;
+}
+.how-it-works-card:hover .how-it-works-step {
+  color: rgba(249,115,22,0.95);
+}
+
+/* ── Explore cards — border glow on hover ───────────────────────────────── */
+.explore-card {
+  transition: transform 0.2s cubic-bezier(0.22,1,0.36,1), box-shadow 0.2s ease, background 0.2s, border-color 0.2s;
+}
+.explore-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(249,115,22,0.14);
+}
+
+/* ── Mobile bottom nav ───────────────────────────────────────────────────── */
+.bottom-nav {
+  /* sits above safe-area on notched phones */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.bottom-nav-item {
+  /* larger tap target than the icon itself */
+  min-width: 56px;
+  touch-action: manipulation;
+}
+.bottom-nav-item:active {
+  opacity: 0.7;
+}
+
 /* ── Reduced motion overrides ────────────────────────────────────────────── */
 /* For users who opt out of animation via OS accessibility settings.         */
 /* We keep opacity/color transitions (low severity) and disable transform,  */
@@ -673,7 +720,8 @@ textarea:focus-visible {
   .ticker-track,
   .animate-ellipsis::after,
   .confetti-piece,
-  .win-shimmer-text {
+  .win-shimmer-text,
+  .ebk-wordmark-glow {
     animation: none !important;
   }
 
@@ -732,6 +780,12 @@ textarea:focus-visible {
   /* Hover transforms on buttons — remove lift effect */
   .btn-primary:hover,
   .btn-secondary:hover {
+    transform: none !important;
+  }
+
+  /* Card hovers — skip the lift */
+  .how-it-works-card:hover,
+  .explore-card:hover {
     transform: none !important;
   }
 }
