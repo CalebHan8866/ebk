@@ -593,3 +593,69 @@ body {
 }
 .gm-card-me  { background: rgba(234,88,12,0.08); border: 1px solid rgba(234,88,12,0.2); }
 .gm-card-other { background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.05); }
+
+/* ── Reduced motion overrides ────────────────────────────────────────────── */
+/* For users who opt out of animation via OS accessibility settings.         */
+/* We keep opacity/color transitions (low severity) and disable transform,  */
+/* continuous loops, and high-intensity effects.                             */
+@media (prefers-reduced-motion: reduce) {
+  /* Kill all continuous looping animations */
+  .live-dot,
+  .animate-glow,
+  .animate-win-glow,
+  .skeleton,
+  .ticker-track,
+  .animate-ellipsis::after,
+  .confetti-piece,
+  .win-shimmer-text {
+    animation: none !important;
+  }
+
+  /* Replace entrance animations with instant fade (no translate/scale) */
+  .animate-slide-up,
+  .animate-fade-up,
+  .animate-fade-up-1,
+  .animate-fade-up-2,
+  .animate-fade-up-3,
+  .animate-fade-up-4,
+  .animate-fade-up-5,
+  .animate-scale-in,
+  .animate-fade-in,
+  .animate-stagger-item {
+    animation: fade-in 0.15s ease forwards !important;
+    transform: none !important;
+  }
+
+  /* Win / loss entrance animations — just fade */
+  .animate-win-pop,
+  .animate-loss-drop {
+    animation: fade-in 0.2s ease forwards !important;
+    transform: none !important;
+  }
+
+  /* Number pop — skip the scale bounce */
+  .animate-num-pop {
+    animation: none !important;
+  }
+
+  /* Spinning loaders — use a simple opacity pulse instead */
+  .animate-spin {
+    animation: pulse 1.5s ease-in-out infinite !important;
+  }
+
+  /* Pulse dots — keep a subtle opacity-only version */
+  .animate-pulse {
+    animation: pulse 2s ease-in-out infinite !important;
+  }
+
+  /* Budget bar fill — instant, no slide */
+  .budget-bar-fill {
+    transition: none !important;
+  }
+
+  /* Hover transforms on buttons — remove lift effect */
+  .btn-primary:hover,
+  .btn-secondary:hover {
+    transform: none !important;
+  }
+}
