@@ -1491,45 +1491,53 @@ export default function AuctionRoomPage() {
           {/* Right: Bid log */}
           <aside className={`lg:col-span-1 border-l border-white/[0.07] p-4 flex flex-col ${mobilePanel !== 'log' ? 'hidden lg:flex' : ''}`}>
             <p className="text-label tracking-[0.2em] mb-4">Bid Log</p>
-            <div className="flex-1 overflow-y-auto space-y-1">
+            <div className="flex-1 overflow-y-auto space-y-0.5">
               {auctionState.bidLog.length === 0 && (
-                <div className="empty-state py-8">
-                  <div className="empty-state-icon">📋</div>
-                  <div className="empty-state-title">No bids yet</div>
+                <div className="flex flex-col items-center justify-center py-10 gap-2 text-center">
+                  <div className="w-8 h-8 rounded-full bg-white/[0.04] border border-white/[0.07] flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                  </div>
+                  <p className="text-white/20 text-[11px] font-bold uppercase tracking-widest">No activity yet</p>
                 </div>
               )}
-              {auctionState.bidLog.map((entry, i) => (
-                <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs border transition-colors ${
-                  entry.action === 'won'   ? 'bg-green-500/10 border-green-500/20' :
-                  entry.action === 'steal' ? 'bg-yellow-500/10 border-yellow-500/20' :
-                  entry.action === 'pass'  ? 'bg-transparent border-transparent' :
-                  entry.action === 'trade' ? 'bg-blue-500/10 border-blue-500/20' :
-                  'bg-white/[0.025] border-white/[0.04]'
-                }`}>
-                  <span className={`w-4 shrink-0 text-center ${
-                    entry.action === 'won'   ? 'text-green-400' :
-                    entry.action === 'steal' ? 'text-yellow-400' :
-                    entry.action === 'pass'  ? 'text-white/20' :
-                    entry.action === 'trade' ? 'text-blue-400' :
-                    'text-orange-400/80'
+              {auctionState.bidLog.map((entry, i) => {
+                const isWon   = entry.action === 'won'
+                const isSteal = entry.action === 'steal'
+                const isPass  = entry.action === 'pass'
+                const isTrade = entry.action === 'trade'
+                const verb = isWon ? 'WON' : isSteal ? 'STEAL' : isPass ? 'PASS' : isTrade ? 'TRADE' : 'BID'
+                return (
+                  <div key={i} className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs border transition-colors ${
+                    isWon   ? 'bg-green-500/[0.07] border-green-500/20' :
+                    isSteal ? 'bg-yellow-500/[0.07] border-yellow-500/20' :
+                    isPass  ? 'bg-transparent border-transparent opacity-40' :
+                    isTrade ? 'bg-blue-500/[0.07] border-blue-500/20' :
+                    'bg-white/[0.02] border-white/[0.04]'
                   }`}>
-                    {entry.action === 'won' ? '✓' : entry.action === 'steal' ? '⚡' : entry.action === 'pass' ? '·' : entry.action === 'trade' ? '↔' : '↑'}
-                  </span>
-                  <span className={`flex-1 truncate font-semibold ${
-                    entry.action === 'won' ? 'text-green-300' :
-                    entry.action === 'steal' ? 'text-yellow-300' :
-                    entry.action === 'pass' ? 'text-white/25' :
-                    'text-white/70'
-                  }`}>{entry.name}</span>
-                  {entry.amount > 0 && (
-                    <span className={`font-black shrink-0 tabular-nums ${
-                      entry.action === 'won' ? 'text-green-400' :
-                      entry.action === 'steal' ? 'text-yellow-400' :
-                      'text-orange-400'
-                    }`}>${entry.amount}M</span>
-                  )}
-                </div>
-              ))}
+                    <span className={`shrink-0 text-[9px] font-black tracking-widest rounded px-1.5 py-0.5 leading-none ${
+                      isWon   ? 'bg-green-500/20 text-green-400' :
+                      isSteal ? 'bg-yellow-500/20 text-yellow-400' :
+                      isPass  ? 'bg-white/[0.05] text-white/25' :
+                      isTrade ? 'bg-blue-500/20 text-blue-400' :
+                      'bg-orange-500/15 text-orange-400'
+                    }`}>{verb}</span>
+                    <span className={`flex-1 truncate font-semibold ${
+                      isWon   ? 'text-green-200' :
+                      isSteal ? 'text-yellow-200' :
+                      isPass  ? 'text-white/25' :
+                      isTrade ? 'text-blue-200' :
+                      'text-white/70'
+                    }`}>{entry.name}</span>
+                    {entry.amount > 0 && (
+                      <span className={`font-black shrink-0 tabular-nums ${
+                        isWon   ? 'text-green-400' :
+                        isSteal ? 'text-yellow-400' :
+                        'text-orange-400'
+                      }`}>${entry.amount}M</span>
+                    )}
+                  </div>
+                )
+              })}
               <div ref={logEndRef} />
             </div>
           </aside>
