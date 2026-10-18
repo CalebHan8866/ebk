@@ -871,8 +871,24 @@ export default function LobbyPage() {
                     ) : listings.length === 0 ? (
                       <div className="empty-state">
                         <div className="empty-state-icon">🏀</div>
-                        <div className="empty-state-title">No open games</div>
-                        <div className="empty-state-body">Post a game on the left to be the first</div>
+                        <div className="empty-state-title">No games open right now</div>
+                        <div className="empty-state-body">
+                          Post one to get started — your game will appear here for others to join.
+                        </div>
+                        {/* Arrow pointing left toward Post Game form (hidden on mobile where form is above) */}
+                        <div className="hidden lg:flex items-center gap-2 mt-4 text-orange-500/50 text-xs font-black uppercase tracking-widest animate-pulse">
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                            <path d="M12 4L6 10L12 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                          Post Game
+                        </div>
+                        {/* On mobile (form is above), show a downward-pointing hint */}
+                        <div className="lg:hidden flex flex-col items-center gap-1 mt-4 text-orange-500/50">
+                          <span className="text-xs font-black uppercase tracking-widest">Post a game above</span>
+                          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true" className="animate-bounce">
+                            <path d="M10 4V16M10 16L4 10M10 16L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
                       </div>
                     ) : (
                       <div className="divide-y divide-white/[0.04]">
