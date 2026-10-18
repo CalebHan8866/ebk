@@ -1012,7 +1012,15 @@ function finishAuction(io: SocketServer, room: AuctionRoom) {
   for (const p of room.participants) {
     io.to(p.socketId).emit('auction:complete', { results })
   }
-  setTimeout(() => { auctionRooms.delete(room.code); auctionRoundCounter.delete(room.code) }, AUCTION_CLEANUP_MS)
+  setTimeout(() => {
+    // Guard: only delete if this exact room object is still registered under this
+    // code.  A new room could theoretically reuse the same code within the
+    // AUCTION_CLEANUP_MS window; deleting it here would silently destroy an active game.
+    if (auctionRooms.get(room.code) === room) {
+      auctionRooms.delete(room.code)
+      auctionRoundCounter.delete(room.code)
+    }
+  }, AUCTION_CLEANUP_MS)
 }
 
 // ─── Server ──────────────────────────────────────────────────────────────────
@@ -1477,13 +1485,14 @@ app.prepare().then(async () => {
       const userId = socket.data.userId as string | null
       const userName: string = (socket.data.username as string | null ?? '').slice(0, 20) || 'Player'
       if (!userId) { pendingListingCreate.delete(socket.id); socket.emit('listing-error', { message: 'Must be signed in to post a game' }); return }
-      // Guard: refuse if this socket or user is already in an active game room
-      for (const room of rooms.values()) {
-        if (room.status === 'drafting' && (room.hostSocketId === socket.id || room.guestSocketId === socket.id || (userId && (room.hostUserId === userId || room.guestUserId === userId)))) {
-          pendingListingCreate.delete(socket.id)
-          socket.emit('listing-error', { message: 'Finish your current game before posting a new one' })
-          return
-        }
+      // Guard: refuse if this user is already active in any draft or auction room.
+      // The old check only scanned rooms (draft rooms) and missed active auction rooms,
+      // allowing a user to post a listing while in a live auction — when both games
+      // finished, updateStatsAndUnlock would fire twice for the same userId.
+      if (isUserActiveInAnyRoom(userId)) {
+        pendingListingCreate.delete(socket.id)
+        socket.emit('listing-error', { message: 'Finish your current game before posting a new one' })
+        return
       }
       // Remove any stale listing by this socket or by the same user (multi-tab protection)
       for (const [c, l] of gameListings.entries()) {
@@ -1578,6 +1587,14 @@ app.prepare().then(async () => {
       // Prevent a user from joining their own listing
       if (userId === listing.hostUserId) {
         socket.emit('listing-error', { message: 'You cannot join your own game' })
+        return
+      }
+
+      // Prevent simultaneous multi-game participation: a user already active in a draft
+      // or auction room cannot join a listing — two concurrent games writing to the same
+      // userId would corrupt wins/losses (double-counting via concurrent finishGame calls).
+      if (isUserActiveInAnyRoom(userId)) {
+        socket.emit('listing-error', { message: 'Finish your current game before joining a new one' })
         return
       }
 
