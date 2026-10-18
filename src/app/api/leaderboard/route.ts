@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db'
 interface CacheEntry { data: unknown; at: number }
 const cache = new Map<string, CacheEntry>()
 const CACHE_TTL = 30 * 1000 // 30 seconds
+const CACHE_MAX_ENTRIES = 500 // hard cap — evict all expired entries when exceeded
 
 export async function GET(request: NextRequest) {
   try {
@@ -70,10 +71,12 @@ export async function GET(request: NextRequest) {
   }
 
   const result = { users, totalPlayers, me }
-  // Prune expired entries before adding new ones to prevent unbounded growth
+  // Prune expired entries; if still over the hard cap, clear the entire cache
+  // to prevent unbounded memory growth when many unique users hit the endpoint.
   cache.forEach((entry, key) => {
     if (now - entry.at >= CACHE_TTL) cache.delete(key)
   })
+  if (cache.size >= CACHE_MAX_ENTRIES) cache.clear()
   cache.set(cacheKey, { data: result, at: now })
   return NextResponse.json(result)
   } catch {
