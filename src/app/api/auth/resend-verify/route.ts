@@ -21,6 +21,12 @@ export async function POST(request: NextRequest) {
     // Normalize to lowercase — emails are stored lowercased at registration.
     const email = rawEmail.toLowerCase()
 
+    // Per-email rate limit: prevents a distributed attacker from flooding one inbox
+    // with verification emails. Applied before the DB lookup; still returns the generic
+    // message so email existence is not leaked.
+    const { success: emailOk } = rateLimit(`resend-verify:email:${email}`, 2, 60 * 60 * 1000) // 2 resends per hour per address
+    if (!emailOk) return noStore({ message: 'If that email is registered and unverified, a new link has been sent.' })
+
     const user = await prisma.user.findUnique({ where: { email } })
     // Return success regardless — don't leak whether the email exists
     if (!user || user.emailVerified) return noStore({ message: 'If that email is registered and unverified, a new link has been sent.' })
