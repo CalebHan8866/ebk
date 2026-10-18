@@ -731,30 +731,53 @@ export default function AuctionRoomPage() {
     const timerUrgent = tradeTimeLeft <= 60
     const timerWarning = tradeTimeLeft <= 180
 
+    // Countdown bar width as percentage of total trade window (assumes 300s default)
+    const tradeBarPct = auctionState.tradeDeadline
+      ? Math.min(100, (tradeTimeLeft / 300) * 100)
+      : 100
+
     return (
-      <div className="min-h-screen px-4 py-6 max-w-5xl mx-auto">
+      <div className="min-h-screen px-4 py-6 max-w-5xl mx-auto animate-scale-in">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 gap-3">
+        <div className="flex items-center justify-between mb-4 gap-3">
           <div>
-            <h1 className="font-display text-3xl sm:text-4xl text-orange-500 tracking-wider leading-none">TRADE WINDOW</h1>
-            <p className="text-white/30 text-xs mt-1 font-mono">{code}</p>
+            <div className="flex items-center gap-3 mb-0.5">
+              <h1 className="font-display text-3xl sm:text-4xl text-orange-500 tracking-wider leading-none">TRADE WINDOW</h1>
+              <div className="live-banner shrink-0">
+                <span className="live-dot" />
+                OPEN
+              </div>
+            </div>
+            <p className="text-white/30 text-xs mt-1 font-mono">{code} · {auctionState.participants.length} GMs</p>
           </div>
-          {/* Timer — urgency ring */}
-          <div className={`relative flex flex-col items-center gap-1 rounded-2xl px-5 py-3 border transition-all overflow-hidden ${
+          {/* Timer — urgency pill */}
+          <div className={`relative flex flex-col items-center gap-1 rounded-2xl px-5 py-3 border transition-all overflow-hidden shrink-0 ${
             timerUrgent
               ? 'bg-red-950/50 border-red-500/60 shadow-[0_0_28px_rgba(239,68,68,0.25)]'
               : timerWarning
               ? 'bg-orange-950/40 border-orange-500/40 shadow-[0_0_16px_rgba(249,115,22,0.12)]'
               : 'bg-white/[0.04] border-white/[0.08]'
           }`}>
-            {timerUrgent && <div className="absolute inset-0 animate-glow pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(239,68,68,0.08) 0%, transparent 70%)' }} />}
-            <p className={`font-display text-4xl leading-none tabular-nums relative ${timerUrgent ? 'text-red-400' : timerWarning ? 'text-orange-400' : 'text-white'}`}>
+            {timerUrgent && <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(239,68,68,0.08) 0%, transparent 70%)' }} />}
+            <p className={`font-display text-4xl leading-none tabular-nums relative ${timerUrgent ? 'text-red-400 animate-timer-throb' : timerWarning ? 'text-orange-400' : 'text-white'}`}>
               {tradeMinutes}:{tradeSecs.toString().padStart(2, '0')}
             </p>
             <p className={`text-[10px] font-black uppercase tracking-widest relative ${timerUrgent ? 'text-red-400/80' : timerWarning ? 'text-orange-400/70' : 'text-white/25'}`}>
               {timerUrgent ? 'Closing soon!' : timerWarning ? 'Time running out' : 'Trade Window'}
             </p>
           </div>
+        </div>
+
+        {/* Countdown progress bar */}
+        <div className="h-1 rounded-full bg-white/[0.05] overflow-hidden mb-6">
+          <div
+            className={`h-full rounded-full transition-all duration-1000 ${
+              timerUrgent ? 'bg-gradient-to-r from-red-700 to-red-400' :
+              timerWarning ? 'bg-gradient-to-r from-orange-700 to-orange-400' :
+              'bg-gradient-to-r from-orange-600 to-orange-400'
+            }`}
+            style={{ width: `${tradeBarPct}%` }}
+          />
         </div>
 
         {/* Incoming offers banner — high priority, shown at top */}
@@ -893,14 +916,34 @@ export default function AuctionRoomPage() {
           </div>
         )}
 
+        {/* Section divider */}
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-white/20 text-[10px] font-black uppercase tracking-widest">Build a Trade</span>
+          <div className="flex-1 h-px bg-white/[0.05]" />
+          {selectedToOffer.length > 0 && (
+            <span className="text-orange-400 text-[10px] font-black uppercase tracking-widest">
+              {selectedToOffer.length} selected to offer
+            </span>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Your Roster */}
           <div className="card-surface p-5">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-1">
               <h2 className="font-display text-lg text-white/80 tracking-wider">YOUR ROSTER</h2>
-              <span className="text-orange-400 text-sm font-bold">${me?.budget ?? 0}M left</span>
+              <div className="flex items-center gap-2">
+                {selectedToOffer.length > 0 && (
+                  <span className="text-[10px] font-black uppercase tracking-widest bg-orange-600/20 border border-orange-500/40 text-orange-400 rounded-lg px-2 py-1">
+                    {selectedToOffer.length} offered
+                  </span>
+                )}
+                <span className="text-orange-400 text-sm font-bold">${me?.budget ?? 0}M</span>
+              </div>
             </div>
-            <p className="text-white/25 text-[11px] mb-3 font-semibold">Tap players to include in a trade offer</p>
+            <p className="text-white/25 text-[10px] mb-3 font-semibold uppercase tracking-wider">
+              {selectedToOffer.length === 0 ? 'Step 1 — tap players to offer' : 'Now select a GM and their players below'}
+            </p>
             <div className="space-y-2">
               {me?.roster.map(p => p && (
                 <button
@@ -909,14 +952,17 @@ export default function AuctionRoomPage() {
                   className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 border transition-all ${
                     selectedToOffer.includes(p.id)
                       ? 'bg-orange-600/20 border-orange-500/50 shadow-[0_0_12px_rgba(234,88,12,0.15)]'
-                      : 'bg-white/[0.03] border-white/[0.05] hover:border-white/20'
+                      : 'bg-white/[0.03] border-white/[0.05] hover:border-white/20 hover:bg-white/[0.05]'
                   }`}
                 >
                   <PosBadge pos={p.position} />
                   <span className="flex-1 text-left text-white text-sm font-bold truncate" title={`${p.firstName} ${p.lastName}`}>{p.firstName} {p.lastName}</span>
                   <span className="text-orange-400 text-xs font-black">{p.ebkScore.toFixed(1)}</span>
                   <span className="text-white/25 text-xs">${p.paidPrice}M</span>
-                  {selectedToOffer.includes(p.id) && <span className="text-orange-400 text-xs shrink-0">✓</span>}
+                  {selectedToOffer.includes(p.id)
+                    ? <span className="w-4 h-4 rounded-full bg-orange-500/30 border border-orange-400 flex items-center justify-center shrink-0"><svg className="w-2.5 h-2.5 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></span>
+                    : <span className="w-4 h-4 rounded-full border border-white/[0.12] shrink-0" />
+                  }
                 </button>
               ))}
               {(!me?.roster || me.roster.length === 0) && (
@@ -931,15 +977,22 @@ export default function AuctionRoomPage() {
 
           {/* Other GMs */}
           <div className="space-y-4">
+            {auctionState.participants.filter(p => p.socketId !== mySocketId).length === 0 && (
+              <div className="card-surface p-8 rounded-2xl text-center">
+                <p className="text-white/25 text-sm font-semibold">No other GMs in this room</p>
+              </div>
+            )}
             {auctionState.participants.filter(p => p.socketId !== mySocketId).map(gm => (
-              <div key={gm.socketId} className="card-surface p-4">
+              <div key={gm.socketId} className={`card-surface p-4 transition-all ${tradeTarget === gm.socketId ? 'border-orange-500/25 shadow-[0_0_24px_rgba(249,115,22,0.06)]' : ''}`}>
                 <div className="flex items-center justify-between mb-3 gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-orange-600/20 border border-orange-500/30 flex items-center justify-center font-display text-orange-400 shrink-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-orange-600/20 border border-orange-500/30 flex items-center justify-center font-display text-orange-400 shrink-0 text-sm">
                       {gm.name[0]?.toUpperCase()}
                     </div>
-                    <span className="font-bold text-white truncate">{gm.name}</span>
-                    <span className="text-white/30 text-xs shrink-0">${gm.budget}M</span>
+                    <div className="min-w-0">
+                      <div className="font-bold text-white truncate text-sm leading-tight">{gm.name}</div>
+                      <div className="text-white/30 text-[10px] font-mono">{gm.rosterCount} players · ${gm.budget}M left</div>
+                    </div>
                   </div>
                   <button
                     onClick={() => {
@@ -979,7 +1032,10 @@ export default function AuctionRoomPage() {
                 {tradeTarget === gm.socketId && (
                   <div className="mt-4 pt-4 border-t border-white/[0.07]">
                     <div className="flex items-center gap-2 mb-3">
-                      <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">Trade Proposal</p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
+                        <p className="text-white/50 text-[10px] font-black uppercase tracking-widest">Step 2 — Trade Proposal</p>
+                      </div>
                       <div className="flex-1 h-px bg-white/[0.05]" />
                       {/* Live EBK net preview */}
                       {(selectedToOffer.length > 0 || selectedToRequest.length > 0) && (() => {
@@ -987,7 +1043,7 @@ export default function AuctionRoomPage() {
                         const requestEbk = selectedToRequest.reduce((s, id) => s + (gm.roster.find(p => p?.id === id)?.ebkScore ?? 0), 0)
                         const net = requestEbk - offerEbk
                         return (
-                          <span className={`text-[10px] font-black tabular-nums ${net < 0 ? 'text-green-400' : net > 0 ? 'text-red-400' : 'text-white/30'}`}>
+                          <span className={`text-[10px] font-black tabular-nums px-2 py-0.5 rounded-md border ${net < 0 ? 'text-green-400 bg-green-950/30 border-green-500/20' : net > 0 ? 'text-red-400 bg-red-950/20 border-red-500/15' : 'text-white/30 bg-white/[0.03] border-white/[0.06]'}`}>
                             EBK {net > 0 ? '+' : ''}{net.toFixed(1)}
                           </span>
                         )
@@ -1004,6 +1060,11 @@ export default function AuctionRoomPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                           </svg>
                           <p className="text-orange-400/60 text-[9px] font-black uppercase tracking-widest">You give</p>
+                          {selectedToOffer.length > 0 && (
+                            <span className="ml-auto text-orange-400/60 font-display text-xs tabular-nums">
+                              {selectedToOffer.reduce((s, id) => s + (me?.roster.find(p => p?.id === id)?.ebkScore ?? 0), 0).toFixed(1)}
+                            </span>
+                          )}
                         </div>
                         <div className="px-3 py-2 space-y-1.5 min-h-[52px]">
                           {selectedToOffer.length > 0 ? selectedToOffer.map(id => {
@@ -1016,7 +1077,7 @@ export default function AuctionRoomPage() {
                               </div>
                             ) : null
                           }) : (
-                            <p className="text-white/20 text-[11px] italic pt-1">Select from your roster below</p>
+                            <p className="text-white/20 text-[11px] italic pt-1">Select from your roster above</p>
                           )}
                         </div>
                       </div>
@@ -1038,6 +1099,11 @@ export default function AuctionRoomPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
                           </svg>
                           <p className="text-blue-400/60 text-[9px] font-black uppercase tracking-widest">You get</p>
+                          {selectedToRequest.length > 0 && (
+                            <span className="ml-auto text-blue-400/60 font-display text-xs tabular-nums">
+                              {selectedToRequest.reduce((s, id) => s + (gm.roster.find(p => p?.id === id)?.ebkScore ?? 0), 0).toFixed(1)}
+                            </span>
+                          )}
                         </div>
                         <div className="px-3 py-2 space-y-1.5 min-h-[52px]">
                           {selectedToRequest.length > 0 ? selectedToRequest.map(id => {
@@ -1058,12 +1124,16 @@ export default function AuctionRoomPage() {
                     <button
                       onClick={handleSendTradeOffer}
                       disabled={selectedToOffer.length === 0 || selectedToRequest.length === 0}
-                      className="btn-primary w-full py-3.5 text-sm tracking-widest flex items-center justify-center gap-2"
+                      className={`w-full py-3.5 text-sm tracking-widest flex items-center justify-center gap-2 rounded-xl font-black uppercase transition-all border ${
+                        selectedToOffer.length > 0 && selectedToRequest.length > 0
+                          ? 'bg-orange-600/25 border-orange-500/60 text-orange-300 hover:bg-orange-600/35 hover:border-orange-500/80 shadow-[0_0_16px_rgba(249,115,22,0.12)]'
+                          : 'bg-white/[0.03] border-white/[0.06] text-white/20 cursor-not-allowed'
+                      }`}
                     >
                       <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                       </svg>
-                      Send Offer to {gm.name}
+                      {selectedToOffer.length === 0 ? 'Select players to offer first' : selectedToRequest.length === 0 ? 'Select players to request' : `Send Offer to ${gm.name}`}
                     </button>
                   </div>
                 )}
@@ -1074,9 +1144,11 @@ export default function AuctionRoomPage() {
 
         {/* Outgoing offers — pending cards */}
         {myOutgoingOffers.length > 0 && (
-          <div className="mt-4">
+          <div className="mt-6">
             <div className="flex items-center gap-2 mb-3 px-1">
+              <span className="w-2 h-2 rounded-full bg-yellow-400/70 animate-pulse shrink-0" />
               <span className="text-label tracking-[0.18em]">Pending Offers</span>
+              <span className="text-[10px] font-black bg-white/[0.06] border border-white/[0.10] text-white/40 rounded-full px-2 py-0.5">{myOutgoingOffers.length}</span>
               <div className="flex-1 h-px bg-white/[0.05]" />
             </div>
             <div className="space-y-2">
@@ -1085,15 +1157,20 @@ export default function AuctionRoomPage() {
                 const offeredPlayers = offer.offeredPlayerIds.map(id => me?.roster.find(p => p?.id === id)).filter(Boolean)
                 const requestedPlayers = offer.requestedPlayerIds.map(id => toGM?.roster.find(p => p?.id === id)).filter(Boolean)
                 return (
-                  <div key={offer.id} className="card-surface rounded-xl border border-white/[0.06] overflow-hidden">
+                  <div key={offer.id} className="rounded-xl border border-yellow-500/15 overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.98) 0%, rgba(20,18,5,0.98) 100%)' }}>
                     <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.04]">
-                      <span className="w-2 h-2 rounded-full bg-orange-400/70 animate-pulse shrink-0" />
-                      <span className="text-white/60 text-xs font-black uppercase tracking-widest flex-1">Awaiting response</span>
-                      <span className="text-white/30 text-xs">→ <span className="text-white/60 font-bold">{offer.toName}</span></span>
+                      <span className="w-2 h-2 rounded-full bg-yellow-400/70 animate-pulse shrink-0" />
+                      <span className="text-yellow-400/70 text-xs font-black uppercase tracking-widest flex-1">Awaiting response</span>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-5 h-5 rounded-full bg-orange-600/20 border border-orange-500/30 flex items-center justify-center font-display text-orange-400 text-[10px] shrink-0">
+                          {offer.toName[0]?.toUpperCase()}
+                        </div>
+                        <span className="text-white/60 text-xs font-bold">{offer.toName}</span>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-[1fr_auto_1fr] gap-3 px-4 py-3 items-start">
+                    <div className="grid grid-cols-[1fr_32px_1fr] gap-0 px-4 py-3 items-start">
                       <div>
-                        <p className="text-orange-400/50 text-[9px] font-black uppercase tracking-widest mb-1.5">You&apos;re offering</p>
+                        <p className="text-orange-400/50 text-[9px] font-black uppercase tracking-widest mb-1.5">Offering</p>
                         <div className="space-y-1">
                           {offeredPlayers.map(p => p && (
                             <div key={p.id} className="flex items-center gap-1.5">
@@ -1105,10 +1182,14 @@ export default function AuctionRoomPage() {
                         </div>
                       </div>
                       <div className="flex items-center justify-center pt-4">
-                        <span className="text-white/20 font-bold text-base">⇄</span>
+                        <div className="w-6 h-6 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white/25" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                          </svg>
+                        </div>
                       </div>
                       <div>
-                        <p className="text-blue-400/50 text-[9px] font-black uppercase tracking-widest mb-1.5">You want</p>
+                        <p className="text-blue-400/50 text-[9px] font-black uppercase tracking-widest mb-1.5">Requesting</p>
                         <div className="space-y-1">
                           {requestedPlayers.map(p => p && (
                             <div key={p.id} className="flex items-center gap-1.5">
@@ -1137,7 +1218,7 @@ export default function AuctionRoomPage() {
         )}
 
         {/* End trading / timer repeat */}
-        <div className="mt-6 flex items-center justify-between gap-4">
+        <div className="mt-6 pb-8 flex items-center justify-between gap-4">
           {isHost && (
             <button
               onClick={handleFinishTrading}
@@ -1146,8 +1227,8 @@ export default function AuctionRoomPage() {
               End Trading Early
             </button>
           )}
-          <div className={`${isHost ? '' : 'ml-auto'} flex items-center gap-2 text-sm font-mono ${timerUrgent ? 'text-red-400' : timerWarning ? 'text-orange-400' : 'text-white/40'}`}>
-            <span className={`live-dot ${timerUrgent ? 'bg-red-400' : ''}`} />
+          <div className={`${isHost ? '' : 'ml-auto'} flex items-center gap-2 text-sm font-mono ${timerUrgent ? 'text-red-400' : timerWarning ? 'text-orange-400' : 'text-white/30'}`}>
+            <span className={`live-dot ${timerUrgent ? 'bg-red-400' : timerWarning ? 'bg-orange-400' : ''}`} />
             {tradeMinutes}:{tradeSecs.toString().padStart(2, '0')} remaining
           </div>
         </div>

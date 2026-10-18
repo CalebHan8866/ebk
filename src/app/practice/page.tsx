@@ -271,13 +271,21 @@ function PracticeContent() {
   // ── Setup ──────────────────────────────────────────────────────────────────
   if (screen === 'setup') {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md">
-          <button onClick={() => router.push('/lobby')} className="text-gray-400 hover:text-white text-sm mb-6 flex items-center gap-1">
-            ← Back to Lobby
+      <div className="min-h-screen flex items-center justify-center px-4 py-10 relative overflow-hidden">
+        {/* Training room ambient glow */}
+        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 40% at 50% 30%, rgba(234,88,12,0.04) 0%, transparent 70%)' }} />
+        <div className="w-full max-w-md relative animate-scale-in">
+          <button onClick={() => router.push('/lobby')} className="text-gray-400 hover:text-white text-sm mb-6 flex items-center gap-1.5 transition-colors">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
+            Back to Lobby
           </button>
           <div className="text-center mb-8">
-            <h1 className="font-display text-5xl text-white leading-none">Practice</h1>
+            <div className="inline-flex items-center gap-2 mb-3 text-orange-400/60 text-[10px] font-black uppercase tracking-widest">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400/60" />
+              Solo Draft
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400/60" />
+            </div>
+            <h1 className="font-display text-6xl text-white leading-none tracking-wide">PRACTICE</h1>
             <p className="text-gray-400 text-sm mt-2">Draft solo — no pressure, no timer</p>
           </div>
 
@@ -299,12 +307,12 @@ function PracticeContent() {
               <label className="text-label block mb-3">Mode</label>
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={() => setDifficulty('casual')}
-                  className={`rounded-xl p-3 text-center border transition-all ${difficulty === 'casual' ? 'border-orange-500 bg-orange-600/20 shadow-[0_0_12px_rgba(234,88,12,0.15)]' : 'border-white/[0.07] bg-white/[0.02] text-gray-400 hover:border-white/[0.15] hover:text-white'}`}>
+                  className={`rounded-xl p-3.5 text-center border transition-all ${difficulty === 'casual' ? 'border-orange-500 bg-orange-600/20 shadow-[0_0_12px_rgba(234,88,12,0.15)]' : 'border-white/[0.07] bg-white/[0.02] text-gray-400 hover:border-white/[0.15] hover:text-white'}`}>
                   <div className={`font-black text-sm ${difficulty === 'casual' ? 'text-orange-400' : 'text-white'}`}>Casual</div>
                   <div className="text-[11px] opacity-60 mt-0.5">EBK scores shown</div>
                 </button>
                 <button onClick={() => setDifficulty('ebk')}
-                  className={`rounded-xl p-3 text-center border transition-all ${difficulty === 'ebk' ? 'border-yellow-500 bg-yellow-600/10 shadow-[0_0_12px_rgba(234,179,8,0.12)]' : 'border-white/[0.07] bg-white/[0.02] text-gray-400 hover:border-white/[0.15] hover:text-white'}`}>
+                  className={`rounded-xl p-3.5 text-center border transition-all ${difficulty === 'ebk' ? 'border-yellow-500 bg-yellow-600/10 shadow-[0_0_12px_rgba(234,179,8,0.12)]' : 'border-white/[0.07] bg-white/[0.02] text-gray-400 hover:border-white/[0.15] hover:text-white'}`}>
                   <div className={`font-black text-sm ${difficulty === 'ebk' ? 'text-yellow-400' : 'text-white'}`}>EBK Mode</div>
                   <div className="text-[11px] opacity-60 mt-0.5">Blind picks — no scores</div>
                 </button>
@@ -313,8 +321,8 @@ function PracticeContent() {
 
             <button
               onClick={() => { setPicks(Array(TEAM_SIZES[teamMode]).fill(null)); setSpunTeamsHistory([]); setScreen('draft') }}
-              className="btn-primary w-full py-4 text-base">
-              Start Practice
+              className="btn-primary w-full py-4 text-base tracking-wider">
+              Start Draft
             </button>
           </div>
         </div>
@@ -330,15 +338,37 @@ function PracticeContent() {
       <div className="min-h-screen py-6 px-4">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-orange-500 font-black text-lg">
-                Practice · {teamMode === 'starter5' ? 'Starter 5' : teamMode === 'bench8' ? 'Bench 8' : 'Full 12'}
-                {difficulty === 'ebk' && <span className="ml-2 text-yellow-500">EBK</span>}
+          <div className="flex items-center justify-between mb-4 gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2.5 mb-0.5 flex-wrap">
+                <span className="text-orange-500 font-black text-lg leading-tight">
+                  {teamMode === 'starter5' ? 'Starter 5' : teamMode === 'bench8' ? 'Bench 8' : 'Full 12'}
+                </span>
+                {difficulty === 'ebk' && (
+                  <span className="text-[10px] font-black uppercase tracking-widest bg-yellow-500/15 border border-yellow-500/30 text-yellow-400 rounded-lg px-2 py-0.5">EBK Mode</span>
+                )}
+                {difficulty === 'casual' && (
+                  <span className="text-[10px] font-black uppercase tracking-widest bg-white/[0.05] border border-white/[0.10] text-white/40 rounded-lg px-2 py-0.5">Casual</span>
+                )}
               </div>
-              <div className="text-gray-400 text-xs">No timer · No opponent · Stats revealed at the end</div>
+              <div className="flex items-center gap-3">
+                <div className="text-gray-400 text-xs">Solo draft · No timer</div>
+                {/* Pick progress bar */}
+                <div className="flex items-center gap-1.5">
+                  <div className="w-16 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-orange-500 transition-all duration-500"
+                      style={{ width: teamSize > 0 ? `${(filledCount / teamSize) * 100}%` : '0%' }}
+                    />
+                  </div>
+                  <span className="text-gray-400 text-[10px] font-mono tabular-nums">{filledCount}/{teamSize}</span>
+                </div>
+              </div>
             </div>
-            <button onClick={reset} className="text-gray-400 hover:text-white text-sm">← Exit</button>
+            <button onClick={reset} className="text-gray-400 hover:text-white text-sm transition-colors flex items-center gap-1 shrink-0">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
+              Exit
+            </button>
           </div>
 
           {loadingPlayers ? (
@@ -365,8 +395,13 @@ function PracticeContent() {
             {/* Mobile: compact team strip on top */}
           <div className="lg:hidden mb-4">
             <div className="card-surface rounded-2xl p-3">
-              <div className="text-orange-400 font-black text-xs mb-2">
-                Your Team <span className="text-gray-400 font-normal">({filledCount}/{teamSize})</span>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-white/50 font-black text-[10px] uppercase tracking-widest">Your Team</span>
+                <span className="text-orange-400 font-black text-[10px] tabular-nums">{filledCount}/{teamSize}</span>
+              </div>
+              {/* Progress bar */}
+              <div className="h-0.5 rounded-full bg-white/[0.06] overflow-hidden mb-2">
+                <div className="h-full rounded-full bg-orange-500 transition-all duration-500" style={{ width: teamSize > 0 ? `${(filledCount / teamSize) * 100}%` : '0%' }} />
               </div>
               <div className="grid grid-cols-2 gap-1">
                 {requiredSlots.map((slotPos, i) => {
@@ -379,30 +414,32 @@ function PracticeContent() {
                     <div
                       key={i}
                       onClick={() => isValidTarget ? placeInSlot(i) : undefined}
-                      className={`rounded px-2 py-1 text-xs flex items-center gap-1.5 transition-all ${
+                      className={`rounded-lg px-2 py-1.5 text-xs flex items-center gap-1.5 transition-all ${
                         isValidTarget
-                          ? 'bg-orange-600/20 border border-orange-500 cursor-pointer'
+                          ? 'bg-orange-600/20 border border-orange-500 cursor-pointer shadow-[0_0_8px_rgba(249,115,22,0.15)]'
                           : pickedPlayer
-                          ? 'bg-white/[0.03]'
-                          : 'bg-white/[0.015] border border-dashed border-white/[0.12]'
+                          ? 'bg-white/[0.04] border border-white/[0.06]'
+                          : 'bg-white/[0.015] border border-dashed border-white/[0.10]'
                       }`}
                     >
-                      <span className={`font-bold w-6 shrink-0 text-[10px] ${isBench ? 'text-gray-400' : 'text-orange-400'}`}>
+                      <span className={`font-bold w-6 shrink-0 text-[10px] ${isBench ? 'text-gray-500' : 'text-orange-400'}`}>
                         {isBench ? 'BN' : slotPos}
                       </span>
-                      <span className={`truncate flex-1 ${pickedPlayer ? 'text-white' : isValidTarget ? 'text-orange-300' : 'text-gray-400'}`}>
-                        {pickedPlayer ? pickedPlayer.lastName : isValidTarget ? 'tap' : '—'}
+                      <span className={`truncate flex-1 text-[11px] ${pickedPlayer ? 'text-white font-semibold' : isValidTarget ? 'text-orange-300' : 'text-gray-500'}`}>
+                        {pickedPlayer ? pickedPlayer.lastName : isValidTarget ? 'tap to place' : '—'}
                       </span>
                       {pickedPlayer && (
-                        <button onClick={e => { e.stopPropagation(); unpick(i) }} className="text-gray-400 hover:text-red-400 text-[10px] shrink-0">✕</button>
+                        <button onClick={e => { e.stopPropagation(); unpick(i) }} className="text-gray-500 hover:text-red-400 text-[10px] shrink-0 w-4 h-4 flex items-center justify-center">
+                          <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
                       )}
                     </div>
                   )
                 })}
               </div>
               {isDone && (
-                <button onClick={() => setScreen('result')} className="btn-primary w-full mt-3 py-2 text-sm">
-                  See Results →
+                <button onClick={() => setScreen('result')} className="btn-primary w-full mt-3 py-2.5 text-sm tracking-wider">
+                  See Results
                 </button>
               )}
             </div>
@@ -559,15 +596,21 @@ function PracticeContent() {
                 )}
 
                 {isSpinning && (
-                  <div className="flex items-center justify-center h-24 rounded-xl bg-yellow-900/10 border border-yellow-600/30 mb-3">
-                    <p className="text-yellow-400 font-bold text-sm animate-pulse">🔒 Locked — waiting for spin to finish...</p>
+                  <div className="flex items-center justify-center h-14 rounded-xl bg-yellow-900/10 border border-yellow-600/25 mb-3 gap-3">
+                    <div className="w-4 h-4 rounded-full border-2 border-yellow-500 border-t-transparent animate-spin shrink-0" />
+                    <p className="text-yellow-400/80 font-black text-xs uppercase tracking-widest">Spinning — pick locked</p>
                   </div>
                 )}
 
                 {selectedPlayer && (
-                  <div className="mb-2 bg-orange-600/10 border border-orange-500 rounded-lg px-3 py-2 text-xs text-orange-300 flex items-center justify-between">
-                    <span><span className="font-black text-orange-400">{selectedPlayer.firstName} {selectedPlayer.lastName}</span> selected — tap a slot on the left</span>
-                    <button onClick={() => setSelectedPlayerId(null)} className="text-orange-400 hover:text-white ml-2">✕</button>
+                  <div className="mb-2 bg-orange-600/10 border border-orange-500/60 rounded-xl px-3 py-2.5 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <svg className="w-3.5 h-3.5 text-orange-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                      <span className="text-xs text-orange-200 truncate"><span className="font-black text-orange-400">{selectedPlayer.firstName} {selectedPlayer.lastName}</span> — tap a slot to place</span>
+                    </div>
+                    <button onClick={() => setSelectedPlayerId(null)} className="text-orange-400/60 hover:text-orange-300 shrink-0">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
                   </div>
                 )}
 
@@ -639,35 +682,35 @@ function PracticeContent() {
   const { grade, label: gradeLabel, color: gradeColor } = getGrade(pct)
 
   return (
-    <div className="min-h-screen py-10 px-4">
+    <div className="min-h-screen py-8 px-4">
       <div className="max-w-2xl mx-auto">
 
         {/* EBK Score + Grade */}
         <div className="card-accent rounded-2xl p-6 mb-5 text-center animate-scale-in">
-          <div className="text-label mb-3">Practice Result</div>
-          <div className={`font-display leading-none mb-1 ${gradeColor}`} style={{ fontSize: 'clamp(5rem, 22vw, 8rem)' }}>
+          <div className="text-label mb-3 uppercase tracking-widest">Practice Result</div>
+          <div className={`font-display leading-none mb-1 ${gradeColor}`} style={{ fontSize: 'clamp(4.5rem, 20vw, 7rem)' }}>
             {grade}
           </div>
-          <div className={`font-black text-lg mb-5 ${gradeColor}`}>{gradeLabel}</div>
+          <div className={`font-black text-base mb-5 uppercase tracking-wider ${gradeColor}`}>{gradeLabel}</div>
 
           {/* Score comparison row */}
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="card-surface rounded-xl p-3 text-center">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
+            <div className="rounded-xl p-3 text-center bg-white/[0.04] border border-white/[0.07]">
               <div className={`font-display text-3xl leading-none tabular-nums ${gradeColor}`}>{totalEBK.toFixed(1)}</div>
-              <div className="text-label mt-1.5">Your EBK</div>
+              <div className="text-label mt-1.5 text-[10px]">Your EBK</div>
             </div>
-            <div className="card-surface rounded-xl p-3 text-center flex flex-col items-center justify-center">
+            <div className="rounded-xl p-3 text-center bg-white/[0.04] border border-white/[0.07] flex flex-col items-center justify-center">
               <div className={`font-display text-2xl leading-none tabular-nums ${gradeColor}`}>{pct.toFixed(0)}%</div>
-              <div className="text-label mt-1.5">of Optimal</div>
+              <div className="text-label mt-1.5 text-[10px]">of Optimal</div>
             </div>
-            <div className="card-surface rounded-xl p-3 text-center">
+            <div className="rounded-xl p-3 text-center bg-white/[0.04] border border-white/[0.07]">
               <div className="font-display text-3xl leading-none text-gray-400 tabular-nums">{bestEBK.toFixed(1)}</div>
-              <div className="text-label mt-1.5">Best Possible</div>
+              <div className="text-label mt-1.5 text-[10px]">Best Possible</div>
             </div>
           </div>
 
           {/* Score bar */}
-          <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden mb-1">
+          <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden mb-2">
             <div
               className={`h-full rounded-full transition-all duration-700 ${
                 pct >= 85 ? 'bg-gradient-to-r from-green-600 to-green-400' : pct >= 70 ? 'bg-gradient-to-r from-blue-600 to-blue-400' : pct >= 55 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400' : pct >= 40 ? 'bg-gradient-to-r from-orange-700 to-orange-400' : 'bg-gradient-to-r from-red-700 to-red-500'
@@ -675,48 +718,44 @@ function PracticeContent() {
               style={{ width: `${Math.min(pct, 100)}%` }}
             />
           </div>
-          <div className="text-label text-center">EBK = career stats weighted by impact</div>
+          <div className="text-label text-center text-[10px]">EBK = career stats weighted by impact</div>
         </div>
 
         {/* Roster */}
         <div className="card-surface rounded-2xl p-4 mb-5 animate-fade-up-1">
-          <h2 className="text-label mb-3">Your Roster</h2>
-          <div className="space-y-2">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-label uppercase tracking-widest">Your Roster</h2>
+            <span className={`font-display text-lg leading-none tabular-nums ${gradeColor}`}>{totalEBK.toFixed(1)}</span>
+          </div>
+          <div className="space-y-1.5">
             {requiredSlots.map((slotPos, i) => {
               const p = pickedPlayersBySlot[i]
               if (!p) return null
+              const ebkColor = p.ebkScore >= 80 ? 'text-green-400' : p.ebkScore >= 60 ? 'text-yellow-400' : p.ebkScore >= 40 ? 'text-orange-400' : 'text-red-400'
               return (
-                <div key={i} className="draft-slot draft-slot-filled rounded-lg px-3 py-2.5 flex items-center gap-2">
-                  <span className={`font-display text-sm w-8 shrink-0 leading-none ${slotPos === 'BENCH' ? 'text-gray-500' : 'text-orange-400'}`}>
+                <div key={i} className="rounded-lg px-3 py-2.5 flex items-center gap-2.5 bg-white/[0.03] border border-white/[0.05]">
+                  <span className={`font-display text-xs w-7 shrink-0 leading-none ${slotPos === 'BENCH' ? 'text-gray-500' : 'text-orange-400'}`}>
                     {slotPos === 'BENCH' ? 'BN' : slotPos}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-white text-sm font-bold truncate">{p.firstName} {p.lastName}</div>
-                    <div className="text-gray-500 text-[11px]">{p.team} · {p.careerGames}GP · {p.careerPPG.toFixed(1)}P/{p.careerRPG.toFixed(1)}R/{p.careerAPG.toFixed(1)}A</div>
+                    <div className="text-white text-sm font-bold truncate leading-tight">{p.firstName} {p.lastName}</div>
+                    <div className="text-gray-500 text-[10px] mt-0.5">{p.team} · {p.careerGames}GP · {p.careerPPG.toFixed(1)}P/{p.careerRPG.toFixed(1)}R/{p.careerAPG.toFixed(1)}A</div>
                   </div>
-                  <div className={`font-display text-xl leading-none shrink-0 tabular-nums ${
-                    p.ebkScore >= 80 ? 'text-green-400' :
-                    p.ebkScore >= 60 ? 'text-yellow-400' :
-                    p.ebkScore >= 40 ? 'text-orange-400' : 'text-red-400'
-                  }`}>{p.ebkScore.toFixed(1)}</div>
+                  <div className={`font-display text-lg leading-none shrink-0 tabular-nums ${ebkColor}`}>{p.ebkScore.toFixed(1)}</div>
                 </div>
               )
             })}
           </div>
-          <div className="mt-3 border-t border-white/[0.06] pt-3 flex justify-between items-center px-1">
-            <span className="text-label">Team EBK Total</span>
-            <span className={`font-black text-lg ${gradeColor}`}>{totalEBK.toFixed(1)}</span>
-          </div>
         </div>
 
-        {/* Totals */}
-        <div className="card-surface rounded-2xl p-5 mb-6">
-          <h2 className="text-label mb-3">Team Totals</h2>
-          <div className="grid grid-cols-2 gap-3">
+        {/* Team Totals */}
+        <div className="card-surface rounded-2xl p-4 mb-5 animate-fade-up-1">
+          <h2 className="text-label mb-3 uppercase tracking-widest">Team Totals</h2>
+          <div className="grid grid-cols-2 gap-2">
             {(Object.entries(STAT_LABELS) as [string, string][]).map(([key, label]) => (
-              <div key={key} className="card-surface rounded-xl p-4 text-center">
-                <div className="text-gray-400 text-xs mb-1">{label}</div>
-                <div className="text-white font-black text-2xl">
+              <div key={key} className="rounded-xl p-3.5 bg-white/[0.03] border border-white/[0.06]">
+                <div className="text-gray-500 text-[10px] uppercase tracking-wider mb-1">{label}</div>
+                <div className="text-white font-black text-2xl tabular-nums leading-none">
                   {key === 'games_played' ? Math.round(totals[key as keyof typeof totals]) : (totals[key as keyof typeof totals]).toFixed(1)}
                 </div>
               </div>
@@ -724,7 +763,7 @@ function PracticeContent() {
           </div>
         </div>
 
-        <div className="flex gap-3 animate-fade-up-2">
+        <div className="flex gap-3 animate-fade-up-2 pb-8">
           <button onClick={() => { const newPicks = Array(TEAM_SIZES[teamMode]).fill(null); setPicks(newPicks); setSpunTeamsHistory([]); setScreen('draft'); triggerSpin(players, newPicks) }}
             className="btn-secondary flex-1">
             Draft Again
