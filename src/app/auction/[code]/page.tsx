@@ -1289,9 +1289,9 @@ export default function AuctionRoomPage() {
               {phase === 'steal-window' ? '⚡ STEAL WINDOW' : '🏷 BIDDING'}
             </div>
 
-            {/* Player card */}
+            {/* Player card — keyed to cp.id so each new player remounts with a fresh animation */}
             {cp && (
-              <div className="card-accent w-full max-w-sm p-6 text-center animate-scale-in">
+              <div key={cp.id} className="card-accent w-full max-w-sm p-6 text-center animate-scale-in">
                 {/* ON THE BLOCK badge */}
                 <div className="inline-flex items-center gap-1.5 bg-orange-950/50 border border-orange-500/40 rounded-full px-3 py-1 mb-4">
                   <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse shrink-0" />
@@ -1349,12 +1349,14 @@ export default function AuctionRoomPage() {
                 {auctionState.currentBid > 0 ? `$${auctionState.currentBid}M` : '–––'}
               </div>
               {auctionState.currentBidderName ? (
-                <div className={`mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-black tracking-widest uppercase ${
-                  amLeading
-                    ? 'bg-orange-950/60 border-orange-500/40 text-orange-400'
-                    : 'bg-white/[0.04] border-white/[0.08] text-white/50'
-                }`}>
-                  {amLeading ? '🔥 You are leading' : `Leading: ${auctionState.currentBidderName}`}
+                <div
+                  key={auctionState.currentBidderSocketId}
+                  className={`mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-black tracking-widest uppercase animate-fade-in ${
+                    amLeading
+                      ? 'bg-orange-950/60 border-orange-500/40 text-orange-400'
+                      : 'bg-white/[0.04] border-white/[0.08] text-white/50'
+                  }`}>
+                  {amLeading ? 'You are leading' : `Leading: ${auctionState.currentBidderName}`}
                 </div>
               ) : (
                 <p className="text-white/25 text-xs mt-2 tracking-widest uppercase">No bids yet — be first</p>
