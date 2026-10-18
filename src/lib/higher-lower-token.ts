@@ -35,39 +35,56 @@ export function signGameToken(userId: string, nonce: string, issuedAt: number): 
 }
 
 /**
+ * Shared signature verification (no nonce side-effects).
+ * Returns the parsed nonce on success, or null on any failure.
+ */
+function verifyTokenSignature(token: string, userId: string): { nonce: string; issuedAt: number } | null {
+  try {
+    const decoded = Buffer.from(token, 'base64url').toString()
+    const parts = decoded.split(':')
+    if (parts.length !== 4) return null
+    const [tid, nonce, issuedAtStr, hmac] = parts
+    if (tid !== userId) return null
+    const issuedAt = parseInt(issuedAtStr, 10)
+    if (isNaN(issuedAt) || Date.now() - issuedAt > SESSION_TTL_MS) return null
+    const expected = crypto.createHmac('sha256', getHmacSecret())
+      .update(`${tid}:${nonce}:${issuedAtStr}`)
+      .digest('hex')
+    if (!crypto.timingSafeEqual(Buffer.from(hmac, 'hex'), Buffer.from(expected, 'hex'))) return null
+    return { nonce, issuedAt }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Verifies a game token WITHOUT consuming the nonce.
+ * Use this for non-final badge milestones (hl_10, hl_25) where the same token
+ * must remain valid for subsequent milestone claims in the same game session.
+ * The DB-level alreadyUnlocked check prevents double-awarding.
+ */
+export function verifyGameToken(token: string, userId: string): boolean {
+  pruneExpiredNonces()
+  const result = verifyTokenSignature(token, userId)
+  if (!result) return false
+  // Reject tokens whose nonce has already been finally consumed (gauntlet claimed)
+  if (usedNonces.has(result.nonce)) return false
+  return true
+}
+
+/**
  * Verifies a game token and marks its nonce as consumed.
  * Returns false if the token is invalid, expired, or has already been used.
  * Once this returns true the nonce is burned — subsequent calls with the same
  * token will return false, preventing badge-milestone replay attacks.
+ * Use this only for the final milestone (hl_gauntlet) to lock out replay.
  */
 export function verifyAndConsumeGameToken(token: string, userId: string): boolean {
-  try {
-    const decoded = Buffer.from(token, 'base64url').toString()
-    const parts = decoded.split(':')
-    if (parts.length !== 4) return false
-    const [tid, nonce, issuedAtStr, hmac] = parts
-    if (tid !== userId) return false
-    const issuedAt = parseInt(issuedAtStr, 10)
-    if (isNaN(issuedAt) || Date.now() - issuedAt > SESSION_TTL_MS) return false
-    const expected = crypto.createHmac('sha256', getHmacSecret())
-      .update(`${tid}:${nonce}:${issuedAtStr}`)
-      .digest('hex')
-    const valid = crypto.timingSafeEqual(Buffer.from(hmac, 'hex'), Buffer.from(expected, 'hex'))
-    if (!valid) return false
-
-    // Replay check: reject if this nonce has already been consumed
-    pruneExpiredNonces()
-    if (usedNonces.has(nonce)) return false
-
-    // Burn the nonce — any future call with this token will be rejected
-    usedNonces.set(nonce, issuedAt + SESSION_TTL_MS)
-    return true
-  } catch {
-    return false
-  }
-}
-
-/** @deprecated Use verifyAndConsumeGameToken for badge claims. */
-export function verifyGameToken(token: string, userId: string): boolean {
-  return verifyAndConsumeGameToken(token, userId)
+  pruneExpiredNonces()
+  const result = verifyTokenSignature(token, userId)
+  if (!result) return false
+  if (usedNonces.has(result.nonce)) return false
+  // Burn the nonce — any future call with this token will be rejected
+  usedNonces.set(result.nonce, result.issuedAt + SESSION_TTL_MS)
+  return true
 }

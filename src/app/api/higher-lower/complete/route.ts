@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { BADGES } from '@/lib/accessories'
-import { verifyAndConsumeGameToken } from '@/lib/higher-lower-token'
+import { verifyAndConsumeGameToken, verifyGameToken } from '@/lib/higher-lower-token'
 
 const HL_BADGE_IDS = ['hl_10', 'hl_25', 'hl_gauntlet']
 
@@ -34,7 +34,18 @@ export async function POST(request: NextRequest) {
     // directly POSTing badge claims without having started a game session via
     // GET /api/higher-lower/start — the token is HMAC-signed with a server secret
     // and expires after 30 minutes, so it cannot be forged or reused across sessions.
-    if (!gameToken || typeof gameToken !== 'string' || !verifyAndConsumeGameToken(gameToken, payload.userId)) {
+    //
+    // hl_10 and hl_25 use a non-consuming verify so the same token remains valid
+    // for subsequent milestones in the same run (they fire on separate guesses and
+    // cannot both arrive in a single request). The DB-level alreadyUnlocked check
+    // prevents double-awarding without needing a nonce burn.
+    // hl_gauntlet consumes (burns) the nonce — it is always the last claim for a
+    // session and we want full replay protection on that badge.
+    const isGauntlet = milestone === 'hl_gauntlet'
+    const tokenValid = isGauntlet
+      ? verifyAndConsumeGameToken(gameToken ?? '', payload.userId)
+      : verifyGameToken(gameToken ?? '', payload.userId)
+    if (!gameToken || typeof gameToken !== 'string' || !tokenValid) {
       return NextResponse.json({ error: 'Invalid or expired game session' }, { status: 403 })
     }
 

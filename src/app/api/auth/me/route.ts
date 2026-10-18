@@ -26,15 +26,18 @@ export async function GET() {
         firstPickWins: true, firstPickGames: true,
         unlockedBadges: true, unlockedEmotes: true, unlockedMilestones: true,
         equippedBadge: true, equippedBadges: true, equippedEmote: true,
-        tokenVersion: true,
+        tokenVersion: true, emailVerified: true,
       },
     })
 
-    // Reject if user deleted or token was invalidated by a password change.
-    if (!row || row.tokenVersion !== claims.tokenVersion) return noStore({ user: null })
+    // Reject if user deleted, token was invalidated, or email is not yet verified.
+    // The emailVerified check is defense-in-depth: the login route already blocks
+    // unverified users, but this ensures any future code path that issues a JWT
+    // before email verification cannot bypass the gate.
+    if (!row || row.tokenVersion !== claims.tokenVersion || !row.emailVerified) return noStore({ user: null })
 
-    // Strip tokenVersion before sending to the client.
-    const { tokenVersion: _tv, ...user } = row
+    // Strip internal fields before sending to the client.
+    const { tokenVersion: _tv, emailVerified: _ev, ...user } = row
     return noStore({ user })
   } catch {
     return noStore({ user: null })
