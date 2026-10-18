@@ -566,18 +566,54 @@ export default function AuctionRoomPage() {
 
   // ── Waiting ────────────────────────────────────────────────────────────────
   if (phase === 'waiting' && auctionState) {
+    const hasEnough = (auctionState.participants.length ?? 0) >= 2
+    // War-room flavour copy rotates through a few phrases
+    const warRoomQuips = [
+      'Study the pool. The weak get overpaid.',
+      'Every GM in this room thinks they\'re the best. Prove it.',
+      'Budget discipline wins auctions. Remember that.',
+      'Stars cost stars money. Value wins championships.',
+      'The draft board doesn\'t lie. Neither does EBK.',
+    ]
+    const quipIndex = auctionState.participants.length % warRoomQuips.length
+
     return (
       <div className="min-h-screen px-4 py-10 max-w-xl mx-auto animate-fade-in">
+        {/* ── Header ── */}
         <div className="text-center mb-8 animate-fade-up">
           <div className="live-banner mx-auto w-fit mb-4">
             <span className="live-dot" />
-            WAITING FOR PLAYERS
+            WAR ROOM LOBBY
           </div>
-          <h1 className="font-display text-5xl text-orange-500 tracking-wider leading-none">WAR ROOM</h1>
-          <div className="mt-2 font-mono text-white/30 text-sm border border-white/[0.07] bg-white/[0.02] rounded-lg px-3 py-1 inline-block tracking-widest">{code}</div>
+          <h1 className="font-display leading-none tracking-wider"
+            style={{ fontSize: 'clamp(3.5rem, 16vw, 5rem)', color: '#ea580c' }}>
+            WAR ROOM
+          </h1>
+          <p className="text-white/25 text-sm mt-1 italic px-4">&ldquo;{warRoomQuips[quipIndex]}&rdquo;</p>
+          <div className="mt-3 font-mono text-white/30 text-sm border border-white/[0.07] bg-white/[0.02] rounded-lg px-3 py-1 inline-block tracking-widest">{code}</div>
         </div>
-        <div className="card-accent p-6 space-y-3 mb-6 animate-fade-up-1">
-          <p className="text-label tracking-[0.2em] text-center mb-4">GMs in Room</p>
+
+        {/* ── Atmosphere strip — stats about the draft ── */}
+        <div className="grid grid-cols-3 gap-2 mb-5 animate-fade-up-1">
+          {[
+            { label: 'Pool Size', value: `${auctionState.poolSize}`, sub: 'players' },
+            { label: 'Budget', value: `$${auctionState.totalBudget}M`, sub: 'per GM' },
+            { label: 'Roster', value: `${auctionState.teamSize}`, sub: 'slots' },
+          ].map(stat => (
+            <div key={stat.label} className="card-surface rounded-xl px-3 py-3 text-center">
+              <div className="font-display text-2xl text-orange-400 leading-none">{stat.value}</div>
+              <div className="text-[10px] font-black tracking-widest text-white/25 uppercase mt-0.5">{stat.label}</div>
+              <div className="text-[9px] text-white/15 uppercase tracking-wider">{stat.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── GMs list ── */}
+        <div className="card-accent p-6 space-y-3 mb-5 animate-fade-up-2">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-label tracking-[0.2em]">GMs in Room</p>
+            <span className="text-label">{auctionState.participants.length} joined</span>
+          </div>
           {auctionState.participants.map((p, i) => {
             const isMe = p.socketId === mySocketId
             const isRoomHost = i === 0  // server always keeps host at index 0
@@ -586,55 +622,87 @@ export default function AuctionRoomPage() {
                 key={p.socketId}
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 border transition-all animate-stagger-item ${
                   isMe
-                    ? 'bg-orange-950/30 border-orange-500/25'
+                    ? 'bg-orange-950/30 border-orange-500/25 shadow-[0_0_16px_rgba(234,88,12,0.06)]'
                     : 'bg-white/[0.025] border-white/[0.05]'
                 }`}
                 style={{ animationDelay: `${i * 60}ms` }}
               >
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center font-display text-sm shrink-0 ${
-                  isMe ? 'bg-orange-600 text-white' : 'bg-white/[0.08] text-white/60'
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display text-base shrink-0 ${
+                  isMe ? 'bg-orange-600 text-white shadow-[0_0_12px_rgba(234,88,12,0.4)]' : 'bg-white/[0.08] text-white/60'
                 }`}>
                   {p.name[0]?.toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="font-bold text-white block truncate">{p.name}</span>
-                  {isRoomHost && (
-                    <span className="text-[10px] font-bold text-orange-400/60 uppercase tracking-widest">
-                      {isMe ? 'Host · You' : 'Host'}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white truncate">{p.name}</span>
+                    {isMe && <span className="text-[9px] font-black text-orange-500 bg-orange-950/60 border border-orange-700/40 rounded px-1.5 py-0.5 uppercase tracking-wide shrink-0">You</span>}
+                  </div>
+                  <span className="text-[10px] font-bold text-orange-400/50 uppercase tracking-widest">
+                    {isRoomHost ? (isMe ? 'Commissioner' : 'Commissioner') : 'GM'}
+                  </span>
                 </div>
-                {!isRoomHost && isMe && (
-                  <span className="text-[10px] font-black text-orange-400 bg-orange-950/50 border border-orange-500/30 rounded px-1.5 py-0.5 uppercase tracking-wider shrink-0">You</span>
-                )}
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                  <span className="text-green-400 text-[10px] font-bold">READY</span>
+                  <span className="text-green-400 text-[10px] font-bold uppercase tracking-wide">Live</span>
                 </div>
               </div>
             )
           })}
-          {auctionState.participants.length < 2 && (
-            <div className="text-center pt-2 pb-1">
-              <div className="flex items-center justify-center gap-2 text-white/25 text-xs">
-                <span className="w-3 h-3 rounded-full border-2 border-white/20 border-t-white/50 animate-spin" />
-                Waiting for more players to join...
+          {!hasEnough && (
+            <div className="text-center pt-2 pb-1 border-t border-white/[0.05] mt-2">
+              <div className="flex items-center justify-center gap-2 text-white/30 text-xs">
+                <span className="w-3 h-3 rounded-full border-2 border-white/20 border-t-white/50 animate-spin shrink-0" />
+                Waiting for more GMs — share the room code above
               </div>
             </div>
           )}
         </div>
+
+        {/* ── Action — host starts, guests see anticipation state ── */}
         {isHost ? (
-          <button
-            onClick={handleStart}
-            disabled={(auctionState.participants.length ?? 0) < 2}
-            className="btn-primary w-full text-lg font-display tracking-widest"
-          >
-            {(auctionState.participants.length ?? 0) < 2 ? 'Waiting for Players...' : 'Start Auction'}
-          </button>
+          <div className="space-y-3 animate-fade-up-3">
+            <button
+              onClick={handleStart}
+              disabled={!hasEnough}
+              className={`btn-primary w-full text-base font-display tracking-widest py-5 transition-all ${
+                hasEnough ? 'animate-glow' : ''
+              }`}
+            >
+              {hasEnough ? '🏀 Open the Auction' : 'Waiting for GMs…'}
+            </button>
+            {hasEnough && (
+              <p className="text-center text-white/20 text-xs">
+                All {auctionState.participants.length} GMs are in. You control the start.
+              </p>
+            )}
+          </div>
         ) : (
-          <div className="flex items-center justify-center gap-2 text-white/30 text-sm py-3">
-            <span className="w-4 h-4 rounded-full border-2 border-orange-500/40 border-t-orange-400 animate-spin shrink-0" />
-            Waiting for host to start...
+          <div className="animate-fade-up-3">
+            <div className="card-surface rounded-2xl px-6 py-5 text-center border border-white/[0.06]">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <span className="w-4 h-4 rounded-full border-2 border-orange-500/50 border-t-orange-400 animate-spin shrink-0" />
+                <span className="text-orange-400 font-black text-sm uppercase tracking-widest">Awaiting Commissioner</span>
+              </div>
+              <p className="text-white/30 text-xs leading-relaxed">
+                <span className="text-white/50 font-bold">{auctionState.participants[0]?.name}</span> will start the auction when everyone&apos;s ready. Use this time to plan your strategy.
+              </p>
+              <div className="mt-4 pt-4 border-t border-white/[0.05] flex items-center justify-center gap-6">
+                <div className="text-center">
+                  <div className="font-display text-xl text-orange-400">{auctionState.poolSize}</div>
+                  <div className="text-[9px] text-white/20 uppercase tracking-wider">Players Available</div>
+                </div>
+                <div className="w-px h-8 bg-white/[0.06]" />
+                <div className="text-center">
+                  <div className="font-display text-xl text-orange-400">${auctionState.totalBudget}M</div>
+                  <div className="text-[9px] text-white/20 uppercase tracking-wider">Your Budget</div>
+                </div>
+                <div className="w-px h-8 bg-white/[0.06]" />
+                <div className="text-center">
+                  <div className="font-display text-xl text-orange-400">{auctionState.teamSize}</div>
+                  <div className="text-[9px] text-white/20 uppercase tracking-wider">Roster Spots</div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
