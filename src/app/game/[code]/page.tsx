@@ -1432,22 +1432,30 @@ function GameContent() {
             </div>
 
             {/* Position filter — hidden in EBK mode */}
-            <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-              {room.difficulty !== 'ebk' && ['ALL', 'PG', 'SG', 'SF', 'PF', 'C'].map(pos => (
-                <button key={pos} onClick={() => setFilterPos(pos)}
-                  className={`px-3 py-2 rounded-lg text-xs font-black tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50 touch-manipulation ${
-                    filterPos === pos
-                      ? 'bg-orange-600 text-white shadow-[0_2px_8px_rgba(234,88,12,0.35)]'
-                      : 'bg-white/[0.04] border border-white/[0.07] text-white/50 hover:text-white hover:border-white/20 hover:bg-white/[0.07]'
-                  }`}
-                >
-                  {pos}
-                </button>
-              ))}
-              <span className="ml-auto text-label self-center">
-                {room.difficulty === 'ebk' && debouncedSearch.length < 3 ? 'type 3+ letters' : `${filteredPlayers.length} available`}
-              </span>
-            </div>
+            {room.difficulty !== 'ebk' && (
+              <div className="flex items-center gap-1 mb-3 flex-wrap">
+                {['ALL', 'PG', 'SG', 'SF', 'PF', 'C'].map(pos => (
+                  <button key={pos} onClick={() => setFilterPos(pos)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-black tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50 touch-manipulation ${
+                      filterPos === pos
+                        ? 'bg-orange-600 text-white shadow-[0_2px_8px_rgba(234,88,12,0.35)]'
+                        : 'bg-white/[0.04] border border-white/[0.07] text-white/50 hover:text-white hover:border-white/20 hover:bg-white/[0.07]'
+                    }`}
+                  >
+                    {pos}
+                  </button>
+                ))}
+                <span className="ml-auto text-label self-center shrink-0">
+                  {filteredPlayers.length} avail
+                </span>
+              </div>
+            )}
+            {room.difficulty === 'ebk' && (
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-label">EBK mode — search by name</span>
+                <span className="text-label">{debouncedSearch.length < 3 ? 'type 3+ letters' : `${filteredPlayers.length} avail`}</span>
+              </div>
+            )}
 
             {/* Timeout warning toast */}
             {timeoutWarning && (
@@ -1512,7 +1520,7 @@ function GameContent() {
                     </div>
                   </div>
                 )}
-                <div className="space-y-1 max-h-[50vh] overflow-y-auto pr-1">
+                <div className="space-y-1 max-h-[55vh] overflow-y-auto pr-1 -mx-1 px-1">
                   {filteredPlayers.map((player, idx) => {
                     const playerPositions = player.positions.split(',')
                     const canPick = !isSpinning && spunTeam !== null && !takenIds.has(player.id)
