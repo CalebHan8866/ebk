@@ -456,11 +456,15 @@ function GameContent() {
 
   if (!room) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 rounded-full border-2 border-orange-500 border-t-transparent animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400 text-sm tracking-widest uppercase">Connecting...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <div className="relative w-16 h-16">
+          <div className="absolute inset-0 rounded-full border-2 border-white/[0.05]" />
+          <div className="absolute inset-0 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+          <div className="absolute inset-3 rounded-full bg-orange-600/10 flex items-center justify-center">
+            <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+          </div>
         </div>
+        <p className="text-label tracking-[0.3em]">CONNECTING TO DRAFT ROOM...</p>
       </div>
     )
   }
