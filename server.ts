@@ -339,6 +339,10 @@ const bidThrottle = new Map<string, { count: number; windowStart: number }>()
 // Per-socket join-room throttle: socketId → { count, windowStart }
 // Allows max 10 join attempts per minute per socket to prevent room-code brute-force
 const joinRoomThrottle = new Map<string, { count: number; windowStart: number }>()
+// Per-socket room-creation throttle: socketId → { count, windowStart }
+// Limits one socket to 5 room creations (game + auction combined) per minute to
+// prevent a single connection from exhausting server memory with ghost rooms.
+const createRoomThrottle = new Map<string, { count: number; windowStart: number }>()
 // cooldown: userId → Map(opponentId → timestamp of last game end)
 const recentMatchups = new Map<string, Map<string, number>>()
 // grudge: userId → Map(opponentId → total games played together)
@@ -1429,17 +1433,21 @@ app.prepare().then(async () => {
     })
 
     socket.on('cancel-listing', ({ code }: { code: string }) => {
-      const listing = gameListings.get(code)
+      if (typeof code !== 'string') return
+      const normCode = code.trim().toUpperCase()
+      const listing = gameListings.get(normCode)
       if (!listing || listing.hostSocketId !== socket.id) return
-      clearTimeout(listingTimers.get(code))
-      listingTimers.delete(code)
-      gameListings.delete(code)
+      clearTimeout(listingTimers.get(normCode))
+      listingTimers.delete(normCode)
+      gameListings.delete(normCode)
       io.to('lobby').emit('listings-updated', { listings: Array.from(gameListings.values()) })
     })
 
-    socket.on('join-listing', async ({ code, userName }: {
+    socket.on('join-listing', async ({ code: rawCode, userName }: {
       code: string, userName: string
     }) => {
+      if (typeof rawCode !== 'string') return
+      const code = rawCode.trim().toUpperCase()
       userName = (userName ?? '').trim().slice(0, 20) || 'Player'
       const userId = socket.data.userId as string | null
       if (!userId) { socket.emit('listing-error', { message: 'Must be signed in to join a game' }); return }
@@ -1565,11 +1573,13 @@ app.prepare().then(async () => {
     })
 
     socket.on('decline-match', ({ code }: { code: string }) => {
-      const rr = readyRooms.get(code)
+      if (typeof code !== 'string') return
+      const normCode = code.trim().toUpperCase()
+      const rr = readyRooms.get(normCode)
       if (!rr) return
       if (socket.id !== rr.hostEntry.socketId && socket.id !== rr.guestEntry.socketId) return
       clearTimeout(rr.timer)
-      readyRooms.delete(code)
+      readyRooms.delete(normCode)
       const isHost = socket.id === rr.hostEntry.socketId
       const declinerName = isHost ? rr.hostEntry.userName : rr.guestEntry.userName
       io.to(rr.hostEntry.socketId).emit('match-cancelled', {
@@ -1581,7 +1591,9 @@ app.prepare().then(async () => {
     })
 
     socket.on('confirm-ready', ({ code }: { code: string }) => {
-      const rr = readyRooms.get(code)
+      if (typeof code !== 'string') return
+      const normCode = code.trim().toUpperCase()
+      const rr = readyRooms.get(normCode)
       if (!rr) return
 
       const isHost = socket.id === rr.hostEntry.socketId
@@ -1596,7 +1608,7 @@ app.prepare().then(async () => {
 
       if (rr.hostReady && rr.guestReady) {
         clearTimeout(rr.timer)
-        readyRooms.delete(code)
+        readyRooms.delete(normCode)
         startGameFromReadyRoom(io, rr)
       }
     })
