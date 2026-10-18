@@ -133,8 +133,29 @@ export default function AuctionPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen px-4 py-8 md:py-14 max-w-2xl mx-auto space-y-6">
+        {/* Header skeleton */}
+        <div className="space-y-3 mb-8">
+          <div className="skeleton h-3 w-20 rounded-full" />
+          <div className="skeleton h-12 w-48 rounded-xl" />
+        </div>
+        {/* Player card skeleton */}
+        <div className="card-accent rounded-2xl p-6 space-y-4">
+          <div className="skeleton h-5 w-32 rounded-full" />
+          <div className="skeleton h-16 w-full rounded-xl" />
+          <div className="grid grid-cols-3 gap-3">
+            <div className="skeleton h-12 rounded-xl" />
+            <div className="skeleton h-12 rounded-xl" />
+            <div className="skeleton h-12 rounded-xl" />
+          </div>
+        </div>
+        {/* Roster skeleton */}
+        <div className="card-surface rounded-2xl p-5 space-y-3">
+          <div className="skeleton h-4 w-24 rounded-full" />
+          {[1,2,3].map(i => (
+            <div key={i} className="skeleton h-12 rounded-xl" />
+          ))}
+        </div>
       </div>
     )
   }
