@@ -1176,13 +1176,20 @@ app.prepare().then(async () => {
   // reject the 21st with a transport error — legitimate users never need more
   // than a handful of tabs open simultaneously.
   const connectionsPerIp = new Map<string, number>()
+  // Normalize an IP string so that IPv4-mapped IPv6 addresses (::ffff:1.2.3.4)
+  // produced by Node's dual-stack listener are treated identically to the plain
+  // IPv4 string that a reverse proxy would put in x-forwarded-for.
+  function normalizeIp(raw: string): string {
+    return raw.startsWith('::ffff:') ? raw.slice(7) : raw
+  }
   io.use((socket, next) => {
-    const ip: string =
+    const raw: string =
       (socket.handshake.headers['x-forwarded-for'] as string | undefined)
         ?.split(',')[0]
         .trim() ??
       socket.handshake.address ??
       'unknown'
+    const ip = normalizeIp(raw)
     const current = connectionsPerIp.get(ip) ?? 0
     if (current >= 20) {
       console.warn('[socket] Connection rejected — too many connections from IP:', ip)
