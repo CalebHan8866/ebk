@@ -661,9 +661,11 @@ function startPickTimer(io: SocketServer, room: Room) {
     const picker = currentRoom.draftOrder[currentRoom.currentPickIndex]
     const autoPick = autoPickPlayer(currentRoom)
     if (autoPick === null) {
-      // No eligible players — this shouldn't happen in practice but clean up to avoid
-      // leaving the room stuck in 'drafting' with no timer running
+      // No eligible players — emit an error to both clients so they are not left
+      // stuck on the draft screen, then tear down the room.
+      currentRoom.status = 'complete'
       pickTimers.delete(code)
+      io.to(code).emit('room-error', { message: 'No eligible players remain. The game has been cancelled.' })
       scheduleRoomCleanup(code, io)
       return
     }
