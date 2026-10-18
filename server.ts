@@ -1149,7 +1149,7 @@ app.prepare().then(async () => {
 
       userName = (userName ?? '').trim().slice(0, 20) || 'Player'
       const userId = socket.data.userId as string | null
-      const room = rooms.get(code.toUpperCase())
+      const room = rooms.get(code.trim().toUpperCase())
       if (!room) { socket.emit('room-error', { message: 'Room not found' }); return }
       if (room.guestSocketId) { socket.emit('room-error', { message: 'Room is full' }); return }
       if (room.status !== 'waiting') { socket.emit('room-error', { message: 'Game already in progress' }); return }
@@ -1171,7 +1171,7 @@ app.prepare().then(async () => {
       // Runtime type guards — validate before any Map lookups
       if (typeof code !== 'string' || typeof slotPos !== 'string') return
       if (typeof playerId !== 'number' || !Number.isInteger(playerId) || playerId <= 0) return
-      const room = rooms.get(code.toUpperCase())
+      const room = rooms.get(code.trim().toUpperCase())
       if (!room || room.status !== 'drafting') return
 
       const currentPicker = room.draftOrder[room.currentPickIndex]
@@ -1270,7 +1270,7 @@ app.prepare().then(async () => {
 
     socket.on('next-game', ({ code }: { code: string }) => {
       if (typeof code !== 'string') return
-      const room = rooms.get(code.toUpperCase())
+      const room = rooms.get(code.trim().toUpperCase())
       if (!room || room.status !== 'result') return
       if (socket.id !== room.hostSocketId) return // only host can start next game
 
