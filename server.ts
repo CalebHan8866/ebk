@@ -1417,6 +1417,14 @@ app.prepare().then(async () => {
       const userId = socket.data.userId as string | null
       const userName: string = (socket.data.username as string | null ?? '').slice(0, 20) || 'Player'
       if (!userId) { pendingListingCreate.delete(socket.id); socket.emit('listing-error', { message: 'Must be signed in to post a game' }); return }
+      // Guard: refuse if this socket or user is already in an active game room
+      for (const room of rooms.values()) {
+        if (room.status === 'drafting' && (room.hostSocketId === socket.id || room.guestSocketId === socket.id || (userId && (room.hostUserId === userId || room.guestUserId === userId)))) {
+          pendingListingCreate.delete(socket.id)
+          socket.emit('listing-error', { message: 'Finish your current game before posting a new one' })
+          return
+        }
+      }
       // Remove any stale listing by this socket or by the same user (multi-tab protection)
       for (const [c, l] of gameListings.entries()) {
         if (l.hostSocketId === socket.id || (userId && l.hostUserId === userId)) {
@@ -1785,7 +1793,10 @@ app.prepare().then(async () => {
       if (!room || room.status !== 'bidding') return
       const bidder = room.participants.find(p => p.socketId === socket.id)
       if (!bidder) return
-      if (!Number.isInteger(amount) || amount < 1 || amount <= room.currentBid) {
+      // Upper-bound guard: reject amounts near or beyond MAX_SAFE_INTEGER to prevent
+      // integer overflow exploits where a very large bid wraps to a negative value in
+      // downstream arithmetic (e.g. budget subtraction, steal-price multiplication).
+      if (!Number.isInteger(amount) || amount < 1 || amount <= room.currentBid || amount > 1_000_000) {
         socket.emit('auction:error', { message: `Bid must be more than $${room.currentBid}M` }); return
       }
       if (amount > bidder.budget) { socket.emit('auction:error', { message: 'Not enough budget' }); return }
