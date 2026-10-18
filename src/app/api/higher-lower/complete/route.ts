@@ -11,10 +11,13 @@ const HL_BADGE_IDS = ['hl_10', 'hl_25', 'hl_gauntlet']
 // Minimum streak required (or full-sequence completion flag) to unlock each badge.
 // The client must report a streak >= this value; hl_gauntlet additionally requires
 // the `complete` flag set to true (meaning the client ran through the full sequence).
+// hl_gauntlet requires BOTH complete=true AND streak >= 25 — without a streakRequired
+// guard the server only checks `complete: true` from the request body, which any
+// authenticated user can trivially fabricate with a valid game token.
 const HL_BADGE_REQUIREMENTS: Record<string, { streakRequired?: number; requiresComplete?: boolean }> = {
   hl_10:      { streakRequired: 10 },
   hl_25:      { streakRequired: 25 },
-  hl_gauntlet: { requiresComplete: true },
+  hl_gauntlet: { requiresComplete: true, streakRequired: 25 },
 }
 
 export async function POST(request: NextRequest) {
