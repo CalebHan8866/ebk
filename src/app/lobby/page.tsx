@@ -524,6 +524,9 @@ export default function LobbyPage() {
 
   // ── MATCH EXPIRED — nobody accepted in time ───────────────────────────────
   if (onlineState === 'expired') {
+    // error holds the server-provided reason (e.g. "PlayerName declined") when the
+    // match was actively declined; it is empty when the 60-s window just timed out.
+    const isDeclined = Boolean(error)
     return (
       <div className="min-h-screen flex items-center justify-center px-4 py-10" role="alert" aria-live="assertive">
         <div className="w-full max-w-sm animate-scale-in">
@@ -534,14 +537,14 @@ export default function LobbyPage() {
             <div className="px-8 py-10 text-center">
               {/* Icon */}
               <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/25 flex items-center justify-center mx-auto mb-6">
-                <span className="text-red-400 text-3xl leading-none font-display">⏱</span>
+                <span className="text-red-400 text-3xl leading-none font-display">{isDeclined ? '✕' : '⏱'}</span>
               </div>
 
               <h2 className="font-display text-4xl text-white tracking-wider leading-none mb-2">
-                MATCH <span className="text-red-400">EXPIRED</span>
+                MATCH <span className="text-red-400">{isDeclined ? 'DECLINED' : 'EXPIRED'}</span>
               </h2>
               <p className="text-gray-400 text-sm leading-relaxed mb-8">
-                The 60-second accept window closed before both players confirmed. Head back to find a new opponent.
+                {isDeclined ? error : 'The 60-second accept window closed before both players confirmed. Head back to find a new opponent.'}
               </p>
 
               <button
