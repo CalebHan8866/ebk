@@ -1071,6 +1071,9 @@ app.prepare().then(async () => {
     // considers it disconnected — generous for lossy mobile connections.
     pingInterval: 20_000,
     pingTimeout: 25_000,
+    // Limit per-message size to 10 KB (default is 1 MB).
+    // Prevents a malicious client from flooding memory with a single oversized frame.
+    maxHttpBufferSize: 10 * 1024,
   })
 
   // ─── Socket.IO error logging ─────────────────────────────────────────────────
