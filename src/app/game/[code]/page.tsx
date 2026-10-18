@@ -532,29 +532,50 @@ function GameContent() {
           {/* Result header */}
           <div className="text-center mb-6">
             {iWon && (
-              <div className="mb-3 inline-flex items-center gap-2 bg-orange-950/50 border border-orange-600/50 rounded-full px-3 py-1 animate-fade-up">
-                <span className="text-orange-400 text-[10px]">🏆</span>
-                <span className="text-orange-300 text-[10px] font-black tracking-[0.2em] uppercase">Series Champion</span>
+              <div className="mb-4 inline-flex items-center gap-2 bg-orange-950/60 border border-orange-500/60 rounded-full px-4 py-1.5 animate-fade-up shadow-[0_0_24px_rgba(249,115,22,0.25)]">
+                <span className="text-orange-300 text-[11px] font-black tracking-[0.25em] uppercase">Series Champion</span>
               </div>
             )}
             <div
-              className={`font-display leading-none mb-3 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-gray-400 animate-scale-in' : 'text-gray-400 animate-loss-drop'}`}
-              style={iWon ? { fontSize: 'clamp(6rem, 28vw, 11rem)' } : { fontSize: 'clamp(4rem, 18vw, 7rem)' }}>
+              className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-red-400/80 animate-loss-drop'}`}
+              style={iWon ? { fontSize: 'clamp(7rem, 32vw, 13rem)' } : { fontSize: 'clamp(4.5rem, 20vw, 8rem)' }}>
               {iWon ? 'W' : isDraw ? 'DRAW' : 'L'}
             </div>
-            <div className={`font-display tracking-wider text-2xl sm:text-3xl mb-2 ${iWon ? 'text-white' : isDraw ? 'text-gray-400' : 'text-gray-500'}`}>
+            <div className={`font-display tracking-[0.15em] text-2xl sm:text-3xl mb-4 ${iWon ? 'text-white' : isDraw ? 'text-yellow-400' : 'text-gray-500'}`}>
               {iWon ? 'SERIES WIN' : isDraw ? 'SERIES DRAW' : 'SERIES LOSS'}
             </div>
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <span className="text-white font-black text-sm truncate max-w-[90px]">{room.hostName}</span>
-              <span className={`font-display text-4xl leading-none tracking-tight ${iWon && role === 'host' ? 'win-shimmer-text' : 'text-orange-400'}`}>{room.hostSeriesScore}</span>
-              <span className="text-gray-500 text-xl font-bold">–</span>
-              <span className={`font-display text-4xl leading-none tracking-tight ${iWon && role === 'guest' ? 'win-shimmer-text' : 'text-orange-400'}`}>{room.guestSeriesScore}</span>
-              <span className="text-white font-black text-sm truncate max-w-[90px]">{room.guestName}</span>
+
+            {/* Dramatic score scoreboard */}
+            <div className={`relative rounded-2xl px-6 py-5 mb-4 overflow-hidden ${
+              iWon
+                ? 'bg-gradient-to-br from-orange-950/60 to-orange-950/20 border border-orange-500/30 shadow-[0_0_40px_rgba(249,115,22,0.12)]'
+                : isDraw
+                ? 'bg-white/[0.04] border border-yellow-700/25'
+                : 'bg-white/[0.03] border border-white/[0.07]'
+            }`}>
+              {iWon && <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-orange-500/80 to-transparent" />}
+              <div className="flex items-center justify-center gap-4">
+                <div className="text-center min-w-0 flex-1">
+                  <div className="text-[10px] font-black tracking-[0.15em] uppercase mb-1 truncate text-white/40">{room.hostName}</div>
+                  <div className={`font-display leading-none tabular-nums ${iWon && role === 'host' ? 'win-shimmer-text animate-win-pop' : 'text-white'}`}
+                    style={{ fontSize: 'clamp(3.5rem, 14vw, 6rem)' }}>
+                    {room.hostSeriesScore}
+                  </div>
+                </div>
+                <div className="text-white/20 font-display text-2xl leading-none shrink-0">–</div>
+                <div className="text-center min-w-0 flex-1">
+                  <div className="text-[10px] font-black tracking-[0.15em] uppercase mb-1 truncate text-white/40">{room.guestName}</div>
+                  <div className={`font-display leading-none tabular-nums ${iWon && role === 'guest' ? 'win-shimmer-text animate-win-pop' : 'text-white'}`}
+                    style={{ fontSize: 'clamp(3.5rem, 14vw, 6rem)' }}>
+                    {room.guestSeriesScore}
+                  </div>
+                </div>
+              </div>
+              <div className="text-gray-600 text-[10px] font-black tracking-[0.18em] uppercase text-center mt-3">
+                Lower {STAT_CATEGORY_LABELS[room.statCategory] ?? 'stat'} total wins
+              </div>
             </div>
-            <div className="text-gray-600 text-[11px] mb-3">
-              Lower team total {STAT_CATEGORY_LABELS[room.statCategory] ?? 'stat'} wins each game
-            </div>
+
             {iWon && (
               <div className="animate-fade-up-1 inline-flex items-center gap-2 bg-orange-950/40 border border-orange-600/40 rounded-full px-5 py-2 shadow-[0_0_20px_rgba(234,88,12,0.2)]">
                 <span className="text-orange-300 text-xs font-black tracking-[0.18em] uppercase">Elite Ball Knowledge Confirmed</span>
@@ -599,26 +620,28 @@ function GameContent() {
                   const gameWon = r.winner === role
                   const gameDraw = r.winner === 'draw'
                   return (
-                    <div key={r.game} className={`flex items-center rounded-xl px-3 py-3 gap-3 border transition-all ${
+                    <div key={r.game} className={`rounded-xl border transition-all overflow-hidden ${
                       gameWon
                         ? 'bg-green-950/25 border-green-800/40 shadow-[0_0_12px_rgba(34,197,94,0.06)]'
                         : gameDraw
                         ? 'bg-yellow-950/15 border-yellow-800/20'
                         : 'bg-white/[0.02] border-white/[0.05]'
                     }`}>
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 font-black text-xs ${
-                        gameWon ? 'bg-green-500/20 text-green-400' : gameDraw ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white/[0.05] text-gray-400'
-                      }`}>G{r.game}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className={`font-display text-xl leading-none tabular-nums ${gameWon ? 'text-green-400' : 'text-white'}`}>{formatStat(myTotal, r.statMode)}</span>
-                          <span className="text-white/20 text-sm">–</span>
-                          <span className={`font-display text-xl leading-none tabular-nums ${!gameWon && !gameDraw ? 'text-green-400' : 'text-white/50'}`}>{formatStat(oppTotal, r.statMode)}</span>
+                      <div className="flex items-center px-3 py-3 gap-3">
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 font-black text-xs ${
+                          gameWon ? 'bg-green-500/20 text-green-400' : gameDraw ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white/[0.05] text-gray-400'
+                        }`}>G{r.game}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className={`font-display text-2xl leading-none tabular-nums ${gameWon ? 'text-green-400' : 'text-white'}`}>{formatStat(myTotal, r.statMode)}</span>
+                            <span className="text-white/20 text-sm">–</span>
+                            <span className={`font-display text-2xl leading-none tabular-nums ${!gameWon && !gameDraw ? 'text-green-400' : 'text-white/50'}`}>{formatStat(oppTotal, r.statMode)}</span>
+                          </div>
+                          <div className="text-white/25 text-[10px] tracking-wider uppercase mt-0.5 truncate">{STAT_LABELS[r.statMode]}</div>
                         </div>
-                        <div className="text-white/25 text-[10px] tracking-wider uppercase mt-0.5 truncate">{STAT_LABELS[r.statMode]}</div>
-                      </div>
-                      <div className={`font-display text-xl leading-none shrink-0 ${gameWon ? 'text-green-400' : gameDraw ? 'text-yellow-400' : 'text-red-400/80'}`}>
-                        {gameWon ? 'W' : gameDraw ? 'D' : 'L'}
+                        <div className={`font-display text-2xl leading-none shrink-0 ${gameWon ? 'text-green-400' : gameDraw ? 'text-yellow-400' : 'text-red-400/80'}`}>
+                          {gameWon ? 'W' : gameDraw ? 'D' : 'L'}
+                        </div>
                       </div>
                     </div>
                   )
@@ -628,7 +651,7 @@ function GameContent() {
           )}
           </div>{/* end LEFT col */}
 
-          {/* RIGHT col: Draft Recap (last game) */}
+          {/* RIGHT col: Draft Recap (last game) + EBK Contribution Table */}
           <div>
           {myPicks.length > 0 && (() => {
             const lastGame = room.gameResults[room.gameResults.length - 1]
@@ -645,7 +668,62 @@ function GameContent() {
               : assignToSlots(oppPicks, playerById, requiredSlots)
             const myLastTotal = role === 'host' ? lastGame.hostTotal : lastGame.guestTotal
             const oppLastTotal = role === 'host' ? lastGame.guestTotal : lastGame.hostTotal
+
+            // EBK contribution per player
+            const myPlayersWithEbk = mySlotsComplete.filter(Boolean) as Player[]
+            const myTotalEbk = myPlayersWithEbk.reduce((s, p) => s + p.ebkScore, 0)
+
             return (
+              <>
+              {/* EBK Contribution breakdown table — series complete highlight */}
+              {myPlayersWithEbk.length > 0 && (
+                <div className="card-accent rounded-2xl p-4 mb-4 animate-fade-up-2">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h2 className="text-label tracking-[0.18em]">Your EBK Breakdown</h2>
+                      <p className="text-white/25 text-[10px] mt-0.5">Each player&apos;s contribution to your team total</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-display text-3xl leading-none text-orange-400 tabular-nums">{myTotalEbk.toFixed(1)}</div>
+                      <div className="text-[9px] font-black tracking-widest text-white/25 uppercase mt-0.5">Total EBK</div>
+                    </div>
+                  </div>
+                  {/* Table header */}
+                  <div className="grid grid-cols-[auto_1fr_auto_auto] gap-x-3 px-2 mb-2">
+                    <div className="text-label" style={{ width: 32 }}>Pos</div>
+                    <div className="text-label">Player</div>
+                    <div className="text-label text-right">EBK</div>
+                    <div className="text-label text-right" style={{ width: 36 }}>Share</div>
+                  </div>
+                  <div className="space-y-1">
+                    {myPlayersWithEbk.map((p, i) => {
+                      const share = myTotalEbk > 0 ? (p.ebkScore / myTotalEbk) * 100 : 0
+                      const slotPos = requiredSlots[mySlotsComplete.indexOf(p)]
+                      return (
+                        <div key={p.id} className="grid grid-cols-[auto_1fr_auto_auto] gap-x-3 items-center px-2 py-2 rounded-lg hover:bg-white/[0.03] transition-colors" style={{ animationDelay: `${i * 0.05}s` }}>
+                          <div style={{ width: 32 }}>
+                            <span className={`pos-badge ${slotPos === 'BENCH' ? 'bg-white/5 text-white/25 border-white/10' : 'pos-' + slotPos?.toLowerCase()}`}>{slotPos === 'BENCH' ? 'BN' : slotPos}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-white text-xs font-bold truncate">{p.firstName} {p.lastName}</div>
+                            <div className="w-full bg-white/[0.06] rounded-full h-1 mt-1 overflow-hidden">
+                              <div className="h-full rounded-full bg-gradient-to-r from-orange-600 to-orange-400 transition-all" style={{ width: `${share}%` }} />
+                            </div>
+                          </div>
+                          <div className="font-display text-base leading-none text-orange-400 tabular-nums text-right">{p.ebkScore.toFixed(1)}</div>
+                          <div className="text-white/35 text-[10px] font-black tabular-nums text-right" style={{ width: 36 }}>{share.toFixed(0)}%</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {/* Total bar */}
+                  <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between px-2">
+                    <span className="text-white/40 text-xs font-black uppercase tracking-widest">Team Total</span>
+                    <span className="font-display text-2xl text-orange-400 tabular-nums leading-none">{myTotalEbk.toFixed(1)}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="card-stat rounded-2xl p-4 mb-4">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-label tracking-[0.18em]">Draft Recap — Game {lastGame.game}</h2>
@@ -702,6 +780,7 @@ function GameContent() {
                   </div>
                 </div>
               </div>
+              </>
             )
           })()}
           </div>{/* end RIGHT col */}
