@@ -1295,7 +1295,7 @@ app.prepare().then(async () => {
 
     socket.on('get-room', ({ code, role }: { code: string; role: 'host' | 'guest' }) => {
       const userId = socket.data.userId as string | null
-      const room = rooms.get(code)
+      const room = rooms.get(typeof code === 'string' ? code.trim().toUpperCase() : '')
       if (!room) {
         socket.emit('room-error', { message: 'Room not found or expired' })
         return
@@ -1530,7 +1530,7 @@ app.prepare().then(async () => {
     })
 
     socket.on('use-emote', async ({ code, emoteText }: { code: string; emoteText: string }) => {
-      const room = rooms.get(code)
+      const room = rooms.get(typeof code === 'string' ? code.trim().toUpperCase() : '')
       if (!room || room.status !== 'drafting') return
       const isHost = socket.id === room.hostSocketId
       const isGuest = socket.id === room.guestSocketId
