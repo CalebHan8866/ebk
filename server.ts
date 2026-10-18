@@ -44,6 +44,16 @@ function buildDbUrl(): string {
 }
 const prisma = new PrismaClient({ datasources: { db: { url: buildDbUrl() } } })
 
+// ─── Privacy helpers ─────────────────────────────────────────────────────────
+// In production, usernames are replaced with a short deterministic token so
+// Railway logs cannot be used to correlate real display names with activity.
+function redactName(name: string): string {
+  if (!name) return '[anon]'
+  if (dev) return name
+  const hash = crypto.createHash('sha1').update(name).digest('hex').slice(0, 6)
+  return `u:${hash}`
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type TeamMode = 'starter5' | 'bench8' | 'full12'
@@ -815,7 +825,7 @@ function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
   rooms.set(code, room)
   consecutiveTimeouts.set(code, { host: 0, guest: 0 })
   console.log('[room] created source=online code=%s host=%s guest=%s mode=%s series=%d game_rooms=%d',
-    code, rr.hostEntry.userName, rr.guestEntry.userName, rr.hostEntry.teamMode, rr.hostEntry.series, rooms.size)
+    code, redactName(rr.hostEntry.userName), redactName(rr.guestEntry.userName), rr.hostEntry.teamMode, rr.hostEntry.series, rooms.size)
 
   const hostSocket = io.sockets.sockets.get(rr.hostEntry.socketId)
   const guestSocket = io.sockets.sockets.get(rr.guestEntry.socketId)
@@ -926,7 +936,7 @@ function handleAuctionBidExpiry(io: SocketServer, room: AuctionRoom) {
   // guard here to prevent any future code path from causing underflow).
   if (winner.budget < room.currentBid) {
     console.warn('[auction] bid-expiry budget underflow prevented code=%s winner=%s budget=%d bid=%d',
-      room.code, winner.name, winner.budget, room.currentBid)
+      room.code, redactName(winner.name), winner.budget, room.currentBid)
     advanceAuction(io, room); return
   }
   winner.roster.push(room.currentPlayer.id)
@@ -1190,7 +1200,7 @@ app.prepare().then(async () => {
       rooms.set(code, room)
       socket.join(code)
       console.log('[room] created source=friends code=%s host=%s mode=%s series=%d game_rooms=%d',
-        code, room.hostName, room.teamMode, room.series, rooms.size)
+        code, redactName(room.hostName), room.teamMode, room.series, rooms.size)
       socket.emit('room-created', { room, players: allPlayers })
     })
 
@@ -1744,7 +1754,7 @@ app.prepare().then(async () => {
       auctionRooms.set(code, room)
       socket.join(`auction:${code}`)
       console.log('[auction] created code=%s host=%s maxPlayers=%d teamSize=%d auction_rooms=%d',
-        code, socket.data.username ?? 'anon', room.maxPlayers, room.teamSize, auctionRooms.size)
+        code, redactName(socket.data.username ?? 'anon'), room.maxPlayers, room.teamSize, auctionRooms.size)
       socket.emit('auction:created', { code })
       broadcastAuctionState(io, room)
     })

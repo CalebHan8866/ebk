@@ -19,6 +19,10 @@ const nextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()',
+          },
+          {
             key: 'Content-Security-Policy',
             // socket.io requires connect-src for WebSocket connections back to self.
             // cdnjs is whitelisted for Twemoji SVG img-src.
