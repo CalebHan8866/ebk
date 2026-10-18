@@ -1263,8 +1263,10 @@ function GameContent() {
           </div>
 
           {/* Turn state + integrated timer */}
-          <div className={`relative px-4 py-3 transition-all ${
-            isMyTurn
+          <div className={`relative px-4 py-3 transition-all duration-300 ${
+            isMyTurn && pickTimeLeft <= 5
+              ? 'bg-gradient-to-r from-red-950/60 via-red-900/40 to-red-950/60 border-x-2 border-b-2 border-red-500/70 rounded-b-2xl'
+              : isMyTurn
               ? 'bg-gradient-to-r from-orange-950/60 via-orange-900/40 to-orange-950/60 border-x-2 border-b-2 border-orange-500/80 rounded-b-2xl'
               : 'bg-[#0d0d14] border-x border-b border-white/[0.05] rounded-b-2xl'
           }`}>
@@ -1311,10 +1313,10 @@ function GameContent() {
                     {pickTimeLeft}
                     <span className="text-sm font-sans ml-0.5">s</span>
                   </div>
-                  <div className="w-20 bg-white/[0.08] rounded-full h-1.5">
+                  <div className="w-20 bg-white/[0.08] rounded-full h-1.5 overflow-hidden">
                     <div
                       className={`h-1.5 rounded-full transition-all duration-1000 ${
-                        pickTimeLeft <= 5 ? 'bg-red-500' : pickTimeLeft <= 10 ? 'bg-yellow-400' : 'bg-green-500'
+                        pickTimeLeft <= 5 ? 'bg-red-500 animate-pulse' : pickTimeLeft <= 10 ? 'bg-yellow-400' : 'bg-green-500'
                       }`}
                       style={{ width: `${(pickTimeLeft / pickTimerDurationRef.current) * 100}%` }}
                     />
