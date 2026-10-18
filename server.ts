@@ -1895,6 +1895,16 @@ app.prepare().then(async () => {
       if (!requestedPlayerIds.every(id => Number.isInteger(id) && id > 0)) {
         socket.emit('auction:error', { message: 'Invalid player IDs in trade request' }); return
       }
+      // Reject duplicate player IDs in either array.
+      // Without this check a sender could list the same ID twice (e.g. [23, 23]);
+      // the ownership guard would pass (23 is in the roster) but the execution loop
+      // would push the player into the recipient's roster twice while only removing
+      // them once, corrupting both rosters.
+      const uniqueOffered = new Set(offeredPlayerIds)
+      const uniqueRequested = new Set(requestedPlayerIds)
+      if (uniqueOffered.size !== offeredPlayerIds.length || uniqueRequested.size !== requestedPlayerIds.length) {
+        socket.emit('auction:error', { message: 'Duplicate player IDs in trade offer' }); return
+      }
       if (!offeredPlayerIds.every(id => from.roster.includes(id))) { socket.emit('auction:error', { message: "You don't own those players" }); return }
       if (!requestedPlayerIds.every(id => to.roster.includes(id))) { socket.emit('auction:error', { message: "They don't own those players" }); return }
 
