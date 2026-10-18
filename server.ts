@@ -1140,23 +1140,61 @@ app.prepare().then(async () => {
       console.log('[server] HTTP server closed')
     })
 
+    // Close the Socket.IO server: stops new connections and sends a disconnect
+    // packet to every connected socket so clients know to reconnect elsewhere.
+    // Without this call, existing WebSockets stay open indefinitely and the
+    // disconnect handlers that drain rooms never fire.
+    io.close(() => {
+      console.log('[server] Socket.IO server closed')
+    })
+
     // Give active rooms up to 10 s to reach a terminal state, then force exit
-    const forceExitTimer = setTimeout(() => {
+    const forceExitTimer = setTimeout(async () => {
       console.warn('[server] Graceful shutdown timed out — forcing exit')
+      await prisma.$disconnect().catch(() => {})
       process.exit(0)
     }, 10_000)
     // Don't let this timer keep the event loop alive if rooms finish sooner
     forceExitTimer.unref()
 
     // Poll until all rooms are gone or the timer fires
-    const pollInterval = setInterval(() => {
+    const pollInterval = setInterval(async () => {
       if (rooms.size === 0 && auctionRooms.size === 0) {
         clearInterval(pollInterval)
         clearTimeout(forceExitTimer)
         console.log('[server] All rooms drained — exiting cleanly')
+        await prisma.$disconnect().catch(() => {})
         process.exit(0)
       }
     }, 500)
+  })
+
+  // ─── IP-level connection rate limiter ───────────────────────────────────────
+  // Without this, a single attacker IP can open thousands of WebSocket
+  // connections before emitting any event, exhausting Node.js heap on Railway's
+  // 512 MB container.  We allow up to 20 concurrent connections per IP and
+  // reject the 21st with a transport error — legitimate users never need more
+  // than a handful of tabs open simultaneously.
+  const connectionsPerIp = new Map<string, number>()
+  io.use((socket, next) => {
+    const ip: string =
+      (socket.handshake.headers['x-forwarded-for'] as string | undefined)
+        ?.split(',')[0]
+        .trim() ??
+      socket.handshake.address ??
+      'unknown'
+    const current = connectionsPerIp.get(ip) ?? 0
+    if (current >= 20) {
+      console.warn('[socket] Connection rejected — too many connections from IP:', ip)
+      return next(new Error('Too many connections from this IP'))
+    }
+    connectionsPerIp.set(ip, current + 1)
+    socket.on('disconnect', () => {
+      const remaining = (connectionsPerIp.get(ip) ?? 1) - 1
+      if (remaining <= 0) connectionsPerIp.delete(ip)
+      else connectionsPerIp.set(ip, remaining)
+    })
+    next()
   })
 
   // Verify JWT from httpOnly cookie on every connection — no client changes needed.
