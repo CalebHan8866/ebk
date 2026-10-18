@@ -473,17 +473,17 @@ export default function LobbyPage() {
             </div>
 
             {/* Game details */}
-            <div className="mx-5 mb-5 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 flex items-center justify-between">
-              <span className="text-label">Format</span>
-              <div className="flex items-center gap-2 text-sm flex-wrap justify-end">
-                <span className="text-white font-black">{MODE_LABEL[matchInfo.proposedTeamMode]}</span>
-                <span className="text-gray-700">·</span>
-                <span className="text-gray-400">{seriesLabel(matchInfo.proposedSeries)}</span>
-                <span className="text-gray-700">·</span>
+            <div className="mx-5 mb-5 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-label">Format</span>
+                <span className="text-white font-black text-xs">{MODE_LABEL[matchInfo.proposedTeamMode]}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400 text-xs">{seriesLabel(matchInfo.proposedSeries)}</span>
                 {matchInfo.proposedStatCategory ? (
-                  <span className="text-orange-400 font-black">{STAT_CATEGORY_LABELS[matchInfo.proposedStatCategory]}</span>
+                  <span className="text-orange-400 font-black text-xs">{STAT_CATEGORY_LABELS[matchInfo.proposedStatCategory]}</span>
                 ) : (
-                  <span className="text-yellow-400 font-black">EBK</span>
+                  <span className="text-yellow-400 font-black text-xs">EBK Score</span>
                 )}
               </div>
             </div>
