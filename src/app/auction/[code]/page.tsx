@@ -1376,7 +1376,7 @@ export default function AuctionRoomPage() {
 
             {/* Bid controls */}
             {phase === 'bidding' && (
-              <div className="w-full max-w-xs space-y-3 px-0 animate-fade-up">
+              <div className="w-full max-w-xs space-y-3 px-0">
                 {/* Quick-add chips */}
                 <div className="flex gap-2 justify-center">
                   {[1, 5, 10].map(bump => (

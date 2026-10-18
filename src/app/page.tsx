@@ -128,6 +128,31 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ── EXPLORE ──────────────────────────────────────────────────── */}
+      <div className="max-w-3xl mx-auto px-4 pb-16">
+        <p className="text-center text-label mb-6 tracking-[0.2em]">Explore</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Link href="/fun-facts" className="card-surface p-6 hover:border-orange-700/40 hover:bg-orange-950/10 transition-all group">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
+                <span className="font-display text-xl text-orange-400 leading-none">$</span>
+              </div>
+              <h3 className="font-black text-white text-base tracking-wide group-hover:text-orange-300 transition-colors">Fun Facts</h3>
+            </div>
+            <p className="text-gray-400 text-sm leading-relaxed">See every NBA player&apos;s career earnings put in wild perspective — houses, iPhones, lobster dinners, and more.</p>
+          </Link>
+          <Link href="/higher-lower" className="card-surface p-6 hover:border-orange-700/40 hover:bg-orange-950/10 transition-all group">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
+                <span className="font-display text-xl text-orange-400 leading-none">?</span>
+              </div>
+              <h3 className="font-black text-white text-base tracking-wide group-hover:text-orange-300 transition-colors">Higher or Lower</h3>
+            </div>
+            <p className="text-gray-400 text-sm leading-relaxed">Guess which player had the higher stat. Streak-based — how far can you go?</p>
+          </Link>
+        </div>
+      </div>
+
       {/* ── READY TO PLAY ────────────────────────────────────────────── */}
       <div className="max-w-2xl mx-auto px-4 pb-24 sm:pb-28">
         <div className="card-accent p-8 sm:p-12 text-center animate-glow">
