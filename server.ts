@@ -1059,7 +1059,7 @@ app.prepare().then(async () => {
   process.on('SIGTERM', () => {
     console.log('[server] SIGTERM received — starting graceful shutdown')
     const activeRoomCodes = [...rooms.keys(), ...auctionRooms.keys()]
-    console.log('[server] Active rooms at shutdown:', activeRoomCodes.length, activeRoomCodes)
+    console.log('[server] Active rooms at shutdown: count=%d', activeRoomCodes.length)
 
     // Stop accepting new HTTP connections
     httpServer.close(() => {
@@ -1104,8 +1104,8 @@ app.prepare().then(async () => {
     // Per-socket error logging
     socket.on('error', (err) => {
       console.error('[socket] Socket error:', {
-        socketId: socket.id,
-        userId: socket.data.userId,
+        socketId: socket.id.slice(0, 6) + '…',
+        userId: socket.data.userId ? '[redacted]' : undefined,
         message: err.message,
         stack: err.stack,
       })
@@ -1364,7 +1364,7 @@ app.prepare().then(async () => {
           ? userId === room.hostUserId
           : !origConnected || socket.id === room.hostSocketId
         if (!isLegit) {
-          console.warn('[room] Unauthorized host takeover attempt code=%s userId=%s', code, userId)
+          console.warn('[room] Unauthorized host takeover attempt code=%s userId=[redacted]', code)
           socket.emit('room-error', { message: 'Unauthorized' })
           return
         }
@@ -1376,7 +1376,7 @@ app.prepare().then(async () => {
           ? userId === room.guestUserId
           : !origConnected || socket.id === room.guestSocketId
         if (!isLegit) {
-          console.warn('[room] Unauthorized guest takeover attempt code=%s userId=%s', code, userId)
+          console.warn('[room] Unauthorized guest takeover attempt code=%s userId=[redacted]', code)
           socket.emit('room-error', { message: 'Unauthorized' })
           return
         }
