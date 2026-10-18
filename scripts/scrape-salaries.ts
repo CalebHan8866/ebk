@@ -19,6 +19,7 @@
  *   DRY_RUN       — set to "1" to log without writing to DB
  *   DELAY_MS      — ms between player-page fetches (default 2200)
  *   START_INDEX   — skip first N matched players (resume a partial run)
+ *   REFETCH       — set to "1" to re-scrape players that already have a value (fixes wrong data)
  */
 
 import axios from 'axios'
@@ -41,6 +42,7 @@ async function ensureConnected() {
 const DRY_RUN    = process.env.DRY_RUN    === '1'
 const DELAY_MS   = parseInt(process.env.DELAY_MS   ?? '2200', 10) || 2200
 const START_IDX  = parseInt(process.env.START_INDEX ?? '0',   10) || 0
+const REFETCH    = process.env.REFETCH    === '1'   // re-scrape even if value already set
 
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -107,11 +109,26 @@ async function fetchCareerEarnings(href: string): Promise<number> {
     try {
       const { data } = await axios.get<string>(url, { headers: HEADERS, timeout: 20_000 })
       const expanded = expandComments(data)
-      // Salary values are stored in csk attribute: csk="4018920"
+      // Use cheerio to find salary cells — more robust than regex since
+      // BBRef sometimes puts csk= before data-stat= (varying attribute order).
+      // Skip any summary/totals row where the year cell is empty or says "Career".
+      const $ = cheerio.load(expanded)
       let total = 0
-      let m: RegExpExecArray | null
-      const re = /data-stat="salary"[^>]+csk="(\d+)"/g
-      while ((m = re.exec(expanded)) !== null) total += parseInt(m[1], 10)
+      $('td[data-stat="salary"]').each((_, el) => {
+        const row = $(el).closest('tr')
+        // Skip header rows and career-total rows
+        const yearCell = row.find('th[data-stat="year_id"], td[data-stat="year_id"]')
+        const yearText = yearCell.text().trim()
+        if (!yearText || yearText.toLowerCase() === 'career') return
+        const csk = $(el).attr('csk')
+        if (csk) total += parseInt(csk, 10)
+        else {
+          // Fallback: parse the text content (strip $ and commas)
+          const raw = $(el).text().replace(/[$,\s]/g, '')
+          const n = parseInt(raw, 10)
+          if (!isNaN(n) && n > 0) total += n
+        }
+      })
       return total
     } catch (err: any) {
       if (err?.response?.status === 429) {
@@ -215,8 +232,8 @@ async function main() {
 
     process.stdout.write(`[${i + 1}/${uniqueHrefs.length}] ${label}... `)
 
-    // Skip if all already populated
-    if (players.every(p => p.careerEarnings > 0)) {
+    // Skip if all already populated (unless REFETCH=1 to fix wrong values)
+    if (!REFETCH && players.every(p => p.careerEarnings > 0)) {
       console.log(`already set ($${(players[0].careerEarnings / 1e6).toFixed(1)}M)`)
       skipped += players.length
       continue
