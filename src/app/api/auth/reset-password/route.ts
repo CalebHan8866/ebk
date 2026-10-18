@@ -6,6 +6,7 @@ import { cookies } from 'next/headers'
 import { createToken } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 import { rateLimit } from '@/lib/ratelimit'
+import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,9 +21,12 @@ export async function POST(request: NextRequest) {
     if (password.length < 6) return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
     if (password.length > 72) return NextResponse.json({ error: 'Password must be 72 characters or less' }, { status: 400 })
 
+    // The DB stores the SHA-256 hash of the reset token; hash before lookup.
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
+
     const user = await prisma.user.findFirst({
       where: {
-        resetToken: token,
+        resetToken: tokenHash,
         resetTokenExpiry: { gt: new Date() },
       },
       select: { id: true, username: true, tokenVersion: true },
@@ -44,7 +48,7 @@ export async function POST(request: NextRequest) {
     const result = await prisma.user.updateMany({
       where: {
         id: user.id,
-        resetToken: token,             // atomic guard against concurrent use
+        resetToken: tokenHash,         // atomic guard against concurrent use (compare hash)
         resetTokenExpiry: { gt: new Date() },
       },
       data: { password: hashed, resetToken: null, resetTokenExpiry: null, tokenVersion: newVersion },

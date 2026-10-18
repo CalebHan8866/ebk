@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { createToken } from '@/lib/auth'
+import crypto from 'crypto'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,19 +12,23 @@ export async function GET(request: NextRequest) {
     // Reject implausibly long tokens before hitting the DB (crypto.randomBytes(32).hex = 64 chars)
     if (token.length > 128) return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 })
 
-    // Look up the user by token first so we have their id for the JWT.
+    // The DB stores the SHA-256 hash of the token, not the raw token.
+    // Hash the incoming value before querying so a DB read cannot replay links.
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
+
+    // Look up the user by token hash first so we have their id for the JWT.
     const user = await prisma.user.findFirst({
-      where: { verificationToken: token },
+      where: { verificationToken: tokenHash },
       select: { id: true, username: true, tokenVersion: true },
     })
     if (!user) return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 })
 
-    // Atomic single-use enforcement: include BOTH id AND token in the WHERE clause.
+    // Atomic single-use enforcement: include BOTH id AND token hash in the WHERE clause.
     // If two concurrent requests race on the same token, only the first updateMany
     // will match a row (count > 0) because the token is cleared by the first write.
     // The second request finds count === 0 and returns 400 — no duplicate sessions.
     const updated = await prisma.user.updateMany({
-      where: { id: user.id, verificationToken: token },
+      where: { id: user.id, verificationToken: tokenHash },
       data: { emailVerified: true, verificationToken: null },
     })
     if (updated.count === 0) {

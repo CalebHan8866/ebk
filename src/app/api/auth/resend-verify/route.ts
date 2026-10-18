@@ -21,7 +21,9 @@ export async function POST(request: NextRequest) {
     if (!user || user.emailVerified) return NextResponse.json({ message: 'If that email is registered and unverified, a new link has been sent.' })
 
     const verificationToken = crypto.randomBytes(32).toString('hex')
-    await prisma.user.update({ where: { id: user.id }, data: { verificationToken } })
+    // Store only the hash; raw token is emailed so a DB read cannot replay links.
+    const verificationTokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex')
+    await prisma.user.update({ where: { id: user.id }, data: { verificationToken: verificationTokenHash } })
 
     sendVerificationEmail(email, user.username, verificationToken).catch(err => console.error('Resend email error:', err))
 

@@ -25,10 +25,12 @@ export async function POST(request: NextRequest) {
 
     const token = crypto.randomBytes(32).toString('hex')
     const expiry = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+    // Store only the SHA-256 hash so a DB read cannot be used to replay reset links.
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { resetToken: token, resetTokenExpiry: expiry },
+      data: { resetToken: tokenHash, resetTokenExpiry: expiry },
     })
 
     // Fire and forget — don't block the response waiting for email

@@ -41,10 +41,13 @@ export async function POST(request: NextRequest) {
 
     const hashed = await bcrypt.hash(password, 12)
     const verificationToken = crypto.randomBytes(32).toString('hex')
+    // Store only the SHA-256 hash of the token so a DB read cannot be used to
+    // replay verification links.  The raw token travels in the email URL only.
+    const verificationTokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex')
 
     try {
       await prisma.user.create({
-        data: { username, email, password: hashed, verificationToken, emailVerified: false }
+        data: { username, email, password: hashed, verificationToken: verificationTokenHash, emailVerified: false }
       })
     } catch (e: unknown) {
       // P2002 = Prisma unique constraint violation (race condition: concurrent signup with same username/email)
