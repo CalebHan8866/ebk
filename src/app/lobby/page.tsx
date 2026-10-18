@@ -400,79 +400,79 @@ export default function LobbyPage() {
               </div>
             </div>
 
-            {/* VS layout — larger avatars + glow */}
-            <div className="grid grid-cols-[1fr_56px_1fr] items-center gap-0 px-5 py-7">
+            {/* VS layout — responsive avatars */}
+            <div className="grid grid-cols-[1fr_44px_1fr] sm:grid-cols-[1fr_56px_1fr] items-center gap-0 px-4 sm:px-5 py-6">
               {/* You */}
-              <div className={`rounded-2xl px-3 py-5 text-center transition-all duration-300 ${
+              <div className={`rounded-2xl px-2 sm:px-3 py-4 sm:py-5 text-center transition-all duration-300 ${
                 myReady
                   ? 'bg-green-500/10 border border-green-500/30 shadow-[0_0_24px_rgba(34,197,94,0.08)]'
                   : 'bg-white/[0.025] border border-white/[0.06]'
               }`}>
-                <div className="flex justify-center mb-3">
-                  <Avatar name={displayName} size="xl" glow={myReady} />
+                <div className="flex justify-center mb-2.5">
+                  <Avatar name={displayName} size="lg" glow={myReady} />
                 </div>
-                <div className="text-white font-black text-sm truncate leading-tight mb-1">{displayName}</div>
+                <div className="text-white font-black text-xs sm:text-sm truncate leading-tight mb-1">{displayName}</div>
                 {user && (
                   <div className="flex items-center justify-center gap-1.5 mb-1 flex-wrap">
                     <BadgeChip badgeId={matchInfo.myBadge} />
                   </div>
                 )}
                 {user && (
-                  <div className="text-gray-500 text-xs">
+                  <div className="text-gray-500 text-[11px]">
                     {user.wins}W–{user.losses}L
                     <span className="text-gray-600 ml-1">{winPct(user.wins, user.losses)}</span>
                   </div>
                 )}
                 {matchInfo.myStreak >= 3 && (
-                  <div className="text-orange-400 text-xs font-black mt-1.5">🔥 {matchInfo.myStreak} streak</div>
+                  <div className="text-orange-400 text-[11px] font-black mt-1">🔥 {matchInfo.myStreak}</div>
                 )}
                 {myReady ? (
-                  <div className="mt-2.5 inline-flex items-center gap-1 bg-green-500/15 border border-green-500/25 rounded-full px-3 py-1">
+                  <div className="mt-2 inline-flex items-center gap-1 bg-green-500/15 border border-green-500/25 rounded-full px-2.5 py-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
-                    <span className="text-green-400 text-[10px] font-black uppercase tracking-wide">Ready</span>
+                    <span className="text-green-400 text-[9px] font-black uppercase tracking-wide">Ready</span>
                   </div>
                 ) : (
-                  <div className="mt-2.5 h-[26px]" /> /* spacer to keep height consistent */
+                  <div className="mt-2 h-[24px]" />
                 )}
               </div>
 
-              {/* VS divider — large glow */}
+              {/* VS divider */}
               <div className="flex flex-col items-center gap-2 h-full py-2">
                 <div className="w-px flex-1 bg-gradient-to-b from-transparent via-white/[0.08] to-transparent" />
                 <div className="relative">
-                  <div className="font-display text-3xl text-orange-500 leading-none drop-shadow-[0_0_20px_rgba(249,115,22,0.7)]">VS</div>
-                  <div className="absolute inset-0 font-display text-3xl text-orange-400/20 leading-none blur-lg">VS</div>
+                  <div className="font-display text-2xl sm:text-3xl text-orange-500 leading-none drop-shadow-[0_0_20px_rgba(249,115,22,0.7)]">VS</div>
+                  <div className="absolute inset-0 font-display text-2xl sm:text-3xl text-orange-400/20 leading-none blur-lg">VS</div>
                 </div>
                 <div className="w-px flex-1 bg-gradient-to-b from-transparent via-white/[0.08] to-transparent" />
               </div>
 
               {/* Opponent */}
-              <div className={`rounded-2xl px-3 py-5 text-center transition-all duration-300 ${
+              <div className={`rounded-2xl px-2 sm:px-3 py-4 sm:py-5 text-center transition-all duration-300 ${
                 oppReady
                   ? 'bg-green-500/10 border border-green-500/30 shadow-[0_0_24px_rgba(34,197,94,0.08)]'
                   : 'bg-white/[0.025] border border-white/[0.06]'
               }`}>
-                <div className="flex justify-center mb-3">
-                  <Avatar name={matchInfo.opponentName} size="xl" glow={oppReady} />
+                <div className="flex justify-center mb-2.5">
+                  <Avatar name={matchInfo.opponentName} size="lg" glow={oppReady} />
                 </div>
-                <div className="text-white font-black text-sm truncate leading-tight mb-1">{matchInfo.opponentName}</div>
+                <div className="text-white font-black text-xs sm:text-sm truncate leading-tight mb-1">{matchInfo.opponentName}</div>
                 <div className="flex items-center justify-center gap-1.5 mb-1 flex-wrap">
                   <BadgeChip badgeId={matchInfo.opponentBadge} />
                 </div>
-                <div className="text-gray-500 text-xs">
+                <div className="text-gray-500 text-[11px]">
                   {matchInfo.opponentRecord.wins}W–{matchInfo.opponentRecord.losses}L
                   <span className="text-gray-600 ml-1">{winPct(matchInfo.opponentRecord.wins, matchInfo.opponentRecord.losses)}</span>
                 </div>
                 {matchInfo.opponentStreak >= 3 && (
-                  <div className="text-orange-400 text-xs font-black mt-1.5">🔥 {matchInfo.opponentStreak} streak</div>
+                  <div className="text-orange-400 text-[11px] font-black mt-1">🔥 {matchInfo.opponentStreak}</div>
                 )}
                 {oppReady ? (
-                  <div className="mt-2.5 inline-flex items-center gap-1 bg-green-500/15 border border-green-500/25 rounded-full px-3 py-1">
+                  <div className="mt-2 inline-flex items-center gap-1 bg-green-500/15 border border-green-500/25 rounded-full px-2.5 py-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
-                    <span className="text-green-400 text-[10px] font-black uppercase tracking-wide">Ready</span>
+                    <span className="text-green-400 text-[9px] font-black uppercase tracking-wide">Ready</span>
                   </div>
                 ) : (
-                  <div className="mt-2.5 h-[26px]" />
+                  <div className="mt-2 h-[24px]" />
                 )}
               </div>
             </div>
@@ -698,16 +698,16 @@ export default function LobbyPage() {
             {/* Row: Higher/Lower + Practice (compact) */}
             <div className="grid grid-cols-2 gap-3">
               <Link href="/higher-lower"
-                className="animate-fade-up-4 group card-surface border border-white/[0.04] hover:border-white/[0.12] rounded-2xl px-5 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block">
+                className="animate-fade-up-4 group card-surface border border-white/[0.04] hover:border-white/[0.12] rounded-2xl px-4 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block min-w-0">
                 <div className="text-label mb-2">Solo</div>
-                <div className="font-display text-2xl text-white leading-none mb-1 group-hover:text-orange-400 transition-colors">Higher / Lower</div>
-                <div className="text-gray-600 text-[11px] font-black uppercase tracking-wide">Guess. Streak. Win.</div>
+                <div className="font-display text-xl leading-none mb-1 group-hover:text-orange-400 transition-colors text-white truncate">Higher / Lower</div>
+                <div className="text-gray-600 text-[10px] font-black uppercase tracking-wide">Guess. Streak. Win.</div>
               </Link>
               <Link href="/practice"
-                className="animate-fade-up-5 group card-surface border border-white/[0.04] hover:border-white/[0.12] rounded-2xl px-5 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block">
+                className="animate-fade-up-5 group card-surface border border-white/[0.04] hover:border-white/[0.12] rounded-2xl px-4 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block min-w-0">
                 <div className="text-label mb-2">Solo</div>
-                <div className="font-display text-2xl text-white leading-none mb-1 group-hover:text-orange-400 transition-colors">Practice</div>
-                <div className="text-gray-600 text-[11px] font-black uppercase tracking-wide">Draft. No timer. Learn.</div>
+                <div className="font-display text-xl leading-none mb-1 group-hover:text-orange-400 transition-colors text-white truncate">Practice</div>
+                <div className="text-gray-600 text-[10px] font-black uppercase tracking-wide">Draft. No timer. Learn.</div>
               </Link>
             </div>
 
@@ -961,29 +961,34 @@ export default function LobbyPage() {
                         {listings.map((l, idx) => (
                           <div
                             key={l.code}
-                            className="flex items-center gap-4 px-5 py-4 hover:bg-white/[0.025] transition-colors group animate-slide-up"
+                            className="flex items-center gap-3 px-4 sm:px-5 py-3.5 hover:bg-white/[0.025] transition-colors group animate-slide-up"
                             style={{ animationDelay: `${idx * 40}ms`, animationFillMode: 'both' }}
                           >
-                            <div className={l.hostStreak >= 3 ? 'avatar-hot rounded-full' : ''}>
+                            <div className={l.hostStreak >= 3 ? 'avatar-hot rounded-full shrink-0' : 'shrink-0'}>
                               <Avatar name={l.hostName} />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-0.5">
+                              <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
                                 <span className="text-white font-black text-sm truncate">{l.hostName}</span>
                                 <BadgeChip badgeId={l.hostBadge} />
                                 {l.hostStreak >= 3 && (
-                                  <span className="text-orange-400 text-[11px] font-black bg-orange-950/40 border border-orange-800/50 rounded px-1.5 py-0.5">
+                                  <span className="text-orange-400 text-[10px] font-black bg-orange-950/40 border border-orange-800/50 rounded px-1.5 py-0.5 shrink-0">
                                     {l.hostStreak} streak
                                   </span>
                                 )}
                               </div>
-                              <div className="text-gray-400 text-xs">
+                              <div className="text-gray-500 text-[11px]">
                                 {l.hostRecord.wins}W {l.hostRecord.losses}L
                                 <span className="text-gray-700 mx-1">·</span>
-                                <span className="text-gray-400">{winPct(l.hostRecord.wins, l.hostRecord.losses)}</span>
+                                <span className="text-gray-500">{winPct(l.hostRecord.wins, l.hostRecord.losses)}</span>
+                              </div>
+                              {/* Format info visible on mobile */}
+                              <div className="flex items-center gap-1.5 mt-1 sm:hidden">
+                                <span className="text-[10px] font-black text-gray-400 bg-white/[0.04] border border-white/[0.07] rounded px-1.5 py-0.5">{MODE_LABEL[l.teamMode]}</span>
+                                <span className="text-orange-400 text-[10px] font-black">{STAT_CATEGORY_LABELS[l.statCategory] ?? 'Games Played'}</span>
                               </div>
                             </div>
-                            {/* Format chip */}
+                            {/* Format chip — desktop only */}
                             <div className="hidden sm:flex flex-col items-end gap-0.5 shrink-0">
                               <span className="text-xs font-black text-gray-200 bg-white/[0.05] border border-white/[0.08] rounded-lg px-2.5 py-1 leading-none">
                                 {MODE_LABEL[l.teamMode]}
@@ -994,7 +999,7 @@ export default function LobbyPage() {
                             <button
                               onClick={() => handleJoinListing(l.code)}
                               disabled={onlineState === 'listing'}
-                              className="btn-primary py-2 px-5 text-xs disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none shrink-0"
+                              className="btn-primary py-2.5 px-4 text-xs min-h-[44px] min-w-[56px] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none shrink-0"
                             >
                               Join
                             </button>

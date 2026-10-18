@@ -608,60 +608,97 @@ function GameContent() {
           {/* LEFT col: header + game-by-game */}
           <div>
           {/* Result header */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-6 animate-fade-up">
             {iWon && (
-              <div className="mb-4 inline-flex items-center gap-2 bg-orange-950/60 border border-orange-500/60 rounded-full px-4 py-1.5 animate-fade-up shadow-[0_0_24px_rgba(249,115,22,0.25)]">
+              <div className="mb-4 inline-flex items-center gap-2 bg-orange-950/60 border border-orange-500/60 rounded-full px-4 py-1.5 shadow-[0_0_24px_rgba(249,115,22,0.25)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
                 <span className="text-orange-300 text-[11px] font-black tracking-[0.25em] uppercase">Series Champion</span>
+              </div>
+            )}
+            {!iWon && !isDraw && (
+              <div className="mb-4 inline-flex items-center gap-2 bg-white/[0.03] border border-white/[0.07] rounded-full px-4 py-1.5">
+                <span className="text-gray-500 text-[11px] font-black tracking-[0.25em] uppercase">Series Over</span>
               </div>
             )}
             <div
               className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-red-400/80 animate-loss-drop'}`}
-              style={iWon ? { fontSize: 'clamp(7rem, 32vw, 13rem)' } : { fontSize: 'clamp(4.5rem, 20vw, 8rem)' }}>
+              style={iWon ? { fontSize: 'clamp(7rem, 30vw, 13rem)' } : { fontSize: 'clamp(4.5rem, 18vw, 8rem)' }}>
               {iWon ? 'W' : isDraw ? 'DRAW' : 'L'}
             </div>
-            <div className={`font-display tracking-[0.15em] text-2xl sm:text-3xl mb-4 ${iWon ? 'text-white' : isDraw ? 'text-yellow-400' : 'text-gray-500'}`}>
+            <div className={`font-display tracking-[0.15em] text-xl sm:text-3xl mb-5 ${iWon ? 'text-white' : isDraw ? 'text-yellow-400' : 'text-gray-500'}`}>
               {iWon ? 'SERIES WIN' : isDraw ? 'SERIES DRAW' : 'SERIES LOSS'}
             </div>
 
-            {/* Dramatic score scoreboard */}
-            <div className={`relative rounded-2xl px-6 py-5 mb-4 overflow-hidden ${
+            {/* Championship scoreboard — winner gets orange glow, loser gets muted */}
+            <div className={`relative rounded-2xl overflow-hidden mb-4 animate-fade-up-1 ${
               iWon
-                ? 'bg-gradient-to-br from-orange-950/60 to-orange-950/20 border border-orange-500/30 shadow-[0_0_40px_rgba(249,115,22,0.12)]'
+                ? 'bg-gradient-to-b from-orange-950/50 to-orange-950/10 border border-orange-500/35 shadow-[0_0_48px_rgba(249,115,22,0.14)]'
                 : isDraw
                 ? 'bg-white/[0.04] border border-yellow-700/25'
-                : 'bg-white/[0.03] border border-white/[0.07]'
+                : 'bg-white/[0.025] border border-white/[0.06]'
             }`}>
-              {iWon && <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-orange-500/80 to-transparent" />}
-              <div className="flex items-center justify-center gap-4">
-                <div className="text-center min-w-0 flex-1">
-                  <div className="text-[10px] font-black tracking-[0.15em] uppercase mb-1 truncate text-white/40">{room.hostName}</div>
-                  <div className={`font-display leading-none tabular-nums ${iWon && role === 'host' ? 'win-shimmer-text animate-win-pop' : 'text-white'}`}
-                    style={{ fontSize: 'clamp(3.5rem, 14vw, 6rem)' }}>
+              {/* Top accent line — orange for win, red for loss */}
+              <div className={`h-[2px] w-full ${iWon ? 'bg-gradient-to-r from-transparent via-orange-500 to-transparent' : isDraw ? 'bg-gradient-to-r from-transparent via-yellow-600/50 to-transparent' : 'bg-gradient-to-r from-transparent via-red-800/40 to-transparent'}`} />
+              <div className="flex items-stretch">
+                {/* Host side */}
+                <div className={`flex-1 min-w-0 px-4 py-5 text-center ${
+                  (role === 'host' && iWon) || (role === 'guest' && !iWon && !isDraw)
+                    ? 'bg-green-950/10'
+                    : ''
+                }`}>
+                  <div className={`text-[10px] font-black tracking-[0.15em] uppercase mb-1.5 truncate ${
+                    (role === 'host' && iWon) || (role === 'guest' && !iWon && !isDraw) ? 'text-white/50' : 'text-white/25'
+                  }`}>{room.hostName}</div>
+                  <div className={`font-display leading-none tabular-nums ${
+                    iWon && role === 'host' ? 'win-shimmer-text animate-win-pop'
+                    : (!iWon && !isDraw && role === 'guest') ? 'text-green-400'
+                    : isDraw ? 'text-yellow-300' : 'text-white/70'
+                  }`}
+                    style={{ fontSize: 'clamp(3rem, 13vw, 5.5rem)' }}>
                     {room.hostSeriesScore}
                   </div>
+                  {(role === 'host' ? iWon : (!iWon && !isDraw)) && (
+                    <div className="mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 bg-green-500/10 border border-green-500/25">
+                      <span className="text-green-400 text-[9px] font-black tracking-widest uppercase">Winner</span>
+                    </div>
+                  )}
                 </div>
-                <div className="text-white/20 font-display text-2xl leading-none shrink-0">–</div>
-                <div className="text-center min-w-0 flex-1">
-                  <div className="text-[10px] font-black tracking-[0.15em] uppercase mb-1 truncate text-white/40">{room.guestName}</div>
-                  <div className={`font-display leading-none tabular-nums ${iWon && role === 'guest' ? 'win-shimmer-text animate-win-pop' : 'text-white'}`}
-                    style={{ fontSize: 'clamp(3.5rem, 14vw, 6rem)' }}>
+                {/* Divider */}
+                <div className="flex items-center justify-center px-2 shrink-0">
+                  <div className="text-white/15 font-display text-2xl leading-none">–</div>
+                </div>
+                {/* Guest side */}
+                <div className={`flex-1 min-w-0 px-4 py-5 text-center ${
+                  (role === 'guest' && iWon) || (role === 'host' && !iWon && !isDraw)
+                    ? 'bg-green-950/10'
+                    : ''
+                }`}>
+                  <div className={`text-[10px] font-black tracking-[0.15em] uppercase mb-1.5 truncate ${
+                    (role === 'guest' && iWon) || (role === 'host' && !iWon && !isDraw) ? 'text-white/50' : 'text-white/25'
+                  }`}>{room.guestName}</div>
+                  <div className={`font-display leading-none tabular-nums ${
+                    iWon && role === 'guest' ? 'win-shimmer-text animate-win-pop'
+                    : (!iWon && !isDraw && role === 'host') ? 'text-green-400'
+                    : isDraw ? 'text-yellow-300' : 'text-white/70'
+                  }`}
+                    style={{ fontSize: 'clamp(3rem, 13vw, 5.5rem)' }}>
                     {room.guestSeriesScore}
                   </div>
+                  {(role === 'guest' ? iWon : (!iWon && !isDraw)) && (
+                    <div className="mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 bg-green-500/10 border border-green-500/25">
+                      <span className="text-green-400 text-[9px] font-black tracking-widest uppercase">Winner</span>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="text-gray-600 text-[10px] font-black tracking-[0.18em] uppercase text-center mt-3">
-                Lower {STAT_CATEGORY_LABELS[room.statCategory] ?? 'stat'} total wins
+              <div className="border-t border-white/[0.05] text-white/20 text-[9px] font-black tracking-[0.2em] uppercase text-center py-2.5">
+                Lower {STAT_CATEGORY_LABELS[room.statCategory] ?? 'stat'} total wins each game
               </div>
             </div>
 
             {iWon && (
-              <div className="animate-fade-up-1 inline-flex items-center gap-2 bg-orange-950/40 border border-orange-600/40 rounded-full px-5 py-2 shadow-[0_0_20px_rgba(234,88,12,0.2)]">
+              <div className="animate-fade-up-2 inline-flex items-center gap-2 bg-orange-950/40 border border-orange-600/40 rounded-full px-5 py-2 shadow-[0_0_20px_rgba(234,88,12,0.2)]">
                 <span className="text-orange-300 text-xs font-black tracking-[0.18em] uppercase">Elite Ball Knowledge Confirmed</span>
-              </div>
-            )}
-            {!iWon && !isDraw && (
-              <div className="inline-flex items-center gap-2 bg-white/[0.03] border border-white/[0.07] rounded-full px-4 py-1.5">
-                <span className="text-gray-400 text-xs font-semibold">Study the pool and run it back</span>
               </div>
             )}
           </div>
@@ -689,35 +726,41 @@ function GameContent() {
 
           {/* Game-by-game breakdown */}
           {room.gameResults.length > 0 && (
-            <div className="card-surface rounded-2xl p-4 mb-4">
-              <div className="text-label tracking-[0.18em] mb-4">Game by Game</div>
-              <div className="space-y-2">
-                {room.gameResults.map(r => {
+            <div className="card-surface rounded-2xl p-4 mb-4 animate-fade-up-3">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-label tracking-[0.18em]">Game by Game</div>
+                <div className="text-label tabular-nums">
+                  {room.gameResults.filter(r => r.winner === role).length}–{room.gameResults.filter(r => r.winner !== role && r.winner !== 'draw').length}
+                  {room.gameResults.filter(r => r.winner === 'draw').length > 0 && (
+                    <span className="text-yellow-600 ml-1">({room.gameResults.filter(r => r.winner === 'draw').length}D)</span>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                {room.gameResults.map((r, idx) => {
                   const myTotal = role === 'host' ? r.hostTotal : r.guestTotal
                   const oppTotal = role === 'host' ? r.guestTotal : r.hostTotal
                   const gameWon = r.winner === role
                   const gameDraw = r.winner === 'draw'
                   return (
-                    <div key={r.game} className={`rounded-xl border transition-all overflow-hidden ${
-                      gameWon
-                        ? 'bg-green-950/25 border-green-800/40 shadow-[0_0_12px_rgba(34,197,94,0.06)]'
-                        : gameDraw
-                        ? 'bg-yellow-950/15 border-yellow-800/20'
-                        : 'bg-white/[0.02] border-white/[0.05]'
-                    }`}>
-                      <div className="flex items-center px-3 py-3 gap-3">
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 font-black text-xs ${
-                          gameWon ? 'bg-green-500/20 text-green-400' : gameDraw ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white/[0.05] text-gray-400'
+                    <div key={r.game}
+                      className={`rounded-xl border overflow-hidden animate-fade-up`}
+                      style={{ animationDelay: `${0.15 + idx * 0.06}s` }}>
+                      <div className={`flex items-center px-3 py-3 gap-3 ${
+                        gameWon ? 'bg-green-950/20 border-green-800/35' : gameDraw ? 'bg-yellow-950/15 border-yellow-800/20' : 'bg-white/[0.02] border-white/[0.05]'
+                      }`}>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-display text-sm leading-none ${
+                          gameWon ? 'bg-green-500/15 text-green-400 border border-green-500/20' : gameDraw ? 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/20' : 'bg-white/[0.04] text-gray-500 border border-white/[0.06]'
                         }`}>G{r.game}</div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className={`font-display text-2xl leading-none tabular-nums ${gameWon ? 'text-green-400' : 'text-white'}`}>{formatStat(myTotal, r.statMode)}</span>
-                            <span className="text-white/20 text-sm">–</span>
-                            <span className={`font-display text-2xl leading-none tabular-nums ${!gameWon && !gameDraw ? 'text-green-400' : 'text-white/50'}`}>{formatStat(oppTotal, r.statMode)}</span>
+                          <div className="flex items-baseline gap-2">
+                            <span className={`font-display text-2xl leading-none tabular-nums ${gameWon ? 'text-green-400' : isDraw ? 'text-yellow-300' : 'text-white'}`}>{formatStat(myTotal, r.statMode)}</span>
+                            <span className="text-white/15 text-sm">–</span>
+                            <span className={`font-display text-xl leading-none tabular-nums ${!gameWon && !gameDraw ? 'text-green-400' : 'text-white/35'}`}>{formatStat(oppTotal, r.statMode)}</span>
                           </div>
-                          <div className="text-white/25 text-[10px] tracking-wider uppercase mt-0.5 truncate">{STAT_LABELS[r.statMode]}</div>
+                          <div className="text-white/20 text-[9px] tracking-wider uppercase mt-0.5 truncate">{STAT_LABELS[r.statMode]}</div>
                         </div>
-                        <div className={`font-display text-2xl leading-none shrink-0 ${gameWon ? 'text-green-400' : gameDraw ? 'text-yellow-400' : 'text-red-400/80'}`}>
+                        <div className={`font-display text-2xl leading-none shrink-0 ${gameWon ? 'text-green-400' : gameDraw ? 'text-yellow-400' : 'text-red-400/60'}`}>
                           {gameWon ? 'W' : gameDraw ? 'D' : 'L'}
                         </div>
                       </div>
@@ -802,10 +845,10 @@ function GameContent() {
                 </div>
               )}
 
-              <div className="card-stat rounded-2xl p-4 mb-4">
-                <div className="flex justify-between items-center mb-4">
+              <div className="card-stat rounded-2xl p-4 mb-4 animate-fade-up-4">
+                <div className="flex flex-wrap items-center justify-between gap-1.5 mb-4">
                   <h2 className="text-label tracking-[0.18em]">Draft Recap — Game {lastGame.game}</h2>
-                  <span className="text-orange-400/60 text-[10px] font-black uppercase tracking-wider">{STAT_LABELS[lastGame.statMode]}</span>
+                  <span className="text-orange-400/60 text-[10px] font-black uppercase tracking-wider shrink-0">{STAT_LABELS[lastGame.statMode]}</span>
                 </div>
                 {/* ESPN-style column headers */}
                 <div className="grid grid-cols-[1fr_auto_1fr] gap-1 mb-3">
@@ -865,29 +908,31 @@ function GameContent() {
           </div>{/* end lg:grid */}
 
           {/* CTA — differentiate win vs loss */}
+          <div className="animate-fade-up-5 mt-5">
           {iWon ? (
-            <div className="flex flex-col sm:flex-row gap-3 mt-4">
-              <button onClick={() => router.push('/lobby')} className="btn-primary flex-1 py-4 text-base font-display tracking-widest">
+            <div className="flex flex-col gap-2.5">
+              <button onClick={() => router.push('/lobby')} className="btn-primary w-full py-4 text-base font-display tracking-widest">
                 Play Again
               </button>
-              <button onClick={() => router.push('/lobby')} className="btn-secondary flex-1 py-4 text-sm font-black uppercase tracking-widest">
+              <button onClick={() => router.push('/lobby')} className="btn-secondary w-full py-4 text-sm font-black uppercase tracking-widest">
                 Find New Opponent
               </button>
             </div>
           ) : isDraw ? (
-            <button onClick={() => router.push('/lobby')} className="btn-primary w-full mt-4 py-4 text-base font-display tracking-widest">
+            <button onClick={() => router.push('/lobby')} className="btn-primary w-full py-4 text-base font-display tracking-widest">
               Rematch
             </button>
           ) : (
-            <div className="flex flex-col sm:flex-row gap-3 mt-4">
-              <button onClick={() => router.push('/lobby')} className="btn-primary flex-1 py-4 text-base font-display tracking-widest">
+            <div className="flex flex-col gap-2.5">
+              <button onClick={() => router.push('/lobby')} className="btn-primary w-full py-4 text-base font-display tracking-widest">
                 Rematch
               </button>
-              <button onClick={() => router.push('/practice')} className="btn-secondary flex-1 py-4 text-sm font-black uppercase tracking-widest">
+              <button onClick={() => router.push('/practice')} className="btn-secondary w-full py-4 text-sm font-black uppercase tracking-widest">
                 Practice Draft
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
     )
@@ -991,9 +1036,9 @@ function GameContent() {
           )}
 
           {/* Stat explanation */}
-          <div className="card-surface rounded-xl px-4 py-2.5 mb-4 text-center">
-            <div className="text-gray-300 text-sm">Lower total <span className="text-orange-400 font-black">{STAT_LABELS[effectiveLastResult.statMode]}</span> wins</div>
-            <div className="text-gray-400 text-xs mt-0.5">Add up every player&apos;s career {effectiveLastResult.statMode === 'games_played' ? 'games played' : effectiveLastResult.statMode.toUpperCase()} — lowest team total takes the game</div>
+          <div className="card-surface rounded-xl px-4 py-3 mb-4 text-center">
+            <div className="text-gray-300 text-sm leading-snug">Lower total <span className="text-orange-400 font-black">{STAT_LABELS[effectiveLastResult.statMode]}</span> wins</div>
+            <div className="text-gray-500 text-[11px] mt-1 leading-relaxed">Lowest team total takes the game</div>
           </div>
 
           {/* Score cards */}
@@ -1031,9 +1076,9 @@ function GameContent() {
           {/* RIGHT col: Draft Recap */}
           <div>
           <div className="card-stat rounded-2xl p-4 mb-4">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-1.5 mb-4">
               <h2 className="text-label tracking-[0.18em]">Draft Recap — Game {effectiveLastResult.game}</h2>
-              <span className="text-orange-400/60 text-[10px] font-black uppercase tracking-wider">{STAT_LABELS[effectiveLastResult.statMode]}</span>
+              <span className="text-orange-400/60 text-[10px] font-black uppercase tracking-wider shrink-0">{STAT_LABELS[effectiveLastResult.statMode]}</span>
             </div>
             {/* Column headers */}
             <div className="grid grid-cols-[1fr_auto_1fr] gap-1 mb-3">
