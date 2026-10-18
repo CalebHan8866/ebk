@@ -12,12 +12,17 @@ export async function POST(request: NextRequest) {
     const ip = (request.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
     const loadTestSecret = request.headers.get('x-load-test-secret')
     const isLoadTest = !!process.env.DEV_SECRET && loadTestSecret === process.env.DEV_SECRET
-    if (!isLoadTest) {
-      const { success } = rateLimit(`login:${ip}`, 10, 15 * 60 * 1000) // 10 attempts per 15 min
-      if (!success) return NextResponse.json({ error: 'Too many login attempts. Try again in 15 minutes.' }, { status: 429 })
-    }
-
     const { email, password } = await request.json()
+
+    if (!isLoadTest) {
+      const { success: ipOk } = rateLimit(`login:${ip}`, 10, 15 * 60 * 1000) // 10 attempts per IP per 15 min
+      if (!ipOk) return NextResponse.json({ error: 'Too many login attempts. Try again in 15 minutes.' }, { status: 429 })
+      // Per-account rate limit — prevents distributed brute-force from multiple IPs targeting one account
+      if (email && typeof email === 'string' && email.length <= 254) {
+        const { success: emailOk } = rateLimit(`login:email:${email.toLowerCase()}`, 5, 15 * 60 * 1000) // 5 attempts per account per 15 min
+        if (!emailOk) return NextResponse.json({ error: 'Too many login attempts. Try again in 15 minutes.' }, { status: 429 })
+      }
+    }
     if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
