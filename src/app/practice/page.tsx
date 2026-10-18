@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { CURRENT_TEAMS, getCurrentTeam } from '@/lib/teams'
 import { type TeamMode, type Difficulty, type Player, TEAM_SIZES, getRequiredPositions } from '@/types/game'
 
@@ -771,6 +772,21 @@ function PracticeContent() {
           <button onClick={reset} className="btn-primary flex-1">
             Change Settings
           </button>
+        </div>
+
+        {/* Explore More */}
+        <div className="pb-16 sm:pb-8">
+          <p className="text-center text-xs font-bold text-gray-500 tracking-[0.2em] uppercase mb-3">Explore More</p>
+          <div className="grid grid-cols-2 gap-3">
+            <Link href="/fun-facts" className="card-surface p-4 hover:border-orange-700/40 hover:bg-orange-950/10 transition-all group rounded-xl">
+              <p className="font-black text-white text-sm mb-1 group-hover:text-orange-300 transition-colors">Fun Facts</p>
+              <p className="text-gray-500 text-xs leading-relaxed">NBA earnings in wild perspective</p>
+            </Link>
+            <Link href="/higher-lower" className="card-surface p-4 hover:border-orange-700/40 hover:bg-orange-950/10 transition-all group rounded-xl">
+              <p className="font-black text-white text-sm mb-1 group-hover:text-orange-300 transition-colors">Higher or Lower</p>
+              <p className="text-gray-500 text-xs leading-relaxed">Guess which player had the higher stat</p>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

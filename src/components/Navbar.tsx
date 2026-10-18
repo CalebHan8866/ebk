@@ -63,6 +63,7 @@ export default function Navbar() {
             {navLink('/lobby', 'Play')}
             {navLink('/leaderboard', 'Leaderboard')}
             {navLink('/fun-facts', 'Fun Facts')}
+            {navLink('/salary', 'Salary')}
           </div>
 
           {/* Right: auth section */}

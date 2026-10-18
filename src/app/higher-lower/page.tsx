@@ -583,6 +583,21 @@ export default function HigherLowerPage() {
         )}
 
       </div>
+
+      {/* Explore More */}
+      <div className="max-w-2xl mx-auto px-4 pb-16 sm:pb-8">
+        <p className="text-center text-xs font-bold text-gray-500 tracking-[0.2em] uppercase mb-3">Explore More</p>
+        <div className="grid grid-cols-2 gap-3">
+          <Link href="/fun-facts" className="card-surface p-4 hover:border-orange-700/40 hover:bg-orange-950/10 transition-all group rounded-xl">
+            <p className="font-black text-white text-sm mb-1 group-hover:text-orange-300 transition-colors">Fun Facts</p>
+            <p className="text-gray-500 text-xs leading-relaxed">NBA earnings in wild perspective</p>
+          </Link>
+          <Link href="/salary" className="card-surface p-4 hover:border-orange-700/40 hover:bg-orange-950/10 transition-all group rounded-xl">
+            <p className="font-black text-white text-sm mb-1 group-hover:text-orange-300 transition-colors">Salary Rankings</p>
+            <p className="text-gray-500 text-xs leading-relaxed">Who got paid most in NBA history</p>
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }

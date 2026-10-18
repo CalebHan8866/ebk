@@ -153,37 +153,69 @@ export default function Home() {
       {/* ── EXPLORE ──────────────────────────────────────────────────── */}
       <div className="max-w-3xl mx-auto px-4 pb-16">
         <p className="text-center text-label mb-8 tracking-[0.25em]">Explore</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
 
           {/* Fun Facts */}
           <Link href="/fun-facts"
-            className="card-surface explore-card p-6 hover:border-orange-700/50 hover:bg-orange-950/10 transition-all group">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="explore-icon-wrap w-11 h-11 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0 transition-all group-hover:bg-orange-500/20 group-hover:border-orange-500/40">
+            className="card-surface explore-card p-4 hover:border-orange-700/50 hover:bg-orange-950/10 transition-all group rounded-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="explore-icon-wrap w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0 transition-all group-hover:bg-orange-500/20 group-hover:border-orange-500/40">
                 <span className="font-display text-xl text-orange-400 leading-none">$</span>
               </div>
-              <h3 className="font-black text-white text-base tracking-wide group-hover:text-orange-300 transition-colors">Fun Facts</h3>
+              <h3 className="font-black text-white text-sm tracking-wide group-hover:text-orange-300 transition-colors">Fun Facts</h3>
             </div>
-            <p className="text-gray-400 text-sm leading-relaxed">See every NBA player&apos;s career earnings put in wild perspective — houses, iPhones, lobster dinners, and more.</p>
-            <div className="mt-4 flex items-center gap-1.5 text-orange-500/60 group-hover:text-orange-400 transition-colors">
-              <span className="text-xs font-bold tracking-wider uppercase">Explore</span>
-              <svg className="w-3 h-3 translate-x-0 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+            <p className="text-gray-400 text-xs leading-relaxed">See every NBA player&apos;s career earnings in wild perspective</p>
+            <div className="mt-3 flex items-center gap-1 text-orange-500/60 group-hover:text-orange-400 transition-colors">
+              <span className="text-[10px] font-bold tracking-wider uppercase">Explore</span>
+              <svg className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </div>
+          </Link>
+
+          {/* Salary Rankings */}
+          <Link href="/salary"
+            className="card-surface explore-card p-4 hover:border-orange-700/50 hover:bg-orange-950/10 transition-all group rounded-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="explore-icon-wrap w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0 transition-all group-hover:bg-orange-500/20 group-hover:border-orange-500/40">
+                <span className="font-display text-xl text-orange-400 leading-none">#</span>
+              </div>
+              <h3 className="font-black text-white text-sm tracking-wide group-hover:text-orange-300 transition-colors">Salary Rankings</h3>
+            </div>
+            <p className="text-gray-400 text-xs leading-relaxed">Career earnings ranked — who got paid and who earned it?</p>
+            <div className="mt-3 flex items-center gap-1 text-orange-500/60 group-hover:text-orange-400 transition-colors">
+              <span className="text-[10px] font-bold tracking-wider uppercase">Explore</span>
+              <svg className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
             </div>
           </Link>
 
           {/* Higher or Lower */}
           <Link href="/higher-lower"
-            className="card-surface explore-card p-6 hover:border-orange-700/50 hover:bg-orange-950/10 transition-all group">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="explore-icon-wrap w-11 h-11 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0 transition-all group-hover:bg-orange-500/20 group-hover:border-orange-500/40">
+            className="card-surface explore-card p-4 hover:border-orange-700/50 hover:bg-orange-950/10 transition-all group rounded-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="explore-icon-wrap w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0 transition-all group-hover:bg-orange-500/20 group-hover:border-orange-500/40">
                 <span className="font-display text-xl text-orange-400 leading-none">?</span>
               </div>
-              <h3 className="font-black text-white text-base tracking-wide group-hover:text-orange-300 transition-colors">Higher or Lower</h3>
+              <h3 className="font-black text-white text-sm tracking-wide group-hover:text-orange-300 transition-colors">Higher or Lower</h3>
             </div>
-            <p className="text-gray-400 text-sm leading-relaxed">Guess which player had the higher stat. Streak-based — how far can you go?</p>
-            <div className="mt-4 flex items-center gap-1.5 text-orange-500/60 group-hover:text-orange-400 transition-colors">
-              <span className="text-xs font-bold tracking-wider uppercase">Play</span>
-              <svg className="w-3 h-3 translate-x-0 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+            <p className="text-gray-400 text-xs leading-relaxed">Guess which player had the higher stat. How far can you go?</p>
+            <div className="mt-3 flex items-center gap-1 text-orange-500/60 group-hover:text-orange-400 transition-colors">
+              <span className="text-[10px] font-bold tracking-wider uppercase">Play</span>
+              <svg className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </div>
+          </Link>
+
+          {/* Practice */}
+          <Link href="/practice"
+            className="card-surface explore-card p-4 hover:border-orange-700/50 hover:bg-orange-950/10 transition-all group rounded-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="explore-icon-wrap w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0 transition-all group-hover:bg-orange-500/20 group-hover:border-orange-500/40">
+                <span className="font-display text-xl text-orange-400 leading-none">▶</span>
+              </div>
+              <h3 className="font-black text-white text-sm tracking-wide group-hover:text-orange-300 transition-colors">Practice</h3>
+            </div>
+            <p className="text-gray-400 text-xs leading-relaxed">Solo draft practice — test your EBK knowledge before going live</p>
+            <div className="mt-3 flex items-center gap-1 text-orange-500/60 group-hover:text-orange-400 transition-colors">
+              <span className="text-[10px] font-bold tracking-wider uppercase">Play</span>
+              <svg className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
             </div>
           </Link>
 
