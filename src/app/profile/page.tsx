@@ -276,14 +276,17 @@ export default function ProfilePage() {
       <div className="max-w-3xl mx-auto">
 
         {/* Page header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-start justify-between mb-6 gap-4">
           <div>
-            <h1 className="font-display text-5xl text-orange-500 leading-none tracking-wide">PROFILE</h1>
-            <p className="text-gray-400 text-[11px] tracking-[0.18em] uppercase mt-1.5">
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-orange-500/70 mb-2">Player Card</p>
+            <h1 className="font-display text-6xl sm:text-7xl text-white leading-none tracking-wide">
+              PRO<span className="text-orange-500">FILE</span>
+            </h1>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-600 mt-2">
               Since {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
             </p>
           </div>
-          <Link href="/lobby" className="btn-secondary py-2 px-4 text-xs">← Lobby</Link>
+          <Link href="/lobby" className="btn-secondary py-2 px-4 text-xs shrink-0 mt-1">← Lobby</Link>
         </div>
 
         {/* Tab nav — uses design-system tab-pill */}
@@ -308,34 +311,47 @@ export default function ProfilePage() {
         <div className="space-y-6">
 
           {/* ── Always-visible identity hero ── */}
-          <div className="profile-hero p-5 sm:p-8">
-            {/* Mobile: avatar centered on top, info below. sm+: row layout */}
+          <div className="profile-hero p-5 sm:p-7">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-              {/* Avatar + win rate — side by side on mobile */}
-              <div className="flex items-center gap-4 sm:contents">
-                <div className={`relative w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-orange-500 to-orange-700 rounded-full flex items-center justify-center shrink-0 shadow-2xl shadow-orange-900/60 ${
-                  user.winStreak >= 5 ? 'avatar-hot' : user.winStreak >= 2 ? 'avatar-win' : ''
-                }`}>
-                  <span className="font-display text-4xl sm:text-5xl text-white leading-none drop-shadow-lg">
-                    {user.username[0].toUpperCase()}
-                  </span>
-                  {/* Streak flame badge */}
+              {/* Avatar column */}
+              <div className="flex items-center gap-4 sm:block">
+                <div className="relative shrink-0">
+                  <div className={`w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-orange-500 to-orange-700 rounded-full flex items-center justify-center shadow-2xl shadow-orange-900/60 ${
+                    user.winStreak >= 5 ? 'avatar-hot' : user.winStreak >= 2 ? 'avatar-win' : ''
+                  }`}>
+                    <span className="font-display text-4xl sm:text-5xl text-white leading-none drop-shadow-lg">
+                      {user.username[0].toUpperCase()}
+                    </span>
+                  </div>
                   {user.winStreak >= 3 && (
-                    <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-orange-500 rounded-full border-2 border-[#111118] flex items-center justify-center">
-                      <span className="text-[11px] font-black text-white leading-none">{user.winStreak}</span>
+                    <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-orange-500 rounded-full border-2 border-[#111118] flex items-center justify-center shadow-lg shadow-orange-900/50">
+                      <span className="text-[10px] font-black text-white leading-none">{user.winStreak}</span>
                     </div>
                   )}
                 </div>
-                {/* Win% — visible beside avatar on mobile, far right on sm+ */}
-                <div className="text-center sm:hidden shrink-0 ml-auto">
-                  <div className="font-display text-4xl text-orange-400 leading-none">{winPct}%</div>
+                {/* Win% — mobile only, right of avatar */}
+                <div className="sm:hidden text-center ml-auto shrink-0">
+                  <div className={`font-display text-4xl leading-none tabular-nums ${winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-orange-400' : 'text-red-400'}`}>{winPct}%</div>
                   <div className="text-label mt-1">Win Rate</div>
                 </div>
               </div>
+
+              {/* Name / email / badges */}
               <div className="flex-1 min-w-0">
                 <h2 className="font-display text-3xl sm:text-4xl text-white leading-none tracking-wider truncate">{user.username.toUpperCase()}</h2>
-                <p className="text-label mt-2 truncate">{user.email}</p>
-                {/* Equipped badges row */}
+                <p className="text-[11px] text-gray-600 font-bold mt-1.5 truncate tracking-wide">{user.email}</p>
+
+                {/* Tier pill */}
+                {(() => {
+                  const w = user.wins
+                  if (w >= 100) return <div className="inline-flex items-center gap-1.5 mt-2 bg-yellow-950/60 border border-yellow-700/50 rounded-full px-3 py-1"><span className="text-yellow-400 text-[11px] font-black tracking-wider uppercase">Legend</span></div>
+                  if (w >= 50)  return <div className="inline-flex items-center gap-1.5 mt-2 bg-purple-950/60 border border-purple-700/50 rounded-full px-3 py-1"><span className="text-purple-400 text-[11px] font-black tracking-wider uppercase">Elite</span></div>
+                  if (w >= 25)  return <div className="inline-flex items-center gap-1.5 mt-2 bg-blue-950/60 border border-blue-700/50 rounded-full px-3 py-1"><span className="text-blue-400 text-[11px] font-black tracking-wider uppercase">Veteran</span></div>
+                  if (w >= 10)  return <div className="inline-flex items-center gap-1.5 mt-2 bg-green-950/60 border border-green-800/50 rounded-full px-3 py-1"><span className="text-green-400 text-[11px] font-black tracking-wider uppercase">Baller</span></div>
+                  return <div className="inline-flex items-center gap-1.5 mt-2 bg-white/[0.04] border border-white/10 rounded-full px-3 py-1"><span className="text-gray-400 text-[11px] font-black tracking-wider uppercase">Rookie</span></div>
+                })()}
+
+                {/* Equipped badges */}
                 {equippedBadges.length > 0 && (
                   <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                     {equippedBadges.map(id => {
@@ -349,6 +365,8 @@ export default function ProfilePage() {
                     })}
                   </div>
                 )}
+
+                {/* Active streak pill */}
                 {user.winStreak >= 2 && (
                   <div className="inline-flex items-center gap-1.5 mt-2 bg-orange-950/50 border border-orange-800/40 rounded-full px-3 py-1">
                     <span className="live-dot shrink-0" style={{ width: 5, height: 5 }} />
@@ -356,26 +374,27 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
-              {/* Win% + W-L — hidden on mobile (shown above), visible on sm+ */}
-              <div className="hidden sm:flex flex-col items-end gap-2 shrink-0">
-                <div className="text-center">
-                  <div className="font-display text-4xl text-orange-400 leading-none">{winPct}%</div>
-                  <div className="text-label mt-1">Win Rate</div>
+
+              {/* Win% + W-L-D — desktop right column */}
+              <div className="hidden sm:flex flex-col items-end gap-3 shrink-0">
+                <div className="text-right">
+                  <div className={`font-display text-5xl leading-none tabular-nums ${winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-orange-400' : 'text-red-400'}`}>{winPct}%</div>
+                  <div className="text-label mt-1 text-right">Win Rate</div>
                 </div>
-                <div className="flex items-center gap-3 text-center">
-                  <div>
-                    <div className="font-display text-2xl text-green-400 leading-none">{user.wins}</div>
-                    <div className="text-label" style={{ fontSize: '9px' }}>W</div>
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <div className="font-display text-2xl text-green-400 leading-none tabular-nums">{user.wins}</div>
+                    <div className="text-[9px] font-black uppercase tracking-[0.1em] text-green-400/50 mt-0.5">W</div>
                   </div>
-                  <div className="text-white/20 text-lg">·</div>
-                  <div>
-                    <div className="font-display text-2xl text-red-400 leading-none">{user.losses}</div>
-                    <div className="text-label" style={{ fontSize: '9px' }}>L</div>
+                  <div className="w-px h-6 bg-white/[0.08]" />
+                  <div className="text-center">
+                    <div className="font-display text-2xl text-red-400 leading-none tabular-nums">{user.losses}</div>
+                    <div className="text-[9px] font-black uppercase tracking-[0.1em] text-red-400/50 mt-0.5">L</div>
                   </div>
-                  <div className="text-white/20 text-lg">·</div>
-                  <div>
-                    <div className="font-display text-2xl text-yellow-400 leading-none">{user.draws}</div>
-                    <div className="text-label" style={{ fontSize: '9px' }}>D</div>
+                  <div className="w-px h-6 bg-white/[0.08]" />
+                  <div className="text-center">
+                    <div className="font-display text-2xl text-yellow-400 leading-none tabular-nums">{user.draws}</div>
+                    <div className="text-[9px] font-black uppercase tracking-[0.1em] text-yellow-400/50 mt-0.5">D</div>
                   </div>
                 </div>
               </div>
@@ -387,46 +406,46 @@ export default function ProfilePage() {
 
           {/* Career stats — card-stat for maximum number contrast */}
           <div className="card-stat p-6">
-            <h3 className="text-label mb-5 tracking-[0.18em]">Career Overview</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 mb-5">Career Overview</h3>
 
             {/* Primary W-L-D trio — big and bold with stronger visual hierarchy */}
             <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="rounded-xl py-5 text-center bg-gradient-to-b from-green-950/60 to-green-950/20 border border-green-700/40 shadow-[0_2px_12px_rgba(34,197,94,0.08)]">
-                <div className="font-display text-5xl text-green-400 leading-none animate-fade-up">{user.wins}</div>
-                <div className="text-label mt-2 text-green-400/60">Wins</div>
+              <div className="rounded-2xl py-5 text-center bg-gradient-to-b from-green-950/70 to-green-950/20 border border-green-700/40 shadow-[0_2px_16px_rgba(34,197,94,0.08)] animate-fade-up">
+                <div className="font-display text-5xl sm:text-6xl text-green-400 leading-none tabular-nums">{user.wins}</div>
+                <div className="text-[10px] font-black uppercase tracking-[0.14em] text-green-400/50 mt-2">Wins</div>
               </div>
-              <div className="rounded-xl py-5 text-center bg-gradient-to-b from-red-950/40 to-transparent border border-red-900/30 shadow-[0_2px_12px_rgba(239,68,68,0.06)]">
-                <div className="font-display text-5xl text-red-400 leading-none animate-fade-up-1">{user.losses}</div>
-                <div className="text-label mt-2 text-red-400/50">Losses</div>
+              <div className="rounded-2xl py-5 text-center bg-gradient-to-b from-red-950/50 to-transparent border border-red-900/30 shadow-[0_2px_12px_rgba(239,68,68,0.06)] animate-fade-up-1">
+                <div className="font-display text-5xl sm:text-6xl text-red-400 leading-none tabular-nums">{user.losses}</div>
+                <div className="text-[10px] font-black uppercase tracking-[0.14em] text-red-400/50 mt-2">Losses</div>
               </div>
-              <div className="rounded-xl py-5 text-center bg-gradient-to-b from-yellow-950/40 to-transparent border border-yellow-900/25 shadow-[0_2px_12px_rgba(234,179,8,0.06)]">
-                <div className="font-display text-5xl text-yellow-400 leading-none animate-fade-up-2">{user.draws}</div>
-                <div className="text-label mt-2 text-yellow-400/50">Draws</div>
+              <div className="rounded-2xl py-5 text-center bg-gradient-to-b from-yellow-950/50 to-transparent border border-yellow-900/25 shadow-[0_2px_12px_rgba(234,179,8,0.06)] animate-fade-up-2">
+                <div className="font-display text-5xl sm:text-6xl text-yellow-400 leading-none tabular-nums">{user.draws}</div>
+                <div className="text-[10px] font-black uppercase tracking-[0.14em] text-yellow-400/50 mt-2">Draws</div>
               </div>
             </div>
 
             {/* Secondary stats row */}
             <div className="grid grid-cols-3 gap-2 mb-5">
-              <div className="text-center py-3 bg-white/[0.025] rounded-xl border border-white/[0.05]">
+              <div className="text-center py-3.5 bg-white/[0.025] rounded-xl border border-white/[0.05]">
                 <div className="font-display text-3xl text-gray-300 leading-none tabular-nums">{user.gamesPlayed}</div>
-                <div className="text-label mt-1.5">Played</div>
+                <div className="text-[9px] font-black uppercase tracking-[0.12em] text-gray-600 mt-1.5">Played</div>
               </div>
-              <div className={`text-center py-3 rounded-xl border transition-colors ${user.winStreak >= 3 ? 'bg-orange-950/30 border-orange-700/40 shadow-[0_0_12px_rgba(249,115,22,0.1)]' : 'bg-white/[0.025] border-white/[0.05]'}`}>
-                <div className={`font-display text-3xl leading-none tabular-nums ${user.winStreak >= 3 ? 'text-orange-400' : 'text-gray-400'}`}>
+              <div className={`text-center py-3.5 rounded-xl border transition-colors ${user.winStreak >= 3 ? 'bg-orange-950/40 border-orange-700/40 shadow-[0_0_14px_rgba(249,115,22,0.12)]' : 'bg-white/[0.025] border-white/[0.05]'}`}>
+                <div className={`font-display text-3xl leading-none tabular-nums ${user.winStreak >= 3 ? 'text-orange-400' : 'text-gray-500'}`}>
                   {user.winStreak >= 3 ? `🔥${user.winStreak}` : user.winStreak}
                 </div>
-                <div className="text-label mt-1.5">Streak</div>
+                <div className={`text-[9px] font-black uppercase tracking-[0.12em] mt-1.5 ${user.winStreak >= 3 ? 'text-orange-500/50' : 'text-gray-600'}`}>Streak</div>
               </div>
-              <div className="text-center py-3 bg-white/[0.025] rounded-xl border border-white/[0.05]">
+              <div className="text-center py-3.5 bg-white/[0.025] rounded-xl border border-white/[0.05]">
                 <div className="font-display text-3xl text-orange-300 leading-none tabular-nums">{user.maxWinStreak}</div>
-                <div className="text-label mt-1.5">Best Streak</div>
+                <div className="text-[9px] font-black uppercase tracking-[0.12em] text-gray-600 mt-1.5">Best</div>
               </div>
             </div>
 
             {/* Win rate progress bar */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-label tracking-[0.14em]">Win Rate</span>
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-[10px] font-black uppercase tracking-[0.14em] text-gray-600">Win Rate</span>
                 <span className={`font-display text-xl leading-none tabular-nums ${winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-white' : 'text-red-400'}`}>{winPct}%</span>
               </div>
               <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
@@ -435,10 +454,10 @@ export default function ProfilePage() {
                   style={{ width: `${winPctNum}%` }}
                 />
               </div>
-              <div className="flex justify-between mt-1">
-                <span className="text-[9px] text-gray-700">0%</span>
-                <span className="text-[9px] text-gray-700">50%</span>
-                <span className="text-[9px] text-gray-700">100%</span>
+              <div className="flex justify-between mt-1.5">
+                <span className="text-[9px] text-gray-700 font-bold tabular-nums">0%</span>
+                <span className="text-[9px] text-gray-700 font-bold tabular-nums">50%</span>
+                <span className="text-[9px] text-gray-700 font-bold tabular-nums">100%</span>
               </div>
             </div>
 
@@ -457,20 +476,20 @@ export default function ProfilePage() {
           </div>
 
           {/* History quick-link */}
-          <div className="card-surface p-4 flex items-center justify-between rounded-xl hover:border-orange-700/30 transition-colors group">
+          <Link href="/history" className="card-surface p-4 flex items-center justify-between rounded-xl hover:border-orange-600/40 hover:bg-orange-950/10 transition-all group cursor-pointer block">
             <div>
-              <div className="font-black text-white text-sm group-hover:text-orange-300 transition-colors">Game History</div>
-              <div className="text-gray-400 text-xs mt-0.5">See every match result</div>
+              <div className="font-display text-xl text-white group-hover:text-orange-300 transition-colors tracking-wide leading-none">Game History</div>
+              <div className="text-[11px] text-gray-500 mt-1 font-bold">See every match result</div>
             </div>
-            <Link href="/history" className="text-orange-400 text-sm font-black hover:text-orange-300 transition-colors group-hover:translate-x-0.5 transition-transform">View →</Link>
-          </div>
+            <span className="text-orange-500 text-lg font-black group-hover:translate-x-1 transition-transform leading-none">→</span>
+          </Link>
 
           </>}
 
           {/* ── Stats tab ── */}
           {activeTab === 'stats' && <>
           <div className="card-stat p-6">
-            <h3 className="text-label mb-5 tracking-[0.18em]">Performance Breakdown</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 mb-5">Performance Breakdown</h3>
 
             {/* Win / Loss / Draw trio */}
             <div className="grid grid-cols-3 gap-3 mb-4">
@@ -533,7 +552,7 @@ export default function ProfilePage() {
 
           {/* Performance insights */}
           <div className="card-surface p-6">
-            <h3 className="font-display text-xl text-white tracking-wider leading-none mb-4">Insights</h3>
+            <h3 className="font-display text-2xl text-white tracking-wider leading-none mb-4">Insights</h3>
             <div className="space-y-3">
               {/* Games to win ratio */}
               <div className="flex items-center justify-between py-2.5 border-b border-white/[0.05]">
@@ -564,14 +583,14 @@ export default function ProfilePage() {
 
             {/* Tier badge */}
             <div className="mt-5 pt-4 border-t border-white/[0.06]">
-              <div className="text-label mb-2">Tier</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-gray-600 mb-2.5">Tier</div>
               {(() => {
                 const w = user.wins
-                if (w >= 100) return <div className="inline-flex items-center gap-2 bg-yellow-950 border border-yellow-700/50 rounded-full px-4 py-1.5"><span className="text-yellow-400 text-sm font-black">👑 Legend · {w}W</span></div>
-                if (w >= 50)  return <div className="inline-flex items-center gap-2 bg-purple-950 border border-purple-700/50 rounded-full px-4 py-1.5"><span className="text-purple-400 text-sm font-black">💎 Elite · {w}W</span></div>
-                if (w >= 25)  return <div className="inline-flex items-center gap-2 bg-blue-950 border border-blue-700/50 rounded-full px-4 py-1.5"><span className="text-blue-400 text-sm font-black">⚡ Veteran · {w}W</span></div>
-                if (w >= 10)  return <div className="inline-flex items-center gap-2 bg-green-950 border border-green-800/50 rounded-full px-4 py-1.5"><span className="text-green-400 text-sm font-black">🏀 Baller · {w}W</span></div>
-                return <div className="inline-flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-full px-4 py-1.5"><span className="text-gray-400 text-sm font-black">🌱 Rookie · {w}W</span></div>
+                if (w >= 100) return <div className="inline-flex items-center gap-2 bg-yellow-950/70 border border-yellow-700/50 rounded-full px-4 py-2"><span className="text-yellow-400 text-sm font-black tracking-wide">Legend</span><span className="text-yellow-700 text-xs font-bold tabular-nums">{w}W</span></div>
+                if (w >= 50)  return <div className="inline-flex items-center gap-2 bg-purple-950/70 border border-purple-700/50 rounded-full px-4 py-2"><span className="text-purple-400 text-sm font-black tracking-wide">Elite</span><span className="text-purple-700 text-xs font-bold tabular-nums">{w}W</span></div>
+                if (w >= 25)  return <div className="inline-flex items-center gap-2 bg-blue-950/70 border border-blue-700/50 rounded-full px-4 py-2"><span className="text-blue-400 text-sm font-black tracking-wide">Veteran</span><span className="text-blue-700 text-xs font-bold tabular-nums">{w}W</span></div>
+                if (w >= 10)  return <div className="inline-flex items-center gap-2 bg-green-950/70 border border-green-800/50 rounded-full px-4 py-2"><span className="text-green-400 text-sm font-black tracking-wide">Baller</span><span className="text-green-800 text-xs font-bold tabular-nums">{w}W</span></div>
+                return <div className="inline-flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-full px-4 py-2"><span className="text-gray-400 text-sm font-black tracking-wide">Rookie</span><span className="text-gray-600 text-xs font-bold tabular-nums">{w}W</span></div>
               })()}
             </div>
           </div>
@@ -585,29 +604,35 @@ export default function ProfilePage() {
           {activeTab === 'badges' && <>
           {/* Badges */}
           <div className="card-surface p-6">
-            <h2 className="font-display text-2xl text-white tracking-wider leading-none mb-1">Badges</h2>
-            <p className="text-gray-400 text-xs mb-5">Badges are a mystery — keep playing to discover them. Tap to equip up to 3.</p>
+            <div className="flex items-baseline justify-between mb-1">
+              <h2 className="font-display text-2xl text-white tracking-wider leading-none">Badges</h2>
+              <span className="text-[10px] font-black uppercase tracking-[0.14em] text-gray-600">
+                {equippedBadges.length}/3 equipped
+              </span>
+            </div>
+            <p className="text-gray-500 text-xs mb-5">Badges are a mystery — keep playing to discover them. Tap to equip up to 3.</p>
 
             {/* Equipped badge slots */}
-            <div className="flex gap-3 mb-5">
+            <div className="flex gap-2.5 mb-6">
               {[0, 1, 2].map(slot => {
                 const badgeId = equippedBadges[slot]
                 const badge = badgeId ? BADGES.find(b => b.id === badgeId) : null
                 return (
                   <div key={slot} className={[
-                    'flex-1 rounded-xl border-2 border-dashed h-20 flex flex-col items-center justify-center transition-all',
-                    badge ? `${badge.bgClass} ${badge.borderClass} border-solid` : 'border-white/10 bg-white/[0.02]',
+                    'flex-1 rounded-xl border-2 border-dashed h-20 flex flex-col items-center justify-center gap-1 transition-all',
+                    badge ? `${badge.bgClass} ${badge.borderClass} border-solid shadow-sm` : 'border-white/[0.08] bg-white/[0.015]',
                   ].join(' ')}>
                     {badge ? (
-                      <div className="relative group flex flex-col items-center">
+                      <div className="relative group flex flex-col items-center gap-1">
                         <img src={badge.icon} alt={badge.name} className="w-8 h-8" loading="lazy" />
+                        <span className={`text-[8px] font-black uppercase tracking-[0.1em] leading-none ${badge.textClass}`}>{badge.label}</span>
                         <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[160px] rounded-lg bg-[#111118] border border-white/[0.1] px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50">
                           <div className="text-white text-xs font-black mb-0.5">{badge.name}</div>
                           <div className="text-gray-400 text-[11px] leading-snug">{badge.description}</div>
                         </div>
                       </div>
                     ) : (
-                      <span className="text-label">slot {slot + 1}</span>
+                      <span className="text-[9px] font-black uppercase tracking-[0.1em] text-white/[0.12]">Slot {slot + 1}</span>
                     )}
                   </div>
                 )
@@ -771,17 +796,18 @@ export default function ProfilePage() {
           {activeTab === 'milestones' && <>
           {/* Milestones */}
           <div className="card-surface p-6">
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-start justify-between mb-1 gap-2">
               <h2 className="font-display text-2xl text-white tracking-wider leading-none">Milestones</h2>
-              <span className="text-label">
-                {unlockedMilestoneIds.length} / {MILESTONES.length}
-              </span>
+              <div className="text-right shrink-0">
+                <span className="font-display text-2xl text-orange-400 leading-none tabular-nums">{unlockedMilestoneIds.length}</span>
+                <span className="text-gray-600 text-sm font-bold"> / {MILESTONES.length}</span>
+              </div>
             </div>
-            <p className="text-gray-400 text-xs mb-4">Track your progress across key achievements.</p>
+            <p className="text-gray-500 text-xs mb-4">Track your progress across key achievements.</p>
 
             {/* Overall progress bar */}
             <div className="mb-5">
-              <div className="budget-bar">
+              <div className="budget-bar h-[5px]">
                 <div
                   className="budget-bar-fill transition-all duration-700"
                   style={{ width: `${MILESTONES.length > 0 ? (unlockedMilestoneIds.length / MILESTONES.length) * 100 : 0}%` }}

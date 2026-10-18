@@ -92,18 +92,18 @@ function BadgeIcons({ equippedBadges }: { equippedBadges: string }) {
 // ── Rank number display — gold/silver/bronze tiers ───────────────────────────
 function RankNumber({ rank }: { rank: number }) {
   if (rank === 1) return (
-    <span className="font-display text-lg tabular-nums text-yellow-400 drop-shadow-[0_0_6px_rgba(234,179,8,0.5)]">#1</span>
+    <span className="font-display text-xl tabular-nums text-yellow-400 drop-shadow-[0_0_8px_rgba(234,179,8,0.6)] tracking-wide">#1</span>
   )
   if (rank === 2) return (
-    <span className="font-display text-lg tabular-nums text-slate-300">#2</span>
+    <span className="font-display text-xl tabular-nums text-slate-300 drop-shadow-[0_0_4px_rgba(148,163,184,0.3)] tracking-wide">#2</span>
   )
   if (rank === 3) return (
-    <span className="font-display text-lg tabular-nums text-orange-400">#3</span>
+    <span className="font-display text-xl tabular-nums text-orange-400 drop-shadow-[0_0_4px_rgba(249,115,22,0.3)] tracking-wide">#3</span>
   )
   if (rank <= 10) return (
-    <span className="font-display text-base tabular-nums text-white/70">#{rank}</span>
+    <span className="font-display text-base tabular-nums text-white/60 tracking-wide">#{rank}</span>
   )
-  return <span className="font-black text-sm tabular-nums text-gray-500">#{rank}</span>
+  return <span className="font-display text-sm tabular-nums text-gray-600 tracking-wide">#{rank}</span>
 }
 
 // ── Rank badge chips ──────────────────────────────────────────────────────────
@@ -132,45 +132,51 @@ function RankChip({ user, rank, totalPlayers }: { user: LeaderboardUser; rank: n
 const PODIUM_CONFIG = [
   {
     order: 1,
-    height: 'h-32',
+    platformHeight: 'h-28',
     avatarSize: 'w-16 h-16',
     avatarText: 'text-3xl',
     nameSize: 'text-base',
-    scoreSize: 'text-3xl',
     medalLabel: '🥇',
-    borderGlow: 'border-yellow-500/50 shadow-[0_0_24px_rgba(234,179,8,0.25)]',
-    bg: 'bg-gradient-to-b from-yellow-950/60 to-yellow-950/20',
-    rankColor: 'text-yellow-400',
-    scoreColor: 'text-yellow-300',
+    borderGlow: 'border-yellow-500/60 shadow-[0_0_32px_rgba(234,179,8,0.3),0_0_8px_rgba(234,179,8,0.2)]',
+    platformBg: 'bg-gradient-to-b from-yellow-900/50 via-yellow-950/40 to-yellow-950/10',
+    rankLabel: 'text-yellow-400',
+    winsColor: 'text-yellow-300',
+    avatarBg: 'bg-gradient-to-br from-yellow-500 to-yellow-700',
     crown: true,
+    rankNum: '#1',
+    rankNumClass: 'font-display text-3xl text-yellow-400 tracking-wide',
   },
   {
     order: 2,
-    height: 'h-24',
-    avatarSize: 'w-12 h-12',
+    platformHeight: 'h-20',
+    avatarSize: 'w-13 h-13',
     avatarText: 'text-2xl',
     nameSize: 'text-sm',
-    scoreSize: 'text-2xl',
     medalLabel: '🥈',
-    borderGlow: 'border-slate-500/40 shadow-[0_0_16px_rgba(148,163,184,0.15)]',
-    bg: 'bg-gradient-to-b from-slate-800/40 to-slate-900/20',
-    rankColor: 'text-slate-300',
-    scoreColor: 'text-slate-200',
+    borderGlow: 'border-slate-500/40 shadow-[0_0_20px_rgba(148,163,184,0.12)]',
+    platformBg: 'bg-gradient-to-b from-slate-700/30 via-slate-800/20 to-slate-900/10',
+    rankLabel: 'text-slate-300',
+    winsColor: 'text-slate-200',
+    avatarBg: 'bg-gradient-to-br from-slate-400 to-slate-600',
     crown: false,
+    rankNum: '#2',
+    rankNumClass: 'font-display text-2xl text-slate-300 tracking-wide',
   },
   {
     order: 3,
-    height: 'h-20',
-    avatarSize: 'w-11 h-11',
+    platformHeight: 'h-14',
+    avatarSize: 'w-12 h-12',
     avatarText: 'text-xl',
     nameSize: 'text-sm',
-    scoreSize: 'text-2xl',
     medalLabel: '🥉',
-    borderGlow: 'border-orange-700/40 shadow-[0_0_14px_rgba(194,65,12,0.15)]',
-    bg: 'bg-gradient-to-b from-orange-950/50 to-orange-950/10',
-    rankColor: 'text-orange-400',
-    scoreColor: 'text-orange-300',
+    borderGlow: 'border-orange-700/40 shadow-[0_0_16px_rgba(194,65,12,0.12)]',
+    platformBg: 'bg-gradient-to-b from-orange-900/30 via-orange-950/20 to-orange-950/5',
+    rankLabel: 'text-orange-400',
+    winsColor: 'text-orange-300',
+    avatarBg: 'bg-gradient-to-br from-orange-600 to-orange-800',
     crown: false,
+    rankNum: '#3',
+    rankNumClass: 'font-display text-2xl text-orange-400 tracking-wide',
   },
 ]
 
@@ -179,37 +185,47 @@ function PodiumCard({ user, rank, isMe, totalPlayers }: { user: LeaderboardUser;
   const winPct = user.gamesPlayed > 0 ? ((user.wins / user.gamesPlayed) * 100).toFixed(1) : '0.0'
 
   return (
-    <div className={`flex flex-col items-center gap-0 ${rank === 1 ? 'order-2' : rank === 2 ? 'order-1' : 'order-3'}`}>
-      {/* Avatar + badge hover */}
-      <div className="relative group mb-2">
-        {cfg.crown && (
-          <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-2xl pointer-events-none select-none">👑</div>
-        )}
+    <div className={`flex flex-col items-center ${rank === 1 ? 'order-2' : rank === 2 ? 'order-1' : 'order-3'}`}>
+      {/* Crown spacer for #1 */}
+      {cfg.crown ? (
+        <div className="text-xl mb-0.5 select-none">👑</div>
+      ) : (
+        <div className="h-6" />
+      )}
+
+      {/* Avatar */}
+      <div className="relative mb-2">
         <div className={`${cfg.avatarSize} rounded-full flex items-center justify-center font-black text-white shrink-0 ${
-          isMe ? 'bg-orange-500 ring-2 ring-orange-300' : rank === 1 ? 'bg-gradient-to-br from-yellow-600 to-yellow-800' : rank === 2 ? 'bg-gradient-to-br from-slate-500 to-slate-700' : 'bg-gradient-to-br from-orange-700 to-orange-900'
-        }`}>
+          isMe ? 'bg-orange-500 ring-2 ring-orange-300' : cfg.avatarBg
+        } ${rank === 1 ? 'shadow-[0_0_20px_rgba(234,179,8,0.35)]' : ''}`}>
           <span className={cfg.avatarText}>{user.username[0].toUpperCase()}</span>
         </div>
+        {user.winStreak >= 3 && (
+          <div className="absolute -bottom-1 -right-1 rounded-full bg-orange-500 border-2 border-[#0a0a0f] w-5 h-5 flex items-center justify-center">
+            <span className="text-[8px] font-black text-white leading-none">{user.winStreak}</span>
+          </div>
+        )}
       </div>
 
       {/* Name + YOU tag */}
-      <div className="text-center mb-1">
-        <div className="flex items-center justify-center gap-1">
-          <span className={`font-black truncate max-w-[80px] ${cfg.nameSize} ${cfg.rankColor}`}>{user.username}</span>
-          {isMe && <span className="text-[8px] font-black text-orange-500 bg-orange-950 border border-orange-700/50 rounded px-1 py-[1px] leading-none">YOU</span>}
+      <div className="text-center mb-2 px-1">
+        <div className="flex items-center justify-center gap-1 flex-wrap">
+          <span className={`font-black truncate max-w-[76px] ${cfg.nameSize} ${cfg.rankLabel}`}>{user.username}</span>
+          {isMe && <span className="text-[7px] font-black text-orange-500 bg-orange-950 border border-orange-700/60 rounded px-1 leading-[14px]">YOU</span>}
         </div>
-        <div className="text-[10px] text-gray-400 tabular-nums">{user.wins}W–{user.losses}L · {winPct}%</div>
-        {user.winStreak >= 3 && (
-          <div className="text-[9px] font-black text-orange-400 mt-0.5">🔥{user.winStreak}</div>
-        )}
+        <div className="text-[10px] text-gray-500 tabular-nums mt-0.5">
+          <span className="text-green-400/80">{user.wins}W</span>
+          <span className="text-white/20 mx-0.5">·</span>
+          <span className="text-red-400/70">{user.losses}L</span>
+          <span className="text-white/20 mx-0.5">·</span>
+          <span>{winPct}%</span>
+        </div>
       </div>
 
       {/* Podium platform */}
-      <div className={`w-full ${cfg.height} ${cfg.bg} border ${cfg.borderGlow} rounded-t-xl flex items-center justify-center ${rank === 1 ? 'animate-glow' : ''}`}>
-        <div className="text-center">
-          <div className={`font-display ${cfg.scoreSize} ${cfg.scoreColor} leading-none`}>{cfg.medalLabel}</div>
-          <div className={`font-display text-xl ${cfg.rankColor} leading-none mt-0.5`}>#{rank}</div>
-        </div>
+      <div className={`w-full ${cfg.platformHeight} ${cfg.platformBg} border ${cfg.borderGlow} rounded-t-2xl flex flex-col items-center justify-center gap-0.5 ${rank === 1 ? 'animate-glow' : ''}`}>
+        <div className={cfg.rankNumClass}>{cfg.rankNum}</div>
+        <div className="text-base leading-none">{cfg.medalLabel}</div>
       </div>
     </div>
   )
@@ -230,15 +246,17 @@ function WinPctBadge({ pct, gamesPlayed }: { pct: string; gamesPlayed: number })
 
 // ── Column header row ─────────────────────────────────────────────────────────
 function ColumnHeaders({ sort }: { sort: SortKey }) {
+  const base = 'text-[10px] font-black uppercase tracking-[0.14em] text-gray-600 transition-colors'
+  const active = 'text-orange-500'
   return (
-    <div className="flex items-center gap-2 sm:gap-3 px-4 pb-1.5 pt-0.5">
+    <div className="flex items-center gap-2 sm:gap-3 px-4 pb-2 pt-1">
       <div className="w-8 sm:w-9 shrink-0" />
       <div className="w-7 sm:w-8 shrink-0" />
-      <div className="flex-1 min-w-0 text-label">Player</div>
-      <div className={`w-9 sm:w-10 text-right text-label shrink-0 ${sort === 'wins' ? 'text-orange-500' : ''}`}>W</div>
-      <div className="hidden sm:block w-10 text-right text-label shrink-0">L</div>
-      <div className={`w-12 sm:w-14 text-right text-label shrink-0 ${sort === 'winPct' ? 'text-orange-500' : ''}`}>WIN%</div>
-      <div className={`hidden sm:block w-12 text-right text-label shrink-0 ${sort === 'winStreak' ? 'text-orange-500' : ''}`}>STK</div>
+      <div className={`flex-1 min-w-0 ${base}`}>Player</div>
+      <div className={`w-9 sm:w-10 text-right shrink-0 ${base} ${sort === 'wins' ? active : ''}`}>W</div>
+      <div className={`hidden sm:block w-10 text-right shrink-0 ${base}`}>L</div>
+      <div className={`w-12 sm:w-14 text-right shrink-0 ${base} ${sort === 'winPct' ? active : ''}`}>WIN%</div>
+      <div className={`hidden sm:block w-12 text-right shrink-0 ${base} ${sort === 'winStreak' ? active : ''}`}>STK</div>
     </div>
   )
 }
@@ -257,12 +275,12 @@ function LeaderboardRow({ user: u, rank, isMe, sort, totalPlayers, rowRef }: Row
   const winPct = u.gamesPlayed > 0 ? ((u.wins / u.gamesPlayed) * 100).toFixed(1) : '0.0'
 
   const rowClass = [
-    'table-row gap-3 rounded-xl border min-h-[44px]',
+    'flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 rounded-xl border min-h-[48px] transition-colors',
     isMe
-      ? 'bg-orange-950/30 border-orange-600/50 ring-1 ring-orange-600/30'
+      ? 'bg-gradient-to-r from-orange-950/50 to-orange-950/20 border-orange-500/50 ring-1 ring-orange-500/25 shadow-[0_0_16px_rgba(249,115,22,0.1)]'
       : rank <= 3
-      ? 'border-white/[0.1] bg-white/[0.015]'
-      : 'border-white/[0.06]',
+      ? 'border-white/[0.1] bg-white/[0.02] hover:bg-white/[0.035]'
+      : 'border-white/[0.05] hover:bg-white/[0.02]',
   ].join(' ')
 
   return (
@@ -273,18 +291,18 @@ function LeaderboardRow({ user: u, rank, isMe, sort, totalPlayers, rowRef }: Row
       </div>
 
       {/* Avatar */}
-      <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-black text-white text-xs shrink-0 ${isMe ? 'bg-orange-500' : 'bg-orange-900/60'}`}>
+      <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-black text-white text-xs shrink-0 ${isMe ? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.4)]' : 'bg-orange-900/60'}`}>
         {u.username[0].toUpperCase()}
       </div>
 
       {/* Player name + chips */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <span className={`font-black text-sm truncate ${isMe ? 'text-orange-300' : 'text-white'}`}>
+          <span className={`font-black text-sm truncate ${isMe ? 'text-orange-200' : 'text-white'}`}>
             {u.username}
           </span>
           {isMe && (
-            <span className="shrink-0 text-[9px] font-black text-orange-500 bg-orange-950 border border-orange-700/50 rounded px-1.5 py-[2px] leading-none tracking-wider uppercase">
+            <span className="shrink-0 text-[8px] font-black text-orange-400 bg-orange-950 border border-orange-600/60 rounded-sm px-1.5 py-[2px] leading-none tracking-[0.1em] uppercase">
               YOU
             </span>
           )}
@@ -304,7 +322,7 @@ function LeaderboardRow({ user: u, rank, isMe, sort, totalPlayers, rowRef }: Row
 
       {/* L — hidden on mobile */}
       <div className="hidden sm:block w-10 text-right shrink-0">
-        <span className="tabular-nums font-bold text-sm text-gray-400">{u.losses}</span>
+        <span className="tabular-nums font-bold text-sm text-gray-500">{u.losses}</span>
       </div>
 
       {/* WIN% */}
@@ -319,7 +337,7 @@ function LeaderboardRow({ user: u, rank, isMe, sort, totalPlayers, rowRef }: Row
             🔥{u.winStreak}
           </span>
         ) : (
-          <span className={`tabular-nums font-bold text-xs ${sort === 'winStreak' ? 'text-white' : 'text-gray-400'}`}>
+          <span className={`tabular-nums font-bold text-xs ${sort === 'winStreak' ? 'text-white' : 'text-gray-500'}`}>
             {u.winStreak}
           </span>
         )}
@@ -381,13 +399,13 @@ function MyRankBanner({ me, totalPlayers }: { me: MeRow; totalPlayers: number })
 // ── Empty state ───────────────────────────────────────────────────────────────
 function EmptyState() {
   return (
-    <div className="card-surface rounded-2xl p-14 text-center flex flex-col items-center gap-4">
-      <div className="font-display text-5xl text-gray-800 leading-none">0</div>
+    <div className="rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.025] to-transparent p-16 text-center flex flex-col items-center gap-5">
+      <div className="font-display text-[80px] text-white/[0.04] leading-none tracking-widest">—</div>
       <div>
-        <p className="font-black text-white text-base">No players ranked yet</p>
-        <p className="text-gray-400 text-sm mt-1">Be the first on the board</p>
+        <p className="font-display text-2xl text-white tracking-wider leading-none">No players ranked yet</p>
+        <p className="text-gray-500 text-sm mt-2">Be the first on the board</p>
       </div>
-      <Link href="/lobby" className="btn-primary mt-1 text-xs px-6 py-3">Play Now</Link>
+      <Link href="/lobby" className="btn-primary mt-1 text-sm px-8 py-3">Play Now</Link>
     </div>
   )
 }
@@ -449,23 +467,23 @@ export default function LeaderboardPage() {
       <div className="max-w-2xl mx-auto">
 
         {/* ── Page header ── */}
-        <div className="flex items-end justify-between mb-4">
+        <div className="flex items-start justify-between mb-5 gap-4">
           <div>
-            <p className="text-label mb-2">EBK Rankings</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-orange-500/70 mb-2">EBK Rankings</p>
             <h1 className="font-display text-6xl sm:text-7xl text-white leading-none tracking-wide">
               LEADER<span className="text-orange-500">BOARD</span>
             </h1>
-            <p className="text-gray-400 text-xs mt-2 tabular-nums font-bold">
-              <span className="font-display text-orange-400 text-lg">{totalPlayers}</span>
-              <span className="ml-1.5">players ranked</span>
+            <p className="mt-2 flex items-baseline gap-1.5">
+              <span className="font-display text-2xl text-orange-400 leading-none tabular-nums">{totalPlayers}</span>
+              <span className="text-gray-500 text-xs font-bold uppercase tracking-[0.1em]">players ranked</span>
             </p>
           </div>
-          <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-col items-end gap-2 shrink-0 pt-1">
             <Link href="/lobby" className="btn-secondary py-2 px-4 text-xs">← Lobby</Link>
-            <div className="flex items-center gap-1.5 text-xs text-gray-400">
+            <div className="flex items-center gap-1.5">
               <span className="live-dot" />
-              <span className="tabular-nums text-[10px] font-bold">
-                Live{lastUpdated ? ` · ${lastUpdated.toLocaleTimeString()}` : ''}
+              <span className="tabular-nums text-[10px] font-bold text-gray-500">
+                {lastUpdated ? lastUpdated.toLocaleTimeString() : 'Live'}
               </span>
             </div>
           </div>
@@ -496,10 +514,12 @@ export default function LeaderboardPage() {
             {/* ── Podium — top 3 ── */}
             {top3.length >= 2 && (
               <div className="mb-8">
-                <div className="section-divider mb-4">
-                  <p className="text-label">Top Performers</p>
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="h-px flex-1 bg-white/[0.05]" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600">Top Performers</span>
+                  <div className="h-px flex-1 bg-white/[0.05]" />
                 </div>
-                <div className="grid grid-cols-3 gap-2 items-end px-2">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-3 items-end px-1 sm:px-3">
                   {top3.map((u, i) => (
                     <PodiumCard
                       key={u.id}
@@ -516,20 +536,20 @@ export default function LeaderboardPage() {
             {/* ── Ranks 4+ table ── */}
             {rest.length > 0 && (
               <div className="card-surface rounded-2xl overflow-hidden">
-                <div className="flex items-center justify-between px-4 pt-3 pb-0">
-                  <p className="text-label">Rankings</p>
+                <div className="flex items-center justify-between px-4 pt-3.5 pb-0">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600">Rankings</span>
                   {me && meInList >= 3 && (
                     <button
                       onClick={() => meRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-                      className="text-[10px] font-black text-orange-400 hover:text-orange-300 transition-colors uppercase tracking-wider"
+                      className="text-[10px] font-black text-orange-500 hover:text-orange-400 transition-colors uppercase tracking-[0.12em]"
                     >
                       Jump to me ↓
                     </button>
                   )}
                 </div>
                 <ColumnHeaders sort={sort} />
-                <div className="mx-4 h-px bg-white/[0.06]" />
-                <div className="px-2 py-1.5 space-y-0.5">
+                <div className="mx-4 h-px bg-white/[0.05]" />
+                <div className="px-2 py-2 space-y-0.5">
                   {rest.map((u, i) => (
                     <div
                       key={u.id}
