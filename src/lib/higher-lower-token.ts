@@ -2,9 +2,17 @@ import crypto from 'crypto'
 
 const SESSION_TTL_MS = 30 * 60 * 1000 // 30 minutes
 
+// Capture the server-process start epoch once at module load time.
+// This value is mixed into every HMAC so that tokens signed before a server
+// restart are cryptographically invalid after restart — even if their TTL has
+// not yet expired and the in-memory usedNonces set has been cleared.
+// An attacker who saves a valid token and waits for a restart cannot replay it
+// because the new process will compute a different HMAC secret.
+const SERVER_EPOCH = Date.now()
+
 function getHmacSecret(): Buffer {
   const key = process.env.JWT_SECRET ?? 'fallback-hl-dev-key'
-  return crypto.createHash('sha256').update(`hl-session:${key}`).digest()
+  return crypto.createHash('sha256').update(`hl-session:${key}:epoch=${SERVER_EPOCH}`).digest()
 }
 
 // One-time-use nonce registry: nonce → expiry timestamp.

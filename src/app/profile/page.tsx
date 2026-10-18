@@ -614,17 +614,28 @@ export default function ProfilePage() {
               })}
             </div>
 
-            {unlockedBadgeIds.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state-icon">🏅</div>
-                <div className="empty-state-title">No badges unlocked yet</div>
-                <div className="empty-state-body">Win games to discover hidden badges</div>
-                <Link href="/lobby" className="btn-primary py-2.5 px-6 text-xs mt-4">Play to Unlock</Link>
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {BADGES.filter(badge => unlockedBadgeIds.includes(badge.id)).map(badge => {
-                  const isEquipped = equippedBadges.includes(badge.id)
+            <div className="flex flex-wrap gap-2">
+              {BADGES.map(badge => {
+                const isUnlocked = unlockedBadgeIds.includes(badge.id)
+                const isEquipped = equippedBadges.includes(badge.id)
+
+                // Compute progress toward this badge
+                let progressPct = 0
+                let progressLabel = ''
+                if (!isUnlocked) {
+                  if (badge.winsRequired) {
+                    progressPct = Math.min(100, (user.wins / badge.winsRequired) * 100)
+                    progressLabel = `${user.wins} / ${badge.winsRequired} wins`
+                  } else if (badge.gamesRequired) {
+                    progressPct = Math.min(100, (user.gamesPlayed / badge.gamesRequired) * 100)
+                    progressLabel = `${user.gamesPlayed} / ${badge.gamesRequired} games`
+                  } else if (badge.streakRequired) {
+                    progressPct = Math.min(100, (user.maxWinStreak / badge.streakRequired) * 100)
+                    progressLabel = `${user.maxWinStreak} / ${badge.streakRequired} streak`
+                  }
+                }
+
+                if (isUnlocked) {
                   return (
                     <button
                       key={badge.id}
@@ -635,6 +646,7 @@ export default function ProfilePage() {
                         badge.bgClass,
                         badge.borderClass,
                       ].join(' ')}
+                      title={badge.name}
                     >
                       <img src={badge.icon} alt={badge.name} className="w-8 h-8" />
                       {/* Tooltip */}
@@ -645,7 +657,42 @@ export default function ProfilePage() {
                       </div>
                     </button>
                   )
-                })}
+                }
+
+                // Locked badge — greyed out with progress bar
+                return (
+                  <div
+                    key={badge.id}
+                    className="relative group rounded-xl p-2.5 border border-white/[0.06] bg-white/[0.025] cursor-default"
+                    title={badge.name}
+                  >
+                    <img src={badge.icon} alt={badge.name} className="w-8 h-8 grayscale opacity-25" />
+                    {/* Lock icon overlay */}
+                    <span className="absolute bottom-1 right-1 text-[9px] text-white/30">🔒</span>
+                    {/* Tooltip with progress */}
+                    <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] rounded-lg bg-[#111118] border border-white/[0.1] px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                      <div className="text-white/60 text-xs font-black mb-0.5">{badge.name}</div>
+                      <div className="text-gray-500 text-[11px] leading-snug mb-1.5">{badge.description}</div>
+                      {progressLabel && (
+                        <>
+                          <div className="h-1 rounded-full bg-white/[0.08] overflow-hidden mb-1">
+                            <div
+                              className="h-full rounded-full bg-orange-500/60 transition-all"
+                              style={{ width: `${progressPct}%` }}
+                            />
+                          </div>
+                          <div className="text-orange-500/60 text-[10px] font-bold tabular-nums">{progressLabel}</div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {unlockedBadgeIds.length === 0 && (
+              <div className="mt-4 text-center">
+                <Link href="/lobby" className="btn-primary py-2.5 px-6 text-xs">Play to Unlock</Link>
               </div>
             )}
           </div>
@@ -659,6 +706,10 @@ export default function ProfilePage() {
                 const unlocked = unlockedEmoteIds.includes(emote.id)
                 const isEquipped = equippedEmote === emote.id
 
+                const emoteProgress = !unlocked && emote.winsRequired > 0
+                  ? Math.min(100, (user.wins / emote.winsRequired) * 100)
+                  : 0
+
                 return (
                   <button
                     key={emote.id}
@@ -668,7 +719,7 @@ export default function ProfilePage() {
                       'relative rounded-xl p-4 text-left border transition-all',
                       unlocked
                         ? 'card-surface cursor-pointer hover:border-orange-500/50'
-                        : 'bg-white/[0.02] border-white/5 cursor-default opacity-40',
+                        : 'bg-white/[0.015] border-white/[0.04] cursor-default',
                       isEquipped
                         ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-black border-orange-500/50'
                         : '',
@@ -680,18 +731,33 @@ export default function ProfilePage() {
                       </span>
                     )}
                     {!unlocked && (
-                      <span className="absolute top-2 right-2 text-[10px] text-gray-400">
-                        locked
-                      </span>
+                      <span className="absolute top-2 right-2 text-[10px] text-white/20">🔒</span>
                     )}
-                    <div className="text-orange-400 font-black text-lg mb-1">{emote.label}</div>
-                    <div className={`text-sm font-semibold ${unlocked ? 'text-white' : 'text-gray-400'}`}>
+                    <div className={`font-black text-lg mb-1 ${unlocked ? 'text-orange-400' : 'text-white/20'}`}>
+                      {emote.label}
+                    </div>
+                    <div className={`text-sm font-semibold ${unlocked ? 'text-white' : 'text-white/25'}`}>
                       {emote.text}
                     </div>
                     {!unlocked && (
-                      <div className="text-label mt-1">
-                        {emote.winsRequired} wins required
-                      </div>
+                      <>
+                        <div className="text-label mt-1.5">
+                          {emote.winsRequired} wins required
+                        </div>
+                        {emoteProgress > 0 && (
+                          <div className="mt-2">
+                            <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-orange-500/40 transition-all"
+                                style={{ width: `${emoteProgress}%` }}
+                              />
+                            </div>
+                            <div className="text-[10px] text-orange-500/40 font-bold mt-0.5 tabular-nums">
+                              {user.wins} / {emote.winsRequired}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </button>
                 )

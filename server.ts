@@ -303,6 +303,8 @@ interface AuctionRoom {
   lastWinnerSocketId: string | null
   lastWinnerName: string | null
   lastWonAmount: number
+  /** ID of the player that was just won at auction and is eligible to be stolen this round */
+  lastWonPlayerId: number | null
   stealInitiated: boolean
   bidTimer: ReturnType<typeof setTimeout> | null
   bidDeadline: number
@@ -356,6 +358,24 @@ let JAMESON_CURRY_ID = 71
 function refreshJCId() {
   const jc = allPlayers.find(p => p.firstName === 'Jameson' && p.lastName === 'Curry')
   if (jc) JAMESON_CURRY_ID = jc.id
+}
+
+// ─── Cross-game active-session guard ─────────────────────────────────────────
+// Returns true if the given userId is already an active participant in ANY live
+// draft room OR any non-complete auction room.  Used to block a single account
+// from joining two different game modes simultaneously via multiple browser tabs,
+// which would corrupt per-user stat recording (wins / losses could be double-counted
+// or interleaved across two concurrent finishGame calls for the same userId).
+function isUserActiveInAnyRoom(userId: string): boolean {
+  for (const room of rooms.values()) {
+    if (room.status === 'complete') continue
+    if (room.hostUserId === userId || room.guestUserId === userId) return true
+  }
+  for (const room of auctionRooms.values()) {
+    if (room.status === 'complete') continue
+    if (room.participants.some(p => p.userId === userId)) return true
+  }
+  return false
 }
 
 // ─── Cooldown helpers ────────────────────────────────────────────────────────
@@ -875,6 +895,7 @@ function advanceAuction(io: SocketServer, room: AuctionRoom) {
       room.currentBidderName = null
       room.lastWinnerSocketId = null
       room.lastWinnerName = null
+      room.lastWonPlayerId = null
       room.stealInitiated = false
       room.status = 'bidding'
       room.bidDeadline = Date.now() + BID_TIMER_MS
@@ -915,6 +936,9 @@ function handleAuctionBidExpiry(io: SocketServer, room: AuctionRoom) {
   room.lastWinnerSocketId = winner.socketId
   room.lastWinnerName = winner.name
   room.lastWonAmount = room.currentBid
+  // Track exactly which player was just won so the steal handler can verify that the
+  // steal target is the newly-acquired player rather than an arbitrary roster slot.
+  room.lastWonPlayerId = room.currentPlayer.id
   room.stealInitiated = false
   room.status = 'steal-window'
   room.bidDeadline = Date.now() + STEAL_WINDOW_MS
@@ -1195,6 +1219,13 @@ app.prepare().then(async () => {
       if (room.status !== 'waiting') { socket.emit('room-error', { message: 'Game already in progress' }); return }
       // Prevent a user from playing against themselves (would double-record stats)
       if (userId && userId === room.hostUserId) { socket.emit('room-error', { message: 'You cannot join your own room' }); return }
+      // Prevent simultaneous multi-game participation: a user already in an active draft
+      // or auction room cannot join another — that would allow two concurrent games to
+      // write conflicting stat updates (wins/losses) for the same userId at roughly the
+      // same time, corrupting the leaderboard.
+      if (userId && isUserActiveInAnyRoom(userId)) {
+        socket.emit('room-error', { message: 'You are already in an active game' }); return
+      }
 
       room.guestSocketId = socket.id
       room.guestUserId = userId
@@ -1706,7 +1737,7 @@ app.prepare().then(async () => {
         participants: [{ socketId: socket.id, userId, name: userName, budget, roster: [], paidPrices: {} }],
         playerPool: pool, currentPlayerIndex: -1, currentPlayer: null,
         currentBid: 0, currentBidderSocketId: null, currentBidderName: null,
-        lastWinnerSocketId: null, lastWinnerName: null, lastWonAmount: 0,
+        lastWinnerSocketId: null, lastWinnerName: null, lastWonAmount: 0, lastWonPlayerId: null,
         stealInitiated: false, bidTimer: null, bidDeadline: 0,
         tradeOffers: [], tradeDeadline: null, tradeTimer: null, bidLog: [], finalResults: null,
       }
@@ -1764,6 +1795,12 @@ app.prepare().then(async () => {
         socket.emit('auction:error', { message: 'That name is already taken in this room' }); return
       }
       const userId: string | null = (socket.data as { userId?: string })?.userId ?? null
+      // Prevent simultaneous multi-game participation: a user already active in a draft
+      // or another auction room cannot join a new one — concurrent games would corrupt
+      // stat recording (wins/losses written by two finishGame calls for the same userId).
+      if (userId && isUserActiveInAnyRoom(userId)) {
+        socket.emit('auction:error', { message: 'You are already in an active game' }); return
+      }
       room.participants.push({ socketId: socket.id, userId, name: userName, budget: room.totalBudget, roster: [], paidPrices: {} })
       socket.join(`auction:${room.code}`)
       socket.emit('auction:joined', { code: room.code })
@@ -1852,6 +1889,12 @@ app.prepare().then(async () => {
       }
       const stealer = room.participants.find(p => p.socketId === socket.id)
       if (!stealer) return
+      // Restrict steal to the player that was just won this round — prevents a stealer
+      // from targeting any arbitrary roster slot across all participants (e.g. stealing a
+      // high-value player acquired many rounds earlier while a cheap player is on the block).
+      if (room.lastWonPlayerId === null || playerIdToSteal !== room.lastWonPlayerId) {
+        socket.emit('auction:error', { message: 'You can only steal the player just won this round' }); return
+      }
       const owner = room.participants.find(p => p.roster.includes(playerIdToSteal))
       if (!owner || owner.socketId === socket.id) { socket.emit('auction:error', { message: 'Invalid steal target' }); return }
       const originalPrice = owner.paidPrices[playerIdToSteal] ?? 1
