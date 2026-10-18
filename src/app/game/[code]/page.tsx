@@ -531,29 +531,38 @@ function GameContent() {
           <div>
           {/* Result header */}
           <div className="text-center mb-6">
+            {iWon && (
+              <div className="mb-3 inline-flex items-center gap-2 bg-orange-950/50 border border-orange-600/50 rounded-full px-3 py-1 animate-fade-up">
+                <span className="text-orange-400 text-[10px]">🏆</span>
+                <span className="text-orange-300 text-[10px] font-black tracking-[0.2em] uppercase">Series Champion</span>
+              </div>
+            )}
             <div
-              className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text' : isDraw ? 'text-gray-400 animate-scale-in' : 'text-gray-400 animate-loss-drop'}`}
-              style={iWon ? { fontSize: 'clamp(5rem, 22vw, 9rem)' } : { fontSize: 'clamp(4rem, 18vw, 7rem)' }}>
+              className={`font-display leading-none mb-3 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-gray-400 animate-scale-in' : 'text-gray-400 animate-loss-drop'}`}
+              style={iWon ? { fontSize: 'clamp(6rem, 28vw, 11rem)' } : { fontSize: 'clamp(4rem, 18vw, 7rem)' }}>
               {iWon ? 'W' : isDraw ? 'DRAW' : 'L'}
             </div>
-            <div className={`font-black text-lg mb-1 ${iWon ? 'text-white' : isDraw ? 'text-gray-400' : 'text-gray-400'}`}>
-              {iWon ? 'Series Win' : isDraw ? 'Series Draw' : 'Series Loss'}
+            <div className={`font-display tracking-wider text-2xl sm:text-3xl mb-2 ${iWon ? 'text-white' : isDraw ? 'text-gray-400' : 'text-gray-500'}`}>
+              {iWon ? 'SERIES WIN' : isDraw ? 'SERIES DRAW' : 'SERIES LOSS'}
             </div>
-            <div className="text-orange-400 font-display text-3xl leading-none tracking-wide">
-              {room.hostSeriesScore} <span className="text-gray-400">–</span> {room.guestSeriesScore}
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <span className="text-white font-black text-sm truncate max-w-[90px]">{room.hostName}</span>
+              <span className={`font-display text-4xl leading-none tracking-tight ${iWon && role === 'host' ? 'win-shimmer-text' : 'text-orange-400'}`}>{room.hostSeriesScore}</span>
+              <span className="text-gray-500 text-xl font-bold">–</span>
+              <span className={`font-display text-4xl leading-none tracking-tight ${iWon && role === 'guest' ? 'win-shimmer-text' : 'text-orange-400'}`}>{room.guestSeriesScore}</span>
+              <span className="text-white font-black text-sm truncate max-w-[90px]">{room.guestName}</span>
             </div>
-            <div className="text-gray-400 text-xs mt-1 truncate">{room.hostName} vs {room.guestName}</div>
-            <div className="text-gray-600 text-[11px] mt-1">
+            <div className="text-gray-600 text-[11px] mb-3">
               Lower team total {STAT_CATEGORY_LABELS[room.statCategory] ?? 'stat'} wins each game
             </div>
             {iWon && (
-              <div className="mt-3 inline-flex items-center gap-2 bg-orange-950/40 border border-orange-700/40 rounded-full px-4 py-1.5">
-                <span className="text-orange-300 text-xs font-black tracking-widest uppercase">Elite Ball Knowledge Confirmed</span>
+              <div className="animate-fade-up-1 inline-flex items-center gap-2 bg-orange-950/40 border border-orange-600/40 rounded-full px-5 py-2 shadow-[0_0_20px_rgba(234,88,12,0.2)]">
+                <span className="text-orange-300 text-xs font-black tracking-[0.18em] uppercase">Elite Ball Knowledge Confirmed</span>
               </div>
             )}
             {!iWon && !isDraw && (
-              <div className="mt-3 inline-flex items-center gap-2 bg-white/[0.03] border border-white/[0.08] rounded-full px-4 py-1.5">
-                <span className="text-gray-400 text-xs font-semibold">Study the player pool and run it back</span>
+              <div className="inline-flex items-center gap-2 bg-white/[0.03] border border-white/[0.07] rounded-full px-4 py-1.5">
+                <span className="text-gray-400 text-xs font-semibold">Study the pool and run it back</span>
               </div>
             )}
           </div>
@@ -661,19 +670,23 @@ function GameContent() {
                   const myVal = myP ? getStatValue(myP, lastGame.statMode) : null
                   const oppVal = oppP ? getStatValue(oppP, lastGame.statMode) : null
                   return (
-                    <div key={i} className="grid grid-cols-[1fr_auto_1fr] gap-1 mb-1">
-                      <div className="bg-white/[0.03] rounded-lg px-2 py-1.5 flex items-center justify-between gap-1 min-w-0">
-                        <span className={`text-[9px] font-black w-5 shrink-0 ${isBench ? 'text-gray-500' : 'text-orange-400/70'}`}>{isBench ? 'BN' : slotPos}</span>
-                        <span className="text-white/80 text-[11px] font-semibold truncate flex-1 text-left" title={myP ? `${myP.firstName} ${myP.lastName}` : ''}>{myP ? myP.lastName : '—'}</span>
-                        {myVal !== null && <span className={`text-[11px] font-black shrink-0 tabular-nums ml-1 ${lastIWon ? 'text-green-400' : 'text-white/60'}`}>{formatStat(myVal, lastGame.statMode)}</span>}
+                    <div key={i} className="grid grid-cols-[1fr_auto_1fr] gap-1 mb-1.5">
+                      <div className={`rounded-lg px-2 py-2 flex flex-col gap-0.5 min-w-0 ${lastIWon ? 'bg-green-950/15' : 'bg-white/[0.03]'}`}>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[9px] font-black shrink-0 ${isBench ? 'text-gray-500' : 'text-orange-400/70'}`}>{isBench ? 'BN' : slotPos}</span>
+                          <span className="text-white/85 text-xs font-bold truncate flex-1" title={myP ? `${myP.firstName} ${myP.lastName}` : ''}>{myP ? `${myP.firstName[0]}. ${myP.lastName}` : '—'}</span>
+                        </div>
+                        {myVal !== null && <span className={`text-sm font-display leading-none tabular-nums ${lastIWon ? 'text-green-400' : 'text-white/50'}`}>{formatStat(myVal, lastGame.statMode)}</span>}
                       </div>
-                      <div className="w-6 flex items-center justify-center">
+                      <div className="w-5 flex items-center justify-center">
                         <div className="w-px h-full bg-white/[0.06]" />
                       </div>
-                      <div className="bg-white/[0.03] rounded-lg px-2 py-1.5 flex items-center justify-between gap-1 min-w-0">
-                        <span className={`text-[9px] font-black w-5 shrink-0 ${isBench ? 'text-gray-500' : 'text-blue-400/60'}`}>{isBench ? 'BN' : slotPos}</span>
-                        <span className="text-white/80 text-[11px] font-semibold truncate flex-1 text-left" title={oppP ? `${oppP.firstName} ${oppP.lastName}` : ''}>{oppP ? oppP.lastName : '—'}</span>
-                        {oppVal !== null && <span className={`text-[11px] font-black shrink-0 tabular-nums ml-1 ${!lastIWon && !lastDraw ? 'text-green-400' : 'text-white/60'}`}>{formatStat(oppVal, lastGame.statMode)}</span>}
+                      <div className={`rounded-lg px-2 py-2 flex flex-col gap-0.5 min-w-0 ${!lastIWon && !lastDraw ? 'bg-green-950/15' : 'bg-white/[0.03]'}`}>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[9px] font-black shrink-0 ${isBench ? 'text-gray-500' : 'text-blue-400/60'}`}>{isBench ? 'BN' : slotPos}</span>
+                          <span className="text-white/85 text-xs font-bold truncate flex-1" title={oppP ? `${oppP.firstName} ${oppP.lastName}` : ''}>{oppP ? `${oppP.firstName[0]}. ${oppP.lastName}` : '—'}</span>
+                        </div>
+                        {oppVal !== null && <span className={`text-sm font-display leading-none tabular-nums ${!lastIWon && !lastDraw ? 'text-green-400' : 'text-white/50'}`}>{formatStat(oppVal, lastGame.statMode)}</span>}
                       </div>
                     </div>
                   )
@@ -757,12 +770,12 @@ function GameContent() {
               )}
             </div>
             <div
-              className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text' : isDraw ? 'text-gray-400 animate-scale-in' : 'text-gray-400 animate-loss-drop'}`}
-              style={iWon ? { fontSize: 'clamp(5rem, 20vw, 8rem)' } : { fontSize: 'clamp(4rem, 18vw, 7rem)' }}>
+              className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-gray-500 animate-loss-drop'}`}
+              style={iWon ? { fontSize: 'clamp(5.5rem, 22vw, 9rem)' } : { fontSize: 'clamp(4rem, 18vw, 7rem)' }}>
               {iWon ? 'W' : isDraw ? 'D' : 'L'}
             </div>
-            <div className={`font-black text-lg ${iWon ? 'text-white' : isDraw ? 'text-gray-400' : 'text-gray-400'}`}>
-              {iWon ? 'You Win' : isDraw ? 'Draw' : 'You Lose'}
+            <div className={`font-display tracking-widest text-xl sm:text-2xl ${iWon ? 'text-white' : isDraw ? 'text-yellow-400/70' : 'text-gray-500'}`}>
+              {iWon ? 'YOU WIN' : isDraw ? 'DRAW' : 'YOU LOSE'}
             </div>
           </div>
 
@@ -844,19 +857,23 @@ function GameContent() {
               const myVal = myP ? getStatValue(myP, effectiveLastResult.statMode) : null
               const oppVal = oppP ? getStatValue(oppP, effectiveLastResult.statMode) : null
               return (
-                <div key={i} className="grid grid-cols-[1fr_auto_1fr] gap-1 mb-1">
-                  <div className="bg-white/[0.03] rounded-lg px-2 py-1.5 flex items-center justify-between gap-1 min-w-0">
-                    <span className={`text-[9px] font-black w-5 shrink-0 ${isBench ? 'text-gray-500' : 'text-orange-400/70'}`}>{isBench ? 'BN' : slotPos}</span>
-                    <span className="text-white/80 text-[11px] font-semibold truncate flex-1 text-left" title={myP ? `${myP.firstName} ${myP.lastName}` : ''}>{myP ? myP.lastName : '—'}</span>
-                    {myVal !== null && <span className={`text-[11px] font-black shrink-0 tabular-nums ml-1 ${iWon ? 'text-green-400' : 'text-white/60'}`}>{formatStat(myVal, effectiveLastResult.statMode)}</span>}
+                <div key={i} className="grid grid-cols-[1fr_auto_1fr] gap-1 mb-1.5">
+                  <div className={`rounded-lg px-2 py-2 flex flex-col gap-0.5 min-w-0 ${iWon ? 'bg-green-950/15' : 'bg-white/[0.03]'}`}>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[9px] font-black shrink-0 ${isBench ? 'text-gray-500' : 'text-orange-400/70'}`}>{isBench ? 'BN' : slotPos}</span>
+                      <span className="text-white/85 text-xs font-bold truncate flex-1" title={myP ? `${myP.firstName} ${myP.lastName}` : ''}>{myP ? `${myP.firstName[0]}. ${myP.lastName}` : '—'}</span>
+                    </div>
+                    {myVal !== null && <span className={`text-sm font-display leading-none tabular-nums ${iWon ? 'text-green-400' : 'text-white/50'}`}>{formatStat(myVal, effectiveLastResult.statMode)}</span>}
                   </div>
-                  <div className="w-6 flex items-center justify-center">
+                  <div className="w-5 flex items-center justify-center">
                     <div className="w-px h-full bg-white/[0.06]" />
                   </div>
-                  <div className="bg-white/[0.03] rounded-lg px-2 py-1.5 flex items-center justify-between gap-1 min-w-0">
-                    <span className={`text-[9px] font-black w-5 shrink-0 ${isBench ? 'text-gray-500' : 'text-blue-400/60'}`}>{isBench ? 'BN' : slotPos}</span>
-                    <span className="text-white/80 text-[11px] font-semibold truncate flex-1 text-left" title={oppP ? `${oppP.firstName} ${oppP.lastName}` : ''}>{oppP ? oppP.lastName : '—'}</span>
-                    {oppVal !== null && <span className={`text-[11px] font-black shrink-0 tabular-nums ml-1 ${!iWon && !isDraw ? 'text-green-400' : 'text-white/60'}`}>{formatStat(oppVal, effectiveLastResult.statMode)}</span>}
+                  <div className={`rounded-lg px-2 py-2 flex flex-col gap-0.5 min-w-0 ${!iWon && !isDraw ? 'bg-green-950/15' : 'bg-white/[0.03]'}`}>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[9px] font-black shrink-0 ${isBench ? 'text-gray-500' : 'text-blue-400/60'}`}>{isBench ? 'BN' : slotPos}</span>
+                      <span className="text-white/85 text-xs font-bold truncate flex-1" title={oppP ? `${oppP.firstName} ${oppP.lastName}` : ''}>{oppP ? `${oppP.firstName[0]}. ${oppP.lastName}` : '—'}</span>
+                    </div>
+                    {oppVal !== null && <span className={`text-sm font-display leading-none tabular-nums ${!iWon && !isDraw ? 'text-green-400' : 'text-white/50'}`}>{formatStat(oppVal, effectiveLastResult.statMode)}</span>}
                   </div>
                 </div>
               )
