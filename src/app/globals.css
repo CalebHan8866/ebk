@@ -550,6 +550,19 @@ body {
 .timer-warn   { color: #f97316; }
 .timer-ok     { color: #22c55e; }
 
+/* ── Animated ellipsis — trailing dots that loop ──────────────────────────── */
+@keyframes ellipsis {
+  0%   { content: '.'; }
+  33%  { content: '..'; }
+  66%  { content: '...'; }
+  100% { content: '.'; }
+}
+.animate-ellipsis::after {
+  content: '.';
+  animation: ellipsis 1.5s steps(1, end) infinite;
+  letter-spacing: 0.05em;
+}
+
 /* ── War Room top bar ─────────────────────────────────────────────────────── */
 .war-room-bar {
   background: rgba(17,17,24,0.95);

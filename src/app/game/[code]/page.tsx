@@ -451,18 +451,76 @@ function GameContent() {
 
   // Waiting for opponent
   if (room.status === 'waiting') {
+    const opponentPresent = role === 'host' ? !!room.guestName : !!room.hostName
+    const opponentName = role === 'host' ? room.guestName : room.hostName
+    const mySeriesScore = role === 'host' ? room.hostSeriesScore : room.guestSeriesScore
+    const oppSeriesScore = role === 'host' ? room.guestSeriesScore : room.hostSeriesScore
+    const inProgress = room.currentGame > 1 && room.series > 1
+
     return (
       <div className="min-h-screen flex items-center justify-center text-center px-4">
         <div className="max-w-sm w-full animate-slide-up">
-          <div className="live-banner mb-6 mx-auto w-fit">
-            <span className="live-dot" />
-            Waiting for opponent
-          </div>
+
+          {/* Status banner */}
+          {opponentPresent ? (
+            <div className="live-banner mb-6 mx-auto w-fit">
+              <span className="live-dot" />
+              {role === 'host' ? 'Opponent connected' : 'In lobby'}
+            </div>
+          ) : (
+            <div className="live-banner mb-6 mx-auto w-fit">
+              <span className="live-dot" />
+              Waiting for opponent
+            </div>
+          )}
+
+          {/* Room code card */}
           <div className="card-accent p-8 mb-4">
             <p className="text-label tracking-[0.2em] mb-4">Room Code</p>
             <div className="font-display text-7xl text-orange-400 tracking-[0.35em] leading-none mb-3">{room.code}</div>
-            <p className="text-gray-400 text-xs">Share this code with your opponent</p>
+            {opponentPresent ? (
+              <div className="flex items-center justify-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <p className="text-green-400 text-xs font-black">{opponentName} joined</p>
+              </div>
+            ) : (
+              <p className="text-gray-400 text-xs">Share this code with your opponent</p>
+            )}
           </div>
+
+          {/* Series score — shown between games in a multi-game series */}
+          {inProgress && (
+            <div className="scoreboard mb-4 animate-fade-up">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-label tracking-[0.2em]">Series Score</span>
+                <span className="text-label tracking-[0.2em]">Game {room.currentGame} of {room.series}</span>
+              </div>
+              <div className="flex items-center justify-center gap-4">
+                <div className="text-center flex-1">
+                  <div className="text-white/40 text-[10px] font-black uppercase tracking-[0.15em] truncate mb-1">{myName}</div>
+                  <div className="font-display text-5xl text-orange-400 leading-none">{mySeriesScore}</div>
+                </div>
+                <div className="text-white/20 font-display text-3xl leading-none">–</div>
+                <div className="text-center flex-1">
+                  <div className="text-white/40 text-[10px] font-black uppercase tracking-[0.15em] truncate mb-1">{opponentName ?? 'Opponent'}</div>
+                  <div className="font-display text-5xl text-white/70 leading-none">{oppSeriesScore}</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Waiting indicator */}
+          <div className="flex items-center justify-center gap-2.5 mb-5">
+            <span className="w-3.5 h-3.5 rounded-full border-2 border-orange-500/40 border-t-orange-400 animate-spin shrink-0" />
+            <span className="text-gray-400 text-sm">
+              {role === 'host'
+                ? (opponentPresent ? 'Tap "Start Game" when ready' : 'Waiting for opponent to join')
+                : 'Waiting for host to start'}
+              <span className="animate-ellipsis" />
+            </span>
+          </div>
+
+          {/* Game format chips */}
           <div className="flex items-center justify-center gap-2 text-gray-400 text-sm flex-wrap">
             <span className="bg-white/[0.04] border border-white/[0.07] rounded-lg px-3 py-1.5 text-xs font-black text-gray-300">
               {room.teamMode === 'starter5' ? 'Starter 5' : room.teamMode === 'bench8' ? 'Bench 8' : 'Full Roster'}
