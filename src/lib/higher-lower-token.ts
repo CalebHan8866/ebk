@@ -15,9 +15,9 @@ const usedNonces = new Map<string, number>()
 
 function pruneExpiredNonces() {
   const now = Date.now()
-  for (const [nonce, expiry] of usedNonces) {
+  usedNonces.forEach((expiry, nonce) => {
     if (now > expiry) usedNonces.delete(nonce)
-  }
+  })
 }
 
 export function signGameToken(userId: string, nonce: string, issuedAt: number): string {
