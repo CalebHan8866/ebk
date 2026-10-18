@@ -1232,30 +1232,32 @@ export default function AuctionRoomPage() {
                       <span className={`font-black ${p.budget < 10 ? 'text-red-400/80' : 'text-white/50'}`}>${p.budget}M</span>
                       <span>{p.rosterCount}/{auctionState.teamSize} players</span>
                     </p>
-                    <div className="flex flex-wrap gap-1">
+                    <div className="space-y-1">
                       {p.roster.map(player => player && (
                         <div key={player.id} className="relative group">
                           {canSteal && p.socketId !== mySocketId ? (
                             <button
                               onClick={() => handleSteal(player.id)}
                               aria-label={`Steal ${player.firstName} ${player.lastName} for $${Math.ceil(player.paidPrice * 1.5)}M`}
-                              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs border border-yellow-500/40 bg-yellow-500/10 text-yellow-300 hover:bg-yellow-500/20 transition-colors"
+                              className="w-full flex items-center gap-2 rounded-lg px-2 py-1.5 border border-yellow-500/30 bg-yellow-500/08 hover:bg-yellow-500/15 text-yellow-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500/50"
                             >
-                              <span aria-hidden="true">⚡</span>
-                              <span>{player.firstName[0]}. {player.lastName}</span>
+                              <PosBadge pos={player.position} />
+                              <span className="flex-1 text-left text-xs font-bold truncate">{player.firstName[0]}. {player.lastName}</span>
+                              <span className="text-orange-400 text-xs font-black tabular-nums shrink-0">{player.ebkScore.toFixed(1)}</span>
+                              <span className="text-yellow-500/60 text-[9px] shrink-0" aria-hidden="true">⚡${Math.ceil(player.paidPrice * 1.5)}M</span>
                             </button>
                           ) : (
-                            <div className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs border border-white/[0.07] bg-white/[0.03] text-white/60">
-                              <span>{player.firstName[0]}. {player.lastName}</span>
-                            </div>
-                          )}
-                          {canSteal && p.socketId !== mySocketId && (
-                            <div className="absolute bottom-full left-0 mb-1 card-surface border border-yellow-500/30 rounded-lg px-2 py-1 text-xs text-yellow-300 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10 transition-opacity" aria-hidden="true">
-                              Steal for ${Math.ceil(player.paidPrice * 1.5)}M
+                            <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 border border-white/[0.06] bg-white/[0.025]">
+                              <PosBadge pos={player.position} />
+                              <span className="flex-1 text-xs font-bold text-white/70 truncate">{player.firstName[0]}. {player.lastName}</span>
+                              <span className="text-orange-400/70 text-xs font-black tabular-nums shrink-0">{player.ebkScore.toFixed(1)}</span>
                             </div>
                           )}
                         </div>
                       ))}
+                      {p.roster.length === 0 && (
+                        <p className="text-white/20 text-[10px] italic py-1">No players yet</p>
+                      )}
                     </div>
                   </div>
                 )

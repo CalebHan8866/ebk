@@ -1690,11 +1690,12 @@ function GameContent() {
                         }`}
                       >
                         <button
-                          className="w-full flex items-center gap-3 px-3 py-2.5 touch-manipulation"
+                          className="w-full flex items-center gap-3 px-3 py-2.5 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60 rounded-xl"
                           onClick={() => canPick && selectAndPick(player.id)}
                           disabled={!canPick}
+                          aria-label={`${player.firstName} ${player.lastName}, ${playerPositions.join('/')}, EBK ${player.ebkScore.toFixed(1)}${room.difficulty === 'casual' ? `, ${formatStat(statVal, statMode)} ${STAT_CATEGORY_SHORT[statMode as keyof typeof STAT_CATEGORY_SHORT] ?? statMode}` : ''}`}
                         >
-                          {/* Rank number — muted circle, Yahoo-style */}
+                          {/* Rank number */}
                           <div className="w-6 text-center shrink-0">
                             <span className="font-display text-gray-700 text-sm leading-none tabular-nums">{idx + 1}</span>
                           </div>
@@ -1713,19 +1714,32 @@ function GameContent() {
                             </div>
                           </div>
 
-                          {/* Stat value — tabular, right-aligned, prominent */}
-                          {room.difficulty === 'casual' && (
-                            <div className="text-right shrink-0 min-w-[52px]">
-                              <div className={`font-display text-xl leading-none tabular-nums ${
-                                isSelected ? 'text-orange-400' : 'text-white'
+                          {/* Stats right column — always show EBK; also show game stat in casual */}
+                          <div className="flex items-center gap-2.5 shrink-0">
+                            {/* Game-mode stat — only in casual (hidden in EBK mode) */}
+                            {room.difficulty === 'casual' && (
+                              <div className="text-right min-w-[44px]">
+                                <div className={`font-display text-xl leading-none tabular-nums ${
+                                  isSelected ? 'text-orange-400' : 'text-white'
+                                }`}>
+                                  {formatStat(statVal, statMode)}
+                                </div>
+                                <div className="text-gray-500 text-[9px] tracking-wider uppercase mt-0.5">
+                                  {STAT_CATEGORY_SHORT[statMode as keyof typeof STAT_CATEGORY_SHORT] ?? statMode.toUpperCase()}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* EBK score — always visible, secondary metric */}
+                            <div className={`text-right min-w-[38px] ${room.difficulty === 'casual' ? 'pl-2 border-l border-white/[0.07]' : ''}`}>
+                              <div className={`font-display text-lg leading-none tabular-nums ${
+                                isSelected ? 'text-orange-300' : 'text-orange-500/70'
                               }`}>
-                                {formatStat(statVal, statMode)}
+                                {player.ebkScore.toFixed(1)}
                               </div>
-                              <div className="text-gray-400 text-[10px] tracking-wider uppercase mt-0.5">
-                                {STAT_CATEGORY_SHORT[statMode as keyof typeof STAT_CATEGORY_SHORT] ?? statMode.toUpperCase()}
-                              </div>
+                              <div className="text-gray-600 text-[9px] tracking-wider uppercase mt-0.5">EBK</div>
                             </div>
-                          )}
+                          </div>
 
                           {/* Pick CTA — only when this card is active and pickable */}
                           {isSelected && !hasMultipleSlots && (
