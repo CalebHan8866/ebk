@@ -405,7 +405,7 @@ export default function AuctionRoomPage() {
     const isMe = (r: AuctionResult) => r.socketId === mySocketId
     const PODIUM_STYLES = [
       { medal: '🥇', border: 'border-yellow-500/40', bg: 'bg-yellow-950/30', glow: 'shadow-[0_0_32px_rgba(234,179,8,0.12)]', rank: 'text-yellow-300', nameSize: 'text-xl sm:text-2xl' },
-      { medal: '🥈', border: 'border-slate-500/30',  bg: 'bg-slate-900/30',  glow: '',                                         rank: 'text-slate-300', nameSize: 'text-lg sm:text-xl' },
+      { medal: '🥈', border: 'border-white/[0.12]',   bg: 'bg-white/[0.03]', glow: '',                                         rank: 'text-white/60',  nameSize: 'text-lg sm:text-xl' },
       { medal: '🥉', border: 'border-orange-800/30', bg: 'bg-orange-950/20', glow: '',                                         rank: 'text-orange-400', nameSize: 'text-base sm:text-lg' },
     ]
 
@@ -1197,12 +1197,17 @@ export default function AuctionRoomPage() {
             {/* Player card */}
             {cp && (
               <div className="card-accent w-full max-w-sm p-6 text-center animate-scale-in">
-                <div className="flex items-center justify-center gap-3 mb-4">
-                  <PosBadge pos={cp.position} />
-                  <span className="text-white/25 text-xs font-mono tracking-widest">{cp.team}</span>
-                  <span className="text-white/15 text-xs">{cp.yearFrom}–{cp.yearTo}</span>
+                {/* ON THE BLOCK badge */}
+                <div className="inline-flex items-center gap-1.5 bg-orange-950/50 border border-orange-500/40 rounded-full px-3 py-1 mb-4">
+                  <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse shrink-0" />
+                  <span className="text-orange-400 text-[10px] font-black tracking-[0.2em] uppercase">On The Block</span>
                 </div>
-                <h2 className="font-display text-5xl md:text-6xl text-white tracking-wider leading-none mb-6">
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  <PosBadge pos={cp.position} />
+                  <span className="text-white/35 text-xs font-mono tracking-widest">{cp.team}</span>
+                  <span className="text-white/20 text-xs">{cp.yearFrom}–{cp.yearTo}</span>
+                </div>
+                <h2 className="font-display text-5xl md:text-6xl text-white tracking-wider leading-none mb-5">
                   {cp.firstName}<br />{cp.lastName}
                 </h2>
                 <div className="grid grid-cols-4 gap-2 mb-5">
