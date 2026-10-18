@@ -231,14 +231,14 @@ function WinPctBadge({ pct, gamesPlayed }: { pct: string; gamesPlayed: number })
 // ── Column header row ─────────────────────────────────────────────────────────
 function ColumnHeaders({ sort }: { sort: SortKey }) {
   return (
-    <div className="flex items-center gap-3 px-4 pb-1.5 pt-0.5">
-      <div className="w-9 shrink-0" />
-      <div className="w-8 shrink-0" />
+    <div className="flex items-center gap-2 sm:gap-3 px-4 pb-1.5 pt-0.5">
+      <div className="w-8 sm:w-9 shrink-0" />
+      <div className="w-7 sm:w-8 shrink-0" />
       <div className="flex-1 min-w-0 text-label">Player</div>
-      <div className={`w-10 text-right text-label shrink-0 ${sort === 'wins' ? 'text-orange-500' : ''}`}>W</div>
-      <div className="w-10 text-right text-label shrink-0">L</div>
-      <div className={`w-14 text-right text-label shrink-0 ${sort === 'winPct' ? 'text-orange-500' : ''}`}>WIN%</div>
-      <div className={`w-12 text-right text-label shrink-0 ${sort === 'winStreak' ? 'text-orange-500' : ''}`}>STK</div>
+      <div className={`w-9 sm:w-10 text-right text-label shrink-0 ${sort === 'wins' ? 'text-orange-500' : ''}`}>W</div>
+      <div className="hidden sm:block w-10 text-right text-label shrink-0">L</div>
+      <div className={`w-12 sm:w-14 text-right text-label shrink-0 ${sort === 'winPct' ? 'text-orange-500' : ''}`}>WIN%</div>
+      <div className={`hidden sm:block w-12 text-right text-label shrink-0 ${sort === 'winStreak' ? 'text-orange-500' : ''}`}>STK</div>
     </div>
   )
 }
@@ -268,18 +268,18 @@ function LeaderboardRow({ user: u, rank, isMe, sort, totalPlayers, rowRef }: Row
   return (
     <div ref={rowRef} className={rowClass}>
       {/* Rank */}
-      <div className="w-9 text-center shrink-0">
+      <div className="w-8 sm:w-9 text-center shrink-0">
         <RankNumber rank={rank} />
       </div>
 
       {/* Avatar */}
-      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-white text-xs shrink-0 ${isMe ? 'bg-orange-500' : 'bg-orange-900/60'}`}>
+      <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-black text-white text-xs shrink-0 ${isMe ? 'bg-orange-500' : 'bg-orange-900/60'}`}>
         {u.username[0].toUpperCase()}
       </div>
 
       {/* Player name + chips */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-1.5">
           <span className={`font-black text-sm truncate ${isMe ? 'text-orange-300' : 'text-white'}`}>
             {u.username}
           </span>
@@ -296,24 +296,24 @@ function LeaderboardRow({ user: u, rank, isMe, sort, totalPlayers, rowRef }: Row
       </div>
 
       {/* W */}
-      <div className="w-10 text-right shrink-0">
+      <div className="w-9 sm:w-10 text-right shrink-0">
         <span className={`tabular-nums font-black text-sm ${sort === 'wins' ? 'text-white' : 'text-gray-300'}`}>
           {u.wins}
         </span>
       </div>
 
-      {/* L */}
-      <div className="w-10 text-right shrink-0">
+      {/* L — hidden on mobile */}
+      <div className="hidden sm:block w-10 text-right shrink-0">
         <span className="tabular-nums font-bold text-sm text-gray-400">{u.losses}</span>
       </div>
 
       {/* WIN% */}
-      <div className="w-14 text-right shrink-0">
+      <div className="w-12 sm:w-14 text-right shrink-0">
         <WinPctBadge pct={winPct} gamesPlayed={u.gamesPlayed} />
       </div>
 
-      {/* Streak */}
-      <div className="w-12 text-right shrink-0">
+      {/* Streak — hidden on mobile */}
+      <div className="hidden sm:block w-12 text-right shrink-0">
         {u.winStreak >= 3 ? (
           <span className={`tabular-nums font-black text-xs ${sort === 'winStreak' ? 'text-orange-400' : 'text-orange-500/70'}`}>
             🔥{u.winStreak}
