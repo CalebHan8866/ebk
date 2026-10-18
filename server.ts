@@ -180,6 +180,8 @@ const LISTING_EXPIRY_MS = 10 * 60 * 1000
 const AUCTION_CLEANUP_MS = 30 * 60 * 1000
 /** Grace period after a game ends before the room is deleted */
 const ROOM_CLEANUP_GRACE_MS = 60_000
+/** Grace period before partner-disconnected fires — lets the socket reconnect first */
+const PARTNER_DISCONNECT_GRACE_MS = 8_000
 /** Steal price multiplier: winner pays ceil(originalPrice × STEAL_MULTIPLIER) */
 const STEAL_MULTIPLIER = 1.5
 /** Auction budget by team size */
@@ -349,6 +351,10 @@ const roomCleanupTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const pickTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const pickTimerStartedAt = new Map<string, number>()
 const consecutiveTimeouts = new Map<string, { host: number; guest: number }>()
+// Pending partner-disconnected timers: roomCode → timer handle.
+// Gives the disconnected player PARTNER_DISCONNECT_GRACE_MS to reconnect before
+// the game is finalized as a forfeit.
+const partnerDisconnectTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const emoteLastSent = new Map<string, number>() // socketId → timestamp
 const pendingListingCreate = new Set<string>() // socketId → in-flight guard
 // Per-socket bid throttle: socketId → { count, windowStart }
@@ -556,6 +562,9 @@ function scheduleRoomCleanup(code: string, ioRef?: SocketServer) {
   // series-complete path) does not leave a stale timer.
   const existing = roomCleanupTimers.get(code)
   if (existing) clearTimeout(existing)
+  // Also cancel any pending forfeit grace-period timer — the game has already ended.
+  const forfeit = partnerDisconnectTimers.get(code)
+  if (forfeit) { clearTimeout(forfeit); partnerDisconnectTimers.delete(code) }
 
   const handle = setTimeout(() => {
     roomCleanupTimers.delete(code)
@@ -1479,6 +1488,15 @@ app.prepare().then(async () => {
         room.guestSocketId = socket.id
       }
 
+      // If a forfeit grace-period timer was pending for this room (because this
+      // player's previous socket disconnected), cancel it — they've reconnected in time.
+      const pendingForfeit = partnerDisconnectTimers.get(code)
+      if (pendingForfeit) {
+        clearTimeout(pendingForfeit)
+        partnerDisconnectTimers.delete(code)
+        console.log('[room] Reconnect within grace period — forfeit cancelled code=%s', code)
+      }
+
       socket.join(code)
       socket.emit('room-state', { room, players: allPlayers })
 
@@ -2204,31 +2222,44 @@ app.prepare().then(async () => {
           // Don't fire partner-disconnected for completed series — player may disconnect
           // on the win screen while the 30s cleanup timer is still running
           if (room.status === 'complete') return
-          // Mark complete immediately to prevent the second player's disconnect handler
-          // from double-emitting partner-disconnected and double-recording the matchup
-          room.status = 'complete'
-          const timer = pickTimers.get(code)
-          if (timer) clearTimeout(timer)
-          pickTimers.delete(code)
-          io.to(code).emit('partner-disconnected')
-          // Award win to remaining player and loss to disconnector for online games
-          if (room.source === 'online') {
-            recordMatchup(room.hostUserId, room.guestUserId)
-            const disconnectorIsHost = room.hostSocketId === socket.id
-            const winner = disconnectorIsHost ? 'guest' : 'host'
-            // Give the winner enough series wins to clearly win the series
-            const winsNeeded = Math.ceil(room.series / 2)
-            if (winner === 'host') {
-              room.hostSeriesScore = Math.max(room.hostSeriesScore, winsNeeded)
-            } else {
-              room.guestSeriesScore = Math.max(room.guestSeriesScore, winsNeeded)
+          // If a forfeit timer is already pending for this room (the other player also
+          // recently disconnected), don't start a second one — let the existing timer fire.
+          if (partnerDisconnectTimers.has(code)) return
+          // Grace period: wait PARTNER_DISCONNECT_GRACE_MS before finalising the forfeit.
+          // If the disconnected player reconnects within the window (via get-room), the
+          // get-room handler will cancel this timer and re-seat them.
+          const disconnectorIsHost = room.hostSocketId === socket.id
+          const gracePeriodTimer = setTimeout(() => {
+            partnerDisconnectTimers.delete(code)
+            // Re-check: room may have been cleaned up or already completed by the time
+            // the grace period expires (e.g. both players disconnected simultaneously).
+            if (!rooms.has(code) || room.status === 'complete') return
+            // Mark complete to prevent double-forfeit if the second player disconnects
+            // during or after the grace period.
+            room.status = 'complete'
+            const pickTimer = pickTimers.get(code)
+            if (pickTimer) clearTimeout(pickTimer)
+            pickTimers.delete(code)
+            io.to(code).emit('partner-disconnected')
+            // Award win to remaining player and loss to disconnector for online games
+            if (room.source === 'online') {
+              recordMatchup(room.hostUserId, room.guestUserId)
+              const winner = disconnectorIsHost ? 'guest' : 'host'
+              // Give the winner enough series wins to clearly win the series
+              const winsNeeded = Math.ceil(room.series / 2)
+              if (winner === 'host') {
+                room.hostSeriesScore = Math.max(room.hostSeriesScore, winsNeeded)
+              } else {
+                room.guestSeriesScore = Math.max(room.guestSeriesScore, winsNeeded)
+              }
+              if (room.hostUserId) updateStatsAndUnlock(io, room.hostUserId, room.hostSocketId, winner === 'host', false, room.hostJCGames, true)
+              if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId!, winner === 'guest', false, room.guestJCGames, false)
+              saveGameRecords(room, winner)
             }
-            if (room.hostUserId) updateStatsAndUnlock(io, room.hostUserId, room.hostSocketId, winner === 'host', false, room.hostJCGames, true)
-            if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId!, winner === 'guest', false, room.guestJCGames, false)
-            saveGameRecords(room, winner)
-          }
-          // scheduleRoomCleanup cleans up consecutiveTimeouts/pickTimerStartedAt/rooms
-          scheduleRoomCleanup(code, io)
+            // scheduleRoomCleanup cleans up consecutiveTimeouts/pickTimerStartedAt/rooms
+            scheduleRoomCleanup(code, io)
+          }, PARTNER_DISCONNECT_GRACE_MS)
+          partnerDisconnectTimers.set(code, gracePeriodTimer)
         }
       })
 

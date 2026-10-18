@@ -338,6 +338,15 @@ function GameContent() {
       setTimeoutWarning(disqualifiedRole === role ? 'You were disqualified for 2 consecutive timeouts' : 'Opponent disqualified for 2 consecutive timeouts')
     }
 
+    // Named handler so socket.off() removes only this listener and not all 'connect'
+    // listeners (e.g. those registered by the socket singleton itself).
+    // On reconnect the socket gets a new ID — re-emit get-room so the server
+    // re-seats this socket into the room channel and pushes fresh state.
+    function handleConnect() {
+      socket.emit('get-room', { code, role })
+    }
+
+    socket.on('connect', handleConnect)
     socket.on('room-state', handleRoomState)
     socket.on('draft-started', handleDraftStarted)
     socket.on('room-updated', handleRoomUpdated)
@@ -356,6 +365,7 @@ function GameContent() {
     socket.emit('get-room', { code, role })
 
     return () => {
+      socket.off('connect', handleConnect)
       socket.off('room-state', handleRoomState)
       socket.off('draft-started', handleDraftStarted)
       socket.off('room-updated', handleRoomUpdated)
