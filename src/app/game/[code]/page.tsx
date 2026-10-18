@@ -383,6 +383,22 @@ function GameContent() {
     }
   }, [code, role])
 
+  // Warn the player before they close the tab while a draft is in progress.
+  // A navigating-away mid-draft counts as a disconnect for the opponent and can
+  // corrupt the game state, so we prompt with the browser's native dialog.
+  useEffect(() => {
+    if (!room || room.status === 'complete' || seriesWinner !== null) return
+    if (room.status !== 'drafting' && room.status !== 'waiting' && room.status !== 'result') return
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      // Modern browsers show their own generic message; setting returnValue
+      // is required for the dialog to appear in all supported browsers.
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [room?.status, seriesWinner])
+
   // Debounce search query by 120ms — prevents janky filtering on every keystroke
   useEffect(() => {
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
@@ -1169,6 +1185,29 @@ function GameContent() {
 
   return (
     <div className="min-h-screen py-4 px-4 relative animate-fade-in">
+      {/* ── Screen-reader live regions ─────────────────────────────────────────── */}
+      {/* Whose turn it is — polite so it doesn't interrupt */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {isMyTurn
+          ? `Your pick. ${spunTeam ? `Pick a player from ${spunTeam}.` : 'Select a player.'}`
+          : `${currentPicker === 'host' ? room.hostName : room.guestName} is picking.`}
+      </div>
+      {/* Pick announcements — assertive so screen readers interrupt immediately */}
+      <div aria-live="assertive" aria-atomic="true" className="sr-only">
+        {recentMyPickId && playerById.get(recentMyPickId) && (
+          `You drafted ${playerById.get(recentMyPickId)!.firstName} ${playerById.get(recentMyPickId)!.lastName}.`
+        )}
+        {recentOppPickId && playerById.get(recentOppPickId) && (
+          `Opponent drafted ${playerById.get(recentOppPickId)!.firstName} ${playerById.get(recentOppPickId)!.lastName}.`
+        )}
+      </div>
+      {/* Countdown — announce when under 10 seconds */}
+      {pickTimeLeft > 0 && pickTimeLeft <= 10 && (
+        <div aria-live="assertive" aria-atomic="true" className="sr-only">
+          {`${pickTimeLeft} seconds remaining.`}
+        </div>
+      )}
+
       {/* Opponent emote popup */}
       {opponentEmote && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-slide-up">

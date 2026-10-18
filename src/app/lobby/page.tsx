@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext'
 import { BADGES } from '@/lib/accessories'
 import { type TeamMode, type SeriesLength, type Difficulty, type StatCategory, STAT_CATEGORY_LABELS, STAT_CATEGORY_DESC, ALL_STAT_CATEGORIES } from '@/types/game'
 
-type OnlineState = 'idle' | 'listing' | 'found'
+type OnlineState = 'idle' | 'listing' | 'found' | 'expired'
 
 interface UserRecord { wins: number; losses: number; draws: number }
 
@@ -198,9 +198,14 @@ export default function LobbyPage() {
 
     const handleMatchCancelled = ({ reason }: { reason: string }) => {
       if (countdownRef.current) clearInterval(countdownRef.current)
-      setOnlineState('idle')
-      setMatchInfo(null)
-      setMyListingCode(null)
+      if (!selfDeclinedRef.current) {
+        // Show expired screen instead of resetting to idle immediately
+        setOnlineState('expired' as OnlineState)
+      } else {
+        setOnlineState('idle')
+        setMatchInfo(null)
+        setMyListingCode(null)
+      }
       if (!selfDeclinedRef.current) setError(reason)
       selfDeclinedRef.current = false
     }
@@ -383,14 +388,14 @@ export default function LobbyPage() {
                   />
                 </div>
                 <div className={`font-display text-4xl leading-none tabular-nums ${
-                  countdownUrgent ? 'text-red-400 animate-win-glow' : countdownWarn ? 'text-yellow-400' : 'text-white/60'
+                  countdown === 0 ? 'text-red-400/60' : countdownUrgent ? 'text-red-400 animate-win-glow' : countdownWarn ? 'text-yellow-400' : 'text-white/60'
                 }`}>
-                  {countdown > 0 ? countdown : '—'}
+                  {countdown > 0 ? countdown : '0'}
                 </div>
                 <div className={`text-[10px] font-black tracking-[0.2em] uppercase ${
-                  countdownUrgent ? 'text-red-400/70' : 'text-white/25'
+                  countdown === 0 ? 'text-red-400/60' : countdownUrgent ? 'text-red-400/70' : 'text-white/25'
                 }`}>
-                  {countdown > 0 ? (countdownUrgent ? 'Accept now!' : 'Seconds to accept') : 'Starting…'}
+                  {countdown === 0 ? 'Window closed…' : countdownUrgent ? 'Accept now!' : 'Seconds to accept'}
                 </div>
               </div>
             </div>
@@ -511,6 +516,58 @@ export default function LobbyPage() {
                 Waiting for <span className="text-white/70 font-bold">{myReady ? matchInfo.opponentName : displayName}</span> to accept…
               </p>
             )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── MATCH EXPIRED — nobody accepted in time ───────────────────────────────
+  if (onlineState === 'expired') {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-10" role="alert" aria-live="assertive">
+        <div className="w-full max-w-sm animate-scale-in">
+          <div className="card-accent rounded-3xl overflow-hidden shadow-[0_0_40px_rgba(239,68,68,0.06)]">
+            {/* Red accent bar */}
+            <div className="h-1 w-full bg-gradient-to-r from-transparent via-red-500/60 to-transparent" />
+
+            <div className="px-8 py-10 text-center">
+              {/* Icon */}
+              <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/25 flex items-center justify-center mx-auto mb-6">
+                <span className="text-red-400 text-3xl leading-none font-display">⏱</span>
+              </div>
+
+              <h2 className="font-display text-4xl text-white tracking-wider leading-none mb-2">
+                MATCH <span className="text-red-400">EXPIRED</span>
+              </h2>
+              <p className="text-gray-400 text-sm leading-relaxed mb-8">
+                The 60-second accept window closed before both players confirmed. Head back to find a new opponent.
+              </p>
+
+              <button
+                onClick={() => {
+                  setOnlineState('idle')
+                  setMatchInfo(null)
+                  setMyListingCode(null)
+                  setError('')
+                }}
+                className="btn-primary w-full"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => {
+                  setOnlineState('idle')
+                  setMainTab(null)
+                  setMatchInfo(null)
+                  setMyListingCode(null)
+                  setError('')
+                }}
+                className="btn-secondary w-full mt-3 text-sm"
+              >
+                Back to Lobby
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -1731,6 +1731,16 @@ app.prepare().then(async () => {
       if (allPlayers.length === 0) {
         socket.emit('auction:error', { message: 'Server still loading' }); return
       }
+
+      // Block authenticated users from creating a room if they are already an active
+      // participant in any draft or auction room.  Without this guard a single account
+      // could open multiple tabs and create as many rooms as the per-socket throttle
+      // allows (up to 5 per minute per tab), corrupting per-user stat recording.
+      const userId: string | null = (socket.data as { userId?: string })?.userId ?? null
+      if (userId && isUserActiveInAnyRoom(userId)) {
+        socket.emit('auction:error', { message: 'You are already in an active game' }); return
+      }
+
       let code = generateCode()
       while (auctionRooms.has(code)) code = generateCode()
 
@@ -1739,7 +1749,6 @@ app.prepare().then(async () => {
       const shuffled = [...validPlayers].sort(() => Math.random() - 0.5)
       const poolSize = maxPlayers * teamSize * 2
       const pool = shuffled.slice(0, Math.min(poolSize, shuffled.length))
-      const userId: string | null = (socket.data as { userId?: string })?.userId ?? null
 
       const room: AuctionRoom = {
         code, hostSocketId: socket.id, maxPlayers, teamSize, totalBudget: budget,

@@ -4,6 +4,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { BADGES, EMOTES } from '@/lib/accessories'
+
+const VALID_BADGE_IDS = new Set(BADGES.map(b => b.id))
+const VALID_EMOTE_IDS = new Set(EMOTES.map(e => e.id))
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,6 +28,15 @@ export async function POST(req: NextRequest) {
     const { type, id } = body
     if (!type || !id || (type !== 'badge' && type !== 'emote')) {
       return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
+    }
+
+    // Validate that the ID is a real canonical badge/emote — not a phantom value
+    // injected via a tampered DB row or future data drift.
+    if (type === 'badge' && !VALID_BADGE_IDS.has(id)) {
+      return NextResponse.json({ error: 'Invalid badge ID' }, { status: 400 })
+    }
+    if (type === 'emote' && !VALID_EMOTE_IDS.has(id)) {
+      return NextResponse.json({ error: 'Invalid emote ID' }, { status: 400 })
     }
 
     const user = await prisma.user.findUnique({

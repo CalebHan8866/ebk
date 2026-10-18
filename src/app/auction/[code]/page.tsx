@@ -268,6 +268,18 @@ export default function AuctionRoomPage() {
     }
   }, [code, guestName])
 
+  // Warn the player before they close the tab while an auction is in progress.
+  // Leaving mid-auction drops the participant from the room and disrupts other players.
+  useEffect(() => {
+    if (phase === 'complete' || phase === 'loading' || phase === 'error') return
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [phase])
+
   const me = auctionState?.participants.find(p => p.socketId === mySocketId)
   const isHost = auctionState && mySocketId === auctionState.hostSocketId
   const canBid = phase === 'bidding' && me && me.budget >= bidAmount && me.rosterCount < (auctionState?.teamSize ?? 0)
