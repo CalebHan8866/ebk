@@ -315,6 +315,11 @@ interface AuctionRoom {
   lastWonAmount: number
   /** ID of the player that was just won at auction and is eligible to be stolen this round */
   lastWonPlayerId: number | null
+  /** SocketId of the participant whose turn it is to nominate (pass without a bid).
+   *  Rotates round-robin each time advanceAuction starts a new bidding round.
+   *  Only the current nominator may call auction:pass — any other participant
+   *  calling pass before a bid is placed would unfairly skip the player. */
+  nominatorSocketId: string | null
   stealInitiated: boolean
   bidTimer: ReturnType<typeof setTimeout> | null
   bidDeadline: number
@@ -874,6 +879,7 @@ function buildAuctionStateForSocket(room: AuctionRoom) {
     lastWinnerName: room.lastWinnerName,
     lastWonAmount: room.lastWonAmount,
     stealInitiated: room.stealInitiated,
+    nominatorSocketId: room.nominatorSocketId,
     bidDeadline: room.bidDeadline,
     tradeOffers: room.tradeOffers,
     tradeDeadline: room.tradeDeadline,
@@ -891,6 +897,10 @@ function broadcastAuctionState(io: SocketServer, room: AuctionRoom) {
   }
 }
 
+// Tracks how many bidding rounds have started so we can derive the nominator
+// index (nominatorRound % participants.length) without a separate counter field.
+const auctionRoundCounter = new Map<string, number>()
+
 function advanceAuction(io: SocketServer, room: AuctionRoom) {
   const wonIds = new Set(room.participants.flatMap(p => p.roster))
   room.currentPlayerIndex++
@@ -907,6 +917,12 @@ function advanceAuction(io: SocketServer, room: AuctionRoom) {
       room.lastWinnerName = null
       room.lastWonPlayerId = null
       room.stealInitiated = false
+      // Assign the nominator for this round using a round-robin through participants.
+      // Only the nominator may call auction:pass — no other participant can unilaterally
+      // skip a player before a bid has been placed.
+      const round = (auctionRoundCounter.get(room.code) ?? 0) + 1
+      auctionRoundCounter.set(room.code, round)
+      room.nominatorSocketId = room.participants[round % room.participants.length]?.socketId ?? null
       room.status = 'bidding'
       room.bidDeadline = Date.now() + BID_TIMER_MS
       if (room.bidTimer) clearTimeout(room.bidTimer)
@@ -996,7 +1012,7 @@ function finishAuction(io: SocketServer, room: AuctionRoom) {
   for (const p of room.participants) {
     io.to(p.socketId).emit('auction:complete', { results })
   }
-  setTimeout(() => { auctionRooms.delete(room.code) }, AUCTION_CLEANUP_MS)
+  setTimeout(() => { auctionRooms.delete(room.code); auctionRoundCounter.delete(room.code) }, AUCTION_CLEANUP_MS)
 }
 
 // ─── Server ──────────────────────────────────────────────────────────────────
@@ -1760,6 +1776,7 @@ app.prepare().then(async () => {
         playerPool: pool, currentPlayerIndex: -1, currentPlayer: null,
         currentBid: 0, currentBidderSocketId: null, currentBidderName: null,
         lastWinnerSocketId: null, lastWinnerName: null, lastWonAmount: 0, lastWonPlayerId: null,
+        nominatorSocketId: null,
         stealInitiated: false, bidTimer: null, bidDeadline: 0,
         tradeOffers: [], tradeDeadline: null, tradeTimer: null, bidLog: [], finalResults: null,
       }
@@ -1893,6 +1910,13 @@ app.prepare().then(async () => {
       // cancelling a valid bid.
       if (room.currentBid > 0) {
         socket.emit('auction:error', { message: 'Cannot pass after a bid has been placed' })
+        return
+      }
+      // Turn-order enforcement: only the designated nominator for this round may
+      // pass. Without this, any participant could unilaterally skip a player that
+      // others haven't had a chance to bid on yet, denying them fair auction access.
+      if (room.nominatorSocketId !== null && socket.id !== room.nominatorSocketId) {
+        socket.emit('auction:error', { message: 'Only the current nominator can pass' })
         return
       }
       // Cancel the running timer so handleAuctionBidExpiry doesn't also fire
@@ -2165,6 +2189,7 @@ app.prepare().then(async () => {
           if (room.participants.length === 0) {
             if (room.bidTimer) clearTimeout(room.bidTimer)
             auctionRooms.delete(room.code)
+            auctionRoundCounter.delete(room.code)
           } else {
             if (room.hostSocketId === socket.id) room.hostSocketId = room.participants[0].socketId
             broadcastAuctionState(io, room)
@@ -2180,6 +2205,7 @@ app.prepare().then(async () => {
             if (room.bidTimer) clearTimeout(room.bidTimer)
             if (room.tradeTimer) clearTimeout(room.tradeTimer)
             auctionRooms.delete(room.code)
+            auctionRoundCounter.delete(room.code)
           }
         }
       })

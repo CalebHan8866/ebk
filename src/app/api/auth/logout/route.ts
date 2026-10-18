@@ -38,5 +38,5 @@ export async function POST() {
     maxAge: 0,
     path: '/',
   })
-  return new NextResponse(null, { status: 204 })
+  return new NextResponse(null, { status: 204, headers: { 'Cache-Control': 'no-store' } })
 }

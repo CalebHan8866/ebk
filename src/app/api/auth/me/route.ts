@@ -1,19 +1,19 @@
 export const dynamic = 'force-dynamic'
 
-import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { decodeToken } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { noStore } from '@/lib/no-store'
 
 export async function GET() {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get('ebk-token')?.value
-    if (!token) return NextResponse.json({ user: null })
+    if (!token) return noStore({ user: null })
 
     // Decode the JWT (crypto only — no DB hit yet).
     const claims = await decodeToken(token)
-    if (!claims) return NextResponse.json({ user: null })
+    if (!claims) return noStore({ user: null })
 
     // Single DB query: fetch user fields + tokenVersion so we can validate
     // the session version without a separate round-trip (was 2 queries, now 1).
@@ -31,12 +31,12 @@ export async function GET() {
     })
 
     // Reject if user deleted or token was invalidated by a password change.
-    if (!row || row.tokenVersion !== claims.tokenVersion) return NextResponse.json({ user: null })
+    if (!row || row.tokenVersion !== claims.tokenVersion) return noStore({ user: null })
 
     // Strip tokenVersion before sending to the client.
     const { tokenVersion: _tv, ...user } = row
-    return NextResponse.json({ user })
+    return noStore({ user })
   } catch {
-    return NextResponse.json({ user: null })
+    return noStore({ user: null })
   }
 }
