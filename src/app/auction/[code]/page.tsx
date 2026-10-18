@@ -1222,6 +1222,7 @@ export default function AuctionRoomPage() {
             <div className="space-y-3">
               {auctionState.participants.map(p => {
                 const budgetPct = (p.budget / auctionState.totalBudget) * 100
+                const rosterPct = auctionState.teamSize > 0 ? (p.rosterCount / auctionState.teamSize) * 100 : 0
                 const isMe = p.socketId === mySocketId
                 const isRoomHost = p.socketId === auctionState.hostSocketId
                 return (
@@ -1233,6 +1234,10 @@ export default function AuctionRoomPage() {
                       <span className={`text-xs font-black truncate flex-1 ${isMe ? 'text-orange-300' : 'text-white'}`}>{p.name}</span>
                       {isRoomHost && !isMe && <span className="text-[9px] font-bold text-white/25 uppercase tracking-wider shrink-0">Host</span>}
                       {isMe && <span className="text-[10px] font-black text-orange-400/70 uppercase tracking-wider shrink-0">{isRoomHost ? 'Host · You' : 'You'}</span>}
+                      {/* Roster fill indicator */}
+                      <span className={`text-[9px] font-black tabular-nums shrink-0 ${rosterPct >= 100 ? 'text-green-400' : 'text-white/30'}`}>
+                        {p.rosterCount}/{auctionState.teamSize}
+                      </span>
                     </div>
                     {/* Budget bar */}
                     <div className="budget-bar mb-1.5">
@@ -1264,6 +1269,9 @@ export default function AuctionRoomPage() {
                               <PosBadge pos={player.position} />
                               <span className="flex-1 text-xs font-bold text-white/70 truncate">{player.firstName[0]}. {player.lastName}</span>
                               <span className="text-orange-400/70 text-xs font-black tabular-nums shrink-0">{player.ebkScore.toFixed(1)}</span>
+                              {player.paidPrice > 0 && (
+                                <span className="text-white/20 text-[9px] tabular-nums shrink-0">${player.paidPrice}M</span>
+                              )}
                             </div>
                           )}
                         </div>
