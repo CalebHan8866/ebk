@@ -328,6 +328,7 @@ const rooms = new Map<string, Room>()
 const readyRooms = new Map<string, ReadyRoom>()
 const gameListings = new Map<string, GameListing>()
 const listingTimers = new Map<string, ReturnType<typeof setTimeout>>()
+const roomCleanupTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const pickTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const pickTimerStartedAt = new Map<string, number>()
 const consecutiveTimeouts = new Map<string, { host: number; guest: number }>()
@@ -515,7 +516,14 @@ async function updateStatsAndUnlock(
 }
 
 function scheduleRoomCleanup(code: string, ioRef?: SocketServer) {
-  setTimeout(() => {
+  // Cancel any existing cleanup timer for this code so that calling
+  // scheduleRoomCleanup twice (e.g. disqualification path followed by a
+  // series-complete path) does not leave a stale timer.
+  const existing = roomCleanupTimers.get(code)
+  if (existing) clearTimeout(existing)
+
+  const handle = setTimeout(() => {
+    roomCleanupTimers.delete(code)
     const t = pickTimers.get(code)
     if (t) clearTimeout(t)
     pickTimers.delete(code)
@@ -526,6 +534,7 @@ function scheduleRoomCleanup(code: string, ioRef?: SocketServer) {
     if (ioRef) ioRef.in(code).socketsLeave(code)
     console.log('[room] destroyed code=%s game_rooms=%d', code, rooms.size)
   }, ROOM_CLEANUP_GRACE_MS) // grace — lets clients receive final event before room disappears
+  roomCleanupTimers.set(code, handle)
 }
 
 function generateCode(): string {
@@ -985,7 +994,12 @@ app.prepare().then(async () => {
     }
   }, 5 * 60 * 1000)
 
-  // Prune stale cooldown entries every hour to prevent unbounded memory growth
+  // Prune stale cooldown and grudge-count entries every hour to prevent unbounded growth.
+  // recentMatchups: entries expire after the cooldown window (30 min).
+  // matchupCount: grudge counts are only meaningful while the pair is still within cooldown,
+  //   because once the cooldown clears the pair can rematch and the count will resume from
+  //   where it left off anyway. Pruning entries that no longer have a live cooldown entry
+  //   bounds the map to at most the number of currently-cooling-down user pairs.
   setInterval(() => {
     const now = Date.now()
     for (const [userId, opponents] of recentMatchups.entries()) {
@@ -993,6 +1007,16 @@ app.prepare().then(async () => {
         if (now - ts > COOLDOWN_MS) opponents.delete(opponentId)
       }
       if (opponents.size === 0) recentMatchups.delete(userId)
+    }
+    // After recentMatchups is pruned, remove matchupCount entries for pairs that no
+    // longer have an active cooldown record — they are dead weight until the pair plays again.
+    for (const [userId, opponents] of matchupCount.entries()) {
+      for (const [opponentId] of opponents.entries()) {
+        if (!recentMatchups.get(userId)?.has(opponentId)) {
+          opponents.delete(opponentId)
+        }
+      }
+      if (opponents.size === 0) matchupCount.delete(userId)
     }
   }, 60 * 60 * 1000)
 
@@ -1100,8 +1124,9 @@ app.prepare().then(async () => {
       if (![1, 3, 5].includes(series)) return
       if (!['casual', 'ebk'].includes(difficulty)) return
       if (allPlayers.length === 0) { socket.emit('room-error', { message: 'Server is still loading player data. Please try again in a minute.' }); return }
-      userName = (userName ?? '').trim().slice(0, 20) || 'Player'
+      // Prefer the server-verified JWT username; fall back to sanitized client name for anonymous players.
       const userId = socket.data.userId as string | null
+      userName = ((socket.data.username as string | null) || (userName ?? '').trim()).slice(0, 20) || 'Player'
       let code = generateCode()
       while (rooms.has(code)) code = generateCode()
 
@@ -1159,8 +1184,9 @@ app.prepare().then(async () => {
         joinRoomThrottle.set(socket.id, { count: 1, windowStart: jrNow })
       }
 
-      userName = (userName ?? '').trim().slice(0, 20) || 'Player'
+      // Prefer the server-verified JWT username; fall back to sanitized client name for anonymous players.
       const userId = socket.data.userId as string | null
+      userName = ((socket.data.username as string | null) || (userName ?? '').trim()).slice(0, 20) || 'Player'
       const room = rooms.get(code.trim().toUpperCase())
       if (!room) { socket.emit('room-error', { message: 'Room not found' }); return }
       if (room.guestSocketId) { socket.emit('room-error', { message: 'Room is full' }); return }
@@ -1287,6 +1313,16 @@ app.prepare().then(async () => {
       if (socket.id !== room.hostSocketId) return // only host can start next game
 
       const roomCode = room.code
+
+      // Cancel the 60-second grace cleanup that was scheduled when the previous
+      // game ended.  Without this the timer would fire mid-draft and delete the
+      // live room out from under the players.
+      const cleanupTimer = roomCleanupTimers.get(roomCode)
+      if (cleanupTimer) {
+        clearTimeout(cleanupTimer)
+        roomCleanupTimers.delete(roomCode)
+      }
+
       room.currentGame++
       room.hostPicks = []
       room.guestPicks = []
@@ -1366,15 +1402,18 @@ app.prepare().then(async () => {
       socket.emit('listings-updated', { listings: Array.from(gameListings.values()) })
     })
 
-    socket.on('create-listing', async ({ userName, teamMode, series, statCategory }: {
-      userName: string, teamMode: TeamMode, series: SeriesLength, statCategory?: StatCategory
+    socket.on('create-listing', async ({ teamMode, series, statCategory }: {
+      userName?: string, teamMode: TeamMode, series: SeriesLength, statCategory?: StatCategory
     }) => {
       if (!['starter5', 'bench8', 'full12'].includes(teamMode)) return
       if (![1, 3, 5].includes(series)) return
       if (pendingListingCreate.has(socket.id)) return // prevent double-fire race
       pendingListingCreate.add(socket.id)
-      userName = (userName ?? '').trim().slice(0, 20) || 'Player'
+      // Always use the server-verified username from the JWT — never trust the client payload.
+      // Accepting a client-supplied userName would let any authenticated user impersonate
+      // another player's display name in the public lobby.
       const userId = socket.data.userId as string | null
+      const userName: string = (socket.data.username as string | null ?? '').slice(0, 20) || 'Player'
       if (!userId) { pendingListingCreate.delete(socket.id); socket.emit('listing-error', { message: 'Must be signed in to post a game' }); return }
       // Remove any stale listing by this socket or by the same user (multi-tab protection)
       for (const [c, l] of gameListings.entries()) {
@@ -1451,13 +1490,14 @@ app.prepare().then(async () => {
       io.to('lobby').emit('listings-updated', { listings: Array.from(gameListings.values()) })
     })
 
-    socket.on('join-listing', async ({ code: rawCode, userName }: {
-      code: string, userName: string
+    socket.on('join-listing', async ({ code: rawCode }: {
+      code: string, userName?: string
     }) => {
       if (typeof rawCode !== 'string') return
       const code = rawCode.trim().toUpperCase()
-      userName = (userName ?? '').trim().slice(0, 20) || 'Player'
+      // Always use the server-verified username — never trust the client payload.
       const userId = socket.data.userId as string | null
+      const userName: string = (socket.data.username as string | null ?? '').slice(0, 20) || 'Player'
       if (!userId) { socket.emit('listing-error', { message: 'Must be signed in to join a game' }); return }
       const listing = gameListings.get(code)
       if (!listing) {
@@ -1635,7 +1675,8 @@ app.prepare().then(async () => {
       if (![5, 8, 12].includes(teamSize) || maxPlayers < 2 || maxPlayers > 6) {
         socket.emit('auction:error', { message: 'Invalid settings' }); return
       }
-      userName = (userName ?? '').trim().slice(0, 20) || 'Player'
+      // Prefer the server-verified JWT username; fall back to sanitized client name for anonymous players.
+      userName = ((socket.data.username as string | null) || (userName ?? '').trim()).slice(0, 20) || 'Player'
       if (allPlayers.length === 0) {
         socket.emit('auction:error', { message: 'Server still loading' }); return
       }
@@ -1668,7 +1709,8 @@ app.prepare().then(async () => {
     })
 
     socket.on('auction:join', ({ code, userName }: { code: string; userName: string }) => {
-      userName = (userName ?? '').trim().slice(0, 20) || 'Player'
+      // Prefer the server-verified JWT username; fall back to sanitized client name for anonymous players.
+      userName = ((socket.data.username as string | null) || (userName ?? '').trim()).slice(0, 20) || 'Player'
       const room = auctionRooms.get(code.toUpperCase())
       if (!room) { socket.emit('auction:error', { message: 'Room not found' }); return }
 
@@ -1983,9 +2025,16 @@ app.prepare().then(async () => {
       // Notify game rooms
       rooms.forEach((room, code) => {
         if (room.hostSocketId === socket.id || room.guestSocketId === socket.id) {
-          // Keep waiting rooms alive — host may navigate to game page (causes brief reconnect)
-          // and guests need to still be able to join
-          if (room.status === 'waiting') return
+          // Waiting rooms: keep alive briefly (host may navigate to game page causing a brief
+          // reconnect), but if the HOST socket disconnects we must eventually clean up —
+          // otherwise a room with no host leaks forever since no guest will ever join.
+          // Schedule cleanup after the same grace period used for completed rooms.
+          if (room.status === 'waiting') {
+            if (room.hostSocketId === socket.id) {
+              scheduleRoomCleanup(code, io)
+            }
+            return
+          }
           // Don't fire partner-disconnected for completed series — player may disconnect
           // on the win screen while the 30s cleanup timer is still running
           if (room.status === 'complete') return
