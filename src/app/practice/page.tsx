@@ -90,6 +90,7 @@ function PracticeContent() {
   const [players, setPlayers] = useState<Player[]>([])
   const playerById = useMemo(() => new Map(players.map(p => [p.id, p])), [players])
   const [loadingPlayers, setLoadingPlayers] = useState(false)
+  const [playerLoadError, setPlayerLoadError] = useState(false)
   // Slot-indexed: picks[i] = player id in slot i, null = empty
   const [picks, setPicks] = useState<(number | null)[]>([])
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null)
@@ -110,10 +111,11 @@ function PracticeContent() {
     if (screen !== 'draft' || players.length > 0) return
     const controller = new AbortController()
     setLoadingPlayers(true)
+    setPlayerLoadError(false)
     fetch('/api/players', { signal: controller.signal })
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error('fetch failed'); return r.json() })
       .then((data: Player[]) => { setPlayers(data); setLoadingPlayers(false); triggerSpin(data, []) })
-      .catch(err => { if (err.name !== 'AbortError') setLoadingPlayers(false) })
+      .catch(err => { if (err.name !== 'AbortError') { setLoadingPlayers(false); setPlayerLoadError(true) } })
     return () => controller.abort()
   }, [screen, players.length])
 
@@ -262,6 +264,7 @@ function PracticeContent() {
     setSpunTeamsHistory([])
     setFilterPos('ALL')
     setSearchQuery('')
+    setPlayerLoadError(false)
     setScreen('setup')
   }
 
@@ -343,6 +346,18 @@ function PracticeContent() {
               <div className="text-center">
                 <div className="w-7 h-7 rounded-full border-2 border-orange-500 border-t-transparent animate-spin mx-auto mb-3"></div>
                 <p className="text-gray-400 text-sm">Loading players...</p>
+              </div>
+            </div>
+          ) : playerLoadError ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center space-y-3">
+                <p className="text-red-400 text-sm font-semibold">Failed to load players.</p>
+                <button
+                  onClick={() => { setPlayerLoadError(false); setPlayers([]) }}
+                  className="btn-primary px-4 py-2 text-sm"
+                >
+                  Retry
+                </button>
               </div>
             </div>
           ) : (
