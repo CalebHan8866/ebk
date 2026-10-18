@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         maxWinStreak: true,
         equippedBadges: true,
       },
-      orderBy: { wins: 'desc' },
+      orderBy: [{ wins: 'desc' }, { gamesPlayed: 'desc' }],
       take: 100,
     }),
     prisma.user.count({ where: { gamesPlayed: { gt: 0 } } }),
