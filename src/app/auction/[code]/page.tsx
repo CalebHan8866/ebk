@@ -154,6 +154,9 @@ export default function AuctionRoomPage() {
   // Flash when you win a player (green glow on the current bid card)
   const [justWon, setJustWon] = useState(false)
   const prevWinnerRef = useRef<string | null>(null)
+  // True after the first auction:state event is received — prevents a spurious
+  // justWon flash when reconnecting to a room where we already won the last player.
+  const stateInitializedRef = useRef(false)
   // Persistent error message for the error phase (errorMsg auto-clears after 4s)
   const persistentErrorRef = useRef('')
   // If the user is authenticated, always use their username so the server can reliably
@@ -223,6 +226,13 @@ export default function AuctionRoomPage() {
     function handleAuctionState(state: AuctionState) {
       // Keep mySocketId fresh in case of reconnects
       setMySocketId(socket.id || '')
+      // Seed prevWinnerRef on the very first state event so the justWon flash
+      // effect doesn't spuriously fire when reconnecting to a room where we
+      // already won the last player (prevWinnerRef starts as null).
+      if (!stateInitializedRef.current) {
+        prevWinnerRef.current = state.lastWinnerSocketId ?? null
+        stateInitializedRef.current = true
+      }
       setAuctionState(state)
       const newPhase = state.status as AuctionPhase
       setPhase(newPhase === 'complete' ? 'complete' : newPhase)
