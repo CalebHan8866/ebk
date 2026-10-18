@@ -2,7 +2,12 @@
 const nextConfig = {
   compress: true,
 
+  // Don't advertise Next.js version in response headers
+  poweredByHeader: false,
+
   images: {
+    // Serve modern image formats (AVIF preferred, WebP fallback)
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',
