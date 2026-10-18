@@ -21,6 +21,13 @@ export async function POST(request: NextRequest) {
     // Normalize to lowercase — emails are stored lowercased at registration.
     const email = rawEmail.toLowerCase()
 
+    // Per-email rate limit: prevents a distributed attacker (rotating IPs) from flooding
+    // one account's inbox with reset emails. Checked BEFORE the DB lookup so we don't
+    // leak whether the email exists — we apply the limit regardless and still return the
+    // same generic success message.
+    const { success: emailOk } = rateLimit(`forgot:email:${email}`, 3, 60 * 60 * 1000) // 3 resets per hour per address
+    if (!emailOk) return noStore({ message: 'If that email exists, a reset link has been sent.' })
+
     const user = await prisma.user.findUnique({ where: { email } })
 
     // Always return success to prevent email enumeration
