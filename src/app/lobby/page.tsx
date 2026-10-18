@@ -50,12 +50,21 @@ function BadgeChip({ badgeId }: { badgeId: string }) {
 }
 
 /** Colored circle with initials — deterministic color per username */
-function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' }) {
+function Avatar({ name, size = 'md', glow = false }: { name: string; size?: 'sm' | 'md' | 'lg' | 'xl'; glow?: boolean }) {
   const palette = ['bg-orange-600', 'bg-blue-600', 'bg-emerald-600', 'bg-violet-600', 'bg-rose-600']
-  const color = palette[name.charCodeAt(0) % palette.length]
-  const sz = size === 'lg' ? 'w-14 h-14 text-base' : size === 'sm' ? 'w-7 h-7 text-[10px]' : 'w-9 h-9 text-xs'
+  const glowPalette = [
+    'shadow-[0_0_24px_rgba(234,88,12,0.5)]',
+    'shadow-[0_0_24px_rgba(37,99,235,0.5)]',
+    'shadow-[0_0_24px_rgba(5,150,105,0.5)]',
+    'shadow-[0_0_24px_rgba(124,58,237,0.5)]',
+    'shadow-[0_0_24px_rgba(225,29,72,0.5)]',
+  ]
+  const idx = name.charCodeAt(0) % palette.length
+  const color = palette[idx]
+  const glowClass = glow ? glowPalette[idx] : ''
+  const sz = size === 'xl' ? 'w-20 h-20 text-2xl' : size === 'lg' ? 'w-16 h-16 text-lg' : size === 'sm' ? 'w-7 h-7 text-[10px]' : 'w-9 h-9 text-xs'
   return (
-    <div className={`${sz} ${color} rounded-full flex items-center justify-center font-black text-white shrink-0 select-none`}>
+    <div className={`${sz} ${color} rounded-full flex items-center justify-center font-black text-white shrink-0 select-none transition-shadow ${glowClass}`}>
       {name.slice(0, 2).toUpperCase()}
     </div>
   )
@@ -337,104 +346,136 @@ export default function LobbyPage() {
 
   // ── MATCH FOUND — full-page takeover ──────────────────────────────────────
   if (onlineState === 'found' && matchInfo) {
+    const countdownUrgent = countdown <= 10
+    const countdownWarn = countdown > 10 && countdown <= 20
     return (
       <div className="min-h-screen flex items-center justify-center px-4 py-10" aria-live="polite" aria-atomic="true">
-        <div className="w-full max-w-md animate-slide-up">
+        <div className="w-full max-w-lg animate-fade-up">
 
           {matchInfo.grudgeMatch && (
-            <div className="mb-4 rounded-xl py-2.5 px-4 text-center border border-red-500/30 bg-red-900/20">
+            <div className="mb-4 rounded-xl py-2.5 px-4 text-center border border-red-500/40 bg-red-900/20 shadow-[0_0_20px_rgba(239,68,68,0.1)] animate-scale-in">
               <span className="text-red-400 font-black text-sm tracking-widest uppercase">Grudge Match</span>
               <span className="text-gray-400 text-xs ml-2">You&apos;ve played before</span>
             </div>
           )}
 
-          <div className="card-accent rounded-2xl overflow-hidden">
+          <div className="card-accent rounded-3xl overflow-hidden shadow-[0_0_60px_rgba(249,115,22,0.08)]">
             {/* Header strip */}
-            <div className="px-6 py-5 text-center border-b border-white/5">
-              <div className="text-label mb-2 tracking-[0.2em]">Game Found</div>
-              <div className="font-display text-6xl text-white leading-none tracking-wider">MATCH UP</div>
-              {/* Countdown bar */}
-              <div className="mt-4 mx-auto max-w-[200px]">
-                <div className="budget-bar">
+            <div className="px-6 pt-7 pb-5 text-center border-b border-white/[0.06] relative">
+              <div className="text-label mb-2 tracking-[0.3em]">Opponent Found</div>
+              <div className="font-display leading-none tracking-[0.08em] text-white"
+                style={{ fontSize: 'clamp(3.5rem, 14vw, 5rem)' }}>
+                MATCH<span className="text-orange-500"> UP</span>
+              </div>
+
+              {/* Countdown — prominent ring */}
+              <div className="mt-5 flex flex-col items-center gap-2">
+                <div className={`relative w-full max-w-[260px] h-2 rounded-full overflow-hidden ${
+                  countdownUrgent ? 'bg-red-900/40' : 'bg-white/[0.06]'
+                }`}>
                   <div
-                    className={`budget-bar-fill transition-all duration-1000 ${
-                      countdown <= 10 ? '!bg-red-500' : countdown <= 20 ? '!bg-yellow-500' : ''
+                    className={`absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ${
+                      countdownUrgent ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'
+                      : countdownWarn ? 'bg-yellow-500'
+                      : 'bg-gradient-to-r from-orange-600 to-orange-400'
                     }`}
                     style={{ width: `${(countdown / 60) * 100}%` }}
                   />
                 </div>
-                <div className={`text-xs font-black mt-1.5 tabular-nums ${
-                  countdown <= 10 ? 'text-red-400' : countdown <= 20 ? 'text-yellow-400' : 'text-gray-400'
+                <div className={`font-display text-4xl leading-none tabular-nums ${
+                  countdownUrgent ? 'text-red-400 animate-win-glow' : countdownWarn ? 'text-yellow-400' : 'text-white/60'
                 }`}>
-                  {countdown > 0 ? `${countdown}s to accept` : 'Processing...'}
+                  {countdown > 0 ? countdown : '—'}
+                </div>
+                <div className={`text-[10px] font-black tracking-[0.2em] uppercase ${
+                  countdownUrgent ? 'text-red-400/70' : 'text-white/25'
+                }`}>
+                  {countdown > 0 ? (countdownUrgent ? 'Accept now!' : 'Seconds to accept') : 'Starting…'}
                 </div>
               </div>
             </div>
 
-            {/* VS layout */}
-            <div className="grid grid-cols-[1fr_48px_1fr] items-center gap-0 px-5 py-5">
+            {/* VS layout — larger avatars + glow */}
+            <div className="grid grid-cols-[1fr_56px_1fr] items-center gap-0 px-5 py-7">
               {/* You */}
-              <div className={`rounded-2xl p-4 text-center transition-all ${
-                myReady ? 'bg-green-500/10 border border-green-500/20' : 'bg-white/[0.03] border border-white/5'
+              <div className={`rounded-2xl px-3 py-5 text-center transition-all duration-300 ${
+                myReady
+                  ? 'bg-green-500/10 border border-green-500/30 shadow-[0_0_24px_rgba(34,197,94,0.08)]'
+                  : 'bg-white/[0.025] border border-white/[0.06]'
               }`}>
-                <div className="flex justify-center mb-2">
-                  <Avatar name={displayName} size="lg" />
+                <div className="flex justify-center mb-3">
+                  <Avatar name={displayName} size="xl" glow={myReady} />
                 </div>
-                <div className="text-white font-black text-sm truncate leading-tight">{displayName}</div>
+                <div className="text-white font-black text-sm truncate leading-tight mb-1">{displayName}</div>
                 {user && (
-                  <div className="flex items-center justify-center gap-1.5 mt-1 flex-wrap">
+                  <div className="flex items-center justify-center gap-1.5 mb-1 flex-wrap">
                     <BadgeChip badgeId={matchInfo.myBadge} />
                   </div>
                 )}
                 {user && (
-                  <div className="text-gray-400 text-xs mt-1">
-                    {user.wins}W {user.losses}L
-                    <span className="text-gray-700 ml-1">· {winPct(user.wins, user.losses)}</span>
+                  <div className="text-gray-500 text-xs">
+                    {user.wins}W–{user.losses}L
+                    <span className="text-gray-600 ml-1">{winPct(user.wins, user.losses)}</span>
                   </div>
                 )}
                 {matchInfo.myStreak >= 3 && (
-                  <div className="text-orange-400 text-xs font-black mt-1">🔥 {matchInfo.myStreak} streak</div>
+                  <div className="text-orange-400 text-xs font-black mt-1.5">🔥 {matchInfo.myStreak} streak</div>
                 )}
-                {myReady && (
-                  <div className="mt-2 text-green-400 text-[10px] font-black uppercase tracking-wide">Ready</div>
+                {myReady ? (
+                  <div className="mt-2.5 inline-flex items-center gap-1 bg-green-500/15 border border-green-500/25 rounded-full px-3 py-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
+                    <span className="text-green-400 text-[10px] font-black uppercase tracking-wide">Ready</span>
+                  </div>
+                ) : (
+                  <div className="mt-2.5 h-[26px]" /> /* spacer to keep height consistent */
                 )}
               </div>
 
-              {/* VS divider */}
-              <div className="flex flex-col items-center gap-1.5">
-                <div className="w-px flex-1 bg-gradient-to-b from-transparent via-white/10 to-transparent" />
-                <div className="font-display text-2xl text-orange-500/80 leading-none drop-shadow-[0_0_12px_rgba(234,88,12,0.4)]">VS</div>
-                <div className="w-px flex-1 bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+              {/* VS divider — large glow */}
+              <div className="flex flex-col items-center gap-2 h-full py-2">
+                <div className="w-px flex-1 bg-gradient-to-b from-transparent via-white/[0.08] to-transparent" />
+                <div className="relative">
+                  <div className="font-display text-3xl text-orange-500 leading-none drop-shadow-[0_0_20px_rgba(249,115,22,0.7)]">VS</div>
+                  <div className="absolute inset-0 font-display text-3xl text-orange-400/20 leading-none blur-lg">VS</div>
+                </div>
+                <div className="w-px flex-1 bg-gradient-to-b from-transparent via-white/[0.08] to-transparent" />
               </div>
 
               {/* Opponent */}
-              <div className={`rounded-2xl p-4 text-center transition-all ${
-                oppReady ? 'bg-green-500/10 border border-green-500/20' : 'bg-white/[0.03] border border-white/5'
+              <div className={`rounded-2xl px-3 py-5 text-center transition-all duration-300 ${
+                oppReady
+                  ? 'bg-green-500/10 border border-green-500/30 shadow-[0_0_24px_rgba(34,197,94,0.08)]'
+                  : 'bg-white/[0.025] border border-white/[0.06]'
               }`}>
-                <div className="flex justify-center mb-2">
-                  <Avatar name={matchInfo.opponentName} size="lg" />
+                <div className="flex justify-center mb-3">
+                  <Avatar name={matchInfo.opponentName} size="xl" glow={oppReady} />
                 </div>
-                <div className="text-white font-black text-sm truncate leading-tight">{matchInfo.opponentName}</div>
-                <div className="flex items-center justify-center gap-1.5 mt-1 flex-wrap">
+                <div className="text-white font-black text-sm truncate leading-tight mb-1">{matchInfo.opponentName}</div>
+                <div className="flex items-center justify-center gap-1.5 mb-1 flex-wrap">
                   <BadgeChip badgeId={matchInfo.opponentBadge} />
                 </div>
-                <div className="text-gray-400 text-xs mt-1">
-                  {matchInfo.opponentRecord.wins}W {matchInfo.opponentRecord.losses}L
-                  <span className="text-gray-700 ml-1">· {winPct(matchInfo.opponentRecord.wins, matchInfo.opponentRecord.losses)}</span>
+                <div className="text-gray-500 text-xs">
+                  {matchInfo.opponentRecord.wins}W–{matchInfo.opponentRecord.losses}L
+                  <span className="text-gray-600 ml-1">{winPct(matchInfo.opponentRecord.wins, matchInfo.opponentRecord.losses)}</span>
                 </div>
                 {matchInfo.opponentStreak >= 3 && (
-                  <div className="text-orange-400 text-xs font-black mt-1">🔥 {matchInfo.opponentStreak} streak</div>
+                  <div className="text-orange-400 text-xs font-black mt-1.5">🔥 {matchInfo.opponentStreak} streak</div>
                 )}
-                {oppReady && (
-                  <div className="mt-2 text-green-400 text-[10px] font-black uppercase tracking-wide">Ready</div>
+                {oppReady ? (
+                  <div className="mt-2.5 inline-flex items-center gap-1 bg-green-500/15 border border-green-500/25 rounded-full px-3 py-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
+                    <span className="text-green-400 text-[10px] font-black uppercase tracking-wide">Ready</span>
+                  </div>
+                ) : (
+                  <div className="mt-2.5 h-[26px]" />
                 )}
               </div>
             </div>
 
             {/* Game details */}
-            <div className="mx-5 mb-5 bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3 flex items-center justify-between">
+            <div className="mx-5 mb-5 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 flex items-center justify-between">
               <span className="text-label">Format</span>
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-2 text-sm flex-wrap justify-end">
                 <span className="text-white font-black">{MODE_LABEL[matchInfo.proposedTeamMode]}</span>
                 <span className="text-gray-700">·</span>
                 <span className="text-gray-400">{seriesLabel(matchInfo.proposedSeries)}</span>
@@ -449,25 +490,25 @@ export default function LobbyPage() {
 
             {/* Action buttons */}
             <div className="px-5 pb-5 grid grid-cols-2 gap-3">
-              <button onClick={handleDecline} className="btn-secondary py-3 text-sm">
+              <button onClick={handleDecline} className="btn-secondary py-4 text-sm">
                 Decline
               </button>
               <button
                 onClick={handleAccept}
                 disabled={myReady}
-                className={`py-3 rounded-xl font-black text-sm uppercase tracking-wider transition-all ${
+                className={`py-4 rounded-xl font-black text-sm uppercase tracking-wider transition-all ${
                   myReady
-                    ? 'bg-green-600/30 text-green-400 border border-green-500/20 cursor-default'
+                    ? 'bg-green-600/30 text-green-400 border border-green-500/30 cursor-default'
                     : 'btn-primary'
                 }`}
               >
-                {myReady ? 'Accepted ✓' : 'Accept'}
+                {myReady ? 'Accepted ✓' : 'Accept Match'}
               </button>
             </div>
 
             {(myReady || oppReady) && !(myReady && oppReady) && (
-              <p className="text-center text-gray-400 text-xs pb-4">
-                Waiting for {myReady ? matchInfo.opponentName : displayName} to accept...
+              <p className="text-center text-gray-500 text-xs pb-5">
+                Waiting for <span className="text-white/70 font-bold">{myReady ? matchInfo.opponentName : displayName}</span> to accept…
               </p>
             )}
           </div>
