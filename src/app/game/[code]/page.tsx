@@ -1302,7 +1302,7 @@ function GameContent() {
               {room.status === 'drafting' && currentPickerInTimer && (
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   <div className={`font-display text-2xl leading-none tabular-nums ${
-                    pickTimeLeft <= 5 ? 'text-red-400' : pickTimeLeft <= 10 ? 'text-yellow-400' : 'text-gray-300'
+                    pickTimeLeft <= 5 ? 'text-red-400 animate-timer-throb' : pickTimeLeft <= 10 ? 'text-yellow-400' : 'text-gray-300'
                   }`}>
                     {pickTimeLeft}
                     <span className="text-sm font-sans ml-0.5">s</span>

@@ -121,7 +121,10 @@ function TimerRing({ timeLeft, maxTime }: { timeLeft: number; maxTime: number })
           style={{ transition: 'stroke-dashoffset 0.1s linear, stroke 0.3s' }}
         />
       </svg>
-      <span aria-hidden="true" className={`font-display text-2xl ${timeLeft <= 5 ? 'text-red-400' : timeLeft <= 10 ? 'text-orange-400' : 'text-white'}`}>
+      <span
+        aria-hidden="true"
+        className={`font-display text-2xl ${timeLeft <= 5 ? 'text-red-400 animate-timer-throb' : timeLeft <= 10 ? 'text-orange-400' : 'text-white'}`}
+      >
         {timeLeft}
       </span>
     </div>

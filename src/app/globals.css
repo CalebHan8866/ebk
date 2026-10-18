@@ -216,6 +216,13 @@ body {
 @keyframes num-pop { 0% { transform: scale(1); } 40% { transform: scale(1.15); } 100% { transform: scale(1); } }
 .animate-num-pop { animation: num-pop 0.25s ease forwards; }
 
+/* ── Timer throb — urgent pulse when ≤5s remain ─────────────────────────────── */
+@keyframes timer-throb {
+  0%, 100% { transform: scale(1);    opacity: 1; }
+  50%       { transform: scale(1.18); opacity: 0.85; }
+}
+.animate-timer-throb { animation: timer-throb 0.55s cubic-bezier(0.22,1,0.36,1) infinite; }
+
 /* ── Touch utility — prevents 300ms tap delay on mobile ─────────────────────── */
 .touch-manipulation { touch-action: manipulation; }
 
@@ -662,6 +669,12 @@ textarea:focus-visible {
   /* Number pop — skip the scale bounce */
   .animate-num-pop {
     animation: none !important;
+  }
+
+  /* Timer throb — replace with a simple opacity pulse */
+  .animate-timer-throb {
+    animation: pulse 1s ease-in-out infinite !important;
+    transform: none !important;
   }
 
   /* Spinning loaders — use a simple opacity pulse instead */
