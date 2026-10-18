@@ -774,6 +774,10 @@ function startPickTimer(io: SocketServer, room: Room) {
         scheduleRoomCleanup(code, io)
       } else {
         io.to(code).emit('game-result', { room: currentRoom, result })
+        // Schedule a cleanup so the room doesn't leak if both players abandon the
+        // result screen without a clean disconnect (e.g. browser crash, NAT timeout).
+        // next-game cancels this timer when the host proceeds to the next draft.
+        scheduleRoomCleanup(code, io)
       }
     } else {
       io.to(code).emit('room-updated', { room: currentRoom })
@@ -1369,6 +1373,10 @@ app.prepare().then(async () => {
           scheduleRoomCleanup(roomCode, io)
         } else {
           io.to(roomCode).emit('game-result', { room, result })
+          // Schedule a cleanup so the room doesn't leak if both players abandon the
+          // result screen without a clean disconnect (e.g. browser crash, NAT timeout).
+          // next-game cancels this timer when the host proceeds to the next draft.
+          scheduleRoomCleanup(roomCode, io)
         }
       } else {
         io.to(roomCode).emit('room-updated', { room })
@@ -1384,13 +1392,33 @@ app.prepare().then(async () => {
 
       const roomCode = room.code
 
-      // Cancel the 60-second grace cleanup that was scheduled when the previous
-      // game ended.  Without this the timer would fire mid-draft and delete the
-      // live room out from under the players.
+      // Cancel the inter-game cleanup timer scheduled when the previous game-result
+      // was emitted.  Without this the timer would fire mid-draft and delete the room.
       const cleanupTimer = roomCleanupTimers.get(roomCode)
       if (cleanupTimer) {
         clearTimeout(cleanupTimer)
         roomCleanupTimers.delete(roomCode)
+      }
+
+      // Guard: if the guest socket is no longer live, treat it as a forfeit rather than
+      // starting the next draft.  Without this check there is a race window where the
+      // host fires next-game before the server has processed the guest's disconnect —
+      // the draft starts, the guest auto-picks via the timer, and when the disconnect
+      // event eventually arrives the disconnect handler fires updateStatsAndUnlock again,
+      // doubling the stat write for both players.
+      if (!room.guestSocketId || !io.sockets.sockets.has(room.guestSocketId)) {
+        room.status = 'complete'
+        if (room.source === 'online') {
+          recordMatchup(room.hostUserId, room.guestUserId)
+          const winsNeeded = Math.ceil(room.series / 2)
+          room.hostSeriesScore = Math.max(room.hostSeriesScore, winsNeeded)
+          if (room.hostUserId) updateStatsAndUnlock(io, room.hostUserId, room.hostSocketId, true, false, room.hostJCGames, true)
+          if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId!, false, false, room.guestJCGames, false)
+          saveGameRecords(room, 'host')
+        }
+        socket.emit('partner-disconnected')
+        scheduleRoomCleanup(roomCode, io)
+        return
       }
 
       room.currentGame++
@@ -1806,6 +1834,7 @@ app.prepare().then(async () => {
     })
 
     socket.on('auction:join', ({ code, userName }: { code: string; userName: string }) => {
+      if (typeof code !== 'string') return
       // Prefer the server-verified JWT username; fall back to sanitized client name for anonymous players.
       userName = ((socket.data.username as string | null) || (userName ?? '').trim()).slice(0, 20) || 'Player'
       const room = auctionRooms.get(code.toUpperCase())
@@ -1864,6 +1893,7 @@ app.prepare().then(async () => {
     })
 
     socket.on('auction:start', ({ code }: { code: string }) => {
+      if (typeof code !== 'string') return
       const room = auctionRooms.get(code)
       if (!room || room.status !== 'waiting') return
       if (socket.id !== room.hostSocketId) { socket.emit('auction:error', { message: 'Only the host can start' }); return }
@@ -1872,6 +1902,7 @@ app.prepare().then(async () => {
     })
 
     socket.on('auction:bid', ({ code, amount }: { code: string; amount: number }) => {
+      if (typeof code !== 'string') return
       // Rate limit: max 5 bids per second per socket to prevent DoS spam
       const now = Date.now()
       const throttle = bidThrottle.get(socket.id)
@@ -1913,6 +1944,7 @@ app.prepare().then(async () => {
     // Explicit pass: skip the current player immediately (no 25s wait).
     // Uses playerIndex to prevent stale passes from double-advancing the auction.
     socket.on('auction:pass', ({ code, playerIndex }: { code: string; playerIndex: number }) => {
+      if (typeof code !== 'string') return
       const room = auctionRooms.get(code)
       if (!room || room.status !== 'bidding') return
       // Validate playerIndex is an integer — reject spoofed non-numeric values
@@ -1943,6 +1975,7 @@ app.prepare().then(async () => {
     })
 
     socket.on('auction:steal', ({ code, playerIdToSteal }: { code: string; playerIdToSteal: number }) => {
+      if (typeof code !== 'string') return
       const room = auctionRooms.get(code)
       if (!room || room.status !== 'steal-window') return
       if (room.stealInitiated) { socket.emit('auction:error', { message: 'Steal already used this round' }); return }
@@ -1983,6 +2016,7 @@ app.prepare().then(async () => {
     socket.on('auction:trade-offer', ({ code, toSocketId, offeredPlayerIds, requestedPlayerIds }: {
       code: string; toSocketId: string; offeredPlayerIds: number[]; requestedPlayerIds: number[]
     }) => {
+      if (typeof code !== 'string' || typeof toSocketId !== 'string') return
       const room = auctionRooms.get(code)
       if (!room || room.status !== 'trading') return
       // Prevent self-trade: offering to yourself would corrupt paidPrices when the
@@ -2037,6 +2071,7 @@ app.prepare().then(async () => {
     })
 
     socket.on('auction:trade-respond', ({ code, offerId, accept }: { code: string; offerId: string; accept: boolean }) => {
+      if (typeof code !== 'string' || typeof offerId !== 'string') return
       const room = auctionRooms.get(code)
       if (!room || room.status !== 'trading') return
       const offerIdx = room.tradeOffers.findIndex(o => o.id === offerId)
@@ -2079,6 +2114,7 @@ app.prepare().then(async () => {
     })
 
     socket.on('auction:get-state', ({ code, userName }: { code: string; userName?: string }) => {
+      if (typeof code !== 'string') return
       const room = auctionRooms.get(code)
       if (!room) { socket.emit('auction:error', { message: 'Room not found' }); return }
 
@@ -2119,6 +2155,7 @@ app.prepare().then(async () => {
     })
 
     socket.on('auction:finish-trading', ({ code }: { code: string }) => {
+      if (typeof code !== 'string') return
       const room = auctionRooms.get(code)
       if (!room || room.status !== 'trading' || socket.id !== room.hostSocketId) return
       if (room.tradeTimer) clearTimeout(room.tradeTimer)
