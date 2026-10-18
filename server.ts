@@ -1942,9 +1942,14 @@ app.prepare().then(async () => {
           socket.emit('auction:error', { message: 'Unauthorized' })
           return
         }
-        const wasHost = existingByName.socketId === room.hostSocketId
+        const oldSocketId = existingByName.socketId
+        const wasHost = oldSocketId === room.hostSocketId
         existingByName.socketId = socket.id
         if (wasHost) room.hostSocketId = socket.id
+        // Keep room-level socketId references consistent with the new socket so that
+        // bid-expiry and pass-turn checks that look up by socketId still work.
+        if (room.currentBidderSocketId === oldSocketId) room.currentBidderSocketId = socket.id
+        if (room.nominatorSocketId === oldSocketId) room.nominatorSocketId = socket.id
         socket.join(`auction:${room.code}`)
         socket.emit('auction:joined', { code: room.code })
         broadcastAuctionState(io, room)
@@ -2148,7 +2153,16 @@ app.prepare().then(async () => {
         toSocketId, toName: to.name,
         offeredPlayerIds, requestedPlayerIds, createdAt: Date.now(),
       }
+      // Deduplicate: replace any prior offer from this sender to this recipient.
       room.tradeOffers = room.tradeOffers.filter(o => !(o.fromSocketId === socket.id && o.toSocketId === toSocketId))
+      // Cap total concurrent outbound offers per sender to prevent trade-spam that
+      // floods every other participant's UI and locks them out of accepting.
+      // A sender may have at most 3 open outbound offers at once.
+      const outboundCount = room.tradeOffers.filter(o => o.fromSocketId === socket.id).length
+      if (outboundCount >= 3) {
+        socket.emit('auction:error', { message: 'You already have 3 pending trade offers. Cancel one before sending another.' })
+        return
+      }
       room.tradeOffers.push(offer)
       broadcastAuctionState(io, room)
     })
@@ -2224,9 +2238,14 @@ app.prepare().then(async () => {
             return
           }
           // Re-seat this socket into the existing participant slot (reconnection)
-          const wasHost = byName.socketId === room.hostSocketId
+          const oldSocketId = byName.socketId
+          const wasHost = oldSocketId === room.hostSocketId
           byName.socketId = socket.id
           if (wasHost) room.hostSocketId = socket.id
+          // Keep room-level socketId references consistent with the new socket so that
+          // bid-expiry and pass-turn checks that look up by socketId still work.
+          if (room.currentBidderSocketId === oldSocketId) room.currentBidderSocketId = socket.id
+          if (room.nominatorSocketId === oldSocketId) room.nominatorSocketId = socket.id
           socket.join(`auction:${room.code}`)
         }
       }
