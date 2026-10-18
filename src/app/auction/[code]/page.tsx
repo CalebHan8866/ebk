@@ -647,49 +647,87 @@ export default function AuctionRoomPage() {
             <p className="text-white/30 text-xs mt-1 font-mono">{code}</p>
           </div>
           {/* Timer — urgency ring */}
-          <div className={`flex flex-col items-center gap-1 rounded-2xl px-4 py-2.5 border transition-all ${
+          <div className={`relative flex flex-col items-center gap-1 rounded-2xl px-5 py-3 border transition-all overflow-hidden ${
             timerUrgent
-              ? 'bg-red-950/40 border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]'
+              ? 'bg-red-950/50 border-red-500/60 shadow-[0_0_28px_rgba(239,68,68,0.25)]'
               : timerWarning
-              ? 'bg-orange-950/30 border-orange-500/30'
+              ? 'bg-orange-950/40 border-orange-500/40 shadow-[0_0_16px_rgba(249,115,22,0.12)]'
               : 'bg-white/[0.04] border-white/[0.08]'
           }`}>
-            <p className={`font-display text-3xl leading-none tabular-nums ${timerUrgent ? 'text-red-400 animate-num-pop' : timerWarning ? 'text-orange-400' : 'text-white'}`}>
+            {timerUrgent && <div className="absolute inset-0 animate-glow pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(239,68,68,0.08) 0%, transparent 70%)' }} />}
+            <p className={`font-display text-4xl leading-none tabular-nums relative ${timerUrgent ? 'text-red-400' : timerWarning ? 'text-orange-400' : 'text-white'}`}>
               {tradeMinutes}:{tradeSecs.toString().padStart(2, '0')}
             </p>
-            <p className={`text-[10px] font-black uppercase tracking-widest ${timerUrgent ? 'text-red-400/70' : 'text-white/25'}`}>
-              {timerUrgent ? 'Hurry up!' : 'Time Left'}
+            <p className={`text-[10px] font-black uppercase tracking-widest relative ${timerUrgent ? 'text-red-400/80' : timerWarning ? 'text-orange-400/70' : 'text-white/25'}`}>
+              {timerUrgent ? 'Closing soon!' : timerWarning ? 'Time running out' : 'Trade Window'}
             </p>
           </div>
         </div>
 
         {/* Incoming offers banner — high priority, shown at top */}
         {myIncomingOffers.length > 0 && (
-          <div className="mb-6 card-accent p-4 animate-scale-in">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse shrink-0" />
-              <h2 className="font-display text-xl text-orange-400 tracking-widest">
-                {myIncomingOffers.length === 1 ? 'INCOMING OFFER' : `${myIncomingOffers.length} INCOMING OFFERS`}
-              </h2>
+          <div className="mb-6 animate-scale-in">
+            {/* Urgent attention bar */}
+            <div className="flex items-center gap-2 mb-3 px-1">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-orange-400 animate-pulse shrink-0" />
+                <span className="font-display text-2xl text-orange-400 tracking-widest leading-none">
+                  {myIncomingOffers.length === 1 ? 'INCOMING OFFER' : `${myIncomingOffers.length} INCOMING OFFERS`}
+                </span>
+              </div>
+              <div className="flex-1 h-px bg-gradient-to-r from-orange-500/30 to-transparent" />
             </div>
             <div className="space-y-4">
               {myIncomingOffers.map(offer => {
                 const fromGM = auctionState.participants.find(p => p.socketId === offer.fromSocketId)
                 const offeredPlayers = offer.offeredPlayerIds.map(id => fromGM?.roster.find(p => p?.id === id)).filter(Boolean)
                 const requestedPlayers = offer.requestedPlayerIds.map(id => me?.roster.find(p => p?.id === id)).filter(Boolean)
+                const receiveTotalEbk = offeredPlayers.reduce((s, p) => s + (p?.ebkScore ?? 0), 0)
+                const giveTotalEbk = requestedPlayers.reduce((s, p) => s + (p?.ebkScore ?? 0), 0)
+                const netEbk = receiveTotalEbk - giveTotalEbk
                 return (
-                  <div key={offer.id} className="bg-white/[0.04] rounded-2xl p-4 border border-white/[0.08]">
-                    <p className="text-white/50 text-xs font-black uppercase tracking-widest mb-3">
-                      Trade proposal from <span className="text-white">{offer.fromName}</span>
-                    </p>
-                    {/* Trade card: THEY SEND → YOU GET / YOU GIVE */}
-                    <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center mb-4">
-                      {/* They send */}
-                      <div className="bg-green-950/30 border border-green-500/20 rounded-xl p-3">
-                        <p className="text-green-400/60 text-[10px] font-black uppercase tracking-widest mb-2">You receive</p>
-                        <div className="space-y-1.5">
+                  <div key={offer.id} className="rounded-2xl border border-orange-500/25 overflow-hidden shadow-[0_0_32px_rgba(249,115,22,0.06)]"
+                    style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.98) 0%, rgba(26,15,5,0.98) 100%)' }}>
+                    {/* Offer header */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-orange-600/20 border border-orange-500/30 flex items-center justify-center font-display text-orange-400 text-sm shrink-0">
+                          {offer.fromName[0]?.toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-white font-black text-sm leading-tight">{offer.fromName}</p>
+                          <p className="text-white/30 text-[10px] tracking-widest uppercase font-black">Sent a trade offer</p>
+                        </div>
+                      </div>
+                      {/* EBK net indicator */}
+                      <div className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 border ${
+                        netEbk < 0
+                          ? 'bg-green-950/40 border-green-500/30 text-green-400'
+                          : netEbk > 0
+                          ? 'bg-red-950/30 border-red-500/20 text-red-400'
+                          : 'bg-white/[0.05] border-white/[0.08] text-white/50'
+                      }`}>
+                        <span className="text-[9px] font-black tracking-widest uppercase">EBK net</span>
+                        <span className="font-display text-base leading-none tabular-nums">
+                          {netEbk > 0 ? '+' : ''}{netEbk.toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Trade card — YOU RECEIVE / YOU GIVE */}
+                    <div className="grid grid-cols-[1fr_36px_1fr] gap-0 p-4">
+                      {/* You receive */}
+                      <div className="rounded-xl border border-green-500/25 overflow-hidden">
+                        <div className="flex items-center gap-1.5 px-3 py-2 bg-green-950/40 border-b border-green-500/15">
+                          <svg className="w-3 h-3 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-green-400 text-[10px] font-black uppercase tracking-widest">You receive</span>
+                          <span className="ml-auto text-green-400/60 font-display text-sm leading-none tabular-nums">{receiveTotalEbk.toFixed(1)}</span>
+                        </div>
+                        <div className="space-y-0 divide-y divide-white/[0.04]">
                           {offeredPlayers.map(p => p && (
-                            <div key={p.id} className="flex items-center gap-2">
+                            <div key={p.id} className="flex items-center gap-2 px-3 py-2.5">
                               <PosBadge pos={p.position} />
                               <span className="text-white font-bold text-xs truncate flex-1">{p.firstName[0]}. {p.lastName}</span>
                               <span className="text-orange-400 text-xs font-black shrink-0">{p.ebkScore.toFixed(1)}</span>
@@ -697,16 +735,28 @@ export default function AuctionRoomPage() {
                           ))}
                         </div>
                       </div>
-                      {/* Arrow */}
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-white/20 text-lg font-bold">⇄</span>
+
+                      {/* Swap arrow */}
+                      <div className="flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-white/[0.05] border border-white/[0.08] flex items-center justify-center">
+                          <svg className="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                          </svg>
+                        </div>
                       </div>
+
                       {/* You give */}
-                      <div className="bg-red-950/20 border border-red-500/20 rounded-xl p-3">
-                        <p className="text-red-400/60 text-[10px] font-black uppercase tracking-widest mb-2">You give up</p>
-                        <div className="space-y-1.5">
+                      <div className="rounded-xl border border-red-500/20 overflow-hidden">
+                        <div className="flex items-center gap-1.5 px-3 py-2 bg-red-950/30 border-b border-red-500/15">
+                          <svg className="w-3 h-3 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          <span className="text-red-400 text-[10px] font-black uppercase tracking-widest">You give</span>
+                          <span className="ml-auto text-red-400/60 font-display text-sm leading-none tabular-nums">{giveTotalEbk.toFixed(1)}</span>
+                        </div>
+                        <div className="space-y-0 divide-y divide-white/[0.04]">
                           {requestedPlayers.map(p => p && (
-                            <div key={p.id} className="flex items-center gap-2">
+                            <div key={p.id} className="flex items-center gap-2 px-3 py-2.5">
                               <PosBadge pos={p.position} />
                               <span className="text-white font-bold text-xs truncate flex-1">{p.firstName[0]}. {p.lastName}</span>
                               <span className="text-orange-400 text-xs font-black shrink-0">{p.ebkScore.toFixed(1)}</span>
@@ -715,19 +765,26 @@ export default function AuctionRoomPage() {
                         </div>
                       </div>
                     </div>
-                    {/* Accept / Decline — full width, easy to tap */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() => handleTradeRespond(offer.id, true)}
-                        className="btn-primary py-3 text-sm tracking-widest"
-                      >
-                        ✓ Accept
-                      </button>
+
+                    {/* Accept / Decline — full width, prominent */}
+                    <div className="grid grid-cols-2 gap-3 px-4 pb-4">
                       <button
                         onClick={() => handleTradeRespond(offer.id, false)}
-                        className="btn-danger py-3 text-sm tracking-widest"
+                        className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-sm uppercase tracking-wider transition-all border bg-red-950/30 border-red-500/40 text-red-400 hover:bg-red-950/50 hover:border-red-500/60 hover:text-red-300 active:bg-red-950/60"
                       >
-                        ✕ Decline
+                        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Decline
+                      </button>
+                      <button
+                        onClick={() => handleTradeRespond(offer.id, true)}
+                        className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-sm uppercase tracking-wider transition-all border bg-green-600/25 border-green-500/50 text-green-400 hover:bg-green-600/35 hover:border-green-500/70 hover:text-green-300 active:bg-green-600/45 shadow-[0_0_16px_rgba(34,197,94,0.12)]"
+                      >
+                        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Accept
                       </button>
                     </div>
                   </div>
@@ -828,48 +885,92 @@ export default function AuctionRoomPage() {
                 {/* Trade proposal preview for this GM */}
                 {tradeTarget === gm.socketId && (
                   <div className="mt-4 pt-4 border-t border-white/[0.07]">
-                    <p className="text-white/30 text-[11px] font-black uppercase tracking-widest mb-3">Trade Summary</p>
-                    <div className="grid grid-cols-[1fr_auto_1fr] gap-2 mb-4">
-                      <div className="bg-orange-950/20 border border-orange-500/15 rounded-xl px-3 py-2.5">
-                        <p className="text-orange-400/50 text-[9px] font-black uppercase tracking-widest mb-1.5">You offer</p>
-                        {selectedToOffer.length > 0 ? (
-                          <div className="space-y-1">
-                            {selectedToOffer.map(id => {
-                              const p = me?.roster.find(r => r?.id === id)
-                              return p ? (
-                                <div key={id} className="text-white text-xs font-bold truncate">{p.firstName[0]}. {p.lastName}</div>
-                              ) : null
-                            })}
-                          </div>
-                        ) : (
-                          <p className="text-white/20 text-xs italic">Select from your roster →</p>
-                        )}
+                    <div className="flex items-center gap-2 mb-3">
+                      <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">Trade Proposal</p>
+                      <div className="flex-1 h-px bg-white/[0.05]" />
+                      {/* Live EBK net preview */}
+                      {(selectedToOffer.length > 0 || selectedToRequest.length > 0) && (() => {
+                        const offerEbk = selectedToOffer.reduce((s, id) => s + (me?.roster.find(p => p?.id === id)?.ebkScore ?? 0), 0)
+                        const requestEbk = selectedToRequest.reduce((s, id) => s + (gm.roster.find(p => p?.id === id)?.ebkScore ?? 0), 0)
+                        const net = requestEbk - offerEbk
+                        return (
+                          <span className={`text-[10px] font-black tabular-nums ${net < 0 ? 'text-green-400' : net > 0 ? 'text-red-400' : 'text-white/30'}`}>
+                            EBK {net > 0 ? '+' : ''}{net.toFixed(1)}
+                          </span>
+                        )
+                      })()}
+                    </div>
+                    <div className="grid grid-cols-[1fr_36px_1fr] gap-0 mb-4">
+                      <div className={`rounded-xl border overflow-hidden transition-all ${
+                        selectedToOffer.length > 0
+                          ? 'border-orange-500/30 bg-orange-950/20'
+                          : 'border-white/[0.08] bg-white/[0.02]'
+                      }`}>
+                        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-white/[0.05]">
+                          <svg className="w-3 h-3 text-orange-400/60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                          </svg>
+                          <p className="text-orange-400/60 text-[9px] font-black uppercase tracking-widest">You give</p>
+                        </div>
+                        <div className="px-3 py-2 space-y-1.5 min-h-[52px]">
+                          {selectedToOffer.length > 0 ? selectedToOffer.map(id => {
+                            const p = me?.roster.find(r => r?.id === id)
+                            return p ? (
+                              <div key={id} className="flex items-center gap-1.5">
+                                <PosBadge pos={p.position} />
+                                <span className="text-white text-xs font-bold truncate flex-1">{p.firstName[0]}. {p.lastName}</span>
+                                <span className="text-orange-400 text-[10px] font-black shrink-0">{p.ebkScore.toFixed(1)}</span>
+                              </div>
+                            ) : null
+                          }) : (
+                            <p className="text-white/20 text-[11px] italic pt-1">Select from your roster below</p>
+                          )}
+                        </div>
                       </div>
+                      {/* Swap icon */}
                       <div className="flex items-center justify-center">
-                        <span className="text-white/20 text-base font-bold">⇄</span>
+                        <div className="w-7 h-7 rounded-full bg-white/[0.05] border border-white/[0.08] flex items-center justify-center">
+                          <svg className="w-3.5 h-3.5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                          </svg>
+                        </div>
                       </div>
-                      <div className="bg-blue-950/20 border border-blue-500/15 rounded-xl px-3 py-2.5">
-                        <p className="text-blue-400/50 text-[9px] font-black uppercase tracking-widest mb-1.5">You want</p>
-                        {selectedToRequest.length > 0 ? (
-                          <div className="space-y-1">
-                            {selectedToRequest.map(id => {
-                              const p = gm.roster.find(r => r?.id === id)
-                              return p ? (
-                                <div key={id} className="text-white text-xs font-bold truncate">{p.firstName[0]}. {p.lastName}</div>
-                              ) : null
-                            })}
-                          </div>
-                        ) : (
-                          <p className="text-white/20 text-xs italic">← Select above</p>
-                        )}
+                      <div className={`rounded-xl border overflow-hidden transition-all ${
+                        selectedToRequest.length > 0
+                          ? 'border-blue-500/30 bg-blue-950/20'
+                          : 'border-white/[0.08] bg-white/[0.02]'
+                      }`}>
+                        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-white/[0.05]">
+                          <svg className="w-3 h-3 text-blue-400/60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+                          </svg>
+                          <p className="text-blue-400/60 text-[9px] font-black uppercase tracking-widest">You get</p>
+                        </div>
+                        <div className="px-3 py-2 space-y-1.5 min-h-[52px]">
+                          {selectedToRequest.length > 0 ? selectedToRequest.map(id => {
+                            const p = gm.roster.find(r => r?.id === id)
+                            return p ? (
+                              <div key={id} className="flex items-center gap-1.5">
+                                <PosBadge pos={p.position} />
+                                <span className="text-white text-xs font-bold truncate flex-1">{p.firstName[0]}. {p.lastName}</span>
+                                <span className="text-orange-400 text-[10px] font-black shrink-0">{p.ebkScore.toFixed(1)}</span>
+                              </div>
+                            ) : null
+                          }) : (
+                            <p className="text-white/20 text-[11px] italic pt-1">Tap their players above</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <button
                       onClick={handleSendTradeOffer}
                       disabled={selectedToOffer.length === 0 || selectedToRequest.length === 0}
-                      className="btn-primary w-full py-3 text-sm tracking-widest"
+                      className="btn-primary w-full py-3.5 text-sm tracking-widest flex items-center justify-center gap-2"
                     >
-                      Send Trade Offer to {gm.name}
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                      </svg>
+                      Send Offer to {gm.name}
                     </button>
                   </div>
                 )}
@@ -878,20 +979,66 @@ export default function AuctionRoomPage() {
           </div>
         </div>
 
-        {/* Outgoing offers */}
+        {/* Outgoing offers — pending cards */}
         {myOutgoingOffers.length > 0 && (
-          <div className="mt-4 card-surface p-4">
-            <p className="text-white/40 text-xs uppercase tracking-widest mb-3">Pending Outgoing Offers</p>
+          <div className="mt-4">
+            <div className="flex items-center gap-2 mb-3 px-1">
+              <span className="text-label tracking-[0.18em]">Pending Offers</span>
+              <div className="flex-1 h-px bg-white/[0.05]" />
+            </div>
             <div className="space-y-2">
-              {myOutgoingOffers.map(offer => (
-                <div key={offer.id} className="flex items-center gap-3 bg-white/[0.03] rounded-xl px-3 py-2.5">
-                  <span className="w-2 h-2 rounded-full bg-orange-400/60 animate-pulse shrink-0" />
-                  <p className="text-white/50 text-sm">
-                    Offer to <span className="text-white font-bold">{offer.toName}</span>
-                    <span className="text-white/25"> — awaiting response</span>
-                  </p>
-                </div>
-              ))}
+              {myOutgoingOffers.map(offer => {
+                const toGM = auctionState.participants.find(p => p.socketId === offer.toSocketId)
+                const offeredPlayers = offer.offeredPlayerIds.map(id => me?.roster.find(p => p?.id === id)).filter(Boolean)
+                const requestedPlayers = offer.requestedPlayerIds.map(id => toGM?.roster.find(p => p?.id === id)).filter(Boolean)
+                return (
+                  <div key={offer.id} className="card-surface rounded-xl border border-white/[0.06] overflow-hidden">
+                    <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.04]">
+                      <span className="w-2 h-2 rounded-full bg-orange-400/70 animate-pulse shrink-0" />
+                      <span className="text-white/60 text-xs font-black uppercase tracking-widest flex-1">Awaiting response</span>
+                      <span className="text-white/30 text-xs">→ <span className="text-white/60 font-bold">{offer.toName}</span></span>
+                    </div>
+                    <div className="grid grid-cols-[1fr_auto_1fr] gap-3 px-4 py-3 items-start">
+                      <div>
+                        <p className="text-orange-400/50 text-[9px] font-black uppercase tracking-widest mb-1.5">You&apos;re offering</p>
+                        <div className="space-y-1">
+                          {offeredPlayers.map(p => p && (
+                            <div key={p.id} className="flex items-center gap-1.5">
+                              <PosBadge pos={p.position} />
+                              <span className="text-white/70 text-xs font-bold truncate">{p.firstName[0]}. {p.lastName}</span>
+                              <span className="text-orange-400/60 text-xs font-black shrink-0">{p.ebkScore.toFixed(1)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-center pt-4">
+                        <span className="text-white/20 font-bold text-base">⇄</span>
+                      </div>
+                      <div>
+                        <p className="text-blue-400/50 text-[9px] font-black uppercase tracking-widest mb-1.5">You want</p>
+                        <div className="space-y-1">
+                          {requestedPlayers.map(p => p && (
+                            <div key={p.id} className="flex items-center gap-1.5">
+                              <PosBadge pos={p.position} />
+                              <span className="text-white/70 text-xs font-bold truncate">{p.firstName[0]}. {p.lastName}</span>
+                              <span className="text-orange-400/60 text-xs font-black shrink-0">{p.ebkScore.toFixed(1)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Urgency bar if time is running out */}
+                    {timerUrgent && (
+                      <div className="px-4 pb-3">
+                        <div className="flex items-center gap-2 bg-red-950/30 border border-red-500/25 rounded-lg px-3 py-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse shrink-0" />
+                          <span className="text-red-400/80 text-[10px] font-black uppercase tracking-widest">Trade window closing in {tradeMinutes}:{tradeSecs.toString().padStart(2, '0')}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
