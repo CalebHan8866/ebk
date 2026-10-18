@@ -635,22 +635,107 @@ export default function AuctionRoomPage() {
     const myOutgoingOffers = auctionState.tradeOffers.filter(o => o.fromSocketId === mySocketId)
     const tradeMinutes = Math.floor(tradeTimeLeft / 60)
     const tradeSecs = tradeTimeLeft % 60
+    const timerUrgent = tradeTimeLeft <= 60
+    const timerWarning = tradeTimeLeft <= 180
 
     return (
-      <div className="min-h-screen px-4 py-8 max-w-5xl mx-auto">
+      <div className="min-h-screen px-4 py-6 max-w-5xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6 gap-3">
           <div>
-            <h1 className="font-display text-4xl text-orange-500 tracking-wider">TRADE WINDOW</h1>
-            <p className="text-white/40 text-sm">{code}</p>
+            <h1 className="font-display text-3xl sm:text-4xl text-orange-500 tracking-wider leading-none">TRADE WINDOW</h1>
+            <p className="text-white/30 text-xs mt-1 font-mono">{code}</p>
           </div>
-          <div className="text-right">
-            <p className="font-display text-3xl text-white">
+          {/* Timer — urgency ring */}
+          <div className={`flex flex-col items-center gap-1 rounded-2xl px-4 py-2.5 border transition-all ${
+            timerUrgent
+              ? 'bg-red-950/40 border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]'
+              : timerWarning
+              ? 'bg-orange-950/30 border-orange-500/30'
+              : 'bg-white/[0.04] border-white/[0.08]'
+          }`}>
+            <p className={`font-display text-3xl leading-none tabular-nums ${timerUrgent ? 'text-red-400 animate-num-pop' : timerWarning ? 'text-orange-400' : 'text-white'}`}>
               {tradeMinutes}:{tradeSecs.toString().padStart(2, '0')}
             </p>
-            <p className="text-white/30 text-xs uppercase">Time Remaining</p>
+            <p className={`text-[10px] font-black uppercase tracking-widest ${timerUrgent ? 'text-red-400/70' : 'text-white/25'}`}>
+              {timerUrgent ? 'Hurry up!' : 'Time Left'}
+            </p>
           </div>
         </div>
+
+        {/* Incoming offers banner — high priority, shown at top */}
+        {myIncomingOffers.length > 0 && (
+          <div className="mb-6 card-accent p-4 animate-scale-in">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse shrink-0" />
+              <h2 className="font-display text-xl text-orange-400 tracking-widest">
+                {myIncomingOffers.length === 1 ? 'INCOMING OFFER' : `${myIncomingOffers.length} INCOMING OFFERS`}
+              </h2>
+            </div>
+            <div className="space-y-4">
+              {myIncomingOffers.map(offer => {
+                const fromGM = auctionState.participants.find(p => p.socketId === offer.fromSocketId)
+                const offeredPlayers = offer.offeredPlayerIds.map(id => fromGM?.roster.find(p => p?.id === id)).filter(Boolean)
+                const requestedPlayers = offer.requestedPlayerIds.map(id => me?.roster.find(p => p?.id === id)).filter(Boolean)
+                return (
+                  <div key={offer.id} className="bg-white/[0.04] rounded-2xl p-4 border border-white/[0.08]">
+                    <p className="text-white/50 text-xs font-black uppercase tracking-widest mb-3">
+                      Trade proposal from <span className="text-white">{offer.fromName}</span>
+                    </p>
+                    {/* Trade card: THEY SEND → YOU GET / YOU GIVE */}
+                    <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center mb-4">
+                      {/* They send */}
+                      <div className="bg-green-950/30 border border-green-500/20 rounded-xl p-3">
+                        <p className="text-green-400/60 text-[10px] font-black uppercase tracking-widest mb-2">You receive</p>
+                        <div className="space-y-1.5">
+                          {offeredPlayers.map(p => p && (
+                            <div key={p.id} className="flex items-center gap-2">
+                              <PosBadge pos={p.position} />
+                              <span className="text-white font-bold text-xs truncate flex-1">{p.firstName[0]}. {p.lastName}</span>
+                              <span className="text-orange-400 text-xs font-black shrink-0">{p.ebkScore.toFixed(1)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {/* Arrow */}
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-white/20 text-lg font-bold">⇄</span>
+                      </div>
+                      {/* You give */}
+                      <div className="bg-red-950/20 border border-red-500/20 rounded-xl p-3">
+                        <p className="text-red-400/60 text-[10px] font-black uppercase tracking-widest mb-2">You give up</p>
+                        <div className="space-y-1.5">
+                          {requestedPlayers.map(p => p && (
+                            <div key={p.id} className="flex items-center gap-2">
+                              <PosBadge pos={p.position} />
+                              <span className="text-white font-bold text-xs truncate flex-1">{p.firstName[0]}. {p.lastName}</span>
+                              <span className="text-orange-400 text-xs font-black shrink-0">{p.ebkScore.toFixed(1)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Accept / Decline — full width, easy to tap */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => handleTradeRespond(offer.id, true)}
+                        className="btn-primary py-3 text-sm tracking-widest"
+                      >
+                        ✓ Accept
+                      </button>
+                      <button
+                        onClick={() => handleTradeRespond(offer.id, false)}
+                        className="btn-danger py-3 text-sm tracking-widest"
+                      >
+                        ✕ Decline
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {errorMsg && (
           <div className="mb-4 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">
@@ -661,25 +746,27 @@ export default function AuctionRoomPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Your Roster */}
           <div className="card-surface p-5">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <h2 className="font-display text-lg text-white/80 tracking-wider">YOUR ROSTER</h2>
               <span className="text-orange-400 text-sm font-bold">${me?.budget ?? 0}M left</span>
             </div>
+            <p className="text-white/25 text-[11px] mb-3 font-semibold">Tap players to include in a trade offer</p>
             <div className="space-y-2">
               {me?.roster.map(p => p && (
                 <button
                   key={p.id}
                   onClick={() => toggleOffer(p.id)}
-                  className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 border transition-all ${
+                  className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 border transition-all ${
                     selectedToOffer.includes(p.id)
-                      ? 'bg-orange-600/20 border-orange-500/40'
+                      ? 'bg-orange-600/20 border-orange-500/50 shadow-[0_0_12px_rgba(234,88,12,0.15)]'
                       : 'bg-white/[0.03] border-white/[0.05] hover:border-white/20'
                   }`}
                 >
                   <PosBadge pos={p.position} />
                   <span className="flex-1 text-left text-white text-sm font-bold truncate" title={`${p.firstName} ${p.lastName}`}>{p.firstName} {p.lastName}</span>
-                  <span className="text-orange-400 text-xs">{p.ebkScore.toFixed(1)}</span>
-                  <span className="text-white/30 text-xs">${p.paidPrice}M</span>
+                  <span className="text-orange-400 text-xs font-black">{p.ebkScore.toFixed(1)}</span>
+                  <span className="text-white/25 text-xs">${p.paidPrice}M</span>
+                  {selectedToOffer.includes(p.id) && <span className="text-orange-400 text-xs shrink-0">✓</span>}
                 </button>
               ))}
               {(!me?.roster || me.roster.length === 0) && (
@@ -696,22 +783,22 @@ export default function AuctionRoomPage() {
           <div className="space-y-4">
             {auctionState.participants.filter(p => p.socketId !== mySocketId).map(gm => (
               <div key={gm.socketId} className="card-surface p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-orange-600/20 border border-orange-500/30 flex items-center justify-center font-display text-orange-400">
+                <div className="flex items-center justify-between mb-3 gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-orange-600/20 border border-orange-500/30 flex items-center justify-center font-display text-orange-400 shrink-0">
                       {gm.name[0]?.toUpperCase()}
                     </div>
-                    <span className="font-bold text-white">{gm.name}</span>
-                    <span className="text-white/30 text-xs">${gm.budget}M left</span>
+                    <span className="font-bold text-white truncate">{gm.name}</span>
+                    <span className="text-white/30 text-xs shrink-0">${gm.budget}M</span>
                   </div>
                   <button
                     onClick={() => {
                       setTradeTarget(tradeTarget === gm.socketId ? null : gm.socketId)
                       setSelectedToRequest([])
                     }}
-                    className={tradeTarget === gm.socketId ? 'btn-secondary text-xs py-2 px-4' : 'btn-primary text-xs py-2 px-4'}
+                    className={`shrink-0 text-xs py-2 px-3 ${tradeTarget === gm.socketId ? 'btn-secondary' : 'btn-primary'}`}
                   >
-                    {tradeTarget === gm.socketId ? '✕ Cancel' : '↔ Propose Trade'}
+                    {tradeTarget === gm.socketId ? '✕ Cancel' : '↔ Trade'}
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -719,17 +806,18 @@ export default function AuctionRoomPage() {
                     <button
                       key={p.id}
                       onClick={() => tradeTarget === gm.socketId && toggleRequest(p.id)}
-                      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 border text-xs transition-all ${
+                      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-2 border text-xs transition-all ${
                         tradeTarget === gm.socketId && selectedToRequest.includes(p.id)
-                          ? 'bg-blue-600/20 border-blue-500/40 text-blue-300'
+                          ? 'bg-blue-600/20 border-blue-500/50 text-blue-300 shadow-[0_0_8px_rgba(59,130,246,0.15)]'
                           : tradeTarget === gm.socketId
                           ? 'bg-white/[0.04] border-white/10 text-white/70 hover:border-blue-500/40 cursor-pointer'
-                          : 'bg-white/[0.04] border-white/[0.07] text-white/50'
+                          : 'bg-white/[0.04] border-white/[0.07] text-white/50 cursor-default'
                       }`}
                     >
                       <PosBadge pos={p.position} />
                       <span className="font-bold">{p.firstName[0]}. {p.lastName}</span>
-                      <span className="text-orange-400">{p.ebkScore.toFixed(1)}</span>
+                      <span className="text-orange-400 font-black">{p.ebkScore.toFixed(1)}</span>
+                      {tradeTarget === gm.socketId && selectedToRequest.includes(p.id) && <span className="text-blue-400">✓</span>}
                     </button>
                   ))}
                   {gm.roster.length === 0 && (
@@ -737,31 +825,51 @@ export default function AuctionRoomPage() {
                   )}
                 </div>
 
-                {/* Trade offer UI for this GM */}
+                {/* Trade proposal preview for this GM */}
                 {tradeTarget === gm.socketId && (
                   <div className="mt-4 pt-4 border-t border-white/[0.07]">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="text-xs text-white/40">
-                        Offering: <span className="text-orange-400 font-bold">
-                          {selectedToOffer.length > 0
-                            ? selectedToOffer.map(id => me?.roster.find(p => p?.id === id)).filter(Boolean).map(p => `${p!.firstName[0]}. ${p!.lastName}`).join(', ')
-                            : 'Select from your roster'}
-                        </span>
+                    <p className="text-white/30 text-[11px] font-black uppercase tracking-widest mb-3">Trade Summary</p>
+                    <div className="grid grid-cols-[1fr_auto_1fr] gap-2 mb-4">
+                      <div className="bg-orange-950/20 border border-orange-500/15 rounded-xl px-3 py-2.5">
+                        <p className="text-orange-400/50 text-[9px] font-black uppercase tracking-widest mb-1.5">You offer</p>
+                        {selectedToOffer.length > 0 ? (
+                          <div className="space-y-1">
+                            {selectedToOffer.map(id => {
+                              const p = me?.roster.find(r => r?.id === id)
+                              return p ? (
+                                <div key={id} className="text-white text-xs font-bold truncate">{p.firstName[0]}. {p.lastName}</div>
+                              ) : null
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-white/20 text-xs italic">Select from your roster →</p>
+                        )}
                       </div>
-                      <div className="text-xs text-white/40">
-                        Requesting: <span className="text-blue-400 font-bold">
-                          {selectedToRequest.length > 0
-                            ? selectedToRequest.map(id => gm.roster.find(p => p?.id === id)).filter(Boolean).map(p => `${p!.firstName[0]}. ${p!.lastName}`).join(', ')
-                            : 'Select from their roster'}
-                        </span>
+                      <div className="flex items-center justify-center">
+                        <span className="text-white/20 text-base font-bold">⇄</span>
+                      </div>
+                      <div className="bg-blue-950/20 border border-blue-500/15 rounded-xl px-3 py-2.5">
+                        <p className="text-blue-400/50 text-[9px] font-black uppercase tracking-widest mb-1.5">You want</p>
+                        {selectedToRequest.length > 0 ? (
+                          <div className="space-y-1">
+                            {selectedToRequest.map(id => {
+                              const p = gm.roster.find(r => r?.id === id)
+                              return p ? (
+                                <div key={id} className="text-white text-xs font-bold truncate">{p.firstName[0]}. {p.lastName}</div>
+                              ) : null
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-white/20 text-xs italic">← Select above</p>
+                        )}
                       </div>
                     </div>
                     <button
                       onClick={handleSendTradeOffer}
                       disabled={selectedToOffer.length === 0 || selectedToRequest.length === 0}
-                      className="btn-primary w-full text-sm"
+                      className="btn-primary w-full py-3 text-sm tracking-widest"
                     >
-                      Send Trade Offer
+                      Send Trade Offer to {gm.name}
                     </button>
                   </div>
                 )}
@@ -770,73 +878,25 @@ export default function AuctionRoomPage() {
           </div>
         </div>
 
-        {/* Incoming Offers */}
-        {myIncomingOffers.length > 0 && (
-          <div className="mt-6 card-accent p-5">
-            <h2 className="font-display text-lg text-white/80 tracking-wider mb-4">INCOMING OFFERS</h2>
-            <div className="space-y-3">
-              {myIncomingOffers.map(offer => {
-                const fromGM = auctionState.participants.find(p => p.socketId === offer.fromSocketId)
-                const offeredPlayers = offer.offeredPlayerIds.map(id => fromGM?.roster.find(p => p?.id === id)).filter(Boolean)
-                const requestedPlayers = offer.requestedPlayerIds.map(id => me?.roster.find(p => p?.id === id)).filter(Boolean)
-                return (
-                  <div key={offer.id} className="bg-white/[0.03] rounded-xl p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <p className="text-white font-bold mb-2">{offer.fromName} offers:</p>
-                        <div className="flex flex-wrap gap-1.5 mb-2">
-                          {offeredPlayers.map(p => p && (
-                            <span key={p.id} className="bg-green-500/10 border border-green-500/30 text-green-400 text-xs rounded-lg px-2 py-1 font-bold">
-                              {p.firstName[0]}. {p.lastName} ({p.ebkScore.toFixed(1)})
-                            </span>
-                          ))}
-                        </div>
-                        <p className="text-white/40 text-xs mb-1">for your:</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {requestedPlayers.map(p => p && (
-                            <span key={p.id} className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-lg px-2 py-1 font-bold">
-                              {p.firstName[0]}. {p.lastName} ({p.ebkScore.toFixed(1)})
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-2 shrink-0">
-                        <button
-                          onClick={() => handleTradeRespond(offer.id, true)}
-                          className="btn-primary text-xs py-2.5 px-4"
-                        >
-                          Accept
-                        </button>
-                        <button
-                          onClick={() => handleTradeRespond(offer.id, false)}
-                          className="btn-danger text-xs py-2.5 px-4"
-                        >
-                          Decline
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Outgoing offers */}
         {myOutgoingOffers.length > 0 && (
           <div className="mt-4 card-surface p-4">
             <p className="text-white/40 text-xs uppercase tracking-widest mb-3">Pending Outgoing Offers</p>
             <div className="space-y-2">
               {myOutgoingOffers.map(offer => (
-                <p key={offer.id} className="text-white/50 text-sm">
-                  Offer to <span className="text-white font-bold">{offer.toName}</span> — awaiting response
-                </p>
+                <div key={offer.id} className="flex items-center gap-3 bg-white/[0.03] rounded-xl px-3 py-2.5">
+                  <span className="w-2 h-2 rounded-full bg-orange-400/60 animate-pulse shrink-0" />
+                  <p className="text-white/50 text-sm">
+                    Offer to <span className="text-white font-bold">{offer.toName}</span>
+                    <span className="text-white/25"> — awaiting response</span>
+                  </p>
+                </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Bid log / End trading */}
+        {/* End trading / timer repeat */}
         <div className="mt-6 flex items-center justify-between gap-4">
           {isHost && (
             <button
@@ -846,8 +906,8 @@ export default function AuctionRoomPage() {
               End Trading Early
             </button>
           )}
-          <div className={`${isHost ? '' : 'ml-auto'} flex items-center gap-2 text-white/40 text-sm font-mono`}>
-            <span className="live-dot" />
+          <div className={`${isHost ? '' : 'ml-auto'} flex items-center gap-2 text-sm font-mono ${timerUrgent ? 'text-red-400' : timerWarning ? 'text-orange-400' : 'text-white/40'}`}>
+            <span className={`live-dot ${timerUrgent ? 'bg-red-400' : ''}`} />
             {tradeMinutes}:{tradeSecs.toString().padStart(2, '0')} remaining
           </div>
         </div>
