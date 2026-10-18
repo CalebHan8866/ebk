@@ -1266,7 +1266,7 @@ export default function AuctionRoomPage() {
 
             {/* Bid controls */}
             {phase === 'bidding' && (
-              <div className="w-full max-w-xs sm:max-w-xs space-y-3 px-2 sm:px-0">
+              <div className="w-full max-w-xs space-y-3 px-0">
                 {/* Quick-add chips */}
                 <div className="flex gap-2 justify-center">
                   {[1, 5, 10].map(bump => (
@@ -1381,7 +1381,7 @@ export default function AuctionRoomPage() {
                       <div className="text-label mb-0.5 tracking-[0.15em]">Steal Price</div>
                       <div className="font-display text-3xl text-yellow-400 leading-none">${stealPrice}M</div>
                     </div>
-                    <p className="text-white/25 text-xs mt-3">Click ⚡ on any opponent&apos;s player in the roster panel to steal</p>
+                    <p className="text-white/25 text-xs mt-3">Tap ⚡ on any opponent&apos;s player in the Rosters tab to steal</p>
                   </div>
                 )}
               </div>
