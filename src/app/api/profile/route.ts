@@ -149,9 +149,17 @@ export async function DELETE(request: NextRequest) {
     // GameRecords are cascade-deleted via the FK onDelete: Cascade in schema.prisma
     await prisma.user.delete({ where: { id: user.id } })
 
-    // Clear the auth cookie so the client is immediately logged out
+    // Clear the auth cookie so the client is immediately logged out.
+    // Use an explicit set-with-maxAge=0 matching all original cookie attributes
+    // so the browser's cookie-matching algorithm correctly evicts the stored cookie.
     const cookieStore = await cookies()
-    cookieStore.delete('ebk-token')
+    cookieStore.set('ebk-token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 0,
+      path: '/',
+    })
 
     return new NextResponse(null, { status: 204 })
   } catch {

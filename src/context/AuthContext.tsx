@@ -66,8 +66,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function refreshUser() {
-    const data = await fetch('/api/auth/me').then(r => r.ok ? r.json() : null).catch(() => null)
-    if (data?.user) setUser(data.user)
+    const res = await fetch('/api/auth/me').catch(() => null)
+    if (!res) return                      // network error — leave state as-is
+    if (!res.ok) { setUser(null); return } // 401/403/500 — session gone, clear it
+    const data = await res.json().catch(() => null)
+    setUser(data?.user ?? null)
   }
 
   return (

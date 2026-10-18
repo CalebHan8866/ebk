@@ -27,6 +27,16 @@ export async function POST() {
     }
   }
 
-  cookieStore.delete('ebk-token')
+  // Explicitly expire the cookie with the same attributes it was set with.
+  // A bare cookieStore.delete() emits Set-Cookie without httpOnly/secure/sameSite,
+  // so browsers that stored the cookie with those flags may not honour the deletion
+  // and the old token would persist in the jar.
+  cookieStore.set('ebk-token', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 0,
+    path: '/',
+  })
   return new NextResponse(null, { status: 204 })
 }
