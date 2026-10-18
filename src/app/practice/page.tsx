@@ -680,7 +680,7 @@ function PracticeContent() {
 
         {/* Roster */}
         <div className="card-surface rounded-2xl p-4 mb-5 animate-fade-up-1">
-          <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Your Roster</h2>
+          <h2 className="text-label mb-3">Your Roster</h2>
           <div className="space-y-2">
             {requiredSlots.map((slotPos, i) => {
               const p = pickedPlayersBySlot[i]
@@ -704,14 +704,14 @@ function PracticeContent() {
             })}
           </div>
           <div className="mt-3 border-t border-white/[0.06] pt-3 flex justify-between items-center px-1">
-            <span className="text-gray-400 text-xs uppercase tracking-wide">Team EBK Total</span>
+            <span className="text-label">Team EBK Total</span>
             <span className={`font-black text-lg ${gradeColor}`}>{totalEBK.toFixed(1)}</span>
           </div>
         </div>
 
         {/* Totals */}
         <div className="card-surface rounded-2xl p-5 mb-6">
-          <h2 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Team Totals</h2>
+          <h2 className="text-label mb-3">Team Totals</h2>
           <div className="grid grid-cols-2 gap-3">
             {(Object.entries(STAT_LABELS) as [string, string][]).map(([key, label]) => (
               <div key={key} className="card-surface rounded-xl p-4 text-center">

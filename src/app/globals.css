@@ -318,12 +318,26 @@ body {
 *:focus-visible {
   outline: 2px solid rgba(249,115,22,0.55);
   outline-offset: 2px;
-  border-radius: 4px;
+  /* Inherit the element's own border-radius so the ring follows the shape */
+  border-radius: inherit;
+}
+/* Fallback for elements that have no border-radius set */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-radius: 8px;
 }
 /* Elements with custom focus styles suppress the default ring */
 .btn-primary:focus-visible,
 .btn-secondary:focus-visible {
   outline-offset: 3px;
+  border-radius: 12px;
+}
+/* Input fields use their own box-shadow focus style — keep their ring subtle */
+.input-field:focus-visible {
+  outline: none;
 }
 
 /* ── Input validation states ──────────────────────────────────────────────────── */
@@ -372,6 +386,11 @@ body {
   background: #ea580c;
   color: #fff;
   box-shadow: 0 4px 12px rgba(234,88,12,0.3);
+}
+.tab-pill-item:focus-visible {
+  outline: 2px solid rgba(249,115,22,0.55);
+  outline-offset: 2px;
+  border-radius: 12px;
 }
 
 /* ── Stat highlight bar ─────────────────────────────────────────────────────── */
@@ -427,6 +446,11 @@ body {
   border-color: rgba(234,88,12,0.4);
   box-shadow: 0 0 0 1px rgba(234,88,12,0.2);
 }
+.player-row:focus-visible {
+  outline: 2px solid rgba(249,115,22,0.55);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
 .player-row.taken { opacity: 0.3; pointer-events: none; }
 
 /* ── Draft slot ─────────────────────────────────────────────────────────────── */
@@ -446,6 +470,7 @@ body {
 .draft-slot-filled { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
 .draft-slot-target { background: rgba(234,88,12,0.12); border: 1px solid rgba(234,88,12,0.5); cursor: pointer; }
 .draft-slot-target:hover { background: rgba(234,88,12,0.2); }
+.draft-slot-target:focus-visible { outline: 2px solid rgba(249,115,22,0.6); outline-offset: 2px; border-radius: 10px; }
 
 /* ── Profile hero ──────────────────────────────────────────────────────────── */
 .profile-hero {
@@ -495,6 +520,7 @@ body {
 }
 .bid-stepper-btn:hover { background: rgba(255,255,255,0.06); color: #fff; }
 .bid-stepper-btn:active { background: rgba(255,255,255,0.1); }
+.bid-stepper-btn:focus-visible { outline: 2px solid rgba(249,115,22,0.55); outline-offset: -2px; }
 .bid-stepper-input {
   flex: 1;
   background: transparent;
