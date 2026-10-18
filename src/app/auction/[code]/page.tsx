@@ -1376,7 +1376,7 @@ export default function AuctionRoomPage() {
 
             {/* Bid controls */}
             {phase === 'bidding' && (
-              <div className="w-full max-w-xs space-y-3 px-0">
+              <div className="w-full max-w-xs space-y-3 px-0 animate-fade-up">
                 {/* Quick-add chips */}
                 <div className="flex gap-2 justify-center">
                   {[1, 5, 10].map(bump => (
@@ -1459,7 +1459,7 @@ export default function AuctionRoomPage() {
 
             {/* Steal window info */}
             {phase === 'steal-window' && (
-              <div className="w-full max-w-sm">
+              <div className="w-full max-w-sm animate-fade-up">
                 {auctionState.stealInitiated ? (() => {
                   const stealEntry = [...auctionState.bidLog].reverse().find(e => e.action === 'steal')
                   const iMeStole = stealEntry?.name === me?.name
