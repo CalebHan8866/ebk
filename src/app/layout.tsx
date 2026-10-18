@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Bebas_Neue, Inter } from 'next/font/google'
 import './globals.css'
 import Navbar from '@/components/Navbar'
@@ -19,6 +19,15 @@ const inter = Inter({
   variable: '--font-inter',
   preload: true,
 })
+
+// Prevent iOS from zooming in when the user taps an input field (which happens
+// when the input font-size is smaller than 16 px). maximumScale=1 suppresses
+// that auto-zoom without disabling pinch-to-zoom (user-scalable is not set).
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+}
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL ?? 'https://ebkgame.com'),

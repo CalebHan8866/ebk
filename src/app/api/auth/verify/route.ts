@@ -3,14 +3,15 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { createToken } from '@/lib/auth'
+import { noStore } from '@/lib/no-store'
 import crypto from 'crypto'
 
 export async function GET(request: NextRequest) {
   try {
     const token = request.nextUrl.searchParams.get('token')
-    if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 400 })
+    if (!token) return noStore({ error: 'Missing token' }, { status: 400 })
     // Reject implausibly long tokens before hitting the DB (crypto.randomBytes(32).hex = 64 chars)
-    if (token.length > 128) return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 })
+    if (token.length > 128) return noStore({ error: 'Invalid or expired token' }, { status: 400 })
 
     // The DB stores the SHA-256 hash of the token, not the raw token.
     // Hash the incoming value before querying so a DB read cannot replay links.
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
       where: { verificationToken: tokenHash },
       select: { id: true, username: true, tokenVersion: true },
     })
-    if (!user) return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 })
+    if (!user) return noStore({ error: 'Invalid or expired token' }, { status: 400 })
 
     // Atomic single-use enforcement: include BOTH id AND token hash in the WHERE clause.
     // If two concurrent requests race on the same token, only the first updateMany
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
     })
     if (updated.count === 0) {
       // Lost the race — another concurrent request already consumed this token
-      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 })
+      return noStore({ error: 'Invalid or expired token' }, { status: 400 })
     }
 
     // Auto-log the user in after verification so they land on the success screen already authenticated.
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest) {
     const authToken = await createToken({ userId: user.id, username: user.username, tokenVersion: user.tokenVersion })
     const appUrl = process.env.APP_URL ?? request.nextUrl.origin
     const response = NextResponse.redirect(new URL('/verify-email?success=1', appUrl))
+    response.headers.set('Cache-Control', 'no-store')
     response.cookies.set('ebk-token', authToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -50,6 +52,6 @@ export async function GET(request: NextRequest) {
     })
     return response
   } catch {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    return noStore({ error: 'Server error' }, { status: 500 })
   }
 }
