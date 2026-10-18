@@ -26,31 +26,40 @@ const MODE_LABEL: Record<string, string> = {
 
 const RESULT_CONFIG = {
   win: {
-    badge:      'result-win',
-    leftBorder: 'border-l-2 border-l-green-500/50',
-    label:      'W',
-    verb:       'Beat',
-    nameColor:  'text-green-400',
-    scoreColor: 'text-green-400',
-    hoverBg:    'hover:bg-green-500/[0.03]',
+    badge:         'result-win',
+    leftBorder:    'border-l-[3px] border-l-green-500/70',
+    label:         'W',
+    verb:          'Beat',
+    nameColor:     'text-white',
+    scoreColor:    'text-green-400',
+    accentBg:      'bg-green-500/[0.04]',
+    hoverBg:       'hover:bg-green-500/[0.05]',
+    resultText:    'text-green-400',
+    badgeBg:       'bg-green-500/15 border border-green-500/30 text-green-400',
   },
   loss: {
-    badge:      'result-loss',
-    leftBorder: 'border-l-2 border-l-red-500/40',
-    label:      'L',
-    verb:       'Lost to',
-    nameColor:  'text-red-400',
-    scoreColor: 'text-red-400',
-    hoverBg:    'hover:bg-red-500/[0.03]',
+    badge:         'result-loss',
+    leftBorder:    'border-l-[3px] border-l-red-500/60',
+    label:         'L',
+    verb:          'Lost to',
+    nameColor:     'text-white',
+    scoreColor:    'text-red-400',
+    accentBg:      'bg-red-500/[0.03]',
+    hoverBg:       'hover:bg-red-500/[0.04]',
+    resultText:    'text-red-400',
+    badgeBg:       'bg-red-500/10 border border-red-500/25 text-red-400',
   },
   draw: {
-    badge:      'result-draw',
-    leftBorder: 'border-l-2 border-l-yellow-500/30',
-    label:      'D',
-    verb:       'Drew with',
-    nameColor:  'text-yellow-400',
-    scoreColor: 'text-yellow-400',
-    hoverBg:    'hover:bg-yellow-500/[0.02]',
+    badge:         'result-draw',
+    leftBorder:    'border-l-[3px] border-l-yellow-500/50',
+    label:         'D',
+    verb:          'Drew with',
+    nameColor:     'text-white',
+    scoreColor:    'text-yellow-400',
+    accentBg:      'bg-yellow-500/[0.02]',
+    hoverBg:       'hover:bg-yellow-500/[0.03]',
+    resultText:    'text-yellow-400',
+    badgeBg:       'bg-yellow-500/10 border border-yellow-500/25 text-yellow-400',
   },
 }
 
@@ -64,6 +73,20 @@ function timeAgo(dateStr: string) {
   if (hrs < 24) return `${hrs}h ago`
   if (days < 7) return `${days}d ago`
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function WinRateBar({ wins, losses, draws }: { wins: number; losses: number; draws: number }) {
+  const total = wins + losses + draws
+  if (total === 0) return null
+  const winPct  = (wins  / total) * 100
+  const drawPct = (draws / total) * 100
+  return (
+    <div className="h-1.5 rounded-full overflow-hidden flex bg-white/[0.05] mb-5">
+      <div className="h-full bg-green-500/70 rounded-l-full transition-all duration-700" style={{ width: `${winPct}%` }} />
+      <div className="h-full bg-yellow-500/50 transition-all duration-700"               style={{ width: `${drawPct}%` }} />
+      <div className="h-full bg-red-500/50 rounded-r-full transition-all duration-700"   style={{ width: `${100 - winPct - drawPct}%` }} />
+    </div>
+  )
 }
 
 function QuickStats({ records }: { records: GameRecord[] }) {
@@ -87,22 +110,51 @@ function QuickStats({ records }: { records: GameRecord[] }) {
   const streakSubLabel = streak > 1 ? (streakResult === 'win' ? 'Win Streak' : 'Loss Streak') : 'Draws'
 
   return (
-    <div className="grid grid-cols-4 gap-2.5 mb-8">
-      {[
-        { label: 'Wins',         value: wins,          color: 'text-green-400' },
-        { label: 'Losses',       value: losses,        color: 'text-red-400' },
-        { label: 'Win %',        value: `${pct}%`,     color: 'text-orange-400' },
-        { label: streakSubLabel, value: streakLabel,   color: streakColor },
-      ].map((s, i) => (
-        <div
-          key={s.label}
-          className="card-surface rounded-xl py-4 text-center animate-fade-up"
-          style={{ animationDelay: `${i * 60}ms` }}
-        >
-          <div className={`font-display text-3xl leading-none ${s.color}`}>{s.value}</div>
-          <div className="text-label mt-1.5">{s.label}</div>
-        </div>
-      ))}
+    <div className="mb-7 animate-fade-up-1">
+      <WinRateBar wins={wins} losses={losses} draws={draws} />
+      <div className="grid grid-cols-4 gap-2.5">
+        {[
+          { label: 'Wins',         value: wins,          color: 'text-green-400' },
+          { label: 'Losses',       value: losses,        color: 'text-red-400' },
+          { label: 'Win %',        value: `${pct}%`,     color: 'text-orange-400' },
+          { label: streakSubLabel, value: streakLabel,   color: streakColor },
+        ].map((s) => (
+          <div
+            key={s.label}
+            className="card-surface rounded-xl py-4 text-center"
+          >
+            <div className={`font-display text-3xl leading-none ${s.color}`}>{s.value}</div>
+            <div className="text-label mt-1.5">{s.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* Inline score vs display — my score on top, opp below */
+function ScoreVs({
+  myScore,
+  oppScore,
+  scoreColor,
+}: {
+  myScore: number
+  oppScore: number
+  scoreColor: string
+}) {
+  const diff = myScore - oppScore
+  const diffStr = diff > 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1)
+  return (
+    <div className="text-right">
+      <div className="leading-none tabular-nums flex items-baseline gap-1 justify-end">
+        <span className={`font-display text-2xl ${scoreColor}`}>{myScore.toFixed(1)}</span>
+        <span className="text-white/15 font-display text-base">–</span>
+        <span className="font-display text-2xl text-white/25">{oppScore.toFixed(1)}</span>
+      </div>
+      <div className="text-label mt-0.5">EBK Score</div>
+      <div className={`text-[10px] font-black mt-0.5 tabular-nums ${diff > 0 ? 'text-green-500/60' : 'text-red-500/60'}`}>
+        {diffStr}
+      </div>
     </div>
   )
 }
@@ -154,12 +206,13 @@ export default function HistoryPage() {
         <div className="max-w-2xl mx-auto">
           <div className="h-10 w-40 rounded-xl skeleton mb-2" />
           <div className="h-3 w-24 rounded skeleton mb-8" />
-          <div className="grid grid-cols-4 gap-2.5 mb-8">
+          <div className="h-1.5 rounded-full skeleton mb-5" />
+          <div className="grid grid-cols-4 gap-2.5 mb-7">
             {[0,1,2,3].map(i => <div key={i} className="h-[72px] rounded-xl skeleton" />)}
           </div>
           <div className="space-y-2">
             {[0,1,2,3,4,5].map(i => (
-              <div key={i} className="h-[72px] rounded-xl skeleton border-l-2 border-l-white/[0.04]" />
+              <div key={i} className="h-[76px] rounded-xl skeleton border-l-[3px] border-l-white/[0.04]" />
             ))}
           </div>
         </div>
@@ -172,7 +225,7 @@ export default function HistoryPage() {
       <div className="max-w-2xl mx-auto">
 
         {/* ── Header ───────────────────────────────────────────────── */}
-        <div className="flex items-end justify-between mb-8 animate-fade-up">
+        <div className="flex items-end justify-between mb-7 animate-fade-up">
           <div>
             <p className="text-label mb-2">Your Record</p>
             <h1 className="font-display text-5xl md:text-6xl text-white leading-none tracking-wide">
@@ -210,72 +263,81 @@ export default function HistoryPage() {
           <>
             <QuickStats records={records} />
 
-            {/* ── Game Rows ────────────────────────────────────────── */}
+            {/* ── Game Timeline ─────────────────────────────────────── */}
             <div className="space-y-2">
               {records.map((r, idx) => {
                 const cfg       = RESULT_CONFIG[r.result]
                 const ago       = timeAgo(r.createdAt)
                 const modeLabel = MODE_LABEL[r.teamMode] || r.teamMode
+                const hasSeriesScore = r.series > 1
+                const hasEbkScore    = !hasSeriesScore && r.myScore !== undefined && r.myScore !== null
 
                 return (
                   <div
                     key={r.id}
-                    className={`card-surface rounded-xl px-4 py-3.5 flex items-center gap-3 ${cfg.leftBorder} ${cfg.hoverBg} transition-colors animate-fade-up`}
+                    className={`rounded-xl px-4 py-3.5 flex items-center gap-3 ${cfg.accentBg} ${cfg.leftBorder} ${cfg.hoverBg} border border-white/[0.06] transition-colors animate-fade-up`}
                     style={{ animationDelay: `${Math.min(idx * 30, 300)}ms`, animationFillMode: 'both' }}
                   >
                     {/* W / L / D badge */}
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-display text-2xl shrink-0 ${cfg.badge}`}>
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-display text-xl shrink-0 ${cfg.badge}`}>
                       {cfg.label}
                     </div>
 
                     {/* Main info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-white/50 text-sm font-bold">{cfg.verb}</span>
-                        <span className={`font-black text-sm ${cfg.nameColor}`}>{r.opponentName}</span>
+                      {/* Opponent line */}
+                      <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                        <span className="text-white/40 text-[11px] font-bold shrink-0">{cfg.verb}</span>
+                        <span className="font-black text-sm text-white truncate">{r.opponentName}</span>
                         {r.source === 'online' && (
                           <span className="text-[9px] font-black text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
                             Online
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-white/30 text-xs">{modeLabel}</span>
+
+                      {/* Meta: mode · series · stat */}
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        <span className="text-white/30 text-[11px] font-semibold">{modeLabel}</span>
                         {r.series > 1 && (
                           <>
                             <span className="text-white/15 text-xs">·</span>
-                            <span className="text-white/30 text-xs">Bo{r.series}</span>
+                            <span className="text-white/30 text-[11px]">Bo{r.series}</span>
                           </>
                         )}
                         {r.statCategory && (
                           <>
                             <span className="text-white/15 text-xs">·</span>
-                            <span className="text-white/30 text-xs">{r.statCategory}</span>
+                            <span className="text-orange-500/50 text-[11px] font-semibold">{r.statCategory}</span>
                           </>
                         )}
                       </div>
                     </div>
 
                     {/* Score + timestamp */}
-                    <div className="text-right shrink-0">
-                      {r.series > 1 ? (
-                        <>
-                          <div className={`font-display text-2xl leading-none tabular-nums ${cfg.scoreColor}`}>
-                            {r.mySeriesScore}–{r.oppSeriesScore}
+                    <div className="shrink-0 text-right">
+                      {hasSeriesScore ? (
+                        <div>
+                          {/* Series score — me vs opp */}
+                          <div className="flex items-baseline gap-1 justify-end">
+                            <span className={`font-display text-2xl leading-none tabular-nums ${cfg.scoreColor}`}>
+                              {r.mySeriesScore}
+                            </span>
+                            <span className="text-white/20 font-display text-lg leading-none">–</span>
+                            <span className="font-display text-2xl leading-none tabular-nums text-white/25">
+                              {r.oppSeriesScore}
+                            </span>
                           </div>
-                          <div className="text-label mt-1">Series</div>
-                        </>
-                      ) : (r.myScore !== undefined && r.myScore !== null) ? (
-                        <>
-                          <div className="leading-none tabular-nums">
-                            <span className={`font-display text-xl ${cfg.scoreColor}`}>{r.myScore?.toFixed(1)}</span>
-                            <span className="text-white/20 font-display text-lg mx-1">vs</span>
-                            <span className="font-display text-xl text-white/30">{r.oppScore?.toFixed(1)}</span>
-                          </div>
-                          <div className="text-label mt-1">EBK Score</div>
-                        </>
+                          <div className="text-label mt-0.5">Series</div>
+                        </div>
+                      ) : hasEbkScore ? (
+                        <ScoreVs
+                          myScore={r.myScore!}
+                          oppScore={r.oppScore ?? 0}
+                          scoreColor={cfg.scoreColor}
+                        />
                       ) : null}
-                      <div className="text-white/25 text-[10px] font-bold mt-1.5 tabular-nums">{ago}</div>
+                      <div className="text-white/20 text-[10px] font-bold mt-1.5 tabular-nums">{ago}</div>
                     </div>
                   </div>
                 )

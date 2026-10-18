@@ -33,6 +33,14 @@ function seededShuffle<T>(arr: T[], seed: number): T[] {
 
 const TOTAL_PLAYERS = 67
 
+/* Streak heat label — text only, no emoji */
+function streakHeat(streak: number): string | null {
+  if (streak >= 25) return 'On Fire'
+  if (streak >= 10) return 'Heating Up'
+  if (streak >= 3)  return 'Hot'
+  return null
+}
+
 export default function HigherLowerPage() {
   const { user } = useAuth()
   const [allPlayers, setAllPlayers] = useState<Player[]>([])
@@ -45,6 +53,8 @@ export default function HigherLowerPage() {
   const [lastTied, setLastTied] = useState(false)
   const [unlockedBadge, setUnlockedBadge] = useState<{ id: string; name: string } | null>(null)
   const [claimStatus, setClaimStatus] = useState<ClaimStatus>(null)
+  // Bump key — changes each time streak increases, re-triggers the bump animation
+  const [streakBumpKey, setStreakBumpKey] = useState(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const badgeClearRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isMounted = useRef(true)
@@ -66,9 +76,6 @@ export default function HigherLowerPage() {
     const saved = typeof window !== 'undefined' ? parseInt(localStorage.getItem('hl_best') || '0') : 0
     setBestStreak(saved)
 
-    // Fetch players and (in parallel, if logged in) a server-side game session token.
-    // The game token is passed back with badge claims so the server can verify the
-    // claim comes from a real game session rather than a crafted direct API call.
     const playersFetch = fetch('/api/players').then(r => r.json())
     const tokenFetch: Promise<string | null> = user
       ? fetch('/api/higher-lower/start')
@@ -135,12 +142,12 @@ export default function HigherLowerPage() {
     isGuessingRef.current = true
     if (timerRef.current) clearTimeout(timerRef.current)
 
-    const current = sequence[idx]
+    const current    = sequence[idx]
     const challenger = sequence[idx + 1]
 
-    const tied = challenger.ebkScore === current.ebkScore
+    const tied     = challenger.ebkScore === current.ebkScore
     const actualDir = challenger.ebkScore > current.ebkScore ? 'higher' : 'lower'
-    const correct = tied || direction === actualDir
+    const correct  = tied || direction === actualDir
 
     setLastCorrect(correct)
     setLastTied(tied)
@@ -149,6 +156,7 @@ export default function HigherLowerPage() {
     if (correct) {
       const newStreak = streak + 1
       setStreak(newStreak)
+      setStreakBumpKey(k => k + 1)
 
       if (newStreak > bestStreak) {
         setBestStreak(newStreak)
@@ -187,6 +195,7 @@ export default function HigherLowerPage() {
     isGuessingRef.current = false
     setIdx(0)
     setStreak(0)
+    setStreakBumpKey(0)
     setLastCorrect(null)
     setLastTied(false)
     setUnlockedBadge(null)
@@ -218,7 +227,7 @@ export default function HigherLowerPage() {
   }
 
   const totalComparisons = sequence.length > 1 ? sequence.length - 1 : 66
-  const current = sequence[idx]
+  const current    = sequence[idx]
   const challenger = sequence[idx + 1]
 
   /* ── GAME OVER ──────────────────────────────────────────────────────────── */
@@ -229,10 +238,10 @@ export default function HigherLowerPage() {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
-          <div className="font-display text-7xl text-red-500/80 leading-none mb-3 select-none">RIP</div>
-          <h1 className="font-display text-5xl text-white leading-none mb-3">Game Over</h1>
+          <div className="font-display text-7xl text-red-500/80 leading-none mb-3 select-none animate-loss-drop">RIP</div>
+          <h1 className="font-display text-5xl text-white leading-none mb-3 animate-fade-up-1">Game Over</h1>
           {current && challenger && (
-            <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+            <p className="text-gray-400 text-sm mb-6 leading-relaxed animate-fade-up-2">
               <span className="text-white font-bold">{challenger.firstName} {challenger.lastName}</span>
               {' '}had{' '}
               <span className="text-orange-400 font-bold">{correctDir} EBK</span>
@@ -258,7 +267,7 @@ export default function HigherLowerPage() {
             </div>
           </div>
 
-          <div className="flex gap-3 justify-center">
+          <div className="flex gap-3 justify-center animate-fade-up-3">
             <button onClick={restart} className="btn-primary">
               Try Again
             </button>
@@ -321,13 +330,23 @@ export default function HigherLowerPage() {
 
   /* ── PLAYING / REVEALING ────────────────────────────────────────────────── */
   const progressPct = Math.min(100, (streak / totalComparisons) * 100)
-  const badge10Pct = (10 / totalComparisons) * 100
-  const badge25Pct = (25 / totalComparisons) * 100
+  const badge10Pct  = (10 / totalComparisons) * 100
+  const badge25Pct  = (25 / totalComparisons) * 100
   const isRevealing = screen === 'revealing'
-  const isTie = isRevealing && lastTied
+  const isTie       = isRevealing && lastTied
+
+  const heatLabel = streakHeat(streak)
+
+  // Challenger card border/glow state
+  const challengerCardClass = isRevealing
+    ? lastCorrect
+      ? 'bg-green-900/15 border-green-500/70 shadow-[0_0_24px_rgba(34,197,94,0.14)]'
+      : 'bg-red-900/15 border-red-500/60 shadow-[0_0_24px_rgba(239,68,68,0.14)]'
+    : 'bg-[#111118] border-white/[0.07] border-dashed'
 
   return (
     <div className="min-h-screen px-4 py-8">
+
       {/* Badge toast */}
       {unlockedBadge && (
         <div className="fixed top-4 right-4 z-50 bg-yellow-900/95 border border-yellow-500 rounded-2xl px-5 py-4 shadow-2xl max-w-[220px] animate-slide-up">
@@ -338,32 +357,56 @@ export default function HigherLowerPage() {
 
       <div className="max-w-2xl mx-auto">
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Link href="/lobby" className="text-gray-400 hover:text-white text-sm transition-colors">← Lobby</Link>
+        {/* ── Header ────────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between mb-6 animate-fade-up">
+          <Link href="/lobby" className="text-gray-400 hover:text-white text-sm transition-colors">
+            ← Lobby
+          </Link>
           <h1 className="font-display text-2xl text-orange-500 leading-none">Higher or Lower</h1>
-          <div className="text-gray-400 text-xs tabular-nums">{idx + 1} / {totalComparisons}</div>
+          <div className="text-gray-500 text-xs tabular-nums font-bold">{idx + 1}<span className="text-gray-700"> / {totalComparisons}</span></div>
         </div>
 
-        {/* Streak bar */}
-        <div className={`p-4 mb-5 rounded-2xl border transition-all duration-300 ${streak >= 10 ? 'card-accent bg-orange-950/10 border-orange-600/40' : 'card-surface'}`}>
+        {/* ── Streak panel ──────────────────────────────────────────────── */}
+        <div
+          className={`p-4 mb-5 rounded-2xl border transition-all duration-300 animate-fade-up-1 ${
+            streak >= 10
+              ? 'card-accent bg-orange-950/10 border-orange-600/40'
+              : 'card-surface'
+          }`}
+        >
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className={`font-display leading-none tabular-nums transition-all duration-200 ${streak >= 10 ? 'text-5xl text-orange-400' : streak >= 3 ? 'text-4xl text-orange-300' : 'text-4xl text-white'}`}>
+            {/* Streak counter */}
+            <div className="flex items-center gap-2.5">
+              <div
+                key={streakBumpKey}
+                className={`font-display leading-none tabular-nums transition-colors duration-200 ${
+                  streak >= 10 ? 'text-5xl text-orange-400 animate-streak-bump' :
+                  streak >= 3  ? 'text-4xl text-orange-300 animate-streak-bump' :
+                  'text-4xl text-white'
+                }`}
+              >
                 {streak}
-              </span>
+              </div>
               <div>
                 <div className="text-label">Streak</div>
-                {streak >= 3 && (
-                  <div className="text-orange-400 text-[10px] font-black leading-tight">
-                    {streak >= 25 ? '🔥🔥🔥 On Fire' : streak >= 10 ? '🔥🔥 Heating Up' : '🔥 Hot'}
+                {heatLabel && (
+                  <div className={`text-[10px] font-black leading-tight mt-0.5 ${
+                    streak >= 25 ? 'text-orange-400' :
+                    streak >= 10 ? 'text-orange-400/80' :
+                    'text-orange-300/70'
+                  }`}>
+                    {streak >= 25 ? '🔥🔥🔥' : streak >= 10 ? '🔥🔥' : '🔥'} {heatLabel}
                   </div>
                 )}
               </div>
             </div>
+
+            {/* Personal best */}
             <div className="text-right">
               <div className="text-label mb-0.5">Personal Best</div>
-              <div className={`font-display text-2xl leading-none tabular-nums ${bestStreak > 0 ? 'text-yellow-400' : 'text-gray-600'}`}>{bestStreak}</div>
+              <div className={`font-display text-2xl leading-none tabular-nums ${bestStreak > 0 ? 'text-yellow-400' : 'text-gray-600'}`}>
+                {bestStreak}
+              </div>
               {!user && <div className="text-gray-700 text-[10px] mt-0.5">log in to save</div>}
             </div>
           </div>
@@ -400,109 +443,140 @@ export default function HigherLowerPage() {
           </div>
         </div>
 
-        {/* Challenger label — self-intuitive, no question text needed */}
-        <div className="text-center mb-5">
-          <p className="text-gray-600 text-[11px] uppercase tracking-widest">Challenger</p>
-        </div>
-
-        {/* Player cards */}
-        <div className="grid grid-cols-2 gap-4 mb-5">
+        {/* ── Player cards ──────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 gap-3 mb-4 animate-fade-up-2">
 
           {/* Current player — always revealed */}
-          <div className="card-stat p-5 flex flex-col">
-            <div className="text-label mb-3 text-orange-500/70">Current</div>
-            <div className="font-black text-white text-base leading-tight mb-0.5">
+          <div className="card-stat p-4 flex flex-col">
+            <div className="text-label mb-2.5 text-orange-500/70">Current</div>
+            <div className="font-black text-white text-sm leading-tight mb-0.5">
               {current.firstName} {current.lastName}
             </div>
             <div className="flex items-center gap-1.5 mb-3">
               <span className={`pos-badge pos-${current.position.toLowerCase()}`}>{current.position}</span>
-              <span className="text-gray-500 text-xs">{current.team}</span>
+              <span className="text-gray-500 text-xs truncate">{current.team}</span>
             </div>
-            <div className="text-gray-500 text-[11px] space-y-0.5 mb-4 flex-1">
-              <div className="text-gray-600">{current.careerGames} GP</div>
-              <div>{current.careerPPG.toFixed(1)} <span className="text-gray-700">PPG</span> · {current.careerRPG.toFixed(1)} <span className="text-gray-700">RPG</span> · {current.careerAPG.toFixed(1)} <span className="text-gray-700">APG</span></div>
+            <div className="text-gray-600 text-[11px] space-y-0.5 mb-3 flex-1">
+              <div>{current.careerGames} GP</div>
+              <div>
+                {current.careerPPG.toFixed(1)} <span className="text-gray-700">PPG</span>
+                {' · '}{current.careerRPG.toFixed(1)} <span className="text-gray-700">RPG</span>
+                {' · '}{current.careerAPG.toFixed(1)} <span className="text-gray-700">APG</span>
+              </div>
             </div>
-            <div className="stat-highlight rounded-xl px-3 py-3 text-center">
+            {/* EBK score highlight */}
+            <div className="stat-highlight rounded-xl px-3 py-2.5 text-center">
               <div className="font-display text-4xl text-orange-400 leading-none">{current.ebkScore.toFixed(1)}</div>
               <div className="text-label mt-1">EBK Score</div>
             </div>
           </div>
 
           {/* Challenger — hidden until reveal */}
-          <div className={[
-            'rounded-2xl p-5 border-2 transition-all duration-300 flex flex-col',
-            isRevealing && lastCorrect  ? 'bg-green-900/15 border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.12)]'  : '',
-            isRevealing && !lastCorrect ? 'bg-red-900/15 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.12)]'      : '',
-            !isRevealing                ? 'bg-[#111118] border-white/[0.07] border-dashed'  : '',
-          ].join(' ')}>
-            <div className={`text-label mb-3 ${isRevealing && lastCorrect ? 'text-green-500/70' : isRevealing && !lastCorrect ? 'text-red-500/70' : 'text-gray-600'}`}>Challenger</div>
-            <div className="font-black text-white text-base leading-tight mb-0.5">
+          <div className={`rounded-2xl p-4 border-2 transition-all duration-300 flex flex-col ${challengerCardClass}`}>
+            <div className={`text-label mb-2.5 ${
+              isRevealing && lastCorrect  ? 'text-green-500/70' :
+              isRevealing && !lastCorrect ? 'text-red-500/70' :
+              'text-gray-600'
+            }`}>
+              Challenger
+            </div>
+            <div className="font-black text-white text-sm leading-tight mb-0.5">
               {challenger.firstName} {challenger.lastName}
             </div>
             <div className="flex items-center gap-1.5 mb-3">
               <span className={`pos-badge pos-${challenger.position.toLowerCase()}`}>{challenger.position}</span>
-              <span className="text-gray-500 text-xs">{challenger.team}</span>
+              <span className="text-gray-500 text-xs truncate">{challenger.team}</span>
             </div>
 
             {isRevealing ? (
-              <>
-                <div className="text-gray-500 text-[11px] space-y-0.5 mb-4 flex-1 animate-scale-in">
-                  <div className="text-gray-600">{challenger.careerGames} GP</div>
-                  <div>{challenger.careerPPG.toFixed(1)} <span className="text-gray-700">PPG</span> · {challenger.careerRPG.toFixed(1)} <span className="text-gray-700">RPG</span> · {challenger.careerAPG.toFixed(1)} <span className="text-gray-700">APG</span></div>
+              /* Revealed state — animate in */
+              <div className="flex flex-col flex-1 animate-card-reveal">
+                <div className="text-gray-600 text-[11px] space-y-0.5 mb-3 flex-1">
+                  <div>{challenger.careerGames} GP</div>
+                  <div>
+                    {challenger.careerPPG.toFixed(1)} <span className="text-gray-700">PPG</span>
+                    {' · '}{challenger.careerRPG.toFixed(1)} <span className="text-gray-700">RPG</span>
+                    {' · '}{challenger.careerAPG.toFixed(1)} <span className="text-gray-700">APG</span>
+                  </div>
                 </div>
-                <div className={`rounded-xl px-3 py-3 text-center animate-scale-in ${isTie ? 'bg-yellow-900/40 border border-yellow-700/40' : lastCorrect ? 'bg-green-900/40 border border-green-700/40' : 'bg-red-900/40 border border-red-700/40'}`}>
-                  <div className={`font-display text-4xl leading-none ${isTie ? 'text-yellow-400' : lastCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                <div className={`rounded-xl px-3 py-2.5 text-center ${
+                  isTie       ? 'bg-yellow-900/40 border border-yellow-700/40' :
+                  lastCorrect ? 'bg-green-900/40  border border-green-700/40' :
+                                'bg-red-900/40    border border-red-700/40'
+                }`}>
+                  <div className={`font-display text-4xl leading-none ${
+                    isTie       ? 'text-yellow-400' :
+                    lastCorrect ? 'text-green-400' :
+                                  'text-red-400'
+                  }`}>
                     {challenger.ebkScore.toFixed(1)}
                   </div>
-                  <div className={`text-[10px] font-bold mt-1 ${isTie ? 'text-yellow-600' : lastCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                    {isTie ? '~ Tie!' : lastCorrect ? '✓ Correct' : '✗ Wrong'}
+                  {/* Arrow showing direction vs current */}
+                  <div className="flex items-center justify-center gap-1 mt-1">
+                    {!isTie && (
+                      <span className={`text-xs font-black ${lastCorrect ? 'text-green-500/80' : 'text-red-500/80'}`}>
+                        {challenger.ebkScore > current.ebkScore ? '▲' : '▼'}
+                        {' '}{Math.abs(challenger.ebkScore - current.ebkScore).toFixed(1)}
+                      </span>
+                    )}
+                    {isTie && (
+                      <span className="text-xs font-black text-yellow-500/80">= Tie</span>
+                    )}
                   </div>
+                  <div className="text-label mt-0.5">EBK Score</div>
                 </div>
-              </>
+              </div>
             ) : (
-              <>
-                <div className="text-gray-800 text-[11px] space-y-0.5 mb-4 flex-1">
+              /* Hidden state */
+              <div className="flex flex-col flex-1">
+                <div className="text-gray-800 text-[11px] space-y-0.5 mb-3 flex-1">
                   <div>??? GP</div>
                   <div>??.? PPG · ??.? RPG · ??.? APG</div>
                 </div>
-                <div className="rounded-xl px-3 py-3 text-center border border-dashed border-white/[0.06] bg-black/20">
+                <div className="rounded-xl px-3 py-2.5 text-center border border-dashed border-white/[0.06] bg-black/20">
                   <div className="font-display text-4xl text-gray-700 leading-none select-none">???</div>
                   <div className="text-label mt-1">EBK Score</div>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Action buttons */}
+        {/* ── Action buttons ────────────────────────────────────────────── */}
         {!isRevealing && (
-          <div className="grid grid-cols-2 gap-4">
-            {/* LOWER = blue — bigger career, better known */}
+          <div className="grid grid-cols-2 gap-3 animate-fade-up-3">
+            {/* LOWER */}
             <button
               onClick={() => guess('lower')}
               className="group relative overflow-hidden bg-blue-950/20 hover:bg-blue-950/50 border border-blue-500/25 hover:border-blue-400/70 text-white font-black py-6 rounded-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-blue-900/30 touch-manipulation"
             >
               <div className="font-display text-4xl text-blue-400 leading-none mb-1 group-hover:scale-110 transition-transform">▼</div>
               <div className="text-sm tracking-wider uppercase">Lower EBK</div>
-              <div className="text-[11px] text-blue-500/70 mt-0.5 font-normal">bigger career</div>
+              <div className="text-[11px] text-blue-500/60 mt-0.5 font-normal">bigger career</div>
             </button>
 
-            {/* HIGHER = orange — unknown gem, EBK brand color */}
+            {/* HIGHER */}
             <button
               onClick={() => guess('higher')}
               className="group relative overflow-hidden bg-orange-950/20 hover:bg-orange-950/50 border border-orange-500/25 hover:border-orange-400/70 text-white font-black py-6 rounded-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-orange-900/30 touch-manipulation"
             >
               <div className="font-display text-4xl text-orange-400 leading-none mb-1 group-hover:scale-110 transition-transform">▲</div>
               <div className="text-sm tracking-wider uppercase">Higher EBK</div>
-              <div className="text-[11px] text-orange-500/70 mt-0.5 font-normal">unknown gem</div>
+              <div className="text-[11px] text-orange-500/60 mt-0.5 font-normal">unknown gem</div>
             </button>
           </div>
         )}
 
-        {/* Reveal verdict */}
+        {/* ── Reveal verdict ────────────────────────────────────────────── */}
         {isRevealing && (
           <div className="flex items-center justify-center h-[88px]">
-            <span className={`font-display text-4xl ${isTie ? 'text-yellow-400' : lastCorrect ? 'text-green-400' : 'text-red-400'}`}>
+            <span
+              className={`font-display text-4xl animate-verdict-pop ${
+                isTie       ? 'text-yellow-400' :
+                lastCorrect ? 'text-green-400' :
+                              'text-red-400'
+              }`}
+            >
               {isTie ? '~ Tie — Free Pass!' : lastCorrect ? '✓  Correct!' : '✗  Wrong!'}
             </span>
           </div>

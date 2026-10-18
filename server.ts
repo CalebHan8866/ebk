@@ -1447,6 +1447,14 @@ app.prepare().then(async () => {
         roomCleanupTimers.delete(roomCode)
       }
 
+      // Cancel any pending disconnect grace-period timer.  If the guest disconnected
+      // during the result screen but the grace timer hasn't fired yet (they may be
+      // reconnecting), we still need to decide here whether to start the next game or
+      // issue a forfeit.  Without this cancel, the timer could fire after the new draft
+      // begins and incorrectly mark the room as complete mid-draft.
+      const pendingGrace = partnerDisconnectTimers.get(roomCode)
+      if (pendingGrace) { clearTimeout(pendingGrace); partnerDisconnectTimers.delete(roomCode) }
+
       // Guard: if the guest socket is no longer live, treat it as a forfeit rather than
       // starting the next draft.  Without this check there is a race window where the
       // host fires next-game before the server has processed the guest's disconnect —
@@ -1500,6 +1508,16 @@ app.prepare().then(async () => {
       // open to arbitrary takeover while the original socket is still live — that would
       // let any socket claim a connected player's turn mid-game.
       if (role === 'host') {
+        // Prevent the guest player from claiming the host slot (role swap).
+        // Check by userId (authenticated) or by current socket occupancy (anonymous).
+        const callerIsGuest = room.guestUserId
+          ? userId === room.guestUserId
+          : socket.id === room.guestSocketId
+        if (callerIsGuest) {
+          console.warn('[room] Role-swap seat-steal attempt (guest→host) code=%s userId=[redacted]', code)
+          socket.emit('room-error', { message: 'Unauthorized' })
+          return
+        }
         const origConnected = io.sockets.sockets.has(room.hostSocketId)
         // For authenticated hosts: require matching userId.
         // For anonymous hosts: only allow takeover when the original socket has gone away.
@@ -1513,6 +1531,15 @@ app.prepare().then(async () => {
         }
         room.hostSocketId = socket.id
       } else if (role === 'guest') {
+        // Prevent the host player from claiming the guest slot (role swap).
+        const callerIsHost = room.hostUserId
+          ? userId === room.hostUserId
+          : socket.id === room.hostSocketId
+        if (callerIsHost) {
+          console.warn('[room] Role-swap seat-steal attempt (host→guest) code=%s userId=[redacted]', code)
+          socket.emit('room-error', { message: 'Unauthorized' })
+          return
+        }
         const origConnected = !!room.guestSocketId && io.sockets.sockets.has(room.guestSocketId)
         // Same logic for guest slot.
         const isLegit = room.guestUserId
