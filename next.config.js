@@ -1,4 +1,7 @@
 /** @type {import('next').NextConfig} */
+
+const isDev = process.env.NODE_ENV !== 'production'
+
 const nextConfig = {
   compress: true,
 
@@ -18,29 +21,46 @@ const nextConfig = {
   },
 
   async headers() {
+    // socket.io requires connect-src for WebSocket connections back to self.
+    // cdnjs is whitelisted for Twemoji SVG img-src.
+    // Inline styles are permitted (Tailwind runtime) — unsafe-inline only for style-src.
+    // unsafe-eval is required in dev for Next.js HMR/fast-refresh; drop it in production.
+    const scriptSrc = isDev
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+      : "script-src 'self' 'unsafe-inline'"
+
+    // In dev the WebSocket connection is plain ws:; in production it's always wss:.
+    const connectSrc = isDev
+      ? "connect-src 'self' ws: wss:"
+      : "connect-src 'self' wss:"
+
     return [
       {
         source: '/(.*)',
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          // HSTS — only send in production; browsers ignore it over HTTP anyway,
+          // but being explicit avoids accidental downgrade in staging.
+          ...(isDev ? [] : [{
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          }]),
           {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()',
           },
           {
             key: 'Content-Security-Policy',
-            // socket.io requires connect-src for WebSocket connections back to self.
-            // cdnjs is whitelisted for Twemoji SVG img-src.
-            // Inline styles are permitted (Tailwind runtime) — unsafe-inline only for style-src.
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              scriptSrc,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https://cdnjs.cloudflare.com",
               "font-src 'self'",
-              "connect-src 'self' wss:",
+              connectSrc,
               "frame-ancestors 'none'",
             ].join('; '),
           },
