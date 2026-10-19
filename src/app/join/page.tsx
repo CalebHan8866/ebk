@@ -7,12 +7,22 @@ import { useRouter, useSearchParams } from 'next/navigation'
  * /join?code=XXXX — invite link handler for draft game rooms.
  *
  * Redirects immediately to /game/[CODE]?role=guest so the invitee lands
- * in the correct game room. If no code is provided, sends them to /lobby.
+ * in the correct game room. If no code is provided, or if the code fails
+ * validation, sends them to /lobby.
+ *
+ * Security: room codes are generated server-side as 6-character strings from
+ * [A-Z2-9].  We enforce that constraint here so an attacker cannot craft a
+ * ?code=../../../evil URL that escapes the /game/ prefix via path traversal
+ * (open redirect).  Anything that doesn't match is treated as absent.
  */
+const ROOM_CODE_RE = /^[A-Z0-9]{4,8}$/
+
 function JoinRedirect() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const code = searchParams.get('code')?.toUpperCase().trim()
+  const raw = searchParams.get('code')?.toUpperCase().trim() ?? ''
+  // Only accept well-formed room codes — reject path traversal or arbitrary strings.
+  const code = ROOM_CODE_RE.test(raw) ? raw : null
 
   useEffect(() => {
     if (code) {
