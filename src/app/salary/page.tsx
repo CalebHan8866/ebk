@@ -330,13 +330,15 @@ export default function SalaryPage() {
               border: '1px solid rgba(234,88,12,0.25)',
             }}
           >
-            <div className="text-5xl mb-4 select-none">🔒</div>
+            <div className="text-5xl mb-4 select-none">⚙️</div>
             <p className="font-display text-2xl text-orange-400 tracking-wide mb-2">
-              Value Rankings Coming Soon
+              Season Data Processing
             </p>
             <p className="text-gray-500 text-sm max-w-sm mx-auto leading-relaxed">
-              We&apos;re building a pipeline to calculate true player value using Win Shares and VORP —
-              who actually earned their contract vs. who was overpaid.
+              Value Rankings require per-season Win Shares and VORP data. Run{' '}
+              <span className="font-mono text-white/40 text-xs">scrape-season-data.ts</span>{' '}
+              with <span className="font-mono text-white/40 text-xs">FORCE=1</span> to populate the pipeline,
+              then value rankings — who earned their contract vs. who was overpaid — will appear here.
             </p>
           </div>
         </div>

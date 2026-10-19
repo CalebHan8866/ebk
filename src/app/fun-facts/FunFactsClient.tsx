@@ -558,7 +558,7 @@ export default function FunFactsPage() {
             <div className="skeleton w-10 h-10 rounded-xl shrink-0" />
           </div>
           {/* Flip card skeleton — matches the real card height */}
-          <div className="card-accent rounded-2xl overflow-hidden" style={{ height: 'clamp(460px, 70vh, 520px)' }}>
+          <div className="card-accent rounded-2xl overflow-hidden" style={{ height: 'clamp(380px, 62vh, 520px)' }}>
             <div className="p-7 flex flex-col h-full">
               {/* Position + name */}
               <div className="flex items-start justify-between mb-6">
