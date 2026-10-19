@@ -62,6 +62,12 @@ const nextConfig = {
               "font-src 'self'",
               connectSrc,
               "frame-ancestors 'none'",
+              // Restrict form submissions to same origin — prevents an injected form
+              // from POSTing credentials to an external attacker-controlled URL.
+              "form-action 'self'",
+              // Restrict <base> tag href to same origin — prevents base-tag injection
+              // from hijacking all relative URLs to an attacker's domain.
+              "base-uri 'self'",
             ].join('; '),
           },
         ],
