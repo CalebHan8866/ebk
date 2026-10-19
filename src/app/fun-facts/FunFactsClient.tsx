@@ -733,6 +733,10 @@ export default function FunFactsPage() {
               className="relative cursor-pointer select-none"
               style={{ perspective: '1200px', height: 'clamp(460px, 70vh, 520px)' }}
               onClick={flipCard}
+              role="button"
+              tabIndex={0}
+              aria-label={isFlipped ? 'Flip card back to player stats' : 'Flip card to reveal fun facts'}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flipCard(); } }}
             >
               <div
                 style={{
@@ -819,6 +823,8 @@ export default function FunFactsPage() {
                     transform: 'rotateY(180deg)',
                   }}
                   className={`absolute inset-0 bg-gradient-to-br ${currentFact?.gradient ?? 'from-[#181818] to-[#0a0a0f]'} border border-white/[0.08] rounded-3xl p-6 flex flex-col overflow-hidden`}
+                  aria-live="polite"
+                  aria-atomic="true"
                 >
                   {currentFact && (
                     <>

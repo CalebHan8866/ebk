@@ -138,7 +138,7 @@ body {
   color: #fff;
 }
 .btn-secondary:active { background: rgba(255,255,255,0.08); }
-.btn-secondary:focus-visible { outline: 2px solid rgba(255,255,255,0.3); outline-offset: 3px; }
+.btn-secondary:focus-visible { outline: 2px solid rgba(249,115,22,0.7); outline-offset: 3px; }
 .btn-secondary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; pointer-events: none; }
 
 /* ── Typography scales ──────────────────────────────────────────────────────── */
@@ -302,13 +302,13 @@ body {
 
 /* ── Skeleton loader ─────────────────────────────────────────────────────────── */
 @keyframes skeleton-shimmer {
-  0%   { background-position: -400px 0; }
-  100% { background-position: 400px 0; }
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 .skeleton {
   background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
-  background-size: 800px 100%;
-  animation: skeleton-shimmer 1.6s ease infinite;
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s linear infinite;
   border-radius: 8px;
 }
 
@@ -469,7 +469,7 @@ body {
 
 /* ── Focus ring — consistent across all interactive elements ─────────────────── */
 *:focus-visible {
-  outline: 2px solid rgba(249,115,22,0.55);
+  outline: 2px solid rgba(249,115,22,0.8);
   outline-offset: 2px;
   /* Inherit the element's own border-radius so the ring follows the shape */
   border-radius: inherit;
@@ -1055,7 +1055,8 @@ textarea:focus-visible {
   .animate-ellipsis::after,
   .confetti-piece,
   .win-shimmer-text,
-  .ebk-wordmark-glow {
+  .ebk-wordmark-glow,
+  .reconnect-dot {
     animation: none !important;
   }
 
@@ -1146,6 +1147,59 @@ textarea:focus-visible {
   /* Card hovers — skip the lift */
   .how-it-works-card:hover,
   .explore-card:hover {
+    transform: none !important;
+  }
+
+  /* Score reveal — instant fade, no scale/blur entrance */
+  .animate-score-reveal {
+    animation: fade-in 0.2s ease forwards !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  /* Toast enter/exit — instant opacity only, no slide */
+  .toast {
+    animation: fade-in 0.15s ease forwards !important;
+  }
+  .toast-exit {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+
+  /* Reconnect banner — instant appear/disappear, no slide */
+  .reconnect-banner,
+  .reconnect-banner-exit {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  /* Countdown shrink bar — remove the progress-bar sweep animation */
+  .countdown-shrink-bar {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Streak fire glow — remove continuous box-shadow throb */
+  .streak-fire-glow {
+    animation: none !important;
+    box-shadow: 0 0 12px rgba(249,115,22,0.18), inset 0 0 16px rgba(249,115,22,0.04);
+  }
+
+  /* Badge equipped glow — keep static ring, kill the pulse */
+  .badge-equipped-glow {
+    animation: none !important;
+    box-shadow: 0 0 0 2px rgba(249,115,22,0.8);
+  }
+
+  /* 404 bounce ball — freeze in place */
+  .animate-bounce-ball {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  /* Game button hovers — remove lift/scale transforms */
+  .btn-hl-lower:hover,
+  .btn-hl-higher:hover {
     transform: none !important;
   }
 }

@@ -31,7 +31,8 @@ Required vars (see `.env.example` for full list):
 |---|---|
 | `DATABASE_URL` | Prisma connection string — use `file:./dev.db` for local SQLite |
 | `JWT_SECRET` | Long random string used to sign session tokens |
-| `APP_URL` | Public URL of the app, e.g. `http://localhost:3000` |
+| `APP_URL` | Public URL of the app, e.g. `http://localhost:3000` — used for Socket.IO CORS and email links |
+| `NEXT_PUBLIC_BASE_URL` | Same base URL, read by the Next.js sitemap/robots.txt (defaults to `https://ebkgame.com`) |
 
 ### 3. Push the database schema and seed player data
 
@@ -54,9 +55,10 @@ The app runs at `http://localhost:3000`. The server is a custom Express + Socket
 
 | Script | Description |
 |---|---|
-| `npm run dev` | Start the development server (Next.js + Socket.IO) |
-| `npm run build` | Build for production (pushes schema, generates Prisma client, scrapes current-season stats, runs Next.js build) |
-| `npm start` | Start the production server |
+| `npm run dev` | Start the development server (Next.js + Socket.IO via `ts-node`) |
+| `npm run build` | Full production build: push schema → generate Prisma client → patch/scrape player data → Next.js build → **compile `server.ts` → `dist/server.js`** |
+| `npm run build:server` | Compile `server.ts` to `dist/server.js` only (TypeScript → `tsconfig.server.json`) |
+| `npm start` | Start the production server (`node dist/server.js`) — requires `npm run build` first |
 | `npm test` | Run the unit test suite (vitest) |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run type-check` | TypeScript type-check without emitting files |
@@ -79,7 +81,9 @@ EBK is configured for Railway via `railway.toml` using a Docker build.
 DATABASE_URL=<your-postgres-connection-string>
 JWT_SECRET=<long-random-secret>
 APP_URL=https://<your-railway-domain>
+NEXT_PUBLIC_BASE_URL=https://<your-railway-domain>
 NODE_ENV=production
+PORT=3000
 ```
 
 4. Deploy — Railway will run the Dockerfile, which:
@@ -93,7 +97,8 @@ NODE_ENV=production
 
 | Variable | Purpose |
 |---|---|
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `FROM_EMAIL` | SMTP credentials for transactional email (password reset, etc.). Leave blank to use console logging in development. |
+| `RESEND_API_KEY` | API key from [Resend](https://resend.com) for transactional email (preferred over SMTP in production). Leave blank to fall back to SMTP or console logging. |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `FROM_EMAIL` | SMTP credentials for transactional email (password reset, etc.). Alternative to Resend. Leave blank to use console logging in development. |
 | `DEV_SECRET` | Dev-only bypass for `/api/auth/dev-verify`. Never set in production. |
 | `NOCOOLDOWN_USER_IDS` | Comma-separated user IDs that bypass the 30-min rematch cooldown (for automated testing). |
 
