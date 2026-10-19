@@ -553,15 +553,15 @@ export default function FunFactsPage() {
             <div className="skeleton h-6 w-14 rounded-full" />
           </div>
           {/* Search skeleton */}
-          <div className="skeleton h-11 w-full rounded-xl mb-6" />
+          <div className="skeleton h-11 w-full rounded-xl mb-4 sm:mb-6" />
           {/* Nav bar skeleton */}
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-3 sm:mb-4">
             <div className="skeleton w-10 h-10 rounded-xl shrink-0" />
             <div className="skeleton flex-1 h-12 rounded-xl" />
             <div className="skeleton w-10 h-10 rounded-xl shrink-0" />
           </div>
           {/* Flip card skeleton — matches the real card height */}
-          <div className="card-accent rounded-2xl overflow-hidden" style={{ height: 'clamp(380px, 62vh, 520px)' }}>
+          <div className="card-accent rounded-2xl overflow-hidden" style={{ height: 'clamp(300px, 52vh, 500px)' }}>
             <div className="p-7 flex flex-col h-full">
               {/* Position + name */}
               <div className="flex items-start justify-between mb-6">
@@ -622,11 +622,11 @@ export default function FunFactsPage() {
     : 0
 
   return (
-    <div className="min-h-screen py-8 sm:py-10 px-3 sm:px-4">
+    <div className="min-h-screen py-4 sm:py-10 px-3 sm:px-4">
       <div className="max-w-md mx-auto">
 
         {/* ── Header ─────────────────────────────────────────────── */}
-        <div className="flex items-end justify-between mb-8 animate-fade-up">
+        <div className="flex items-end justify-between mb-5 sm:mb-8 animate-fade-up">
           <div>
             <p className="text-label mb-2">Player Earnings</p>
             <h1 className="font-display text-6xl text-white leading-none">
@@ -649,7 +649,7 @@ export default function FunFactsPage() {
         </div>
 
         {/* ── Search ─────────────────────────────────────────────── */}
-        <div className="relative mb-6 animate-fade-up-1">
+        <div className="relative mb-4 sm:mb-6 animate-fade-up-1">
           <svg
             className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25 pointer-events-none"
             fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
@@ -709,7 +709,7 @@ export default function FunFactsPage() {
         ) : (
           <>
             {/* ── Player nav bar ───────────────────────────────────── */}
-            <div className="flex items-center gap-3 mb-4 animate-fade-up-2">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4 animate-fade-up-2">
               <button
                 onClick={prevPlayer}
                 className="w-10 h-10 rounded-xl card-surface border border-white/[0.07] text-white/40 hover:text-white hover:border-white/20 flex items-center justify-center transition-all shrink-0"
@@ -744,7 +744,7 @@ export default function FunFactsPage() {
             {/* ── Flip card ────────────────────────────────────────── */}
             <div
               className="relative cursor-pointer select-none"
-              style={{ perspective: '1200px', height: 'clamp(380px, 62vh, 520px)' }}
+              style={{ perspective: '1200px', height: 'clamp(300px, 52vh, 500px)' }}
               onClick={flipCard}
               role="button"
               tabIndex={0}
@@ -903,8 +903,8 @@ export default function FunFactsPage() {
               </div>
             </div>
 
-            {/* ── Bottom nav ───────────────────────────────────────── */}
-            <div className="flex items-center gap-3 mt-5">
+            {/* ── Bottom nav — hidden on mobile (top arrows serve the same purpose) */}
+            <div className="hidden sm:flex items-center gap-3 mt-5">
               <button onClick={prevPlayer} className="btn-secondary flex-1 py-3 text-sm">
                 ← Prev Player
               </button>
@@ -914,7 +914,7 @@ export default function FunFactsPage() {
             </div>
 
             {/* Disclaimer */}
-            <p className="text-center text-white/20 text-[11px] mt-4 leading-relaxed px-2">
+            <p className="hidden sm:block text-center text-white/20 text-[11px] mt-4 leading-relaxed px-2">
               {current?.careerEarnings > 0
                 ? 'Career earnings sourced from real NBA salary records.'
                 : 'Earnings are estimates based on era and performance — not official salary data.'}
