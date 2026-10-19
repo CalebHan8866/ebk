@@ -9,22 +9,15 @@ const cache = new Map<string, CacheEntry>()
 const CACHE_TTL = 30 * 1000 // 30 seconds
 const CACHE_MAX_ENTRIES = 500 // hard cap — evict all expired entries when exceeded
 
-export async function GET(request: NextRequest) {
-  try {
-  const now = Date.now()
+// Inflight guard: if a DB fetch is already in progress for a given cache key,
+// subsequent cold-cache requests attach to the same Promise rather than each
+// issuing their own query. Without this, N simultaneous requests on a cold cache
+// would all miss, all hit the DB, and all race to overwrite the cache entry —
+// a classic thundering-herd problem that's especially costly for leaderboard
+// queries (top-100 users + rank count = 2–3 Postgres round-trips per request).
+const inflight = new Map<string, Promise<unknown>>()
 
-  // Check if the request includes a logged-in user
-  const cookieStore = await cookies()
-  const token = cookieStore.get('ebk-token')?.value
-  const payload = token ? await verifyToken(token) : null
-
-  // Cache per userId (or 'anon') so each user's rank data is cached independently
-  const cacheKey = payload?.userId ?? 'anon'
-  const cached = cache.get(cacheKey)
-  if (cached && now - cached.at < CACHE_TTL) {
-    return NextResponse.json(cached.data)
-  }
-
+async function fetchLeaderboardData(userId: string | undefined, now: number): Promise<unknown> {
   const [users, totalPlayers] = await Promise.all([
     prisma.user.findMany({
       where: { gamesPlayed: { gt: 0 } },
@@ -51,11 +44,11 @@ export async function GET(request: NextRequest) {
     equippedBadges: string; rank: number
   } | null = null
 
-  if (payload?.userId) {
+  if (userId) {
     // Check if the user is already in the top-100 result to avoid an extra DB round trip
-    const inTop100 = users.find(u => u.id === payload.userId)
+    const inTop100 = users.find(u => u.id === userId)
     const myUser = inTop100 ?? await prisma.user.findUnique({
-      where: { id: payload.userId },
+      where: { id: userId },
       select: {
         id: true, username: true, wins: true, losses: true, draws: true,
         gamesPlayed: true, winStreak: true, maxWinStreak: true, equippedBadges: true,
@@ -71,6 +64,7 @@ export async function GET(request: NextRequest) {
   }
 
   const result = { users, totalPlayers, me }
+
   // Prune expired entries; if still over the hard cap after pruning, evict the
   // oldest quarter by insertion order rather than clearing the entire map.
   // cache.clear() would cause a stampede where every cached user simultaneously
@@ -83,7 +77,39 @@ export async function GET(request: NextRequest) {
     const keys = Array.from(cache.keys()).slice(0, evict)
     for (const key of keys) cache.delete(key)
   }
-  cache.set(cacheKey, { data: result, at: now })
+  cache.set(userId ?? 'anon', { data: result, at: now })
+
+  return result
+}
+
+export async function GET(request: NextRequest) {
+  try {
+  const now = Date.now()
+
+  // Check if the request includes a logged-in user
+  const cookieStore = await cookies()
+  const token = cookieStore.get('ebk-token')?.value
+  const payload = token ? await verifyToken(token) : null
+
+  // Cache per userId (or 'anon') so each user's rank data is cached independently
+  const cacheKey = payload?.userId ?? 'anon'
+  const cached = cache.get(cacheKey)
+  if (cached && now - cached.at < CACHE_TTL) {
+    return NextResponse.json(cached.data)
+  }
+
+  // If a DB fetch is already in progress for this key, wait for it instead of
+  // issuing a duplicate query. The first request populates the cache; all waiters
+  // read from it once the Promise settles.
+  let promise = inflight.get(cacheKey)
+  if (!promise) {
+    promise = fetchLeaderboardData(payload?.userId, now).finally(() => {
+      inflight.delete(cacheKey)
+    })
+    inflight.set(cacheKey, promise)
+  }
+
+  const result = await promise
   return NextResponse.json(result)
   } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
