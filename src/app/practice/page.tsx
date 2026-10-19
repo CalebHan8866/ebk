@@ -438,7 +438,7 @@ function PracticeContent() {
                         {pickedPlayer ? pickedPlayer.lastName : isValidTarget ? 'tap to place' : '—'}
                       </span>
                       {pickedPlayer && (
-                        <button onClick={e => { e.stopPropagation(); unpick(i) }} className="text-gray-500 hover:text-red-400 text-[10px] shrink-0 w-4 h-4 flex items-center justify-center">
+                        <button onClick={e => { e.stopPropagation(); unpick(i) }} aria-label="Remove player from slot" className="text-gray-500 hover:text-red-400 text-[10px] shrink-0 w-4 h-4 flex items-center justify-center">
                           <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                       )}
@@ -617,7 +617,7 @@ function PracticeContent() {
                       <svg className="w-3.5 h-3.5 text-orange-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
                       <span className="text-xs text-orange-200 truncate"><span className="font-black text-orange-400">{selectedPlayer.firstName} {selectedPlayer.lastName}</span> — tap a slot to place</span>
                     </div>
-                    <button onClick={() => setSelectedPlayerId(null)} className="text-orange-400/60 hover:text-orange-300 shrink-0">
+                    <button onClick={() => setSelectedPlayerId(null)} aria-label="Cancel player selection" className="text-orange-400/60 hover:text-orange-300 shrink-0">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                   </div>

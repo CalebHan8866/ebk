@@ -926,8 +926,11 @@ export default function ProfilePage() {
 
           {/* Change username */}
           <div className="card-surface p-6">
-            <h2 className="font-display text-2xl text-white tracking-wider leading-none mb-1">Change Username</h2>
-            <p className="text-gray-400 text-xs mb-5">Letters, numbers, and underscores only · 3–20 characters</p>
+            <div className="flex items-baseline gap-3 mb-1">
+              <span className="text-label text-orange-500/60">01</span>
+              <h2 className="font-display text-2xl text-white tracking-wider leading-none">Change Username</h2>
+            </div>
+            <p className="text-gray-500 text-xs mb-5 ml-8">Letters, numbers, and underscores only · 3–20 characters</p>
             <form onSubmit={handleUsernameChange} className="space-y-4">
               <div>
                 <label htmlFor="new-username" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">
@@ -942,10 +945,16 @@ export default function ProfilePage() {
                   maxLength={20}
                   placeholder={user?.username}
                   className="input-field"
+                  autoComplete="username"
                 />
               </div>
               {usernameMsg && (
-                <div className={`rounded-xl px-4 py-3 text-sm ${usernameMsg.ok ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
+                <div role="alert" className={`rounded-xl px-4 py-3 text-sm flex items-center gap-2.5 ${usernameMsg.ok ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
+                  {usernameMsg.ok ? (
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                  ) : (
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                  )}
                   {usernameMsg.text}
                 </div>
               )}
@@ -961,8 +970,11 @@ export default function ProfilePage() {
 
           {/* Change password */}
           <div className="card-surface p-6">
-            <h2 className="font-display text-2xl text-white tracking-wider leading-none mb-1">Change Password</h2>
-            <p className="text-gray-400 text-xs mb-5">Minimum 6 characters</p>
+            <div className="flex items-baseline gap-3 mb-1">
+              <span className="text-label text-orange-500/60">02</span>
+              <h2 className="font-display text-2xl text-white tracking-wider leading-none">Change Password</h2>
+            </div>
+            <p className="text-gray-500 text-xs mb-5 ml-8">Minimum 6 characters</p>
             <form onSubmit={handlePasswordChange} className="space-y-4">
               <div>
                 <label htmlFor="current-password" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">Current Password</label>
@@ -974,8 +986,10 @@ export default function ProfilePage() {
                   required
                   className="input-field"
                   placeholder="••••••••"
+                  autoComplete="current-password"
                 />
               </div>
+              <div className="h-px bg-white/[0.05]" />
               <div>
                 <label htmlFor="new-password" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">New Password</label>
                 <input
@@ -987,6 +1001,7 @@ export default function ProfilePage() {
                   minLength={6}
                   className="input-field"
                   placeholder="Min 6 characters"
+                  autoComplete="new-password"
                 />
               </div>
               <div>
@@ -998,18 +1013,30 @@ export default function ProfilePage() {
                   onChange={e => setConfirmPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="input-field"
+                  className={`input-field ${confirmPassword && confirmPassword !== newPassword ? 'border-red-500/40' : confirmPassword && confirmPassword === newPassword && newPassword ? 'border-green-500/40' : ''}`}
                   placeholder="Repeat new password"
+                  autoComplete="new-password"
                 />
+                {confirmPassword && newPassword && confirmPassword !== newPassword && (
+                  <p className="mt-1.5 text-[11px] text-red-400 flex items-center gap-1">
+                    <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    Passwords do not match
+                  </p>
+                )}
               </div>
               {passwordMsg && (
-                <div className={`rounded-xl px-4 py-3 text-sm ${passwordMsg.ok ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
-                  {passwordMsg.text}
+                <div role="alert" className={`rounded-xl px-4 py-3 text-sm flex items-start gap-2.5 ${passwordMsg.ok ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
+                  {passwordMsg.ok ? (
+                    <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                  ) : (
+                    <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                  )}
+                  <span>{passwordMsg.text}</span>
                 </div>
               )}
               <button
                 type="submit"
-                disabled={passwordLoading || !currentPassword || !newPassword || !confirmPassword}
+                disabled={passwordLoading || !currentPassword || !newPassword || !confirmPassword || confirmPassword !== newPassword}
                 className="btn-primary w-full text-sm uppercase disabled:opacity-50"
               >
                 {passwordLoading ? 'Saving…' : 'Change Password'}
@@ -1020,7 +1047,7 @@ export default function ProfilePage() {
           {/* Delete account */}
           <div className="card-danger p-6">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-red-500 text-base leading-none select-none">⚠</span>
+              <svg className="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
               <h2 className="font-display text-2xl text-red-400 tracking-wider leading-none">Danger Zone</h2>
             </div>
             <p className="text-gray-500 text-xs mb-5">Permanently delete your account and all game history. This cannot be undone.</p>
@@ -1059,7 +1086,8 @@ export default function ProfilePage() {
                   />
                 </div>
                 {deleteMsg && (
-                  <div className={`rounded-xl px-4 py-3 text-sm ${deleteMsg.ok ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
+                  <div role="alert" className={`rounded-xl px-4 py-3 text-sm flex items-center gap-2.5 ${deleteMsg.ok ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                     {deleteMsg.text}
                   </div>
                 )}

@@ -1,31 +1,42 @@
 export default function HistoryLoading() {
   return (
-    <div className="min-h-screen px-4 py-8 max-w-2xl mx-auto w-full animate-pulse">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="skeleton h-3 w-16 rounded-full mb-2" />
-        <div className="skeleton h-8 w-36 rounded-xl mb-1" />
-        <div className="skeleton h-3 w-48 rounded-full" />
-      </div>
-      {/* Cards */}
-      <div className="space-y-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="border border-white/[0.07] rounded-2xl px-4 py-4 bg-white/[0.02]">
-            <div className="flex items-center justify-between mb-2">
-              <div className="skeleton h-5 w-20 rounded-full" />
-              <div className="skeleton h-4 w-24 rounded" />
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="skeleton h-8 w-16 rounded-lg" />
-              <div className="skeleton h-4 w-4 rounded-full" />
-              <div className="skeleton h-8 w-16 rounded-lg" />
-            </div>
-            <div className="mt-2 flex gap-2">
-              <div className="skeleton h-3 w-20 rounded-full" />
-              <div className="skeleton h-3 w-16 rounded-full" />
-            </div>
+    <div className="min-h-screen py-10 px-4">
+      <div className="max-w-2xl mx-auto">
+
+        {/* Header */}
+        <div className="flex items-end justify-between mb-7">
+          <div className="space-y-2">
+            <div className="skeleton h-2.5 w-20 rounded-full" />
+            <div className="skeleton h-14 w-56 rounded-xl" />
+            <div className="skeleton h-3 w-24 rounded-full" />
           </div>
-        ))}
+          <div className="skeleton h-5 w-14 rounded-full" />
+        </div>
+
+        {/* Win-rate bar */}
+        <div className="skeleton h-1.5 w-full rounded-full mb-5" />
+
+        {/* Quick stats grid */}
+        <div className="grid grid-cols-4 gap-2.5 mb-7">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="skeleton h-[72px] rounded-xl" />
+          ))}
+        </div>
+
+        {/* Section divider */}
+        <div className="flex items-center gap-2 mb-3">
+          <div className="h-px flex-1 bg-white/[0.05]" />
+          <div className="skeleton h-2.5 w-24 rounded-full" />
+          <div className="h-px flex-1 bg-white/[0.05]" />
+        </div>
+
+        {/* Game cards */}
+        <div className="space-y-2">
+          {(['border-l-green-500/30', 'border-l-red-500/25', 'border-l-green-500/30', 'border-l-red-500/25', 'border-l-yellow-500/20', 'border-l-green-500/30'] as const).map((cls, i) => (
+            <div key={i} className={`skeleton h-[76px] rounded-xl border-l-[3px] ${cls}`} />
+          ))}
+        </div>
+
       </div>
     </div>
   )

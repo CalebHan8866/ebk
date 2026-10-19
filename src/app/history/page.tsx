@@ -258,11 +258,11 @@ export default function HistoryPage() {
         {records.length === 0 ? (
           <div className="card-accent animate-fade-up-1">
             <div className="empty-state py-16">
-              <div className="empty-state-icon text-5xl">🏀</div>
-              <p className="empty-state-title text-base">No games yet</p>
-              <p className="empty-state-body mt-1">Play online to start building your record</p>
-              <Link href="/lobby" className="btn-primary mt-6 text-sm">
-                Play Now
+              <div className="empty-state-icon">🏀</div>
+              <p className="empty-state-title">Your legend starts here</p>
+              <p className="empty-state-body mt-1">Every great player has a first game. Head to the lobby and start building your record.</p>
+              <Link href="/lobby" className="btn-primary mt-6 text-sm px-8">
+                Play Your First Game
               </Link>
             </div>
           </div>
