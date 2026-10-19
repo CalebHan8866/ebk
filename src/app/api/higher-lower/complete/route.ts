@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
           id: payload.userId,
           // string_contains: milestone checks that the JSON array text does NOT
           // contain this badge id.  We invert with NOT to guard against a race.
-          NOT: { unlockedBadges: { string_contains: `"${milestone}"` } },
+          NOT: { unlockedBadges: { contains: `"${milestone}"` } },
         },
         data: { unlockedBadges: JSON.stringify([...unlocked, milestone]) },
       })

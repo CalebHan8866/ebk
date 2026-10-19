@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { BADGES, EMOTES, MILESTONES } from '@/lib/accessories'
 import { useAuth } from '@/context/AuthContext'
 
@@ -649,7 +650,7 @@ export default function ProfilePage() {
                   ].join(' ')}>
                     {badge ? (
                       <div className="relative group flex flex-col items-center gap-1">
-                        <img src={badge.icon} alt={badge.name} className="w-8 h-8" loading="lazy" />
+                        <Image src={badge.icon} alt={badge.name} width={32} height={32} className="w-8 h-8" />
                         <span className={`text-[8px] font-black uppercase tracking-[0.1em] leading-none ${badge.textClass}`}>{badge.label}</span>
                         <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[160px] rounded-lg bg-[#111118] border border-white/[0.1] px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50">
                           <div className="text-white text-xs font-black mb-0.5">{badge.name}</div>
@@ -698,7 +699,7 @@ export default function ProfilePage() {
                       ].join(' ')}
                       title={badge.name}
                     >
-                      <img src={badge.icon} alt={badge.name} className="w-8 h-8" />
+                      <Image src={badge.icon} alt={badge.name} width={32} height={32} className="w-8 h-8" />
                       {/* Tooltip */}
                       <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] rounded-lg bg-[#111118] border border-white/[0.1] px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50">
                         <div className="text-white text-xs font-black mb-0.5">{badge.name}</div>
@@ -716,7 +717,7 @@ export default function ProfilePage() {
                     className="relative group rounded-xl p-2.5 border border-white/[0.06] bg-white/[0.025] cursor-default"
                     title={badge.name}
                   >
-                    <img src={badge.icon} alt={badge.name} className="w-8 h-8 grayscale opacity-25" />
+                    <Image src={badge.icon} alt={badge.name} width={32} height={32} className="w-8 h-8 grayscale opacity-25" />
                     {/* Lock icon overlay */}
                     <span className="absolute bottom-1 right-1 text-[9px] text-white/30">🔒</span>
                     {/* Tooltip with progress */}

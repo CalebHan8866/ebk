@@ -1,0 +1,223 @@
+{
+  "formulaVersion": "1.0",
+  "seasons": [
+    {
+      "year": 1991,
+      "label": "1990-91",
+      "cap": 11871000,
+      "shortened": false
+    },
+    {
+      "year": 1992,
+      "label": "1991-92",
+      "cap": 12500000,
+      "shortened": false
+    },
+    {
+      "year": 1993,
+      "label": "1992-93",
+      "cap": 14000000,
+      "shortened": false
+    },
+    {
+      "year": 1994,
+      "label": "1993-94",
+      "cap": 15175000,
+      "shortened": false
+    },
+    {
+      "year": 1995,
+      "label": "1994-95",
+      "cap": 15964000,
+      "shortened": false
+    },
+    {
+      "year": 1996,
+      "label": "1995-96",
+      "cap": 23000000,
+      "shortened": false
+    },
+    {
+      "year": 1997,
+      "label": "1996-97",
+      "cap": 24363000,
+      "shortened": false
+    },
+    {
+      "year": 1998,
+      "label": "1997-98",
+      "cap": 26900000,
+      "shortened": false
+    },
+    {
+      "year": 1999,
+      "label": "1998-99",
+      "cap": 30000000,
+      "shortened": true
+    },
+    {
+      "year": 2000,
+      "label": "1999-00",
+      "cap": 34000000,
+      "shortened": false
+    },
+    {
+      "year": 2001,
+      "label": "2000-01",
+      "cap": 35500000,
+      "shortened": false
+    },
+    {
+      "year": 2002,
+      "label": "2001-02",
+      "cap": 42500000,
+      "shortened": false
+    },
+    {
+      "year": 2003,
+      "label": "2002-03",
+      "cap": 40271000,
+      "shortened": false
+    },
+    {
+      "year": 2004,
+      "label": "2003-04",
+      "cap": 43870000,
+      "shortened": false
+    },
+    {
+      "year": 2005,
+      "label": "2004-05",
+      "cap": 43870000,
+      "shortened": false
+    },
+    {
+      "year": 2006,
+      "label": "2005-06",
+      "cap": 49500000,
+      "shortened": false
+    },
+    {
+      "year": 2007,
+      "label": "2006-07",
+      "cap": 53135000,
+      "shortened": false
+    },
+    {
+      "year": 2008,
+      "label": "2007-08",
+      "cap": 55630000,
+      "shortened": false
+    },
+    {
+      "year": 2009,
+      "label": "2008-09",
+      "cap": 58680000,
+      "shortened": false
+    },
+    {
+      "year": 2010,
+      "label": "2009-10",
+      "cap": 57700000,
+      "shortened": false
+    },
+    {
+      "year": 2011,
+      "label": "2010-11",
+      "cap": 58044000,
+      "shortened": false
+    },
+    {
+      "year": 2012,
+      "label": "2011-12",
+      "cap": 58044000,
+      "shortened": true
+    },
+    {
+      "year": 2013,
+      "label": "2012-13",
+      "cap": 58044000,
+      "shortened": false
+    },
+    {
+      "year": 2014,
+      "label": "2013-14",
+      "cap": 58679000,
+      "shortened": false
+    },
+    {
+      "year": 2015,
+      "label": "2014-15",
+      "cap": 63065000,
+      "shortened": false
+    },
+    {
+      "year": 2016,
+      "label": "2015-16",
+      "cap": 70000000,
+      "shortened": false
+    },
+    {
+      "year": 2017,
+      "label": "2016-17",
+      "cap": 94143000,
+      "shortened": false
+    },
+    {
+      "year": 2018,
+      "label": "2017-18",
+      "cap": 99093000,
+      "shortened": false
+    },
+    {
+      "year": 2019,
+      "label": "2018-19",
+      "cap": 101869000,
+      "shortened": false
+    },
+    {
+      "year": 2020,
+      "label": "2019-20",
+      "cap": 109140000,
+      "shortened": true
+    },
+    {
+      "year": 2021,
+      "label": "2020-21",
+      "cap": 109140000,
+      "shortened": true
+    },
+    {
+      "year": 2022,
+      "label": "2021-22",
+      "cap": 112414000,
+      "shortened": false
+    },
+    {
+      "year": 2023,
+      "label": "2022-23",
+      "cap": 123655000,
+      "shortened": false
+    },
+    {
+      "year": 2024,
+      "label": "2023-24",
+      "cap": 136021000,
+      "shortened": false
+    },
+    {
+      "year": 2025,
+      "label": "2024-25",
+      "cap": 141000000,
+      "shortened": false
+    },
+    {
+      "year": 2026,
+      "label": "2025-26",
+      "cap": 155000000,
+      "shortened": false
+    }
+  ],
+  "updatedAt": "2026-10-19T11:35:55.762Z",
+  "note": "Value formula: surplus_pct = fair_pct - cap_pct; fair_pct = min(cap_pct,min_pct) + rate * max(0,production); production = 0.5*WS + 0.5*(2.7*VORP). See scripts/scrape-season-data.ts."
+}
