@@ -138,8 +138,3 @@ export function getCurrentTeam(teamStr: string): string {
   if (byName) return byName.abbr
   return teamStr
 }
-
-export function getTeamName(abbr: string): string {
-  const t = CURRENT_TEAMS.find(t => t.abbr === abbr)
-  return t ? `${t.city} ${t.name}` : abbr
-}

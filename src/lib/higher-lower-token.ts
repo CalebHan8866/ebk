@@ -71,23 +71,9 @@ function verifyTokenSignature(token: string, userId: string): { nonce: string; i
 
 /**
  * Verifies a game token WITHOUT consuming the nonce.
- * Use this for non-final badge milestones (hl_10, hl_25) where the same token
- * must remain valid for subsequent milestone claims in the same game session.
- * The DB-level alreadyUnlocked check prevents double-awarding.
- */
-export function verifyGameToken(token: string, userId: string): boolean {
-  pruneExpiredNonces()
-  const result = verifyTokenSignature(token, userId)
-  if (!result) return false
-  // Reject tokens whose nonce has already been finally consumed (gauntlet claimed)
-  if (usedNonces.has(result.nonce)) return false
-  return true
-}
-
-/**
- * Like verifyGameToken but also returns issuedAt so the caller can enforce a
- * minimum elapsed time between game start and badge claim.
- * Returns null if the token is invalid or the nonce has been consumed.
+ * Returns issuedAt so the caller can enforce a minimum elapsed time between
+ * game start and badge claim. Returns null if the token is invalid or the
+ * nonce has already been consumed by a final milestone claim.
  */
 export function verifyGameTokenIssuedAt(token: string, userId: string): number | null {
   pruneExpiredNonces()
@@ -98,27 +84,10 @@ export function verifyGameTokenIssuedAt(token: string, userId: string): number |
 }
 
 /**
- * Verifies a game token and marks its nonce as consumed.
- * Returns false if the token is invalid, expired, or has already been used.
- * Once this returns true the nonce is burned — subsequent calls with the same
- * token will return false, preventing badge-milestone replay attacks.
- * Use this only for the final milestone (hl_gauntlet) to lock out replay.
- */
-export function verifyAndConsumeGameToken(token: string, userId: string): boolean {
-  pruneExpiredNonces()
-  const result = verifyTokenSignature(token, userId)
-  if (!result) return false
-  if (usedNonces.has(result.nonce)) return false
-  // Burn the nonce — any future call with this token will be rejected
-  usedNonces.set(result.nonce, result.issuedAt + SESSION_TTL_MS)
-  return true
-}
-
-/**
- * Like verifyAndConsumeGameToken but also returns issuedAt so the caller can
- * enforce a minimum elapsed time between game start and badge claim.
+ * Verifies a game token, marks its nonce as consumed, and returns issuedAt so
+ * the caller can enforce a minimum elapsed time between game start and badge claim.
  * Returns null if the token is invalid, expired, or already consumed.
- * On success the nonce is burned.
+ * On success the nonce is burned — replay attempts return null.
  */
 export function verifyAndConsumeGameTokenIssuedAt(token: string, userId: string): number | null {
   pruneExpiredNonces()
