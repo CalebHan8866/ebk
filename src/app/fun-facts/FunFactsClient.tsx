@@ -674,6 +674,16 @@ export default function FunFactsPage() {
           )}
         </div>
 
+        {/* ── Search result count ────────────────────────────────── */}
+        {search && filtered.length > 0 && (
+          <p className="text-white/35 text-xs font-bold mb-4 -mt-2 animate-fade-up-1">
+            <span className="text-orange-400 font-black">{filtered.length}</span>
+            <span className="text-white/20"> of </span>
+            <span className="text-white/50">{players.length}</span>
+            <span className="ml-1">players match</span>
+          </p>
+        )}
+
         {/* ── Empty search result ─────────────────────────────────── */}
         {filtered.length === 0 ? (
           <div className="card-accent animate-fade-up-2">
@@ -746,7 +756,6 @@ export default function FunFactsPage() {
                   position: 'relative',
                   width: '100%',
                   height: '100%',
-                  transformStyle: 'preserve-3d',
                   transformStyle: 'preserve-3d',
                   transition: 'transform 0.48s cubic-bezier(0.34, 1.1, 0.64, 1)',
                   transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',

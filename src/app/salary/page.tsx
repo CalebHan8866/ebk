@@ -256,7 +256,7 @@ export default function SalaryPage() {
           <select
             value={sortMode}
             onChange={e => setSortMode(e.target.value as SortMode)}
-            className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-gray-300 focus:outline-none focus:border-orange-500/40 transition-colors cursor-pointer appearance-none min-w-0"
+            className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-gray-300 focus:outline-none focus:border-orange-500/40 transition-colors cursor-pointer appearance-none sm:w-44"
           >
             <option value="highest">Highest Earnings</option>
             <option value="lowest">Lowest Earnings</option>
@@ -267,7 +267,7 @@ export default function SalaryPage() {
           <select
             value={eraFilter}
             onChange={e => setEraFilter(e.target.value as EraFilter)}
-            className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-gray-300 focus:outline-none focus:border-orange-500/40 transition-colors cursor-pointer appearance-none min-w-0"
+            className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-gray-300 focus:outline-none focus:border-orange-500/40 transition-colors cursor-pointer appearance-none sm:w-36"
           >
             {ERA_OPTIONS.map(o => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -348,7 +348,21 @@ export default function SalaryPage() {
       {!loading && tab === 'earnings' && (
         <div className="max-w-3xl mx-auto px-4">
           {filtered.length === 0 ? (
-            <div className="text-center py-16 text-gray-600 text-sm">No players found.</div>
+            <div className="empty-state py-16">
+              <div className="empty-state-icon">🔍</div>
+              <p className="empty-state-title">No players found</p>
+              <p className="empty-state-body">
+                Try a different name, era, or sort — or clear the search to see everyone
+              </p>
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="btn-secondary text-xs py-2 px-5 mt-5"
+                >
+                  Clear search
+                </button>
+              )}
+            </div>
           ) : (
             <>
               <div className="space-y-2">
@@ -377,11 +391,11 @@ export default function SalaryPage() {
                         {/* Info block */}
                         <div className="flex-1 min-w-0">
                           {/* Name + years row */}
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-black text-white text-sm">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-black text-white text-sm truncate">
                               {p.firstName} {p.lastName}
                             </span>
-                            <span className="text-gray-600 text-xs">
+                            <span className="text-gray-600 text-xs shrink-0">
                               {p.yearFrom}–{p.yearTo}
                             </span>
                           </div>
