@@ -1475,7 +1475,10 @@ app.prepare().then(async () => {
           const winsNeeded = Math.ceil(room.series / 2)
           room.hostSeriesScore = Math.max(room.hostSeriesScore, winsNeeded)
           if (room.hostUserId) updateStatsAndUnlock(io, room.hostUserId, room.hostSocketId, true, false, room.hostJCGames, true)
-          if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId!, false, false, room.guestJCGames, false)
+          // room.guestSocketId may be null here (that's what triggered this branch).
+          // Pass it as an empty string — the socket has disconnected so we only need
+          // the DB write inside updateStatsAndUnlock; the io.to() emit will be a no-op.
+          if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId ?? '', false, false, room.guestJCGames, false)
           saveGameRecords(room, 'host')
         }
         socket.emit('partner-disconnected')
@@ -1503,6 +1506,16 @@ app.prepare().then(async () => {
 
     socket.on('get-room', ({ code, role }: { code: string; role: 'host' | 'guest' }) => {
       const userId = socket.data.userId as string | null
+      // Reject unknown roles before any room lookup — an invalid role would fall
+      // through the host/guest branches below without updating any socketId, yet
+      // the socket would still join the Socket.IO room channel and receive the
+      // full room-state payload (including both players' picks).  This allows any
+      // socket that knows a room code to spectate a private game without being a
+      // legitimate participant.
+      if (role !== 'host' && role !== 'guest') {
+        socket.emit('room-error', { message: 'Invalid role' })
+        return
+      }
       const room = rooms.get(typeof code === 'string' ? code.trim().toUpperCase() : '')
       if (!room) {
         socket.emit('room-error', { message: 'Room not found or expired' })
@@ -1562,20 +1575,25 @@ app.prepare().then(async () => {
 
       // If a forfeit grace-period timer was pending for this room (because this
       // player's previous socket disconnected), cancel it — they've reconnected in time.
-      const pendingForfeit = partnerDisconnectTimers.get(code)
+      // Use room.code (canonical uppercase) — the client-supplied `code` may be mixed-case,
+      // causing the Map lookup to miss the timer and the forfeit to fire despite reconnect.
+      const pendingForfeit = partnerDisconnectTimers.get(room.code)
       if (pendingForfeit) {
         clearTimeout(pendingForfeit)
-        partnerDisconnectTimers.delete(code)
-        console.log('[room] Reconnect within grace period — forfeit cancelled code=%s', code)
+        partnerDisconnectTimers.delete(room.code)
+        console.log('[room] Reconnect within grace period — forfeit cancelled code=%s', room.code)
       }
 
-      socket.join(code)
+      // Always join using the canonical room code so the socket receives events
+      // broadcast via io.to(room.code). A lowercase client-supplied code would
+      // place the socket in a different Socket.IO room and miss all draft events.
+      socket.join(room.code)
       socket.emit('room-state', { room, players: allPlayers })
 
       if (room.status === 'drafting') {
         // Re-emit timer with accurate remaining duration so rejoining client syncs
         const currentPicker = room.draftOrder[room.currentPickIndex]
-        const startedAt = pickTimerStartedAt.get(code) ?? Date.now()
+        const startedAt = pickTimerStartedAt.get(room.code) ?? Date.now()
         const elapsed = Math.floor((Date.now() - startedAt) / 1000)
         const remaining = Math.max(2, PICK_TIMER_MS / 1000 - elapsed)
         socket.emit('pick-timer-start', { picker: currentPicker, duration: remaining, spunTeam: room.currentSpunTeam })
@@ -1927,7 +1945,7 @@ app.prepare().then(async () => {
       if (typeof code !== 'string') return
       // Prefer the server-verified JWT username; fall back to sanitized client name for anonymous players.
       userName = ((socket.data.username as string | null) || (userName ?? '').trim()).slice(0, 20) || 'Player'
-      const room = auctionRooms.get(code.toUpperCase())
+      const room = auctionRooms.get(code.trim().toUpperCase())
       if (!room) { socket.emit('auction:error', { message: 'Room not found' }); return }
 
       // Allow a previous participant (same name) to reconnect even if auction has started.
@@ -1989,7 +2007,7 @@ app.prepare().then(async () => {
 
     socket.on('auction:start', ({ code }: { code: string }) => {
       if (typeof code !== 'string') return
-      const room = auctionRooms.get(code)
+      const room = auctionRooms.get(code.trim().toUpperCase())
       if (!room || room.status !== 'waiting') return
       if (socket.id !== room.hostSocketId) { socket.emit('auction:error', { message: 'Only the host can start' }); return }
       if (room.participants.length < 2) { socket.emit('auction:error', { message: 'Need at least 2 players to start' }); return }
@@ -2217,10 +2235,16 @@ app.prepare().then(async () => {
       broadcastAuctionState(io, room)
     })
 
-    socket.on('auction:get-state', ({ code, userName }: { code: string; userName?: string }) => {
+    socket.on('auction:get-state', ({ code, userName: rawUserName }: { code: string; userName?: string }) => {
       if (typeof code !== 'string') return
-      const room = auctionRooms.get(code)
+      const room = auctionRooms.get(code.trim().toUpperCase())
       if (!room) { socket.emit('auction:error', { message: 'Room not found' }); return }
+
+      // Normalize userName the same way auction:join does: prefer the server-verified
+      // JWT username over the client-supplied value.  Without this, an authenticated
+      // attacker could pass an arbitrary userName in the event payload to match another
+      // participant's name and steal their slot when their original socket goes away.
+      const userName: string | undefined = ((socket.data.username as string | null) || (rawUserName ?? '').trim()).slice(0, 20) || undefined
 
       // Handle reconnection: if this socket is not a participant but a participant
       // has the same name (or same userId), update their socketId.
