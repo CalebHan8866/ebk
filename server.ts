@@ -255,6 +255,8 @@ interface Room {
   currentSpunTeam: string | null
   hostJCGames: number
   guestJCGames: number
+  /** Unix ms timestamp when the room was created — used by the stale-room sweep */
+  createdAt: number
 }
 
 interface PlayerData {
@@ -362,6 +364,8 @@ interface AuctionRoom {
   tradeTimer: ReturnType<typeof setTimeout> | null
   bidLog: Array<{ name: string; amount: number; action: 'bid' | 'steal' | 'won' | 'pass' | 'trade' }>
   finalResults: AuctionResult[] | null
+  /** Unix ms timestamp when the room was created — used by the stale-room sweep */
+  createdAt: number
 }
 
 interface AuctionResult {
@@ -892,6 +896,7 @@ function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
     currentSpunTeam: null,
     hostJCGames: 0,
     guestJCGames: 0,
+    createdAt: Date.now(),
   }
   rooms.set(code, room)
   consecutiveTimeouts.set(code, { host: 0, guest: 0 })
@@ -1399,7 +1404,14 @@ app.prepare().then(async () => {
       const userId = socket.data.userId as string | null
       userName = ((socket.data.username as string | null) || (userName ?? '').trim()).slice(0, 20) || 'Player'
       let code = generateCode()
-      while (rooms.has(code) || readyRooms.has(code) || gameListings.has(code)) code = generateCode()
+      let codeAttempts = 0
+      while (rooms.has(code) || readyRooms.has(code) || gameListings.has(code)) {
+        if (++codeAttempts >= 10) {
+          socket.emit('room-error', { message: 'Unable to create room. Please try again.' })
+          return
+        }
+        code = generateCode()
+      }
 
       const resolvedStatCategory: StatCategory = (statCategory && VALID_STAT_CATEGORIES.includes(statCategory)) ? statCategory : 'games_played'
 
@@ -1431,6 +1443,7 @@ app.prepare().then(async () => {
         currentSpunTeam: null,
         hostJCGames: 0,
         guestJCGames: 0,
+        createdAt: Date.now(),
       }
       rooms.set(code, room)
       socket.join(code)
@@ -1882,7 +1895,15 @@ app.prepare().then(async () => {
       }
 
       let code = generateCode()
-      while (rooms.has(code) || readyRooms.has(code) || gameListings.has(code)) code = generateCode()
+      let codeAttempts = 0
+      while (rooms.has(code) || readyRooms.has(code) || gameListings.has(code)) {
+        if (++codeAttempts >= 10) {
+          pendingListingCreate.delete(socket.id)
+          socket.emit('listing-error', { message: 'Unable to create listing. Please try again.' })
+          return
+        }
+        code = generateCode()
+      }
 
       const hostUser = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { equippedBadge: true } }).catch(() => null) : null
 
@@ -2147,7 +2168,14 @@ app.prepare().then(async () => {
       }
 
       let code = generateCode()
-      while (auctionRooms.has(code)) code = generateCode()
+      let codeAttempts = 0
+      while (auctionRooms.has(code)) {
+        if (++codeAttempts >= 10) {
+          socket.emit('auction:error', { message: 'Unable to create room. Please try again.' })
+          return
+        }
+        code = generateCode()
+      }
 
       const budget = AUCTION_BUDGETS[teamSize] ?? 175
       const validPlayers = allPlayers.filter(p => p.ebkScore > 5)
@@ -2165,6 +2193,7 @@ app.prepare().then(async () => {
         nominatorSocketId: null,
         stealInitiated: false, bidTimer: null, bidDeadline: 0,
         tradeOffers: [], tradeDeadline: null, tradeTimer: null, bidLog: [], finalResults: null,
+        createdAt: Date.now(),
       }
       auctionRooms.set(code, room)
       socket.join(`auction:${code}`)
