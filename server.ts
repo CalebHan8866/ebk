@@ -902,7 +902,13 @@ function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
 
 // ─── Auction helpers ──────────────────────────────────────────────────────────
 
-function buildAuctionStateForSocket(room: AuctionRoom) {
+function buildAuctionStateForSocket(room: AuctionRoom, recipientSocketId?: string) {
+  // Trade offers are private: only deliver offers that involve the recipient.
+  // Broadcasting all offers would let participant C read negotiations between A and B,
+  // revealing which players others are trying to acquire or give up.
+  const visibleTradeOffers = recipientSocketId
+    ? room.tradeOffers.filter(o => o.fromSocketId === recipientSocketId || o.toSocketId === recipientSocketId)
+    : room.tradeOffers
   return {
     code: room.code,
     status: room.status,
@@ -940,7 +946,7 @@ function buildAuctionStateForSocket(room: AuctionRoom) {
     stealInitiated: room.stealInitiated,
     nominatorSocketId: room.nominatorSocketId,
     bidDeadline: room.bidDeadline,
-    tradeOffers: room.tradeOffers,
+    tradeOffers: visibleTradeOffers,
     tradeDeadline: room.tradeDeadline,
     playerIndex: room.currentPlayerIndex,
     poolSize: room.playerPool.length,
@@ -950,8 +956,10 @@ function buildAuctionStateForSocket(room: AuctionRoom) {
 }
 
 function broadcastAuctionState(io: SocketServer, room: AuctionRoom) {
-  const state = buildAuctionStateForSocket(room)
   for (const p of room.participants) {
+    // Build a per-recipient state so trade offers are filtered to only those
+    // involving this participant — prevents information leakage in multi-player auctions.
+    const state = buildAuctionStateForSocket(room, p.socketId)
     io.to(p.socketId).emit('auction:state', state)
   }
 }
@@ -1697,7 +1705,18 @@ app.prepare().then(async () => {
           socket.emit('room-error', { message: 'Unauthorized' })
           return
         }
-        const origConnected = !!room.guestSocketId && io.sockets.sockets.has(room.guestSocketId)
+        // get-room is a reconnect handler — a guest slot that was never occupied
+        // has no prior socket to reconnect to.  Allowing an empty-slot claim here
+        // would let anyone with the room code call get-room(role='guest') before the
+        // legitimate guest calls join-room, hijack the guestSocketId, and block the
+        // real guest from entering (join-room would see room.guestSocketId set and
+        // return "Room is full").  First-time guest entry must go through join-room.
+        if (room.guestSocketId === null) {
+          console.warn('[room] get-room guest on unoccupied slot (use join-room) code=%s', code)
+          socket.emit('room-error', { message: 'Room not found or expired' })
+          return
+        }
+        const origConnected = io.sockets.sockets.has(room.guestSocketId)
         // Same logic for guest slot.
         const isLegit = room.guestUserId
           ? userId === room.guestUserId
@@ -2505,7 +2524,8 @@ app.prepare().then(async () => {
 
       // Rebuild and emit state directly to the requesting socket (not just participants).
       // This handles the case where socketId changed after a reconnect/navigation.
-      const state = buildAuctionStateForSocket(room)
+      // Pass socket.id so trade offers are filtered to only those involving this socket.
+      const state = buildAuctionStateForSocket(room, socket.id)
       socket.emit('auction:state', state)
     })
 
