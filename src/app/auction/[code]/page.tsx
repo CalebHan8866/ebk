@@ -94,6 +94,27 @@ const POSITION_COLORS: Record<string, string> = {
   C:  'bg-red-500/20 text-red-400 border-red-500/40',
 }
 
+function ReconnectBanner({ status }: { status: 'reconnecting' | 'reconnected' | null }) {
+  if (!status) return null
+  return (
+    <div className={`reconnect-banner ${status === 'reconnected' ? 'reconnect-banner-success' : 'reconnect-banner-warning'}`}>
+      {status === 'reconnecting' ? (
+        <>
+          <span className="reconnect-dot" />
+          <span className="reconnect-dot" />
+          <span className="reconnect-dot" />
+          <span style={{ marginLeft: 4 }}>Reconnecting…</span>
+        </>
+      ) : (
+        <>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+          <span>Reconnected</span>
+        </>
+      )}
+    </div>
+  )
+}
+
 function PosBadge({ pos }: { pos: string }) {
   const cls = POSITION_COLORS[pos] || 'bg-white/10 text-white/60 border-white/20'
   return (
@@ -155,6 +176,9 @@ export default function AuctionRoomPage() {
   // Flash when you win a player (green glow on the current bid card)
   const [justWon, setJustWon] = useState(false)
   const prevWinnerRef = useRef<string | null>(null)
+  // Network reconnect banner
+  const [socketStatus, setSocketStatus] = useState<'reconnecting' | 'reconnected' | null>(null)
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // True after the first auction:state event is received — prevents a spurious
   // justWon flash when reconnecting to a room where we already won the last player.
   const stateInitializedRef = useRef(false)
@@ -228,6 +252,18 @@ export default function AuctionRoomPage() {
       // Socket reconnected with a new ID — re-seat ourselves in the auction room
       setMySocketId(socket.id || '')
       socket.emit('auction:get-state', { code, userName: nameAtMount })
+      setSocketStatus(prev => {
+        if (prev === 'reconnecting') {
+          if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current)
+          reconnectTimerRef.current = setTimeout(() => setSocketStatus(null), 2000)
+          return 'reconnected'
+        }
+        return prev
+      })
+    }
+
+    function handleDisconnect() {
+      setSocketStatus('reconnecting')
     }
 
     function handleAuctionState(state: AuctionState) {
@@ -270,6 +306,7 @@ export default function AuctionRoomPage() {
     }
 
     socket.on('connect', handleConnect)
+    socket.on('disconnect', handleDisconnect)
     socket.on('auction:state', handleAuctionState)
     socket.on('auction:complete', handleAuctionComplete)
     socket.on('auction:error', handleAuctionError)
@@ -286,11 +323,13 @@ export default function AuctionRoomPage() {
 
     return () => {
       socket.off('connect', handleConnect)
+      socket.off('disconnect', handleDisconnect)
       socket.off('auction:state', handleAuctionState)
       socket.off('auction:complete', handleAuctionComplete)
       socket.off('auction:error', handleAuctionError)
       socket.off('session-expired', handleSessionExpired)
       clearTimeout(loadTimeout)
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current)
     }
   }, [code, guestName])
 
@@ -643,6 +682,7 @@ export default function AuctionRoomPage() {
 
     return (
       <div className="min-h-screen px-4 py-10 max-w-xl mx-auto animate-fade-in">
+        <ReconnectBanner status={socketStatus} />
         {/* ── Header ── */}
         <div className="text-center mb-8 animate-fade-up">
           <div className="live-banner mx-auto w-fit mb-4">
@@ -795,6 +835,7 @@ export default function AuctionRoomPage() {
 
     return (
       <div className="min-h-screen px-3 sm:px-4 py-5 sm:py-6 max-w-5xl mx-auto animate-scale-in">
+        <ReconnectBanner status={socketStatus} />
         {/* Header */}
         <div className="flex items-center justify-between mb-4 gap-2 sm:gap-3">
           <div className="min-w-0">
@@ -1330,6 +1371,7 @@ export default function AuctionRoomPage() {
 
     return (
       <div className="min-h-screen flex flex-col">
+        <ReconnectBanner status={socketStatus} />
         {/* Top bar — sticky war room header */}
         <div className="war-room-bar">
           <div className="flex items-center gap-3">

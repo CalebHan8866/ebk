@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { getSocket } from '@/lib/socket'
 import { useAuth } from '@/context/AuthContext'
@@ -30,8 +30,9 @@ function CrownIcon({ className }: { className?: string }) {
   )
 }
 
-export default function AuctionPage() {
+function AuctionPageInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, loading } = useAuth()
 
   const [phase, setPhase] = useState<Phase>('lobby')
@@ -39,7 +40,8 @@ export default function AuctionPage() {
   const [teamSize, setTeamSize] = useState<5 | 8 | 12>(8)
   const [maxPlayers, setMaxPlayers] = useState<2 | 3 | 4 | 5 | 6>(4)
   const [code, setCode] = useState('')
-  const [joinCode, setJoinCode] = useState('')
+  // Pre-fill join code if arriving from an /auction/join?code= invite link
+  const [joinCode, setJoinCode] = useState(() => searchParams.get('join')?.toUpperCase().trim() ?? '')
   const [participants, setParticipants] = useState<ParticipantInfo[]>([])
   const [errorMsg, setErrorMsg] = useState('')
   const [guestName, setGuestName] = useState('')
@@ -48,6 +50,13 @@ export default function AuctionPage() {
   const [copied, setCopied] = useState(false)
 
   const userName = user?.username || guestName
+
+  // If arriving from an invite link (/auction/join?code=XXX), switch to join tab automatically
+  useEffect(() => {
+    if (searchParams.get('join')) {
+      setActiveTab('join')
+    }
+  }, [searchParams])
 
   useEffect(() => {
     const socket = getSocket()
@@ -561,5 +570,20 @@ export default function AuctionPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function AuctionPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="relative w-16 h-16">
+          <div className="absolute inset-0 rounded-full border-2 border-white/[0.05]" />
+          <div className="absolute inset-0 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+        </div>
+      </div>
+    }>
+      <AuctionPageInner />
+    </Suspense>
   )
 }

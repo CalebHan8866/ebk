@@ -137,9 +137,12 @@ export default function SalaryPage() {
 
   useEffect(() => {
     fetch('/api/players')
-      .then(r => r.json())
-      .then((data: Player[]) => {
-        setPlayers(data)
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
+      .then((data: unknown) => {
+        setPlayers(Array.isArray(data) ? (data as Player[]) : [])
         setLoading(false)
       })
       .catch(() => setLoading(false))

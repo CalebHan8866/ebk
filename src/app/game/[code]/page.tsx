@@ -120,6 +120,10 @@ function GameContent() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [disconnected, setDisconnected] = useState(false)
   const [disconnectReason, setDisconnectReason] = useState<string | null>(null)
+  // Network reconnect banner — 'reconnecting' shows the amber bar, 'reconnected' shows
+  // a brief green flash then hides. null = no banner.
+  const [socketStatus, setSocketStatus] = useState<'reconnecting' | 'reconnected' | null>(null)
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Opponent pick highlight — shows a flash animation on newly drafted opponent player
   const [recentOppPickId, setRecentOppPickId] = useState<number | null>(null)
   const recentOppPickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -344,6 +348,21 @@ function GameContent() {
     // re-seats this socket into the room channel and pushes fresh state.
     function handleConnect() {
       socket.emit('get-room', { code, role })
+      // If we were showing a "reconnecting" banner, flip it to "reconnected" briefly
+      setSocketStatus(prev => {
+        if (prev === 'reconnecting') {
+          if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current)
+          reconnectTimerRef.current = setTimeout(() => setSocketStatus(null), 2000)
+          return 'reconnected'
+        }
+        return prev
+      })
+    }
+
+    function handleDisconnect() {
+      // Only show the banner for transient disconnects (not deliberate navigations).
+      // The 'disconnected' state (partner left) takes precedence and is shown as a modal.
+      setSocketStatus('reconnecting')
     }
 
     // Server emits 'session-expired' before force-disconnecting a socket whose
@@ -354,6 +373,7 @@ function GameContent() {
     }
 
     socket.on('connect', handleConnect)
+    socket.on('disconnect', handleDisconnect)
     socket.on('room-state', handleRoomState)
     socket.on('draft-started', handleDraftStarted)
     socket.on('room-updated', handleRoomUpdated)
@@ -372,8 +392,22 @@ function GameContent() {
     // Request current room state from server
     socket.emit('get-room', { code, role })
 
+    // If no room-state arrives within 8 seconds the code is invalid or expired.
+    // Show the disconnected error screen instead of spinning forever.
+    const loadTimeout = setTimeout(() => {
+      setRoom(prev => {
+        if (prev === null) {
+          setDisconnected(true)
+          setDisconnectReason('Room not found or has already ended.')
+        }
+        return prev
+      })
+    }, 8000)
+
     return () => {
+      clearTimeout(loadTimeout)
       socket.off('connect', handleConnect)
+      socket.off('disconnect', handleDisconnect)
       socket.off('room-state', handleRoomState)
       socket.off('draft-started', handleDraftStarted)
       socket.off('room-updated', handleRoomUpdated)
@@ -399,6 +433,7 @@ function GameContent() {
       if (recentOppPickTimerRef.current) clearTimeout(recentOppPickTimerRef.current)
       if (recentMyPickTimerRef.current) clearTimeout(recentMyPickTimerRef.current)
       if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current)
     }
   }, [code, role])
 
@@ -539,6 +574,15 @@ function GameContent() {
 
     return (
       <div className="min-h-screen flex items-center justify-center text-center px-4">
+        {socketStatus && (
+          <div className={`reconnect-banner ${socketStatus === 'reconnected' ? 'reconnect-banner-success' : 'reconnect-banner-warning'}`}>
+            {socketStatus === 'reconnecting' ? (
+              <><span className="reconnect-dot" /><span className="reconnect-dot" /><span className="reconnect-dot" /><span style={{ marginLeft: 4 }}>Reconnecting…</span></>
+            ) : (
+              <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg><span>Reconnected</span></>
+            )}
+          </div>
+        )}
         <div className="max-w-sm w-full animate-slide-up">
 
           {/* Status banner */}
@@ -1041,6 +1085,15 @@ function GameContent() {
 
     return (
       <div className="min-h-screen px-3 sm:px-4 py-6 sm:py-8 overflow-y-auto">
+        {socketStatus && (
+          <div className={`reconnect-banner ${socketStatus === 'reconnected' ? 'reconnect-banner-success' : 'reconnect-banner-warning'}`}>
+            {socketStatus === 'reconnecting' ? (
+              <><span className="reconnect-dot" /><span className="reconnect-dot" /><span className="reconnect-dot" /><span style={{ marginLeft: 4 }}>Reconnecting…</span></>
+            ) : (
+              <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg><span>Reconnected</span></>
+            )}
+          </div>
+        )}
         <div className="max-w-4xl w-full mx-auto">
           <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
           {/* LEFT: header + scores + series */}
@@ -1327,6 +1380,25 @@ function GameContent() {
 
   return (
     <div className="min-h-screen py-4 px-4 relative animate-fade-in">
+      {/* ── Reconnect banner ──────────────────────────────────────────────────── */}
+      {socketStatus && (
+        <div className={`reconnect-banner ${socketStatus === 'reconnected' ? 'reconnect-banner-success' : 'reconnect-banner-warning'}`}>
+          {socketStatus === 'reconnecting' ? (
+            <>
+              <span className="reconnect-dot" />
+              <span className="reconnect-dot" />
+              <span className="reconnect-dot" />
+              <span style={{ marginLeft: 4 }}>Reconnecting…</span>
+            </>
+          ) : (
+            <>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+              <span>Reconnected</span>
+            </>
+          )}
+        </div>
+      )}
+
       {/* ── Screen-reader live regions ─────────────────────────────────────────── */}
       {/* Whose turn it is — polite so it doesn't interrupt */}
       <div aria-live="polite" aria-atomic="true" className="sr-only">
