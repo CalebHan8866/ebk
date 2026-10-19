@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { id: true, username: true, password: true, tokenVersion: true },
+      select: { id: true, username: true, password: true },
     })
     if (!user) return noStore({ error: 'User not found' }, { status: 404 })
 
@@ -61,16 +61,20 @@ export async function POST(request: NextRequest) {
     }
 
     const hashed = await bcrypt.hash(newPassword, 12)
-    const newVersion = user.tokenVersion + 1
 
-    // Bump tokenVersion — all existing cookies (other sessions) are now invalid.
-    await prisma.user.update({
+    // Bump tokenVersion atomically at the DB level — all existing cookies (other
+    // sessions) are now invalid. Using { increment: 1 } instead of a read-then-write
+    // prevents two concurrent change-password requests from both reading the same
+    // tokenVersion, incrementing it in JS, and writing the same value — which would
+    // leave one of the requests' old tokens still valid.
+    const updated = await prisma.user.update({
       where: { id: user.id },
-      data: { password: hashed, tokenVersion: newVersion },
+      data: { password: hashed, tokenVersion: { increment: 1 } },
+      select: { tokenVersion: true },
     })
 
     // Reissue a fresh token for this session so the current browser stays logged in.
-    const newToken = await createToken({ userId: user.id, username: user.username, tokenVersion: newVersion })
+    const newToken = await createToken({ userId: user.id, username: user.username, tokenVersion: updated.tokenVersion })
     cookieStore.set('ebk-token', newToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
