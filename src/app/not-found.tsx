@@ -45,19 +45,24 @@ export default function NotFound() {
 
           {/* Card */}
           <div className="card-accent p-6 sm:p-8 mb-6 animate-fade-up-2">
-            {/* Bench icon */}
-            <div className="w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mx-auto mb-5">
-              <svg className="w-7 h-7 text-orange-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round"
-                  d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-              </svg>
+            {/* Bouncing basketball */}
+            <div className="flex items-center justify-center mb-5">
+              <div style={{ animation: 'bounce-ball 1.1s cubic-bezier(0.36,0,0.66,0) infinite' }}>
+                <div className="w-14 h-14 rounded-full bg-orange-500/20 border-2 border-orange-500/40 flex items-center justify-center"
+                  style={{ boxShadow: '0 0 24px rgba(249,115,22,0.25), inset 0 1px 0 rgba(255,255,255,0.1)' }}>
+                  <svg className="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" />
+                    <path strokeLinecap="round" d="M12 3c0 5 3 8 9 9M12 3C12 8 9 11 3 12M12 21c0-5-3-8-9-9M12 21c0-5 3-8 9-9" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
-            <p className="text-white/70 text-sm leading-relaxed mb-1">
-              Looks like this page fouled out of bounds.
+            <p className="text-white/70 text-sm font-bold leading-relaxed mb-1">
+              This page fouled out of bounds.
             </p>
             <p className="text-white/35 text-xs leading-relaxed mb-6">
-              The page you're looking for doesn't exist or may have been moved.
+              Whatever you were looking for doesn&apos;t exist — or got traded to another URL.
             </p>
 
             <div className="flex flex-col gap-3">

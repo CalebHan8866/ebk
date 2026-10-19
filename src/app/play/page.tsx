@@ -118,10 +118,15 @@ function PlayGame() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <p className="text-label mb-1 tracking-[0.2em]">Quick Play</p>
+          <div className="inline-flex items-center gap-2 bg-orange-950/50 border border-orange-700/40 rounded-full px-3 py-1 mb-4"
+            style={{ boxShadow: '0 0 0 1px rgba(249,115,22,0.07), 0 2px 10px rgba(234,88,12,0.15)' }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+            <span className="text-orange-300/80 text-[10px] font-black tracking-[0.2em] uppercase">Quick Play</span>
+          </div>
           <h1 className="font-display text-5xl sm:text-6xl text-white leading-none tracking-wide">
-            PICK THE <span className="text-orange-500">LOWER</span>
+            PICK THE <span className="text-orange-500" style={{ textShadow: '0 0 30px rgba(249,115,22,0.4)' }}>LOWER</span>
           </h1>
+          <p className="text-white/30 text-xs mt-2 tracking-wide">Lower career stat wins — no account needed</p>
         </div>
 
         {/* Mode selector */}
@@ -188,9 +193,9 @@ function PlayGame() {
                     onClick={() => handlePick(player.id)}
                     disabled={!!gameResult}
                     aria-label={`Pick ${player.firstName} ${player.lastName}`}
-                    className={`card-surface rounded-2xl p-5 sm:p-6 text-left transition-all w-full disabled:cursor-default relative
-                      ${!gameResult ? 'hover:border-orange-500/50 hover:bg-orange-950/10 active:scale-[0.99]' : ''}
-                      ${isCorrect  ? 'border-green-500/60 bg-green-950/20 shadow-[0_0_24px_rgba(34,197,94,0.12)]' : ''}
+                    className={`card-surface rounded-2xl p-5 sm:p-6 text-left transition-all duration-200 w-full disabled:cursor-default relative
+                      ${!gameResult ? 'hover:border-orange-500/60 hover:bg-orange-950/15 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(249,115,22,0.12)] active:scale-[0.99] active:translate-y-0' : ''}
+                      ${isCorrect  ? 'border-green-500/60 bg-green-950/20 shadow-[0_0_32px_rgba(34,197,94,0.15)]' : ''}
                       ${isIncorrect ? 'border-red-500/30 opacity-60' : ''}
                       border
                     `}
@@ -260,8 +265,8 @@ function PlayGame() {
             {/* VS chip — centered over the gap on desktop, between cards on mobile */}
             {!gameResult && (
               <div className="flex items-center justify-center sm:absolute sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:z-10 my-2 sm:my-0">
-                <div className="w-9 h-9 rounded-full bg-[#181818] border-2 border-white/[0.1] flex items-center justify-center shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
-                  <span className="font-display text-base text-white/50 leading-none">VS</span>
+                <div className="w-10 h-10 rounded-full bg-[#111118] border-2 border-orange-500/30 flex items-center justify-center shadow-[0_0_16px_rgba(249,115,22,0.2),0_2px_12px_rgba(0,0,0,0.7)]">
+                  <span className="font-display text-base text-orange-400/80 leading-none">VS</span>
                 </div>
               </div>
             )}
@@ -319,11 +324,20 @@ function PlayGame() {
         )}
 
         {/* Bottom CTA */}
-        <div className="text-center border-t border-white/[0.06] pt-8 mt-4">
-          <p className="text-white/40 text-sm mb-4">Want head-to-head drafts, win records, and badges?</p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/lobby" className="btn-primary py-3 px-8 text-sm tracking-widest">Play Live Draft</Link>
-            <Link href="/register" className="btn-secondary py-3 px-8 text-sm">Create Free Account</Link>
+        <div className="relative border-t border-white/[0.06] pt-8 mt-4">
+          {/* Ambient glow behind CTA */}
+          <div className="absolute inset-x-0 -top-4 h-32 pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse 70% 100% at 50% 0%, rgba(234,88,12,0.07) 0%, transparent 70%)' }} />
+          <div className="relative card-accent p-5 sm:p-6 text-center">
+            <p className="text-label mb-2 tracking-[0.2em]">Level up</p>
+            <p className="font-display text-2xl sm:text-3xl text-white leading-none mb-1">Ready for the real game?</p>
+            <p className="text-white/35 text-xs leading-relaxed mb-5 max-w-xs mx-auto">
+              Head-to-head snake drafts, live win records, streak badges, and leaderboards.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/lobby" className="btn-primary py-3 px-8 text-sm tracking-widest">Play Live Draft</Link>
+              <Link href="/register" className="btn-secondary py-3 px-8 text-sm">Create Free Account</Link>
+            </div>
           </div>
         </div>
 

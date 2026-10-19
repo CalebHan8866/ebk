@@ -135,9 +135,12 @@ export default function Home() {
             Elite Ball Knowledge
           </p>
 
-          <p className="text-white/90 text-lg sm:text-2xl font-black max-w-sm mx-auto mb-8 sm:mb-10 leading-snug tracking-wide uppercase animate-fade-up-3">
+          <p className="text-white/80 text-lg sm:text-2xl font-black max-w-sm mx-auto mb-3 sm:mb-4 leading-snug tracking-wide uppercase animate-fade-up-3">
             Draft NBA Players.<br />
             <span className="text-orange-400">Score lower. Win.</span>
+          </p>
+          <p className="text-white/35 text-sm sm:text-base max-w-xs mx-auto mb-8 sm:mb-10 leading-relaxed animate-fade-up-3">
+            Real-time head-to-head snake drafts. Hidden gems beat superstars. 3,247 players across 80 years.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-up-4">
@@ -176,17 +179,20 @@ export default function Home() {
 
       {/* ── QUICK PLAY INLINE CTA ─────────────────────────────────────── */}
       <div className="max-w-3xl mx-auto px-4 pb-14">
-        <div className="card-surface rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-center sm:text-left">
-            <p className="text-label mb-1 tracking-widest">No account needed</p>
+        <div className="relative card-accent p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 overflow-hidden">
+          {/* Subtle right-side glow */}
+          <div className="absolute right-0 top-0 bottom-0 w-40 pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse 100% 100% at 100% 50%, rgba(249,115,22,0.08) 0%, transparent 70%)' }} />
+          <div className="relative text-center sm:text-left">
+            <p className="text-label mb-1.5 tracking-widest">No account needed</p>
             <p className="font-display text-2xl sm:text-3xl text-white leading-none">
               Try <span className="text-orange-400">Quick Play</span> right now
             </p>
-            <p className="text-white/35 text-xs mt-1">Pick the player with lower career stats. One question, instant fun.</p>
+            <p className="text-white/35 text-xs mt-1.5 leading-relaxed">Pick the player with lower career stats. One round, instant fun.</p>
           </div>
           <Link
             href="/play"
-            className="btn-primary text-sm uppercase tracking-widest px-8 py-3 shrink-0 w-full sm:w-auto"
+            className="btn-primary text-sm uppercase tracking-widest px-8 py-3 shrink-0 w-full sm:w-auto relative"
           >
             Play Free →
           </Link>
@@ -223,7 +229,7 @@ export default function Home() {
             <Link
               key={href}
               href={href}
-              className="card-surface explore-card p-4 hover:border-orange-700/50 hover:bg-orange-950/10 transition-all group rounded-xl"
+              className="card-surface explore-card p-4 hover:border-orange-700/50 hover:bg-orange-950/10 hover:-translate-y-0.5 hover:shadow-[0_6px_24px_rgba(249,115,22,0.08)] transition-all duration-200 group rounded-xl"
             >
               <div className="flex items-center gap-2 mb-2">
                 <div className="explore-icon-wrap w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0 transition-all group-hover:bg-orange-500/20 group-hover:border-orange-500/40">
