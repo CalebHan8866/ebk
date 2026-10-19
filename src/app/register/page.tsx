@@ -88,30 +88,46 @@ export default function RegisterPage() {
 
   if (done) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="card-surface p-10 max-w-sm w-full text-center animate-scale-in">
-          <div className="w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mx-auto mb-5">
-            <svg className="w-7 h-7 text-orange-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-            </svg>
+      <div className="min-h-screen flex items-center justify-center px-4 py-16 animate-fade-in">
+        <div className="w-full max-w-sm">
+          {/* EBK wordmark */}
+          <div className="text-center mb-10 animate-fade-up">
+            <h1
+              className="font-display text-7xl text-white leading-none mb-1"
+              style={{ textShadow: '0 0 60px rgba(249,115,22,0.35)' }}
+            >
+              EBK
+            </h1>
+            <p className="text-label tracking-[0.4em]">Account Created</p>
           </div>
-          <h2 className="font-black text-white text-xl mb-2">Check Your Inbox</h2>
-          <p className="text-gray-400 text-sm mb-1 leading-relaxed">
-            We sent a verification link to
-          </p>
-          <p className="text-orange-400 font-semibold text-sm mb-6">{email}</p>
-          <p className="text-gray-500 text-xs mb-6">Check your spam folder if you don&apos;t see it within a minute.</p>
-          {resendMsg ? (
-            <p className="text-green-400 text-xs mb-4">{resendMsg}</p>
-          ) : (
-            <button onClick={handleResend} disabled={resendLoading}
-              className="text-gray-500 hover:text-gray-300 text-xs transition-colors mb-4 block mx-auto">
-              {resendLoading ? 'Sending...' : 'Didn\'t get it? Resend email'}
-            </button>
-          )}
-          <Link href="/login" className="text-orange-400 hover:text-orange-300 font-semibold text-sm transition-colors">
-            Go to Login →
-          </Link>
+
+          <div className="card-accent p-8 animate-fade-up-1 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mx-auto mb-6">
+              <svg className="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+              </svg>
+            </div>
+
+            <h2 className="font-display text-4xl text-white leading-none mb-2 tracking-wide">CHECK YOUR INBOX</h2>
+            <p className="text-white/45 text-sm leading-relaxed mb-1">
+              We sent a verification link to
+            </p>
+            <p className="text-orange-400 font-semibold text-sm mb-2">{email}</p>
+            <p className="text-white/25 text-xs leading-relaxed mb-8">Check your spam folder if you don&apos;t see it within a minute.</p>
+
+            <Link href="/login" className="btn-primary w-full text-sm font-display tracking-widest mb-4">
+              Go to Login
+            </Link>
+
+            {resendMsg ? (
+              <p className="text-green-400 text-xs">{resendMsg}</p>
+            ) : (
+              <button onClick={handleResend} disabled={resendLoading}
+                className="text-white/25 hover:text-white/60 text-xs transition-colors">
+                {resendLoading ? 'Sending...' : "Didn't get it? Resend email"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     )
@@ -140,9 +156,25 @@ export default function RegisterPage() {
           ))}
         </div>
 
-        <div className="card-surface p-8">
+        <div className="card-accent p-8 animate-fade-up-1">
+          {/* Icon header */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="font-black text-white text-base leading-tight">Create your account</h2>
+              <p className="text-white/35 text-xs mt-0.5">Free forever — no credit card needed</p>
+            </div>
+          </div>
+
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 mb-6 text-sm">
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 mb-5 text-sm animate-slide-up flex items-start gap-2">
+              <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
               {error}
             </div>
           )}
@@ -228,16 +260,24 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <button type="submit" disabled={loading} className="btn-primary w-full text-sm uppercase mt-2">
-              {loading ? 'Creating account…' : 'Create Free Account'}
+            <button type="submit" disabled={loading} className="btn-primary w-full text-sm font-display tracking-widest mt-2">
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Creating account…
+                </span>
+              ) : 'Create Free Account'}
             </button>
           </form>
-          <p className="text-center text-gray-400 text-sm mt-6">
-            Already have an account?{' '}
-            <Link href="/login" className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
-              Sign in
-            </Link>
-          </p>
+
+          {/* Divider */}
+          <div className="section-divider mt-6 mb-5">
+            <span className="text-white/20 text-xs font-bold tracking-widest uppercase">already a member?</span>
+          </div>
+
+          <Link href="/login" className="btn-secondary w-full text-sm text-center block">
+            Sign In
+          </Link>
         </div>
       </div>
     </div>
