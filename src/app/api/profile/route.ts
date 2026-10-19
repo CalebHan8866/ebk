@@ -6,6 +6,7 @@ import { cookies } from 'next/headers'
 import { verifyToken, createToken } from '@/lib/auth'
 import { containsProfanity } from '@/lib/profanity'
 import bcrypt from 'bcryptjs'
+import { rateLimit } from '@/lib/ratelimit'
 
 // A bcrypt hash of a dummy password used to make the DELETE timing constant
 // regardless of whether the user record exists (mirrors the login pattern).
@@ -123,8 +124,19 @@ export async function PATCH(request: NextRequest) {
 // keep the response time constant and avoid leaking whether an account exists.
 export async function DELETE(request: NextRequest) {
   try {
+    const ip = (request.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
+    // Rate limit: 5 delete attempts per hour per IP — bcrypt is expensive so this also
+    // protects against a distributed password-guessing attack on the confirmation field.
+    const { success: ipOk } = rateLimit(`delete-account:${ip}`, 5, 60 * 60 * 1000)
+    if (!ipOk) return NextResponse.json({ error: 'Too many attempts. Try again in an hour.' }, { status: 429 })
+
     const payload = await getAuthUser(request)
     if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // Per-account rate limit: prevents distributed brute-force (rotating IPs) from
+    // guessing the confirmation password for a specific account.
+    const { success: userOk } = rateLimit(`delete-account:user:${payload.userId}`, 5, 60 * 60 * 1000)
+    if (!userOk) return NextResponse.json({ error: 'Too many attempts. Try again in an hour.' }, { status: 429 })
 
     let body: { password?: unknown }
     try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid body' }, { status: 400 }) }

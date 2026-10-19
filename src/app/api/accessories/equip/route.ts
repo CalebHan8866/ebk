@@ -5,12 +5,18 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { BADGES, EMOTES } from '@/lib/accessories'
+import { rateLimit } from '@/lib/ratelimit'
 
 const VALID_BADGE_IDS = new Set(BADGES.map(b => b.id))
 const VALID_EMOTE_IDS = new Set(EMOTES.map(e => e.id))
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = (req.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
+    // Rate limit: 30 equip actions per minute per IP — generous for real UI clicks, tight for scripts
+    const { success } = rateLimit(`equip:${ip}`, 30, 60 * 1000)
+    if (!success) return NextResponse.json({ error: 'Too many requests. Try again in a minute.' }, { status: 429 })
+
     const cookieStore = await cookies()
     const token = cookieStore.get('ebk-token')?.value
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

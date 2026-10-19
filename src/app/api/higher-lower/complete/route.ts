@@ -5,6 +5,7 @@ import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { BADGES } from '@/lib/accessories'
 import { verifyAndConsumeGameToken, verifyGameToken } from '@/lib/higher-lower-token'
+import { rateLimit } from '@/lib/ratelimit'
 
 const HL_BADGE_IDS = ['hl_10', 'hl_25', 'hl_gauntlet']
 
@@ -22,6 +23,12 @@ const HL_BADGE_REQUIREMENTS: Record<string, { streakRequired?: number; requiresC
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = (request.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
+    // Rate limit: 20 badge claim attempts per hour per IP — generous for real play,
+    // blocks scripted badge-farming even with a valid game token.
+    const { success } = rateLimit(`hl-complete:${ip}`, 20, 60 * 60 * 1000)
+    if (!success) return NextResponse.json({ error: 'Too many requests. Try again in an hour.' }, { status: 429 })
+
     const cookieStore = await cookies()
     const token = cookieStore.get('ebk-token')?.value
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
