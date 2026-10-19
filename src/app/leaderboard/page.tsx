@@ -279,8 +279,12 @@ function LeaderboardRow({ user: u, rank, isMe, sort, totalPlayers, rowRef }: Row
     'flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 rounded-xl border min-h-[48px] transition-colors',
     isMe
       ? 'bg-gradient-to-r from-orange-950/50 to-orange-950/20 border-orange-500/50 ring-1 ring-orange-500/25 shadow-[0_0_16px_rgba(249,115,22,0.1)]'
-      : rank <= 3
-      ? 'border-white/[0.1] bg-white/[0.02] hover:bg-white/[0.035]'
+      : rank === 1
+      ? 'bg-gradient-to-r from-yellow-950/40 to-transparent border-yellow-700/30 shadow-[0_0_12px_rgba(234,179,8,0.08)]'
+      : rank === 2
+      ? 'bg-gradient-to-r from-slate-800/30 to-transparent border-slate-600/25 shadow-[0_0_8px_rgba(148,163,184,0.06)]'
+      : rank === 3
+      ? 'bg-gradient-to-r from-amber-950/30 to-transparent border-amber-800/25 shadow-[0_0_8px_rgba(120,53,15,0.08)]'
       : 'border-white/[0.05] hover:bg-white/[0.02]',
   ].join(' ')
 

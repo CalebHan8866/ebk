@@ -6,8 +6,12 @@ import { prisma } from '@/lib/db'
 
 interface CacheEntry { data: unknown; at: number }
 const cache = new Map<string, CacheEntry>()
-const CACHE_TTL = 30 * 1000 // 30 seconds
+const SWR_TTL   = 30 * 1000 // serve stale, trigger background refresh after 30s
+const CACHE_TTL = 60 * 1000 // hard expiry — block on fresh fetch after 60s
 const CACHE_MAX_ENTRIES = 500 // hard cap — evict all expired entries when exceeded
+
+// Background refresh guard: one in-flight refresh per cache key at a time
+const refreshing = new Map<string, boolean>()
 
 // Inflight guard: if a DB fetch is already in progress for a given cache key,
 // subsequent cold-cache requests attach to the same Promise rather than each
@@ -65,7 +69,7 @@ async function fetchLeaderboardData(userId: string | undefined, now: number): Pr
 
   const result = { users, totalPlayers, me }
 
-  // Prune expired entries; if still over the hard cap after pruning, evict the
+  // Prune hard-expired entries; if still over the hard cap after pruning, evict the
   // oldest quarter by insertion order rather than clearing the entire map.
   // cache.clear() would cause a stampede where every cached user simultaneously
   // misses and hammers the DB — LRU-style partial eviction avoids that.
@@ -94,22 +98,33 @@ export async function GET(request: NextRequest) {
   // Cache per userId (or 'anon') so each user's rank data is cached independently
   const cacheKey = payload?.userId ?? 'anon'
   const cached = cache.get(cacheKey)
-  if (cached && now - cached.at < CACHE_TTL) {
-    return NextResponse.json(cached.data)
-  }
+  const age = cached ? now - cached.at : Infinity
 
-  // If a DB fetch is already in progress for this key, wait for it instead of
-  // issuing a duplicate query. The first request populates the cache; all waiters
-  // read from it once the Promise settles.
-  let promise = inflight.get(cacheKey)
-  if (!promise) {
-    promise = fetchLeaderboardData(payload?.userId, now).finally(() => {
-      inflight.delete(cacheKey)
-    })
-    inflight.set(cacheKey, promise)
+  if (age >= CACHE_TTL) {
+    // Hard-expired — block on a fresh DB fetch before responding (thundering-herd
+    // protection: attach to any already-inflight promise for this key)
+    let promise = inflight.get(cacheKey)
+    if (!promise) {
+      promise = fetchLeaderboardData(payload?.userId, now).finally(() => {
+        inflight.delete(cacheKey)
+      })
+      inflight.set(cacheKey, promise)
+    }
+    await promise
+  } else if (age >= SWR_TTL) {
+    // Stale but usable — serve immediately, kick off a background refresh
+    if (!refreshing.get(cacheKey)) {
+      refreshing.set(cacheKey, true)
+      fetchLeaderboardData(payload?.userId, now).catch(err => {
+        console.error('[leaderboard] Background cache refresh failed:', err)
+      }).finally(() => {
+        refreshing.delete(cacheKey)
+      })
+    }
   }
+  // Fresh (age < SWR_TTL): serve from cache immediately, no refresh needed
 
-  const result = await promise
+  const result = cache.get(cacheKey)?.data
   return NextResponse.json(result)
   } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 })

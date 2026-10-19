@@ -33,11 +33,12 @@ function seededShuffle<T>(arr: T[], seed: number): T[] {
 
 const TOTAL_PLAYERS = 67
 
-/* Streak heat label — text only, no emoji */
+/* Streak heat label — shown at milestone thresholds */
 function streakHeat(streak: number): string | null {
   if (streak >= 25) return 'On Fire'
   if (streak >= 10) return 'Heating Up'
-  if (streak >= 3)  return 'Hot'
+  if (streak >= 5)  return 'Hot'
+  if (streak >= 3)  return 'Warming Up'
   return null
 }
 
@@ -405,9 +406,10 @@ export default function HigherLowerPage() {
                   <div className={`text-[11px] font-black leading-tight mt-0.5 tracking-wide ${
                     streak >= 25 ? 'text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.55)]' :
                     streak >= 10 ? 'text-orange-400 drop-shadow-[0_0_4px_rgba(249,115,22,0.45)]' :
-                    'text-orange-300/80'
+                    streak >= 5  ? 'text-orange-300 drop-shadow-[0_0_3px_rgba(249,115,22,0.3)]' :
+                    'text-orange-300/70'
                   }`}>
-                    {streak >= 25 ? '🔥🔥🔥' : streak >= 10 ? '🔥🔥' : '🔥'} {heatLabel}
+                    {streak >= 25 ? '🔥🔥🔥' : streak >= 10 ? '🔥🔥' : streak >= 5 ? '🔥' : '🌡️'} {heatLabel}
                   </div>
                 )}
               </div>
@@ -592,8 +594,8 @@ export default function HigherLowerPage() {
             isTie
               ? 'bg-yellow-950/20 border-yellow-700/30'
               : lastCorrect
-                ? 'bg-green-950/20 border-green-700/30'
-                : 'bg-red-950/20 border-red-700/30'
+                ? 'bg-green-950/20 border-green-700/30 animate-correct-flash'
+                : 'bg-red-950/20 border-red-700/30 animate-wrong-shake'
           }`}>
             <span
               className={`font-display text-4xl animate-verdict-pop ${

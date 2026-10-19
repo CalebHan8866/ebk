@@ -771,11 +771,11 @@ export default function FunFactsPage() {
                           <div className="text-white font-black text-sm">{current.firstName} {current.lastName}</div>
                           <div className={`text-xs font-bold mt-0.5 ${currentFact.accent}`}>{fmt(earnings)}</div>
                         </div>
-                        <div className="text-4xl leading-none">{currentFact.emoji}</div>
+                        <div className="text-4xl leading-none animate-fact-entrance">{currentFact.emoji}</div>
                       </div>
 
-                      {/* Main fact */}
-                      <div className="flex-1 flex flex-col justify-center">
+                      {/* Main fact — key triggers remount + entrance animation when factIndex changes */}
+                      <div key={factIndex} className="flex-1 flex flex-col justify-center animate-fact-entrance">
                         <div className={`font-black leading-tight mb-3 ${currentFact.accent}`} style={{ fontSize: 'clamp(1.2rem, 5vw, 1.5rem)' }}>
                           {currentFact.headline}
                         </div>
