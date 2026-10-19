@@ -660,10 +660,11 @@ textarea:focus-visible {
 
 /* ── Card flip reveal — challenger card animates in on correct/wrong ──── */
 @keyframes card-reveal {
-  0%   { opacity: 0; transform: rotateY(-25deg) scale(0.95); }
-  100% { opacity: 1; transform: rotateY(0deg)   scale(1); }
+  0%   { opacity: 0; transform: rotateY(-20deg) scale(0.96) translateX(4px); }
+  60%  { transform: rotateY(4deg) scale(1.01) translateX(-1px); }
+  100% { opacity: 1; transform: rotateY(0deg) scale(1) translateX(0); }
 }
-.animate-card-reveal { animation: card-reveal 0.35s cubic-bezier(0.22,1,0.36,1) forwards; }
+.animate-card-reveal { animation: card-reveal 0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
 
 /* ── Verdict pop — big correct/wrong text entrance ─────────────────────── */
 @keyframes verdict-pop {
@@ -673,6 +674,15 @@ textarea:focus-visible {
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 .animate-verdict-pop { animation: verdict-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+/* ── Milestone dot pop — fires when a badge milestone is reached ─────────── */
+@keyframes milestone-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.5); box-shadow: 0 0 12px currentColor; }
+  70%  { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+.animate-milestone-pop { animation: milestone-pop 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards; }
 
 /* ── VS divider pulse — fires once on mount ─────────────────────────────── */
 @keyframes vs-enter {
@@ -808,7 +818,8 @@ textarea:focus-visible {
   .animate-verdict-pop,
   .animate-card-reveal,
   .animate-vs-enter,
-  .animate-streak-bump {
+  .animate-streak-bump,
+  .animate-milestone-pop {
     animation: fade-in 0.2s ease forwards !important;
     transform: none !important;
   }
