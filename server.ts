@@ -204,6 +204,16 @@ const JOIN_THROTTLE_MAX = 10
 const CREATE_THROTTLE_MAX = 5
 /** Sliding-window duration shared by join and create throttles (ms) */
 const THROTTLE_WINDOW_MS = 60_000
+/** Per-socket get-room throttle: max reconnect/state-sync requests per GET_ROOM_WINDOW_MS */
+const GET_ROOM_THROTTLE_MAX = 10
+/** Sliding-window duration for the get-room throttle (ms) */
+const GET_ROOM_WINDOW_MS = 10_000
+/** Per-socket get-listings throttle: max lobby refresh requests per GET_LISTINGS_WINDOW_MS */
+const GET_LISTINGS_THROTTLE_MAX = 5
+/** Sliding-window duration for the get-listings throttle (ms) */
+const GET_LISTINGS_WINDOW_MS = 5_000
+/** Per-socket join-listing throttle: max join-listing attempts per THROTTLE_WINDOW_MS */
+const JOIN_LISTING_THROTTLE_MAX = 10
 
 interface GameResult {
   game: number
@@ -385,6 +395,15 @@ const joinRoomThrottle = new Map<string, { count: number; windowStart: number }>
 // Limits one socket to 5 room creations (game + auction combined) per minute to
 // prevent a single connection from exhausting server memory with ghost rooms.
 const createRoomThrottle = new Map<string, { count: number; windowStart: number }>()
+// Per-socket get-room throttle: prevents spamming reconnect/state-sync requests that
+// each emit the full allPlayers list — large payloads that can saturate the socket.
+const getRoomThrottle = new Map<string, { count: number; windowStart: number }>()
+// Per-socket get-listings throttle: prevents a client from hammering the lobby refresh
+// and joining the 'lobby' broadcast room repeatedly (each call re-joins and re-emits).
+const getListingsThrottle = new Map<string, { count: number; windowStart: number }>()
+// Per-socket join-listing throttle: each attempt runs two Prisma queries; cap at
+// JOIN_LISTING_THROTTLE_MAX per minute to prevent DB query flooding.
+const joinListingThrottle = new Map<string, { count: number; windowStart: number }>()
 // cooldown: userId → Map(opponentId → timestamp of last game end)
 const recentMatchups = new Map<string, Map<string, number>>()
 // grudge: userId → Map(opponentId → total games played together)
@@ -1609,6 +1628,20 @@ app.prepare().then(async () => {
     })
 
     socket.on('get-room', ({ code, role }: { code: string; role: 'host' | 'guest' }) => {
+      // Rate limit: max 10 get-room calls per 10 seconds per socket.
+      // Each call emits the full allPlayers list; unthrottled spam saturates the socket.
+      const grNow = Date.now()
+      const grThrottle = getRoomThrottle.get(socket.id)
+      if (grThrottle && grNow - grThrottle.windowStart < GET_ROOM_WINDOW_MS) {
+        if (grThrottle.count >= GET_ROOM_THROTTLE_MAX) {
+          socket.emit('room-error', { message: 'Too many requests. Please wait a moment.' })
+          return
+        }
+        grThrottle.count++
+      } else {
+        getRoomThrottle.set(socket.id, { count: 1, windowStart: grNow })
+      }
+
       const userId = socket.data.userId as string | null
       // Reject unknown roles before any room lookup — an invalid role would fall
       // through the host/guest branches below without updating any socketId, yet
@@ -1731,6 +1764,17 @@ app.prepare().then(async () => {
     // ── Game Listings (open lobby browser) ───────────────────────────────────
 
     socket.on('get-listings', () => {
+      // Rate limit: max 5 get-listings calls per 5 seconds per socket.
+      // Each call re-joins the 'lobby' channel and emits a full listings payload.
+      const glNow = Date.now()
+      const glThrottle = getListingsThrottle.get(socket.id)
+      if (glThrottle && glNow - glThrottle.windowStart < GET_LISTINGS_WINDOW_MS) {
+        if (glThrottle.count >= GET_LISTINGS_THROTTLE_MAX) return // silently drop
+        glThrottle.count++
+      } else {
+        getListingsThrottle.set(socket.id, { count: 1, windowStart: glNow })
+      }
+
       // Join the lobby broadcast room so future listings-updated events reach this client
       socket.join('lobby')
       socket.emit('listings-updated', { listings: Array.from(gameListings.values()) })
@@ -1837,6 +1881,20 @@ app.prepare().then(async () => {
       code: string, userName?: string
     }) => {
       if (typeof rawCode !== 'string') return
+      // Rate limit: max 10 join-listing attempts per minute per socket.
+      // Each call triggers two Prisma queries; unthrottled spam floods the DB.
+      const jlNow = Date.now()
+      const jlThrottle = joinListingThrottle.get(socket.id)
+      if (jlThrottle && jlNow - jlThrottle.windowStart < THROTTLE_WINDOW_MS) {
+        if (jlThrottle.count >= JOIN_LISTING_THROTTLE_MAX) {
+          socket.emit('listing-error', { message: 'Too many join attempts. Please wait a moment.' })
+          return
+        }
+        jlThrottle.count++
+      } else {
+        joinListingThrottle.set(socket.id, { count: 1, windowStart: jlNow })
+      }
+
       const code = rawCode.trim().toUpperCase()
       // Always use the server-verified username — never trust the client payload.
       const userId = socket.data.userId as string | null
@@ -2464,6 +2522,9 @@ app.prepare().then(async () => {
       bidThrottle.delete(socket.id)
       joinRoomThrottle.delete(socket.id)
       createRoomThrottle.delete(socket.id)
+      getRoomThrottle.delete(socket.id)
+      getListingsThrottle.delete(socket.id)
+      joinListingThrottle.delete(socket.id)
       // Remove any open listing by this socket
       for (const [code, listing] of gameListings.entries()) {
         if (listing.hostSocketId === socket.id) {
