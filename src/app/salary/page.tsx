@@ -199,10 +199,19 @@ export default function SalaryPage() {
       <div className="relative text-center pt-10 sm:pt-16 pb-8 px-4 overflow-hidden">
         <div className="absolute inset-x-0 top-0 h-[320px] pointer-events-none"
           style={{ background: 'radial-gradient(ellipse 80% 80% at 50% -5%, rgba(234,88,12,0.30) 0%, rgba(234,88,12,0.06) 55%, transparent 72%)' }} />
+        <Link
+          href="/lobby"
+          className="absolute top-4 left-4 inline-flex items-center gap-1.5 text-white/40 hover:text-white/80 transition-colors text-sm group"
+        >
+          <svg className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Lobby
+        </Link>
         <div className="relative">
           <p className="text-[11px] font-bold tracking-[0.45em] text-orange-500/70 uppercase mb-3">EBK</p>
           <h1 className="font-display text-4xl sm:text-6xl text-white leading-none mb-3">
-            NBA Salary Rankings
+            NBA <span className="text-orange-500">Salary</span> Rankings
           </h1>
           <p className="text-gray-400 text-sm sm:text-base max-w-sm mx-auto">
             Career earnings across the NBA&apos;s history
