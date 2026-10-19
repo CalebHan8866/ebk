@@ -360,6 +360,44 @@ export default function AuctionRoomPage() {
 
   const maxTime = phase === 'steal-window' ? 10 : 25
 
+  function AuctionCopyButton({ code: roomCode }: { code: string }) {
+    const [copied, setCopied] = useState(false)
+    function handleCopy() {
+      const url = `${window.location.origin}/auction/join?code=${roomCode}`
+      navigator.clipboard.writeText(url).then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }).catch(() => {
+        navigator.clipboard.writeText(roomCode).then(() => {
+          setCopied(true)
+          setTimeout(() => setCopied(false), 2000)
+        })
+      })
+    }
+    return (
+      <button
+        onClick={handleCopy}
+        className={`w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-black text-xs tracking-[0.12em] uppercase transition-all duration-200 ${
+          copied
+            ? 'bg-green-500/20 border border-green-500/50 text-green-400'
+            : 'bg-orange-600/15 border border-orange-500/40 text-orange-300 hover:bg-orange-600/25 hover:border-orange-500/60 active:scale-95'
+        }`}
+      >
+        {copied ? (
+          <>
+            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            Link Copied!
+          </>
+        ) : (
+          <>
+            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            Copy Invite Link
+          </>
+        )}
+      </button>
+    )
+  }
+
   // ── Loading ────────────────────────────────────────────────────────────────
   if (phase === 'loading') {
     return (
@@ -615,7 +653,13 @@ export default function AuctionRoomPage() {
             WAR ROOM
           </h1>
           <p className="text-white/25 text-sm mt-1 italic px-4">&ldquo;{warRoomQuips[quipIndex]}&rdquo;</p>
-          <div className="mt-3 font-mono text-white/30 text-sm border border-white/[0.07] bg-white/[0.02] rounded-lg px-3 py-1 inline-block tracking-widest">{code}</div>
+
+          {/* Share card — prominent code + copy link CTA */}
+          <div className="mt-4 card-accent inline-block w-full rounded-2xl px-6 py-5">
+            <p className="text-label tracking-[0.2em] mb-2">Room Code</p>
+            <div className="font-display text-5xl text-orange-400 tracking-[0.35em] leading-none mb-4">{code}</div>
+            <AuctionCopyButton code={code} />
+          </div>
         </div>
 
         {/* ── Atmosphere strip — stats about the draft ── */}
@@ -674,10 +718,10 @@ export default function AuctionRoomPage() {
             )
           })}
           {!hasEnough && (
-            <div className="text-center pt-2 pb-1 border-t border-white/[0.05] mt-2">
+            <div className="pt-3 border-t border-white/[0.05] mt-2 space-y-2">
               <div className="flex items-center justify-center gap-2 text-white/30 text-xs">
                 <span className="w-3 h-3 rounded-full border-2 border-white/20 border-t-white/50 animate-spin shrink-0" />
-                Waiting for more GMs — share the room code above
+                Need at least 2 GMs to start
               </div>
             </div>
           )}

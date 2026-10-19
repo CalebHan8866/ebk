@@ -456,6 +456,47 @@ function GameContent() {
     socket.emit('next-game', { code })
   }
 
+  function CopyCodeButton({ code: roomCode }: { code: string }) {
+    const [copied, setCopied] = useState(false)
+    function handleCopy() {
+      const url = `${window.location.origin}/join?code=${roomCode}`
+      navigator.clipboard.writeText(url).then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }).catch(() => {
+        navigator.clipboard.writeText(roomCode).then(() => {
+          setCopied(true)
+          setTimeout(() => setCopied(false), 2000)
+        })
+      })
+    }
+    return (
+      <div className="space-y-2">
+        <button
+          onClick={handleCopy}
+          className={`w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-black text-xs tracking-[0.12em] uppercase transition-all duration-200 ${
+            copied
+              ? 'bg-green-500/20 border border-green-500/50 text-green-400'
+              : 'bg-orange-600/15 border border-orange-500/40 text-orange-300 hover:bg-orange-600/25 hover:border-orange-500/60 active:scale-95'
+          }`}
+        >
+          {copied ? (
+            <>
+              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              Link Copied!
+            </>
+          ) : (
+            <>
+              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+              Copy Invite Link
+            </>
+          )}
+        </button>
+        <p className="text-white/25 text-[11px]">Or share the code above</p>
+      </div>
+    )
+  }
+
   if (disconnected) {
     return (
       <div className="min-h-screen flex items-center justify-center text-center px-4">
@@ -514,16 +555,18 @@ function GameContent() {
           )}
 
           {/* Room code card */}
-          <div className="card-accent p-8 mb-4">
+          <div className="card-accent p-8 mb-3">
             <p className="text-label tracking-[0.2em] mb-4">Room Code</p>
-            <div className="font-display text-7xl text-orange-400 tracking-[0.35em] leading-none mb-3">{room.code}</div>
+            <div className="font-display text-7xl text-orange-400 tracking-[0.35em] leading-none mb-4">{room.code}</div>
             {opponentPresent ? (
               <div className="flex items-center justify-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                 <p className="text-green-400 text-xs font-black">{opponentName} joined</p>
               </div>
             ) : (
-              <p className="text-gray-400 text-xs">Share this code with your opponent</p>
+              <div className="space-y-2">
+                <CopyCodeButton code={room.code} />
+              </div>
             )}
           </div>
 
@@ -1369,24 +1412,35 @@ function GameContent() {
               )}
 
               {/* Timer — always in the header, never buried */}
-              {room.status === 'drafting' && currentPickerInTimer && (
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <div className={`font-display text-2xl leading-none tabular-nums ${
-                    pickTimeLeft <= 5 ? 'text-red-400 animate-timer-throb' : pickTimeLeft <= 10 ? 'text-yellow-400' : 'text-gray-300'
-                  }`}>
-                    {pickTimeLeft}
-                    <span className="text-sm font-sans ml-0.5">s</span>
+              {room.status === 'drafting' && currentPickerInTimer && (() => {
+                const pct = pickTimerDurationRef.current > 0 ? pickTimeLeft / pickTimerDurationRef.current : 0
+                const r = 18
+                const circ = 2 * Math.PI * r
+                const timerColor = pickTimeLeft <= 5 ? '#ef4444' : pickTimeLeft <= 10 ? '#f97316' : '#22c55e'
+                return (
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* SVG ring timer */}
+                    <div className="relative w-12 h-12 flex items-center justify-center" role="timer" aria-label={`${pickTimeLeft} seconds`}>
+                      <svg className="absolute inset-0 -rotate-90" width="48" height="48" aria-hidden="true">
+                        <circle cx="24" cy="24" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
+                        <circle
+                          cx="24" cy="24" r={r} fill="none"
+                          stroke={timerColor} strokeWidth="3"
+                          strokeDasharray={circ}
+                          strokeDashoffset={circ * (1 - pct)}
+                          strokeLinecap="round"
+                          style={{ transition: 'stroke-dashoffset 0.9s linear, stroke 0.3s' }}
+                        />
+                      </svg>
+                      <span className={`font-display text-base leading-none tabular-nums relative z-10 ${
+                        pickTimeLeft <= 5 ? 'text-red-400 animate-timer-throb' : pickTimeLeft <= 10 ? 'text-yellow-400' : 'text-gray-200'
+                      }`}>
+                        {pickTimeLeft}
+                      </span>
+                    </div>
                   </div>
-                  <div className="w-20 bg-white/[0.08] rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className={`h-1.5 rounded-full transition-all duration-1000 ${
-                        pickTimeLeft <= 5 ? 'bg-red-500 animate-pulse' : pickTimeLeft <= 10 ? 'bg-yellow-400' : 'bg-green-500'
-                      }`}
-                      style={{ width: `${(pickTimeLeft / pickTimerDurationRef.current) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              )}
+                )
+              })()}
             </div>
           </div>
         </div>
@@ -1757,15 +1811,19 @@ function GameContent() {
                       }
                     }
 
+                    // EBK fill bar — relative to pool max for quick visual scanning
+                    const poolMaxEbk = Math.max(...filteredPlayers.map(p => p.ebkScore), 1)
+                    const ebkPct = Math.min(100, (player.ebkScore / poolMaxEbk) * 100)
+
                     return (
                       <div
                         key={player.id}
-                        className={`w-full rounded-xl text-left transition-all ${
+                        className={`w-full rounded-xl text-left transition-all duration-150 ${
                           isSelected
-                            ? 'bg-orange-600/20 border-2 border-orange-500 shadow-[0_0_18px_rgba(234,88,12,0.22)]'
+                            ? 'bg-orange-600/25 border-2 border-orange-500 shadow-[0_0_24px_rgba(234,88,12,0.3)] scale-[1.01]'
                             : canPick
-                            ? 'bg-[#111118] border border-white/[0.06] hover:bg-orange-950/25 hover:border-orange-600/40 cursor-pointer shadow-[0_1px_4px_rgba(0,0,0,0.4)]'
-                            : 'bg-[#0d0d0d] border border-transparent opacity-35'
+                            ? 'card-surface border border-white/[0.06] hover:bg-orange-950/20 hover:border-orange-600/40 cursor-pointer'
+                            : 'bg-white/[0.015] border border-transparent opacity-30'
                         }`}
                       >
                         <button
@@ -1781,7 +1839,7 @@ function GameContent() {
 
                           {/* Name + meta */}
                           <div className="flex-1 min-w-0">
-                            <div className="text-white font-bold text-sm leading-tight truncate">
+                            <div className={`font-bold text-sm leading-tight truncate ${isSelected ? 'text-orange-100' : 'text-white'}`}>
                               {player.firstName} {player.lastName}
                             </div>
                             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -1790,6 +1848,13 @@ function GameContent() {
                               ))}
                               <span className="text-gray-400 text-[11px]">{player.team}</span>
                               <span className="text-gray-700 text-[11px]">{player.yearFrom}–{player.yearTo}</span>
+                            </div>
+                            {/* EBK fill bar — visual tier indicator */}
+                            <div className="w-full bg-white/[0.05] rounded-full h-0.5 mt-1.5 overflow-hidden">
+                              <div
+                                className={`h-0.5 rounded-full transition-all duration-300 ${isSelected ? 'bg-orange-400' : 'bg-orange-600/50'}`}
+                                style={{ width: `${ebkPct}%` }}
+                              />
                             </div>
                           </div>
 
@@ -1823,7 +1888,7 @@ function GameContent() {
                           {/* Pick CTA — only when this card is active and pickable */}
                           {isSelected && !hasMultipleSlots && (
                             <div className="shrink-0">
-                              <div className="bg-orange-600 text-white text-xs font-black px-3 py-1.5 rounded-lg">
+                              <div className="bg-orange-500 text-white text-xs font-black px-3 py-1.5 rounded-lg shadow-[0_2px_8px_rgba(234,88,12,0.5)] animate-pulse">
                                 PICK
                               </div>
                             </div>
