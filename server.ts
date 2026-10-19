@@ -2130,6 +2130,11 @@ app.prepare().then(async () => {
 
       room.stealInitiated = true
       room.bidLog.push({ name: stealer.name, amount: stealPrice, action: 'steal' })
+      // Update bidDeadline to reflect the post-steal advance window so the client
+      // countdown timer shows the correct remaining time. Without this the client
+      // keeps displaying the old steal-window deadline (already near zero), making
+      // the countdown jump backward or expire immediately after the steal.
+      room.bidDeadline = Date.now() + POST_STEAL_ADVANCE_MS
       broadcastAuctionState(io, room)
 
       if (room.bidTimer) clearTimeout(room.bidTimer)
