@@ -1179,6 +1179,34 @@ app.prepare().then(async () => {
     }, 500)
   })
 
+  // ─── Graceful SIGINT (Ctrl+C in dev / some container runtimes) ───────────────
+  // Mirrors the SIGTERM handler so that a clean shutdown happens regardless of
+  // which signal is sent.  Prisma is disconnected before exit in both paths.
+  process.on('SIGINT', () => {
+    console.log('[server] SIGINT received — starting graceful shutdown')
+    httpServer.close(() => {
+      console.log('[server] HTTP server closed')
+    })
+    io.close(() => {
+      console.log('[server] Socket.IO server closed')
+    })
+    const forceExitTimer = setTimeout(async () => {
+      console.warn('[server] Graceful shutdown timed out — forcing exit')
+      await prisma.$disconnect().catch(() => {})
+      process.exit(0)
+    }, 10_000)
+    forceExitTimer.unref()
+    const pollInterval = setInterval(async () => {
+      if (rooms.size === 0 && auctionRooms.size === 0) {
+        clearInterval(pollInterval)
+        clearTimeout(forceExitTimer)
+        console.log('[server] All rooms drained — exiting cleanly')
+        await prisma.$disconnect().catch(() => {})
+        process.exit(0)
+      }
+    }, 500)
+  })
+
   // ─── IP-level connection rate limiter ───────────────────────────────────────
   // Without this, a single attacker IP can open thousands of WebSocket
   // connections before emitting any event, exhausting Node.js heap on Railway's

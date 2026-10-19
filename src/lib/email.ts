@@ -26,7 +26,7 @@ export async function sendVerificationEmail(email: string, username: string, tok
 
   if (!resend) {
     console.log('\n─────────────────────────────────────────')
-    console.log(`📧 VERIFY EMAIL for ${username} (${email})`)
+    console.log(`📧 VERIFY EMAIL for ${username} (${email.replace(/(?<=.).(?=[^@]*@)/g, '*')})`)
     console.log(`   ${verifyUrl}`)
     console.log('─────────────────────────────────────────\n')
     return
@@ -63,7 +63,7 @@ export async function sendPasswordResetEmail(email: string, username: string, to
 
   if (!resend) {
     console.log('\n─────────────────────────────────────────')
-    console.log(`🔑 RESET PASSWORD for ${username} (${email})`)
+    console.log(`🔑 RESET PASSWORD for ${username} (${email.replace(/(?<=.).(?=[^@]*@)/g, '*')})`)
     console.log(`   ${resetUrl}`)
     console.log('─────────────────────────────────────────\n')
     return
