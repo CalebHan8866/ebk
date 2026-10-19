@@ -1277,6 +1277,32 @@ app.prepare().then(async () => {
       })
     })
 
+    // Periodically re-validate the session for authenticated sockets.
+    // The handshake middleware only runs once at connect time, so a logout or
+    // password change that increments tokenVersion would otherwise leave the
+    // socket open indefinitely.  Every 5 minutes we check the DB tokenVersion
+    // for authenticated connections and disconnect the socket if the session
+    // has been invalidated, ensuring the user cannot continue playing after
+    // logging out.  Anonymous sockets (userId === null) are skipped.
+    const SESSION_RECHECK_MS = 5 * 60 * 1000
+    const sessionRecheckInterval = setInterval(async () => {
+      const userId = socket.data.userId as string | null
+      if (!userId) return
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { tokenVersion: true },
+        })
+        if (!user || user.tokenVersion !== (socket.data.tokenVersion as number | null)) {
+          socket.emit('session-expired')
+          socket.disconnect(true)
+        }
+      } catch {
+        // Non-fatal — skip this cycle rather than disconnecting on a transient DB error
+      }
+    }, SESSION_RECHECK_MS)
+    socket.on('disconnect', () => clearInterval(sessionRecheckInterval))
+
     socket.on('create-room', ({ teamMode, series, difficulty, statCategory, userName }: {
       teamMode: TeamMode, series: SeriesLength, difficulty: Difficulty, statCategory?: StatCategory, userName: string
     }) => {
@@ -1637,6 +1663,17 @@ app.prepare().then(async () => {
         clearTimeout(pendingForfeit)
         partnerDisconnectTimers.delete(room.code)
         console.log('[room] Reconnect within grace period — forfeit cancelled code=%s', room.code)
+      }
+
+      // If this is an inter-game result screen and a cleanup timer is already running,
+      // reschedule it from now.  Without this, a player who refreshes their browser near
+      // the end of the 60-second window reconnects successfully but the cleanup timer still
+      // fires a few seconds later — deleting the room before the host can click "next game".
+      // The timer is only rescheduled for status='result'; for 'complete' the timer should
+      // run to its natural end and the room should not be kept alive indefinitely.
+      if (room.status === 'result' && roomCleanupTimers.has(room.code)) {
+        scheduleRoomCleanup(room.code, io)
+        console.log('[room] Reconnect on result screen — cleanup timer rescheduled code=%s', room.code)
       }
 
       // Always join using the canonical room code so the socket receives events
@@ -2394,9 +2431,12 @@ app.prepare().then(async () => {
             }
             return
           }
-          // Don't fire partner-disconnected for completed series — player may disconnect
-          // on the win screen while the 30s cleanup timer is still running
-          if (room.status === 'complete') return
+          // Don't fire partner-disconnected for completed series or between-game result
+          // screens — the game is already over so a disconnect here is not a forfeit.
+          // Without the 'result' guard a player refreshing on the result screen would
+          // trigger the 8-second forfeit timer, which would emit 'partner-disconnected'
+          // to the remaining player before they could click "next game".
+          if (room.status === 'complete' || room.status === 'result') return
           // If a forfeit timer is already pending for this room (the other player also
           // recently disconnected), don't start a second one — let the existing timer fire.
           if (partnerDisconnectTimers.has(code)) return
@@ -2406,9 +2446,10 @@ app.prepare().then(async () => {
           const disconnectorIsHost = room.hostSocketId === socket.id
           const gracePeriodTimer = setTimeout(() => {
             partnerDisconnectTimers.delete(code)
-            // Re-check: room may have been cleaned up or already completed by the time
-            // the grace period expires (e.g. both players disconnected simultaneously).
-            if (!rooms.has(code) || room.status === 'complete') return
+            // Re-check: room may have been cleaned up or already completed/result by the
+            // time the grace period expires (e.g. both players disconnected simultaneously,
+            // or the room transitioned to 'result' between disconnect and timer fire).
+            if (!rooms.has(code) || room.status === 'complete' || room.status === 'result') return
             // Mark complete to prevent double-forfeit if the second player disconnects
             // during or after the grace period.
             room.status = 'complete'
