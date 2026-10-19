@@ -19,6 +19,10 @@ function getHmacSecret(): Buffer {
 // Prevents a valid game token from being replayed across multiple /complete calls
 // to claim every badge milestone in a single session without re-playing the game.
 // Entries are lazily pruned when they expire so the map stays bounded.
+// Hard cap: if the map grows beyond this (e.g. many IPs flooding /start before
+// /complete), drop all expired entries and, if still over the cap, evict the oldest
+// quarter to prevent unbounded memory growth.
+const MAX_USED_NONCES = 10_000
 const usedNonces = new Map<string, number>()
 
 function pruneExpiredNonces() {
@@ -26,6 +30,14 @@ function pruneExpiredNonces() {
   usedNonces.forEach((expiry, nonce) => {
     if (now > expiry) usedNonces.delete(nonce)
   })
+  // If the map is still above the hard cap after pruning, evict the oldest quarter
+  // (by insertion order — Map iteration is insertion-ordered in V8) so the map
+  // cannot grow without bound even when callers never reach /complete to consume tokens.
+  if (usedNonces.size > MAX_USED_NONCES) {
+    const evict = Math.floor(usedNonces.size / 4)
+    const keys = Array.from(usedNonces.keys()).slice(0, evict)
+    for (const key of keys) usedNonces.delete(key)
+  }
 }
 
 export function signGameToken(userId: string, nonce: string, issuedAt: number): string {

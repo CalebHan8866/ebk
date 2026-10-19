@@ -71,12 +71,18 @@ export async function GET(request: NextRequest) {
   }
 
   const result = { users, totalPlayers, me }
-  // Prune expired entries; if still over the hard cap, clear the entire cache
-  // to prevent unbounded memory growth when many unique users hit the endpoint.
+  // Prune expired entries; if still over the hard cap after pruning, evict the
+  // oldest quarter by insertion order rather than clearing the entire map.
+  // cache.clear() would cause a stampede where every cached user simultaneously
+  // misses and hammers the DB — LRU-style partial eviction avoids that.
   cache.forEach((entry, key) => {
     if (now - entry.at >= CACHE_TTL) cache.delete(key)
   })
-  if (cache.size >= CACHE_MAX_ENTRIES) cache.clear()
+  if (cache.size >= CACHE_MAX_ENTRIES) {
+    const evict = Math.floor(cache.size / 4)
+    const keys = Array.from(cache.keys()).slice(0, evict)
+    for (const key of keys) cache.delete(key)
+  }
   cache.set(cacheKey, { data: result, at: now })
   return NextResponse.json(result)
   } catch {

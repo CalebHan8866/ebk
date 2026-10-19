@@ -16,8 +16,8 @@ import bcrypt from 'bcryptjs'
 export async function POST(request: NextRequest) {
   try {
     const ip = (request.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
-    const { success } = rateLimit(`change-pw:${ip}`, 5, 15 * 60 * 1000) // 5 attempts per 15 min
-    if (!success) return noStore({ error: 'Too many attempts. Try again in 15 minutes.' }, { status: 429 })
+    const { success: ipOk } = rateLimit(`change-pw:${ip}`, 5, 15 * 60 * 1000) // 5 attempts per 15 min per IP
+    if (!ipOk) return noStore({ error: 'Too many attempts. Try again in 15 minutes.' }, { status: 429 })
 
     const cookieStore = await cookies()
     const token = cookieStore.get('ebk-token')?.value
@@ -25,6 +25,13 @@ export async function POST(request: NextRequest) {
 
     const payload = await verifyToken(token)
     if (!payload) return noStore({ error: 'Unauthorized' }, { status: 401 })
+
+    // Per-account rate limit: prevents distributed brute-force (rotating IPs) from
+    // guessing the current password via /change-password. Applied after auth so we
+    // have payload.userId — always returns the same error message to avoid leaking
+    // whether the account exists.
+    const { success: userOk } = rateLimit(`change-pw:user:${payload.userId}`, 5, 15 * 60 * 1000) // 5 attempts per account per 15 min
+    if (!userOk) return noStore({ error: 'Too many attempts. Try again in 15 minutes.' }, { status: 429 })
 
     let body: { currentPassword?: unknown; newPassword?: unknown }
     try { body = await request.json() } catch { return noStore({ error: 'Invalid body' }, { status: 400 }) }
