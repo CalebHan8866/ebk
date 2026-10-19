@@ -82,8 +82,12 @@ body {
 }
 .input-field::placeholder { color: rgba(255,255,255,0.2); }
 .input-field:focus {
-  border-color: rgba(249,115,22,0.5);
-  box-shadow: 0 0 0 3px rgba(249,115,22,0.08);
+  border-color: rgba(249,115,22,0.6);
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.22);
+}
+.input-field:focus-visible {
+  outline: 2px solid rgba(249,115,22,0.7);
+  outline-offset: 2px;
 }
 
 /* ── Buttons ──────────────────────────────────────────────────────────────── */
@@ -699,6 +703,10 @@ textarea:focus-visible {
 .bid-stepper-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+.bid-stepper-input:focus-visible {
+  outline: 2px solid rgba(249,115,22,0.7);
+  outline-offset: -2px;
 }
 
 /* ── Milestone progress row ────────────────────────────────────────────────── */
