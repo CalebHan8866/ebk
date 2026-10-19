@@ -374,6 +374,23 @@ body {
 }
 .animate-bid-update { animation: bid-update 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards; }
 
+/* ── Danger zone card — visually isolated, red-tinted surface ───────────────── */
+.card-danger {
+  background: linear-gradient(135deg, rgba(127,29,29,0.18) 0%, rgba(17,17,24,1) 55%);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(239,68,68,0.08), 0 1px 3px rgba(0,0,0,0.4);
+}
+.card-danger::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 5%, rgba(239,68,68,0.7) 40%, rgba(239,68,68,0.7) 60%, transparent 95%);
+}
+
 /* ── Danger button ────────────────────────────────────────────────────────────── */
 .btn-danger {
   display: inline-flex;
@@ -783,6 +800,89 @@ textarea:focus-visible {
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(249,115,22,0.14);
 }
+
+/* ── Higher / Lower game action buttons ─────────────────────────────────────── */
+/* Standalone variants for the Higher-or-Lower game — stronger lift, halo glow  */
+.btn-hl-lower {
+  position: relative;
+  overflow: hidden;
+  background: rgba(30,58,138,0.18);
+  border: 1.5px solid rgba(59,130,246,0.28);
+  border-radius: 16px;
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.22,1,0.36,1),
+              box-shadow 0.18s ease,
+              background 0.15s ease,
+              border-color 0.15s ease;
+  touch-action: manipulation;
+  box-shadow: 0 2px 12px rgba(59,130,246,0.08), 0 1px 4px rgba(0,0,0,0.3);
+}
+.btn-hl-lower:hover {
+  background: rgba(30,58,138,0.40);
+  border-color: rgba(99,160,255,0.65);
+  transform: translateY(-3px) scale(1.015);
+  box-shadow: 0 8px 28px rgba(59,130,246,0.28), 0 2px 8px rgba(0,0,0,0.4);
+}
+.btn-hl-lower:active {
+  transform: translateY(1px) scale(0.985);
+  box-shadow: 0 1px 6px rgba(59,130,246,0.18);
+  background: rgba(30,58,138,0.55);
+}
+.btn-hl-lower:focus-visible {
+  outline: 2px solid rgba(99,160,255,0.6);
+  outline-offset: 3px;
+}
+
+.btn-hl-higher {
+  position: relative;
+  overflow: hidden;
+  background: rgba(124,45,18,0.22);
+  border: 1.5px solid rgba(249,115,22,0.32);
+  border-radius: 16px;
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.22,1,0.36,1),
+              box-shadow 0.18s ease,
+              background 0.15s ease,
+              border-color 0.15s ease;
+  touch-action: manipulation;
+  box-shadow: 0 2px 12px rgba(249,115,22,0.10), 0 1px 4px rgba(0,0,0,0.3);
+}
+.btn-hl-higher:hover {
+  background: rgba(124,45,18,0.46);
+  border-color: rgba(249,115,22,0.70);
+  transform: translateY(-3px) scale(1.015);
+  box-shadow: 0 8px 28px rgba(249,115,22,0.30), 0 2px 8px rgba(0,0,0,0.4);
+}
+.btn-hl-higher:active {
+  transform: translateY(1px) scale(0.985);
+  box-shadow: 0 1px 6px rgba(249,115,22,0.20);
+  background: rgba(124,45,18,0.60);
+}
+.btn-hl-higher:focus-visible {
+  outline: 2px solid rgba(249,115,22,0.65);
+  outline-offset: 3px;
+}
+
+/* Arrow icons inside game buttons scale on parent hover */
+.btn-hl-lower:hover .hl-arrow,
+.btn-hl-higher:hover .hl-arrow {
+  transform: scale(1.15);
+}
+.hl-arrow {
+  transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1);
+  display: block;
+}
+
+/* ── Streak fire glow — applied when streak >= 10 ───────────────────────────── */
+@keyframes streak-fire-throb {
+  0%, 100% { box-shadow: 0 0 12px rgba(249,115,22,0.18), inset 0 0 16px rgba(249,115,22,0.04); }
+  50%       { box-shadow: 0 0 28px rgba(249,115,22,0.35), inset 0 0 24px rgba(249,115,22,0.09); }
+}
+.streak-fire-glow { animation: streak-fire-throb 1.8s ease-in-out infinite; }
 
 /* ── Mobile bottom nav ───────────────────────────────────────────────────── */
 .bottom-nav {

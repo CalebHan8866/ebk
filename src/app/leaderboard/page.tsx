@@ -99,7 +99,7 @@ function RankNumber({ rank }: { rank: number }) {
     <span className="font-display text-xl tabular-nums text-slate-300 drop-shadow-[0_0_4px_rgba(148,163,184,0.3)] tracking-wide">#2</span>
   )
   if (rank === 3) return (
-    <span className="font-display text-xl tabular-nums text-orange-400 drop-shadow-[0_0_4px_rgba(249,115,22,0.3)] tracking-wide">#3</span>
+    <span className="font-display text-xl tabular-nums text-amber-600 drop-shadow-[0_0_4px_rgba(180,83,9,0.4)] tracking-wide">#3</span>
   )
   if (rank <= 10) return (
     <span className="font-display text-base tabular-nums text-white/60 tracking-wide">#{rank}</span>
@@ -170,14 +170,14 @@ const PODIUM_CONFIG = [
     avatarText: 'text-xl',
     nameSize: 'text-sm',
     medalLabel: '🥉',
-    borderGlow: 'border-orange-700/40 shadow-[0_0_16px_rgba(194,65,12,0.12)]',
-    platformBg: 'bg-gradient-to-b from-orange-900/30 via-orange-950/20 to-orange-950/5',
-    rankLabel: 'text-orange-400',
-    winsColor: 'text-orange-300',
-    avatarBg: 'bg-gradient-to-br from-orange-600 to-orange-800',
+    borderGlow: 'border-amber-800/50 shadow-[0_0_16px_rgba(120,53,15,0.18)]',
+    platformBg: 'bg-gradient-to-b from-amber-900/30 via-amber-950/20 to-amber-950/5',
+    rankLabel: 'text-amber-600',
+    winsColor: 'text-amber-500',
+    avatarBg: 'bg-gradient-to-br from-amber-700 to-amber-900',
     crown: false,
     rankNum: '#3',
-    rankNumClass: 'font-display text-2xl text-orange-400 tracking-wide',
+    rankNumClass: 'font-display text-2xl text-amber-600 tracking-wide',
   },
 ]
 

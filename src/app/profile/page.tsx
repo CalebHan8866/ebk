@@ -1008,13 +1008,16 @@ export default function ProfilePage() {
           </div>
 
           {/* Delete account */}
-          <div className="card-surface p-6 border border-red-900/30">
-            <h2 className="font-display text-2xl text-red-400 tracking-wider leading-none mb-1">Danger Zone</h2>
-            <p className="text-gray-400 text-xs mb-5">Permanently delete your account and all game history. This cannot be undone.</p>
+          <div className="card-danger p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-red-500 text-base leading-none select-none">⚠</span>
+              <h2 className="font-display text-2xl text-red-400 tracking-wider leading-none">Danger Zone</h2>
+            </div>
+            <p className="text-gray-500 text-xs mb-5">Permanently delete your account and all game history. This cannot be undone.</p>
             {!showDeleteForm ? (
               <button
                 onClick={() => setShowDeleteForm(true)}
-                className="w-full py-3 rounded-xl border border-red-800/50 text-red-400 text-sm font-black uppercase tracking-wider hover:bg-red-950/30 transition-colors"
+                className="btn-danger w-full uppercase tracking-wider text-sm"
               >
                 Delete My Account
               </button>

@@ -382,7 +382,7 @@ export default function HigherLowerPage() {
         <div
           className={`p-4 mb-5 rounded-2xl border transition-all duration-300 animate-fade-up-1 ${
             streak >= 10
-              ? 'card-accent bg-orange-950/10 border-orange-600/40'
+              ? 'card-accent bg-orange-950/10 border-orange-600/40 streak-fire-glow'
               : 'card-surface'
           }`}
         >
@@ -402,10 +402,10 @@ export default function HigherLowerPage() {
               <div>
                 <div className="text-label">Streak</div>
                 {heatLabel && (
-                  <div className={`text-[10px] font-black leading-tight mt-0.5 ${
-                    streak >= 25 ? 'text-orange-400' :
-                    streak >= 10 ? 'text-orange-400/80' :
-                    'text-orange-300/70'
+                  <div className={`text-[11px] font-black leading-tight mt-0.5 tracking-wide ${
+                    streak >= 25 ? 'text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.55)]' :
+                    streak >= 10 ? 'text-orange-400 drop-shadow-[0_0_4px_rgba(249,115,22,0.45)]' :
+                    'text-orange-300/80'
                   }`}>
                     {streak >= 25 ? '🔥🔥🔥' : streak >= 10 ? '🔥🔥' : '🔥'} {heatLabel}
                   </div>
@@ -475,12 +475,12 @@ export default function HigherLowerPage() {
               <span className={`pos-badge pos-${current.position.toLowerCase()}`}>{current.position}</span>
               <span className="text-gray-500 text-xs truncate">{current.team}</span>
             </div>
-            <div className="text-gray-600 text-[11px] space-y-0.5 mb-3 flex-1">
-              <div>{current.careerGames} GP</div>
+            <div className="text-gray-400 text-[11px] space-y-0.5 mb-3 flex-1">
+              <div className="text-gray-300">{current.careerGames} <span className="text-gray-500">GP</span></div>
               <div>
-                {current.careerPPG.toFixed(1)} <span className="text-gray-700">PPG</span>
-                {' · '}{current.careerRPG.toFixed(1)} <span className="text-gray-700">RPG</span>
-                {' · '}{current.careerAPG.toFixed(1)} <span className="text-gray-700">APG</span>
+                <span className="text-gray-300">{current.careerPPG.toFixed(1)}</span> <span className="text-gray-500">PPG</span>
+                {' · '}<span className="text-gray-300">{current.careerRPG.toFixed(1)}</span> <span className="text-gray-500">RPG</span>
+                {' · '}<span className="text-gray-300">{current.careerAPG.toFixed(1)}</span> <span className="text-gray-500">APG</span>
               </div>
             </div>
             {/* EBK score highlight */}
@@ -510,12 +510,12 @@ export default function HigherLowerPage() {
             {isRevealing ? (
               /* Revealed state — animate in */
               <div className="flex flex-col flex-1 animate-card-reveal">
-                <div className="text-gray-600 text-[11px] space-y-0.5 mb-3 flex-1">
-                  <div>{challenger.careerGames} GP</div>
+                <div className="text-gray-400 text-[11px] space-y-0.5 mb-3 flex-1">
+                  <div className="text-gray-300">{challenger.careerGames} <span className="text-gray-500">GP</span></div>
                   <div>
-                    {challenger.careerPPG.toFixed(1)} <span className="text-gray-700">PPG</span>
-                    {' · '}{challenger.careerRPG.toFixed(1)} <span className="text-gray-700">RPG</span>
-                    {' · '}{challenger.careerAPG.toFixed(1)} <span className="text-gray-700">APG</span>
+                    <span className="text-gray-300">{challenger.careerPPG.toFixed(1)}</span> <span className="text-gray-500">PPG</span>
+                    {' · '}<span className="text-gray-300">{challenger.careerRPG.toFixed(1)}</span> <span className="text-gray-500">RPG</span>
+                    {' · '}<span className="text-gray-300">{challenger.careerAPG.toFixed(1)}</span> <span className="text-gray-500">APG</span>
                   </div>
                 </div>
                 <div className={`rounded-xl px-3 py-2.5 text-center ${
@@ -548,7 +548,7 @@ export default function HigherLowerPage() {
             ) : (
               /* Hidden state */
               <div className="flex flex-col flex-1">
-                <div className="text-gray-800 text-[11px] space-y-0.5 mb-3 flex-1">
+                <div className="text-gray-700 text-[11px] space-y-0.5 mb-3 flex-1 select-none">
                   <div>— GP</div>
                   <div>—.— PPG · —.— RPG</div>
                 </div>
@@ -567,21 +567,21 @@ export default function HigherLowerPage() {
             {/* LOWER */}
             <button
               onClick={() => guess('lower')}
-              className="group relative overflow-hidden bg-blue-950/20 hover:bg-blue-950/50 border border-blue-500/25 hover:border-blue-400/70 text-white font-black py-5 sm:py-6 rounded-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-blue-900/30 touch-manipulation"
+              className="btn-hl-lower py-5 sm:py-6 text-center w-full"
             >
-              <div className="font-display text-3xl sm:text-4xl text-blue-400 leading-none mb-1 group-hover:scale-110 transition-transform duration-200">▼</div>
+              <div className="hl-arrow font-display text-3xl sm:text-4xl text-blue-400 leading-none mb-1.5">▼</div>
               <div className="text-xs sm:text-sm font-black tracking-wider uppercase text-blue-200/90">Lower EBK</div>
-              <div className="text-[10px] text-blue-500/50 mt-0.5 font-medium">bigger career</div>
+              <div className="text-[10px] text-blue-400/50 mt-0.5 font-semibold">bigger career</div>
             </button>
 
             {/* HIGHER */}
             <button
               onClick={() => guess('higher')}
-              className="group relative overflow-hidden bg-orange-950/20 hover:bg-orange-950/50 border border-orange-500/25 hover:border-orange-400/70 text-white font-black py-5 sm:py-6 rounded-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-orange-900/30 touch-manipulation"
+              className="btn-hl-higher py-5 sm:py-6 text-center w-full"
             >
-              <div className="font-display text-3xl sm:text-4xl text-orange-400 leading-none mb-1 group-hover:scale-110 transition-transform duration-200">▲</div>
+              <div className="hl-arrow font-display text-3xl sm:text-4xl text-orange-400 leading-none mb-1.5">▲</div>
               <div className="text-xs sm:text-sm font-black tracking-wider uppercase text-orange-200/90">Higher EBK</div>
-              <div className="text-[10px] text-orange-500/50 mt-0.5 font-medium">unknown gem</div>
+              <div className="text-[10px] text-orange-400/50 mt-0.5 font-semibold">unknown gem</div>
             </button>
           </div>
         )}
