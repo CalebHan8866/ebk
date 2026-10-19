@@ -777,7 +777,7 @@ function PracticeContent() {
         </div>
 
         <div className="flex gap-3 animate-fade-up-2 pb-8">
-          <button onClick={() => { const newPicks = Array(TEAM_SIZES[teamMode]).fill(null); setPicks(newPicks); setSpunTeamsHistory([]); setScreen('draft'); triggerSpin(players, newPicks) }}
+          <button onClick={() => { const newPicks = Array(TEAM_SIZES[teamMode]).fill(null); setPicks(newPicks); setSpunTeamsHistory([]); setFilterPos('ALL'); setSearchQuery(''); setScreen('draft'); triggerSpin(players, newPicks) }}
             className="btn-secondary flex-1">
             Draft Again
           </button>

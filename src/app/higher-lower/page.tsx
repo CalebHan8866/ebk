@@ -204,6 +204,15 @@ export default function HigherLowerPage() {
       const seed = Math.floor(Math.random() * 1_000_000)
       setSequence(seededShuffle(allPlayers, seed).slice(0, TOTAL_PLAYERS))
     }
+    // Fetch a fresh game token for the new session so the previous gauntlet's
+    // consumed nonce does not block milestone claims in the next play-through.
+    if (user) {
+      gameTokenRef.current = null
+      fetch('/api/higher-lower/start')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.gameToken) gameTokenRef.current = d.gameToken })
+        .catch(() => {})
+    }
     setScreen('playing')
   }
 
