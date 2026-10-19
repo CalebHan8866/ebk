@@ -1,5 +1,18 @@
 'use client'
-export default function Error({ reset }: { reset: () => void }) {
+
+import { useEffect } from 'react'
+
+export default function SalaryError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  useEffect(() => {
+    console.error('[EBK salary error boundary]', error)
+  }, [error])
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
       <p className="font-display text-4xl text-orange-500">Oops</p>
