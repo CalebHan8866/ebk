@@ -2076,8 +2076,8 @@ app.prepare().then(async () => {
       // This mirrors the identical guard on join-room (game rooms).
       const ajNow = Date.now()
       const ajThrottle = joinRoomThrottle.get(socket.id)
-      if (ajThrottle && ajNow - ajThrottle.windowStart < 60_000) {
-        if (ajThrottle.count >= 10) {
+      if (ajThrottle && ajNow - ajThrottle.windowStart < THROTTLE_WINDOW_MS) {
+        if (ajThrottle.count >= JOIN_THROTTLE_MAX) {
           socket.emit('auction:error', { message: 'Too many join attempts. Please wait a moment.' })
           return
         }
@@ -2161,8 +2161,8 @@ app.prepare().then(async () => {
       // Rate limit: max 5 bids per second per socket to prevent DoS spam
       const now = Date.now()
       const throttle = bidThrottle.get(socket.id)
-      if (throttle && now - throttle.windowStart < 1000) {
-        if (throttle.count >= 5) { socket.emit('auction:error', { message: 'Bidding too fast — slow down.' }); return }
+      if (throttle && now - throttle.windowStart < BID_THROTTLE_WINDOW_MS) {
+        if (throttle.count >= BID_THROTTLE_MAX) { socket.emit('auction:error', { message: 'Bidding too fast — slow down.' }); return }
         throttle.count++
       } else {
         bidThrottle.set(socket.id, { count: 1, windowStart: now })
