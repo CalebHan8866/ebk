@@ -714,8 +714,17 @@ function startPickTimer(io: SocketServer, room: Room) {
       return
     }
     const { playerId: pickedId, slotPos: pickedSlotPos } = autoPick
-    // Guard against duplicate picks (shouldn't happen, but be safe)
-    if (currentRoom.hostPicks.includes(pickedId) || currentRoom.guestPicks.includes(pickedId)) return
+    // Guard against duplicate picks (shouldn't happen, but be safe).
+    // If autoPickPlayer somehow returns an already-taken player, skip this pick by
+    // advancing the index and restarting the timer — returning without action here
+    // would leave the room status='drafting' with no timer running and no pick made,
+    // permanently deadlocking the draft.
+    if (currentRoom.hostPicks.includes(pickedId) || currentRoom.guestPicks.includes(pickedId)) {
+      currentRoom.currentPickIndex++
+      pickTimers.delete(code)
+      startPickTimer(io, currentRoom)
+      return
+    }
 
     if (picker === 'host') { currentRoom.hostPicks.push(pickedId); currentRoom.hostPickSlots.push(pickedSlotPos) }
     else { currentRoom.guestPicks.push(pickedId); currentRoom.guestPickSlots.push(pickedSlotPos) }
