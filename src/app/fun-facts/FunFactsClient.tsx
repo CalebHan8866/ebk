@@ -472,7 +472,10 @@ export default function FunFactsPage() {
   useEffect(() => {
     const controller = new AbortController()
     fetch('/api/players', { signal: controller.signal })
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then((data: Player[]) => {
         // Keep only players whose earnings produce a $100K–$1M/yr comparison
         // Use real scraped earnings when available, fall back to estimate (mirrors generateFacts)
