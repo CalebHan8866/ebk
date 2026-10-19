@@ -52,17 +52,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.6,
     },
-    {
-      url: `${base}/login`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.4,
-    },
-    {
-      url: `${base}/register`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.4,
-    },
+    // Auth/utility pages intentionally excluded — search engines should not
+    // index /login, /register, /forgot-password as content pages.
   ]
 }
