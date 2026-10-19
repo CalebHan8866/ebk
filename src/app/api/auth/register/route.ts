@@ -79,7 +79,14 @@ export async function POST(request: NextRequest) {
         ],
       },
     })
-    if (existing) return noStore({ error: 'Username or email already taken' }, { status: 409 })
+    if (existing) {
+      // Always run bcrypt even on the "already taken" path so that response
+      // timing is indistinguishable from a successful registration. Without
+      // this a timing oracle would reveal whether a given email or username
+      // is already registered (fast 409 vs slow 201 after bcrypt.hash).
+      await bcrypt.hash(password, 12)
+      return noStore({ error: 'Username or email already taken' }, { status: 409 })
+    }
 
     const hashed = await bcrypt.hash(password, 12)
     const verificationToken = crypto.randomBytes(32).toString('hex')
