@@ -29,6 +29,12 @@ const nextConfig = {
       ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
       : "script-src 'self' 'unsafe-inline'"
 
+    // upgrade-insecure-requests tells browsers to rewrite http:// sub-resource
+    // requests to https:// before fetching — belt-and-suspenders alongside HSTS.
+    // Only emit in production; dev runs over plain HTTP so the directive would
+    // block all local asset loads.
+    const upgradeInsecure = isDev ? null : "upgrade-insecure-requests"
+
     // In dev the WebSocket connection is plain ws:; in production it's always wss:.
     const connectSrc = isDev
       ? "connect-src 'self' ws: wss:"
@@ -58,9 +64,16 @@ const nextConfig = {
               "default-src 'self'",
               scriptSrc,
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https://cdnjs.cloudflare.com",
+              // data: URIs in img-src are not used anywhere in the codebase.
+              // Allowing them would let XSS payloads exfiltrate data via crafted
+              // <img src="data:..."> tags — remove it.
+              "img-src 'self' https://cdnjs.cloudflare.com",
               "font-src 'self'",
               connectSrc,
+              // Explicit object-src 'none' blocks Flash and legacy plugin injection.
+              // default-src 'self' already covers this, but being explicit ensures
+              // browsers that don't inherit object-src from default-src are also protected.
+              "object-src 'none'",
               "frame-ancestors 'none'",
               // Restrict form submissions to same origin — prevents an injected form
               // from POSTing credentials to an external attacker-controlled URL.
@@ -68,6 +81,8 @@ const nextConfig = {
               // Restrict <base> tag href to same origin — prevents base-tag injection
               // from hijacking all relative URLs to an attacker's domain.
               "base-uri 'self'",
+              // Rewrite any accidental http:// sub-resource requests to https:// in prod.
+              ...(upgradeInsecure ? [upgradeInsecure] : []),
             ].join('; '),
           },
         ],

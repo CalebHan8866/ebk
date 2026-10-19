@@ -57,6 +57,21 @@ model GameRecord {
   @@index([userId, createdAt(sort: Desc)])
 }
 
+// Persists auction results to the DB at the moment finishAuction fires.
+// The results JSON mirrors the AuctionResult[] sent to clients so the
+// server can serve the results page even after a restart within the 30-min
+// review window.  Rows are retained for 48 h then can be pruned.
+model AuctionRecord {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  teamSize    Int
+  totalBudget Int
+  results     String   // JSON-serialised AuctionResult[]
+  completedAt DateTime @default(now())
+
+  @@index([completedAt(sort: Desc)])
+}
+
 model Player {
   id          Int     @id
   firstName   String

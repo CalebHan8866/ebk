@@ -1089,6 +1089,25 @@ function finishAuction(io: SocketServer, room: AuctionRoom) {
   for (const p of room.participants) {
     io.to(p.socketId).emit('auction:complete', { results })
   }
+
+  // Persist results to the DB so they survive a server restart within the 30-min
+  // review window.  We use upsert (keyed on the unique room code) so a double-call
+  // (idempotency guard above prevents this in normal operation, but belt-and-suspenders)
+  // never creates duplicate rows.  Fire-and-forget: a write failure should not crash
+  // the server or block the client response that has already been emitted above.
+  prisma.auctionRecord.upsert({
+    where: { code: room.code },
+    create: {
+      code: room.code,
+      teamSize: room.teamSize,
+      totalBudget: room.totalBudget,
+      results: JSON.stringify(results),
+    },
+    update: {
+      results: JSON.stringify(results),
+    },
+  }).catch(err => console.error('[auction] Failed to persist results for room=%s: %o', room.code, err))
+
   setTimeout(() => {
     // Guard: only delete if this exact room object is still registered under this
     // code.  A new room could theoretically reuse the same code within the
