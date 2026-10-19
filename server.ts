@@ -1327,7 +1327,7 @@ app.prepare().then(async () => {
       const userId = socket.data.userId as string | null
       userName = ((socket.data.username as string | null) || (userName ?? '').trim()).slice(0, 20) || 'Player'
       let code = generateCode()
-      while (rooms.has(code)) code = generateCode()
+      while (rooms.has(code) || readyRooms.has(code) || gameListings.has(code)) code = generateCode()
 
       const resolvedStatCategory: StatCategory = (statCategory && VALID_STAT_CATEGORIES.includes(statCategory)) ? statCategory : 'games_played'
 
@@ -1668,6 +1668,19 @@ app.prepare().then(async () => {
         clearTimeout(pendingForfeit)
         partnerDisconnectTimers.delete(room.code)
         console.log('[room] Reconnect within grace period — forfeit cancelled code=%s', room.code)
+      }
+
+      // If the host reconnects to a waiting room (status='waiting'), cancel any pending
+      // cleanup timer that was started when the host's previous socket disconnected.
+      // Without this, the cleanup timer fires 60 s after the disconnect and deletes the
+      // room even though the host is back and waiting for a guest to join.
+      if (room.status === 'waiting' && role === 'host') {
+        const waitingCleanup = roomCleanupTimers.get(room.code)
+        if (waitingCleanup) {
+          clearTimeout(waitingCleanup)
+          roomCleanupTimers.delete(room.code)
+          console.log('[room] Host reconnected to waiting room — cleanup timer cancelled code=%s', room.code)
+        }
       }
 
       // If this is an inter-game result screen and a cleanup timer is already running,
