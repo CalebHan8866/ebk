@@ -1176,9 +1176,13 @@ app.prepare().then(async () => {
     // Don't let this timer keep the event loop alive if rooms finish sooner
     forceExitTimer.unref()
 
-    // Poll until all rooms are gone or the timer fires
+    // Poll until all active (non-complete) rooms are gone or the timer fires.
+    // Completed auction rooms intentionally stay in auctionRooms for AUCTION_CLEANUP_MS
+    // (30 min) so players can review results — exclude them from the drain check or the
+    // server would never drain cleanly after any auction has finished.
     const pollInterval = setInterval(async () => {
-      if (rooms.size === 0 && auctionRooms.size === 0) {
+      const activeAuctions = [...auctionRooms.values()].filter(r => r.status !== 'complete').length
+      if (rooms.size === 0 && activeAuctions === 0) {
         clearInterval(pollInterval)
         clearTimeout(forceExitTimer)
         console.log('[server] All rooms drained — exiting cleanly')
@@ -1206,7 +1210,8 @@ app.prepare().then(async () => {
     }, 10_000)
     forceExitTimer.unref()
     const pollInterval = setInterval(async () => {
-      if (rooms.size === 0 && auctionRooms.size === 0) {
+      const activeAuctions = [...auctionRooms.values()].filter(r => r.status !== 'complete').length
+      if (rooms.size === 0 && activeAuctions === 0) {
         clearInterval(pollInterval)
         clearTimeout(forceExitTimer)
         console.log('[server] All rooms drained — exiting cleanly')
@@ -2448,10 +2453,17 @@ app.prepare().then(async () => {
           const disconnectorIsHost = room.hostSocketId === socket.id
           const gracePeriodTimer = setTimeout(() => {
             partnerDisconnectTimers.delete(code)
-            // Re-check: room may have been cleaned up or already completed/result by the
-            // time the grace period expires (e.g. both players disconnected simultaneously,
-            // or the room transitioned to 'result' between disconnect and timer fire).
-            if (!rooms.has(code) || room.status === 'complete' || room.status === 'result') return
+            // Re-check: room may have been cleaned up or already completed by the time
+            // the grace period expires (e.g. both players disconnected simultaneously).
+            if (!rooms.has(code) || room.status === 'complete') return
+            // If the game already advanced to the result screen while the grace timer was
+            // running (e.g. auto-pick fired and completed the draft), don't issue a forfeit
+            // but DO schedule cleanup — the host may have already clicked next-game and
+            // cancelled the original cleanup timer while waiting for this grace period.
+            if (room.status === 'result') {
+              if (!roomCleanupTimers.has(code)) scheduleRoomCleanup(code, io)
+              return
+            }
             // Mark complete to prevent double-forfeit if the second player disconnects
             // during or after the grace period.
             room.status = 'complete'
