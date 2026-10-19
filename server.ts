@@ -949,6 +949,11 @@ function advanceAuction(io: SocketServer, room: AuctionRoom) {
 }
 
 function handleAuctionBidExpiry(io: SocketServer, room: AuctionRoom) {
+  // Clear the handle immediately — the timer has fired so the reference is stale.
+  // Any subsequent clearTimeout(room.bidTimer) calls (e.g. in auction:pass or
+  // finishAuction) would otherwise operate on a dangling handle that has no effect
+  // but could mask logic errors in paths that check `if (room.bidTimer)`.
+  room.bidTimer = null
   // Guard: only execute if we're still in bidding or steal-window phase.
   // This prevents double-advancement if the timer fires after an explicit pass.
   if (room.status !== 'bidding' && room.status !== 'steal-window') return
@@ -999,6 +1004,11 @@ function startAuctionTradePhase(io: SocketServer, room: AuctionRoom) {
 }
 
 function finishAuction(io: SocketServer, room: AuctionRoom) {
+  // Idempotency guard: prevent double-finalisation if both the tradeTimer fires and
+  // the host emits auction:finish-trading within the same event loop cycle.
+  // Without this guard auction:complete would be emitted twice to every participant,
+  // which could cause the results screen to flash or duplicate DB writes in future.
+  if (room.status === 'complete') return
   room.status = 'complete'
   if (room.bidTimer) clearTimeout(room.bidTimer)
   if (room.tradeTimer) clearTimeout(room.tradeTimer)
@@ -2026,7 +2036,7 @@ app.prepare().then(async () => {
         bidThrottle.set(socket.id, { count: 1, windowStart: now })
       }
 
-      const room = auctionRooms.get(code)
+      const room = auctionRooms.get(code.trim().toUpperCase())
       if (!room || room.status !== 'bidding') return
       const bidder = room.participants.find(p => p.socketId === socket.id)
       if (!bidder) return
@@ -2058,7 +2068,7 @@ app.prepare().then(async () => {
     // Uses playerIndex to prevent stale passes from double-advancing the auction.
     socket.on('auction:pass', ({ code, playerIndex }: { code: string; playerIndex: number }) => {
       if (typeof code !== 'string') return
-      const room = auctionRooms.get(code)
+      const room = auctionRooms.get(code.trim().toUpperCase())
       if (!room || room.status !== 'bidding') return
       // Validate playerIndex is an integer — reject spoofed non-numeric values
       if (!Number.isInteger(playerIndex)) return
@@ -2089,7 +2099,7 @@ app.prepare().then(async () => {
 
     socket.on('auction:steal', ({ code, playerIdToSteal }: { code: string; playerIdToSteal: number }) => {
       if (typeof code !== 'string') return
-      const room = auctionRooms.get(code)
+      const room = auctionRooms.get(code.trim().toUpperCase())
       if (!room || room.status !== 'steal-window') return
       if (room.stealInitiated) { socket.emit('auction:error', { message: 'Steal already used this round' }); return }
       // Validate playerIdToSteal is a positive integer to prevent prototype pollution or NaN tricks
@@ -2130,7 +2140,7 @@ app.prepare().then(async () => {
       code: string; toSocketId: string; offeredPlayerIds: number[]; requestedPlayerIds: number[]
     }) => {
       if (typeof code !== 'string' || typeof toSocketId !== 'string') return
-      const room = auctionRooms.get(code)
+      const room = auctionRooms.get(code.trim().toUpperCase())
       if (!room || room.status !== 'trading') return
       // Prevent self-trade: offering to yourself would corrupt paidPrices when the
       // same participant object is used as both `from` and `to`.
@@ -2194,7 +2204,7 @@ app.prepare().then(async () => {
 
     socket.on('auction:trade-respond', ({ code, offerId, accept }: { code: string; offerId: string; accept: boolean }) => {
       if (typeof code !== 'string' || typeof offerId !== 'string') return
-      const room = auctionRooms.get(code)
+      const room = auctionRooms.get(code.trim().toUpperCase())
       if (!room || room.status !== 'trading') return
       const offerIdx = room.tradeOffers.findIndex(o => o.id === offerId)
       if (offerIdx === -1) return
@@ -2289,7 +2299,7 @@ app.prepare().then(async () => {
 
     socket.on('auction:finish-trading', ({ code }: { code: string }) => {
       if (typeof code !== 'string') return
-      const room = auctionRooms.get(code)
+      const room = auctionRooms.get(code.trim().toUpperCase())
       if (!room || room.status !== 'trading' || socket.id !== room.hostSocketId) return
       if (room.tradeTimer) clearTimeout(room.tradeTimer)
       finishAuction(io, room)
