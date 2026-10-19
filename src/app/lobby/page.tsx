@@ -695,7 +695,7 @@ export default function LobbyPage() {
               </button>
             </div>
 
-            {/* Row: Higher/Lower + Practice (compact) */}
+            {/* Row: Solo modes + Explore (2×2) */}
             <div className="grid grid-cols-2 gap-3">
               <Link href="/higher-lower"
                 className="animate-fade-up-4 group card-surface border border-white/[0.04] hover:border-white/[0.12] rounded-2xl px-4 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block min-w-0">
@@ -708,6 +708,18 @@ export default function LobbyPage() {
                 <div className="text-label mb-2">Solo</div>
                 <div className="font-display text-xl leading-none mb-1 group-hover:text-orange-400 transition-colors text-white truncate">Practice</div>
                 <div className="text-gray-600 text-[10px] font-black uppercase tracking-wide">Draft. No timer. Learn.</div>
+              </Link>
+              <Link href="/fun-facts"
+                className="animate-fade-up-5 group card-surface border border-white/[0.04] hover:border-white/[0.12] rounded-2xl px-4 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block min-w-0">
+                <div className="text-label mb-2">Explore</div>
+                <div className="font-display text-xl leading-none mb-1 group-hover:text-orange-400 transition-colors text-white truncate">Fun Facts</div>
+                <div className="text-gray-600 text-[10px] font-black uppercase tracking-wide">NBA earnings in perspective.</div>
+              </Link>
+              <Link href="/salary"
+                className="animate-fade-up-5 group card-surface border border-white/[0.04] hover:border-white/[0.12] rounded-2xl px-4 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block min-w-0">
+                <div className="text-label mb-2">Explore</div>
+                <div className="font-display text-xl leading-none mb-1 group-hover:text-orange-400 transition-colors text-white truncate">Salary Rankings</div>
+                <div className="text-gray-600 text-[10px] font-black uppercase tracking-wide">Who got paid most.</div>
               </Link>
             </div>
 

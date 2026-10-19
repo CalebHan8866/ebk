@@ -166,10 +166,20 @@ interface Fact {
   accent: string
 }
 
+function getReliableEarnings(p: Player): { earnings: number; hasRealEarnings: boolean } {
+  if (p.careerEarnings <= 0) return { earnings: estimateCareerEarnings(p), hasRealEarnings: false }
+  // Sanity check: if the scraped value is less than 15% of the estimate, the scraper
+  // likely only captured a single season (attribute-order bug in the BBRef regex).
+  // Fall back to the estimate so fun facts aren't wildly wrong (e.g. Dwight Howard $16M).
+  const estimate = estimateCareerEarnings(p)
+  if (estimate > 0 && p.careerEarnings < estimate * 0.15) {
+    return { earnings: estimate, hasRealEarnings: false }
+  }
+  return { earnings: p.careerEarnings, hasRealEarnings: true }
+}
+
 function generateFacts(p: Player): Fact[] {
-  // Use real scraped earnings when available; fall back to era-based estimate
-  const earnings = p.careerEarnings > 0 ? p.careerEarnings : estimateCareerEarnings(p)
-  const hasRealEarnings = p.careerEarnings > 0
+  const { earnings, hasRealEarnings } = getReliableEarnings(p)
   const name = `${p.firstName} ${p.lastName}`
   const facts: Fact[] = []
 
