@@ -1308,7 +1308,8 @@ app.prepare().then(async () => {
     const ip = normalizeIp(raw)
     const current = connectionsPerIp.get(ip) ?? 0
     if (current >= 20) {
-      console.warn('[socket] Connection rejected — too many connections from IP:', ip)
+      // Do not log the raw IP — Railway logs are retained and IPs are PII.
+      console.warn('[socket] Connection rejected — too many connections from single IP (address withheld)')
       return next(new Error('Too many connections from this IP'))
     }
     connectionsPerIp.set(ip, current + 1)
@@ -2537,6 +2538,7 @@ app.prepare().then(async () => {
           lastWinnerName: null,
           lastWonAmount: 0,
           stealInitiated: false,
+          nominatorSocketId: null,
           bidDeadline: 0,
           tradeDeadline: null,
           tradeOffers: [],
