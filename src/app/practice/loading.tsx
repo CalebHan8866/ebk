@@ -1,37 +1,46 @@
 export default function PracticeLoading() {
   return (
-    <div className="min-h-screen px-4 py-8 max-w-2xl mx-auto w-full animate-pulse">
+    <div className="min-h-screen px-4 py-8 max-w-2xl mx-auto w-full">
+      {/* Back link placeholder */}
+      <div className="skeleton h-4 w-28 rounded-full mb-8" />
+
       {/* Header */}
-      <div className="mb-8">
-        <div className="skeleton h-3 w-14 rounded-full mb-2" />
-        <div className="skeleton h-8 w-36 rounded-xl mb-1" />
-        <div className="skeleton h-3 w-52 rounded-full" />
+      <div className="mb-8 space-y-2">
+        <div className="skeleton h-3 w-14 rounded-full" />
+        <div className="skeleton h-10 w-40 rounded-xl" />
+        <div className="skeleton h-3 w-64 rounded-full" />
       </div>
-      {/* Mode selector */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        <div className="skeleton h-8 w-20 rounded-full" />
-        <div className="skeleton h-8 w-24 rounded-full" />
-        <div className="skeleton h-8 w-20 rounded-full" />
-      </div>
-      {/* Player card */}
-      <div className="border border-white/[0.07] rounded-2xl p-6 bg-white/[0.02] mb-4 space-y-4">
-        <div className="skeleton h-6 w-40 rounded" />
+
+      {/* Team mode selector — 3 cards */}
+      <div className="space-y-1.5 mb-5">
+        <div className="skeleton h-3 w-20 rounded-full mb-3" />
         <div className="grid grid-cols-3 gap-3">
-          <div className="skeleton h-16 rounded-xl" />
-          <div className="skeleton h-16 rounded-xl" />
-          <div className="skeleton h-16 rounded-xl" />
+          <div className="skeleton h-20 rounded-2xl" />
+          <div className="skeleton h-20 rounded-2xl" />
+          <div className="skeleton h-20 rounded-2xl" />
         </div>
       </div>
-      {/* Draft slots */}
-      <div className="space-y-2">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 px-4 py-3 border border-white/[0.06] rounded-xl bg-white/[0.02]">
-            <div className="skeleton h-5 w-5 rounded" />
-            <div className="skeleton h-4 flex-1 rounded" />
-            <div className="skeleton h-4 w-16 rounded" />
-          </div>
-        ))}
+
+      {/* Difficulty selector — 3 pill tabs */}
+      <div className="space-y-1.5 mb-6">
+        <div className="skeleton h-3 w-16 rounded-full mb-3" />
+        <div className="flex gap-2">
+          <div className="skeleton h-9 w-24 rounded-full" />
+          <div className="skeleton h-9 w-24 rounded-full" />
+          <div className="skeleton h-9 w-24 rounded-full" />
+        </div>
       </div>
+
+      {/* Stat mode row */}
+      <div className="flex gap-2 mb-8">
+        <div className="skeleton h-8 w-28 rounded-full" />
+        <div className="skeleton h-8 w-28 rounded-full" />
+        <div className="skeleton h-8 w-28 rounded-full" />
+        <div className="skeleton h-8 w-28 rounded-full" />
+      </div>
+
+      {/* Start button */}
+      <div className="skeleton h-12 w-full rounded-xl" />
     </div>
   )
 }
