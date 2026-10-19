@@ -464,6 +464,15 @@ function GameContent() {
     }
   }, [searchQuery])
 
+  // Keyboard shortcut: Escape cancels the current player selection during drafting
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setSelectedPlayerId(null)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [])
+
   // Load user's unlocked emotes
   useEffect(() => {
     const controller = new AbortController()

@@ -12,16 +12,16 @@ const SECTIONS = [
     title: 'Information We Collect',
     content: (
       <>
-        <p className="text-white/50 text-sm leading-relaxed mb-3">When you create an account, we collect:</p>
+        <p className="text-white/60 text-sm leading-relaxed mb-3">When you create an account, we collect:</p>
         <ul className="space-y-2">
           {['Username', 'Email address', 'Hashed password (we never store your plain-text password)', 'Game statistics (wins, losses, draws)'].map(item => (
-            <li key={item} className="flex items-start gap-2 text-white/40 text-sm">
+            <li key={item} className="flex items-start gap-2 text-white/55 text-sm">
               <span className="text-orange-500/60 mt-0.5 shrink-0">—</span>
               {item}
             </li>
           ))}
         </ul>
-        <p className="text-white/50 text-sm leading-relaxed mt-3">We do not collect payment information, phone numbers, or location data.</p>
+        <p className="text-white/60 text-sm leading-relaxed mt-3">We do not collect payment information, phone numbers, or location data.</p>
       </>
     ),
   },
@@ -30,7 +30,7 @@ const SECTIONS = [
     title: 'How We Use Your Information',
     content: (
       <>
-        <p className="text-white/50 text-sm leading-relaxed mb-3">We use your information to:</p>
+        <p className="text-white/60 text-sm leading-relaxed mb-3">We use your information to:</p>
         <ul className="space-y-2">
           {[
             'Create and manage your account',
@@ -38,13 +38,13 @@ const SECTIONS = [
             'Track your game record and unlocked achievements',
             'Display your username and record to other players in online lobbies',
           ].map(item => (
-            <li key={item} className="flex items-start gap-2 text-white/40 text-sm">
+            <li key={item} className="flex items-start gap-2 text-white/55 text-sm">
               <span className="text-orange-500/60 mt-0.5 shrink-0">—</span>
               {item}
             </li>
           ))}
         </ul>
-        <p className="text-white/50 text-sm leading-relaxed mt-3">We do not sell, rent, or share your personal information with third parties for marketing purposes.</p>
+        <p className="text-white/60 text-sm leading-relaxed mt-3">We do not sell, rent, or share your personal information with third parties for marketing purposes.</p>
       </>
     ),
   },
@@ -52,21 +52,21 @@ const SECTIONS = [
     num: '03',
     title: 'Email Communications',
     content: (
-      <p className="text-white/50 text-sm leading-relaxed">We only send transactional emails — account verification and password resets. We do not send marketing or promotional emails.</p>
+      <p className="text-white/60 text-sm leading-relaxed">We only send transactional emails — account verification and password resets. We do not send marketing or promotional emails.</p>
     ),
   },
   {
     num: '04',
     title: 'Data Storage',
     content: (
-      <p className="text-white/50 text-sm leading-relaxed">Your data is stored in a secure PostgreSQL database hosted on Railway. Passwords are hashed using bcrypt and are never stored in plain text. Authentication tokens are stored as HTTP-only cookies.</p>
+      <p className="text-white/60 text-sm leading-relaxed">Your data is stored in a secure PostgreSQL database hosted on Railway. Passwords are hashed using bcrypt and are never stored in plain text. Authentication tokens are stored as HTTP-only cookies.</p>
     ),
   },
   {
     num: '05',
     title: 'Cookies',
     content: (
-      <p className="text-white/50 text-sm leading-relaxed">We use a single authentication cookie (&quot;ebk-token&quot;) to keep you logged in. This cookie is HTTP-only, meaning it cannot be accessed by JavaScript. No tracking or advertising cookies are used.</p>
+      <p className="text-white/60 text-sm leading-relaxed">We use a single authentication cookie (&quot;ebk-token&quot;) to keep you logged in. This cookie is HTTP-only, meaning it cannot be accessed by JavaScript. No tracking or advertising cookies are used.</p>
     ),
   },
   {
@@ -74,7 +74,7 @@ const SECTIONS = [
     title: 'Third-Party Services',
     content: (
       <>
-        <p className="text-white/50 text-sm leading-relaxed mb-3">We use the following third-party services:</p>
+        <p className="text-white/60 text-sm leading-relaxed mb-3">We use the following third-party services:</p>
         <ul className="space-y-2">
           {[
             { name: 'Railway', desc: 'hosting and database' },
@@ -95,20 +95,20 @@ const SECTIONS = [
     title: 'Your Rights (PIPEDA)',
     content: (
       <>
-        <p className="text-white/50 text-sm leading-relaxed mb-3">Under Canada&apos;s Personal Information Protection and Electronic Documents Act (PIPEDA), you have the right to:</p>
+        <p className="text-white/60 text-sm leading-relaxed mb-3">Under Canada&apos;s Personal Information Protection and Electronic Documents Act (PIPEDA), you have the right to:</p>
         <ul className="space-y-2">
           {[
             'Access the personal information we hold about you',
             'Request correction of inaccurate information',
             'Request deletion of your account and associated data',
           ].map(item => (
-            <li key={item} className="flex items-start gap-2 text-white/40 text-sm">
+            <li key={item} className="flex items-start gap-2 text-white/55 text-sm">
               <span className="text-orange-500/60 mt-0.5 shrink-0">—</span>
               {item}
             </li>
           ))}
         </ul>
-        <p className="text-white/50 text-sm leading-relaxed mt-3">
+        <p className="text-white/60 text-sm leading-relaxed mt-3">
           To exercise these rights, contact us at{' '}
           <a href="mailto:noreply@eliteballknowledge.ca" className="text-orange-400 hover:text-orange-300 transition-colors">
             noreply@eliteballknowledge.ca
@@ -121,21 +121,21 @@ const SECTIONS = [
     num: '08',
     title: 'Data Retention',
     content: (
-      <p className="text-white/50 text-sm leading-relaxed">We retain your account data for as long as your account is active. If you request account deletion, we will remove your personal information within 30 days.</p>
+      <p className="text-white/60 text-sm leading-relaxed">We retain your account data for as long as your account is active. If you request account deletion, we will remove your personal information within 30 days.</p>
     ),
   },
   {
     num: '09',
     title: "Children's Privacy",
     content: (
-      <p className="text-white/50 text-sm leading-relaxed">EBK is not directed at children under 13. We do not knowingly collect information from children under 13. If you believe a child has created an account, contact us and we will delete it.</p>
+      <p className="text-white/60 text-sm leading-relaxed">EBK is not directed at children under 13. We do not knowingly collect information from children under 13. If you believe a child has created an account, contact us and we will delete it.</p>
     ),
   },
   {
     num: '10',
     title: 'Changes to This Policy',
     content: (
-      <p className="text-white/50 text-sm leading-relaxed">We may update this policy from time to time. We will notify users of significant changes by posting a notice on the site.</p>
+      <p className="text-white/60 text-sm leading-relaxed">We may update this policy from time to time. We will notify users of significant changes by posting a notice on the site.</p>
     ),
   },
 ]
@@ -143,7 +143,7 @@ const SECTIONS = [
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen px-4 py-12 animate-fade-in">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-prose mx-auto">
 
         {/* Back nav */}
         <div className="mb-10">
@@ -194,8 +194,8 @@ export default function PrivacyPage() {
             <div key={num} className="card-surface rounded-2xl overflow-hidden">
               {/* Section header */}
               <div className="flex items-center gap-4 px-5 py-4 border-b border-white/[0.05]">
-                <span className="font-display text-2xl text-orange-500/40 leading-none tabular-nums">{num}</span>
-                <h2 className="text-white font-black text-sm tracking-wide">{title}</h2>
+                <span className="font-display text-2xl text-orange-500/40 leading-none tabular-nums shrink-0">{num}</span>
+                <h2 className="text-white font-black text-base tracking-wide leading-snug">{title}</h2>
               </div>
               {/* Section body */}
               <div className="px-5 py-4">

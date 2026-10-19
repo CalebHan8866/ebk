@@ -11,14 +11,14 @@ const SECTIONS = [
     num: '01',
     title: 'Acceptance of Terms',
     content: (
-      <p className="text-white/50 text-sm leading-relaxed">By accessing or using Elite Ball Knowledge (&quot;EBK&quot;, &quot;the Service&quot;) at eliteballknowledge.ca, you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.</p>
+      <p className="text-white/60 text-sm leading-relaxed">By accessing or using Elite Ball Knowledge (&quot;EBK&quot;, &quot;the Service&quot;) at eliteballknowledge.ca, you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.</p>
     ),
   },
   {
     num: '02',
     title: 'Description of Service',
     content: (
-      <p className="text-white/50 text-sm leading-relaxed">EBK is an online NBA-themed draft game where players compete head-to-head by selecting NBA players based on career statistics. The Service is intended for entertainment purposes only.</p>
+      <p className="text-white/60 text-sm leading-relaxed">EBK is an online NBA-themed draft game where players compete head-to-head by selecting NBA players based on career statistics. The Service is intended for entertainment purposes only.</p>
     ),
   },
   {
@@ -26,7 +26,7 @@ const SECTIONS = [
     title: 'Accounts',
     content: (
       <>
-        <p className="text-white/50 text-sm leading-relaxed mb-3">You must create an account to access online features. You are responsible for:</p>
+        <p className="text-white/60 text-sm leading-relaxed mb-3">You must create an account to access online features. You are responsible for:</p>
         <ul className="space-y-2">
           {[
             'Maintaining the confidentiality of your password',
@@ -34,7 +34,7 @@ const SECTIONS = [
             'Providing accurate registration information',
             'Being at least 13 years of age',
           ].map(item => (
-            <li key={item} className="flex items-start gap-2 text-white/40 text-sm">
+            <li key={item} className="flex items-start gap-2 text-white/55 text-sm">
               <span className="text-orange-500/60 mt-0.5 shrink-0">—</span>
               {item}
             </li>
@@ -48,7 +48,7 @@ const SECTIONS = [
     title: 'Acceptable Use',
     content: (
       <>
-        <p className="text-white/50 text-sm leading-relaxed mb-3">You agree not to:</p>
+        <p className="text-white/60 text-sm leading-relaxed mb-3">You agree not to:</p>
         <ul className="space-y-2">
           {[
             'Use the Service for any unlawful purpose',
@@ -58,7 +58,7 @@ const SECTIONS = [
             'Use automated scripts or bots',
             'Attempt to access systems or data you are not authorized to access',
           ].map(item => (
-            <li key={item} className="flex items-start gap-2 text-white/40 text-sm">
+            <li key={item} className="flex items-start gap-2 text-white/55 text-sm">
               <span className="text-orange-500/60 mt-0.5 shrink-0">—</span>
               {item}
             </li>
@@ -72,7 +72,7 @@ const SECTIONS = [
     title: 'Intellectual Property',
     content: (
       <>
-        <p className="text-white/50 text-sm leading-relaxed mb-3">All content, design, code, and branding of EBK — including the name &quot;Elite Ball Knowledge&quot; and the EBK mark — are owned by or licensed to the operator. You may not copy, reproduce, or distribute any part of the Service without written permission.</p>
+        <p className="text-white/60 text-sm leading-relaxed mb-3">All content, design, code, and branding of EBK — including the name &quot;Elite Ball Knowledge&quot; and the EBK mark — are owned by or licensed to the operator. You may not copy, reproduce, or distribute any part of the Service without written permission.</p>
         <p className="text-white/35 text-xs leading-relaxed bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3">NBA team names, player names, and statistics are property of the NBA and respective rights holders. EBK is an independent fan project and is not affiliated with, endorsed by, or sponsored by the NBA.</p>
       </>
     ),
@@ -81,35 +81,35 @@ const SECTIONS = [
     num: '06',
     title: 'Disclaimer of Warranties',
     content: (
-      <p className="text-white/50 text-sm leading-relaxed">The Service is provided &quot;as is&quot; without warranties of any kind. We do not guarantee uninterrupted, error-free service. Player statistics are sourced from public records and may contain errors.</p>
+      <p className="text-white/60 text-sm leading-relaxed">The Service is provided &quot;as is&quot; without warranties of any kind. We do not guarantee uninterrupted, error-free service. Player statistics are sourced from public records and may contain errors.</p>
     ),
   },
   {
     num: '07',
     title: 'Limitation of Liability',
     content: (
-      <p className="text-white/50 text-sm leading-relaxed">To the maximum extent permitted by law, EBK and its operators shall not be liable for any indirect, incidental, or consequential damages arising from your use of the Service.</p>
+      <p className="text-white/60 text-sm leading-relaxed">To the maximum extent permitted by law, EBK and its operators shall not be liable for any indirect, incidental, or consequential damages arising from your use of the Service.</p>
     ),
   },
   {
     num: '08',
     title: 'Termination',
     content: (
-      <p className="text-white/50 text-sm leading-relaxed">We reserve the right to suspend or terminate accounts that violate these terms, at our discretion, without prior notice.</p>
+      <p className="text-white/60 text-sm leading-relaxed">We reserve the right to suspend or terminate accounts that violate these terms, at our discretion, without prior notice.</p>
     ),
   },
   {
     num: '09',
     title: 'Changes to Terms',
     content: (
-      <p className="text-white/50 text-sm leading-relaxed">We may update these terms at any time. Continued use of the Service after changes constitutes acceptance of the new terms.</p>
+      <p className="text-white/60 text-sm leading-relaxed">We may update these terms at any time. Continued use of the Service after changes constitutes acceptance of the new terms.</p>
     ),
   },
   {
     num: '10',
     title: 'Governing Law',
     content: (
-      <p className="text-white/50 text-sm leading-relaxed">These terms are governed by the laws of Canada and the province of Ontario, without regard to conflict of law principles.</p>
+      <p className="text-white/60 text-sm leading-relaxed">These terms are governed by the laws of Canada and the province of Ontario, without regard to conflict of law principles.</p>
     ),
   },
 ]
@@ -117,7 +117,7 @@ const SECTIONS = [
 export default function TermsPage() {
   return (
     <div className="min-h-screen px-4 py-12 animate-fade-in">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-prose mx-auto">
 
         {/* Back nav */}
         <div className="mb-10">
@@ -168,8 +168,8 @@ export default function TermsPage() {
             <div key={num} className="card-surface rounded-2xl overflow-hidden">
               {/* Section header */}
               <div className="flex items-center gap-4 px-5 py-4 border-b border-white/[0.05]">
-                <span className="font-display text-2xl text-orange-500/40 leading-none tabular-nums">{num}</span>
-                <h2 className="text-white font-black text-sm tracking-wide">{title}</h2>
+                <span className="font-display text-2xl text-orange-500/40 leading-none tabular-nums shrink-0">{num}</span>
+                <h2 className="text-white font-black text-base tracking-wide leading-snug">{title}</h2>
               </div>
               {/* Section body */}
               <div className="px-5 py-4">

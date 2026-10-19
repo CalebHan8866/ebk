@@ -73,6 +73,24 @@ export default function HigherLowerPage() {
     }
   }, [])
 
+  // Keyboard shortcuts: ArrowUp / H = Higher, ArrowDown / L = Lower
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      // Ignore if focus is on an input to avoid swallowing form input
+      if (document.activeElement?.tagName === 'INPUT') return
+      if (e.key === 'ArrowUp' || e.key === 'h' || e.key === 'H') {
+        e.preventDefault()
+        guess('higher')
+      } else if (e.key === 'ArrowDown' || e.key === 'l' || e.key === 'L') {
+        e.preventDefault()
+        guess('lower')
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, sequence, idx, streak])
+
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? parseInt(localStorage.getItem('hl_best') || '0') : 0
     setBestStreak(saved)
@@ -616,10 +634,12 @@ export default function HigherLowerPage() {
 
         {/* ── Action buttons ────────────────────────────────────────────── */}
         {!isRevealing && (
+          <>
           <div className="grid grid-cols-2 gap-3 animate-fade-up-3">
             {/* LOWER */}
             <button
               onClick={() => guess('lower')}
+              aria-label="Guess lower EBK score (keyboard: L or Arrow Down)"
               className="btn-hl-lower py-5 sm:py-6 text-center w-full"
             >
               <div className="hl-arrow font-display text-3xl sm:text-4xl text-blue-400 leading-none mb-1.5">▼</div>
@@ -630,6 +650,7 @@ export default function HigherLowerPage() {
             {/* HIGHER */}
             <button
               onClick={() => guess('higher')}
+              aria-label="Guess higher EBK score (keyboard: H or Arrow Up)"
               className="btn-hl-higher py-5 sm:py-6 text-center w-full"
             >
               <div className="hl-arrow font-display text-3xl sm:text-4xl text-orange-400 leading-none mb-1.5">▲</div>
@@ -637,6 +658,10 @@ export default function HigherLowerPage() {
               <div className="text-[10px] text-orange-400/50 mt-0.5 font-semibold">unknown gem</div>
             </button>
           </div>
+          <p className="text-center text-[10px] text-gray-700 mt-2 tracking-wide hidden sm:block">
+            Keyboard: <kbd className="bg-white/[0.06] border border-white/[0.10] rounded px-1.5 py-0.5 text-[10px] font-mono text-gray-500">H</kbd> or <kbd className="bg-white/[0.06] border border-white/[0.10] rounded px-1.5 py-0.5 text-[10px] font-mono text-gray-500">↑</kbd> Higher &nbsp;·&nbsp; <kbd className="bg-white/[0.06] border border-white/[0.10] rounded px-1.5 py-0.5 text-[10px] font-mono text-gray-500">L</kbd> or <kbd className="bg-white/[0.06] border border-white/[0.10] rounded px-1.5 py-0.5 text-[10px] font-mono text-gray-500">↓</kbd> Lower
+          </p>
+          </>
         )}
 
         {/* ── Reveal verdict ────────────────────────────────────────────── */}

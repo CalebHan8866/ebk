@@ -128,6 +128,16 @@ function PracticeContent() {
     }
   }, [])
 
+  // Keyboard shortcuts: Escape cancels selection while in draft
+  useEffect(() => {
+    if (screen !== 'draft') return
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setSelectedPlayerId(null)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [screen])
+
   const teamSize = TEAM_SIZES[teamMode]
   const requiredSlots = getRequiredPositions(teamMode)
   const filledCount = picks.filter(id => id !== null).length
@@ -287,7 +297,18 @@ function PracticeContent() {
               <span className="w-1.5 h-1.5 rounded-full bg-orange-400/60" />
             </div>
             <h1 className="font-display text-6xl text-white leading-none tracking-wide">PRACTICE</h1>
-            <p className="text-gray-400 text-sm mt-2">Draft solo — no pressure, no timer</p>
+            <p className="text-gray-400 text-sm mt-2">Draft solo — no opponent, no timer, just reps</p>
+          </div>
+
+          {/* What is practice mode */}
+          <div className="flex items-start gap-3 bg-white/[0.03] border border-white/[0.06] rounded-2xl px-4 py-3 mb-5 text-left">
+            <svg className="w-4 h-4 text-orange-400/70 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-white/40 text-xs leading-relaxed">
+              Practice mode spins a real team each pick — just like a live game — but you play alone at your own pace.
+              Use it to learn EBK scoring, sharpen your instincts, and see how your draft grades out.
+            </p>
           </div>
 
           <div className="card-surface rounded-2xl p-6 space-y-5">
@@ -331,7 +352,7 @@ function PracticeContent() {
               onClick={() => { setPicks(Array(TEAM_SIZES[teamMode]).fill(null)); setSpunTeamsHistory([]); setScreen('draft') }}
               className="btn-primary w-full py-4 text-base tracking-wider gap-2">
               <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              Start Draft
+              Start Practice Draft
             </button>
           </div>
         </div>

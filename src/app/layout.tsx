@@ -31,8 +31,13 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL ?? 'https://ebkgame.com'),
-  title: 'EBK - Elite Ball Knowledge',
+  title: {
+    default: 'EBK - Elite Ball Knowledge',
+    template: '%s | EBK',
+  },
   description: 'Live head-to-head NBA draft game. Draft the worst career stats to win.',
+  keywords: ['NBA', 'draft game', 'basketball', 'EBK', 'Elite Ball Knowledge', 'head-to-head'],
+  authors: [{ name: 'EBK' }],
   icons: {
     icon: '/ebk-favicon.svg',
     apple: '/ebk-logo.svg',
@@ -40,8 +45,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'EBK - Elite Ball Knowledge',
     description: 'Live head-to-head NBA draft game. Draft the worst career stats to win.',
-    images: [{ url: '/ebk-logo.svg', width: 400, height: 400 }],
+    // Note: /ebk-og.png (1200×630 PNG) would improve social preview rendering.
+    // SVG is used as a fallback until a raster image is available.
+    images: [{ url: '/ebk-logo.svg', width: 400, height: 400, alt: 'EBK - Elite Ball Knowledge' }],
     type: 'website',
+    siteName: 'EBK - Elite Ball Knowledge',
+    locale: 'en_CA',
   },
   twitter: {
     card: 'summary_large_image',
