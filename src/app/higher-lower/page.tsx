@@ -360,9 +360,12 @@ export default function HigherLowerPage() {
 
       {/* Badge toast */}
       {unlockedBadge && (
-        <div className="fixed top-4 right-4 z-50 bg-yellow-900/95 border border-yellow-500 rounded-2xl px-5 py-4 shadow-2xl max-w-[220px] animate-slide-up">
-          <div className="text-yellow-500 text-[10px] font-black uppercase tracking-widest mb-1">Badge Unlocked!</div>
-          <div className="text-white font-black text-base leading-tight">{unlockedBadge.name}</div>
+        <div className="toast toast-badge">
+          <span className="text-xl leading-none shrink-0">🏅</span>
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-widest mb-0.5 text-yellow-400/70">Badge Unlocked</div>
+            <div className="font-black text-sm leading-tight">{unlockedBadge.name}</div>
+          </div>
         </div>
       )}
 

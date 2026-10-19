@@ -669,66 +669,124 @@ export default function LobbyPage() {
               onClick={() => { setMainTab('online'); setError('') }}
               className="animate-fade-up-1 group w-full card-surface border border-white/[0.06] hover:border-orange-700/50 hover:bg-orange-950/10 rounded-2xl p-7 text-left transition-all hover:scale-[1.01] active:scale-[0.99]"
             >
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-label">Live</span>
-                <div className="live-banner py-0.5 px-2" style={{ fontSize: 9 }}>
-                  <span className="live-dot" style={{ width: 5, height: 5 }} />
-                  ONLINE
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-label">Live</span>
+                  <div className="live-banner py-0.5 px-2" style={{ fontSize: 9 }}>
+                    <span className="live-dot" style={{ width: 5, height: 5 }} />
+                    ONLINE
+                  </div>
+                </div>
+                <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg bg-white/[0.04] border border-white/[0.07] text-white/30">
+                  ~5 min
+                </span>
+              </div>
+              <div className="flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-display text-4xl sm:text-5xl text-white leading-none mb-1.5 group-hover:text-orange-400 transition-colors">Online Play</div>
+                  <div className="text-white/40 text-xs font-bold leading-relaxed">Get matched with a random opponent and draft the lowest-EBK team to win.</div>
+                </div>
+                <div className="shrink-0 w-12 h-12 rounded-2xl bg-orange-600/10 border border-orange-500/20 flex items-center justify-center text-orange-400 text-2xl">
+                  ⚡
                 </div>
               </div>
-              <div className="font-display text-4xl sm:text-5xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">Online Play</div>
-              <div className="text-gray-500 text-xs font-black uppercase tracking-wide">Random opponent. Real-time. Win.</div>
             </button>
 
             {/* Row: War Room + Play Friends */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Link href="/auction"
                 className="animate-fade-up-2 group card-surface border border-orange-900/30 hover:border-orange-500/40 hover:bg-orange-950/10 rounded-2xl p-6 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-label">Multiplayer</span>
-                  <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full bg-orange-600 text-white tracking-widest">NEW</span>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-label">Multiplayer</span>
+                    <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full bg-orange-600 text-white tracking-widest">NEW</span>
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg bg-white/[0.04] border border-white/[0.07] text-white/30">
+                    2–6 players
+                  </span>
                 </div>
-                <div className="font-display text-3xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">War Room</div>
-                <div className="text-gray-500 text-xs font-black uppercase tracking-wide">Bid. Steal. Outmaneuver.</div>
+                <div className="flex items-end justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-display text-3xl text-white leading-none mb-1 group-hover:text-orange-400 transition-colors">War Room</div>
+                    <div className="text-white/35 text-[11px] font-bold leading-relaxed">Live salary-cap auction. Bid against friends in real time.</div>
+                  </div>
+                  <div className="shrink-0 w-10 h-10 rounded-xl bg-orange-600/10 border border-orange-500/20 flex items-center justify-center text-orange-400 text-xl">
+                    🏦
+                  </div>
+                </div>
               </Link>
 
               <button
                 onClick={() => { setMainTab('friends'); setError('') }}
                 className="animate-fade-up-3 group card-surface border border-white/[0.06] hover:border-orange-700/50 hover:bg-orange-950/10 rounded-2xl p-6 text-left transition-all hover:scale-[1.01] active:scale-[0.99] w-full"
               >
-                <div className="mb-3">
+                <div className="flex items-center justify-between mb-3">
                   <span className="text-label">Private</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg bg-white/[0.04] border border-white/[0.07] text-white/30">
+                    1v1
+                  </span>
                 </div>
-                <div className="font-display text-3xl text-white leading-none mb-2 group-hover:text-orange-400 transition-colors">Play Friends</div>
-                <div className="text-gray-500 text-xs font-black uppercase tracking-wide">Private room. Share the code.</div>
+                <div className="flex items-end justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-display text-3xl text-white leading-none mb-1 group-hover:text-orange-400 transition-colors">Play Friends</div>
+                    <div className="text-white/35 text-[11px] font-bold leading-relaxed">Private snake draft. Share a code and go head-to-head.</div>
+                  </div>
+                  <div className="shrink-0 w-10 h-10 rounded-xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center text-white/40 text-xl group-hover:border-orange-500/20 group-hover:text-orange-400 transition-all">
+                    🔗
+                  </div>
+                </div>
               </button>
             </div>
 
             {/* Row: Solo modes + Explore (2×2) */}
             <div className="grid grid-cols-2 gap-3">
               <Link href="/higher-lower"
-                className="animate-fade-up-4 group card-surface border border-white/[0.04] hover:border-white/[0.12] rounded-2xl px-4 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block min-w-0">
-                <div className="text-label mb-2">Solo</div>
+                className="animate-fade-up-4 group card-surface border border-white/[0.04] hover:border-white/[0.14] rounded-2xl px-4 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block min-w-0">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-label">Solo</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Quick</span>
+                </div>
+                <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center mb-2 text-sm group-hover:border-orange-500/20 group-hover:text-orange-400 transition-all">
+                  📊
+                </div>
                 <div className="font-display text-xl leading-none mb-1 group-hover:text-orange-400 transition-colors text-white truncate">Higher / Lower</div>
-                <div className="text-gray-600 text-[10px] font-black uppercase tracking-wide">Guess. Streak. Win.</div>
+                <div className="text-white/35 text-[10px] font-bold leading-relaxed mt-0.5">Guess the higher or lower stat. Build a streak.</div>
               </Link>
               <Link href="/practice"
-                className="animate-fade-up-5 group card-surface border border-white/[0.04] hover:border-white/[0.12] rounded-2xl px-4 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block min-w-0">
-                <div className="text-label mb-2">Solo</div>
+                className="animate-fade-up-5 group card-surface border border-white/[0.04] hover:border-white/[0.14] rounded-2xl px-4 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block min-w-0">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-label">Solo</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-white/20">No timer</span>
+                </div>
+                <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center mb-2 text-sm group-hover:border-orange-500/20 group-hover:text-orange-400 transition-all">
+                  🏋️
+                </div>
                 <div className="font-display text-xl leading-none mb-1 group-hover:text-orange-400 transition-colors text-white truncate">Practice</div>
-                <div className="text-gray-600 text-[10px] font-black uppercase tracking-wide">Draft. No timer. Learn.</div>
+                <div className="text-white/35 text-[10px] font-bold leading-relaxed mt-0.5">Draft freely, no pressure. Learn which players are gems.</div>
               </Link>
               <Link href="/fun-facts"
-                className="animate-fade-up-5 group card-surface border border-white/[0.04] hover:border-white/[0.12] rounded-2xl px-4 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block min-w-0">
-                <div className="text-label mb-2">Explore</div>
+                className="animate-fade-up-5 group card-surface border border-white/[0.04] hover:border-white/[0.14] rounded-2xl px-4 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block min-w-0">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-label">Explore</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Trivia</span>
+                </div>
+                <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center mb-2 text-sm group-hover:border-orange-500/20 group-hover:text-orange-400 transition-all">
+                  💸
+                </div>
                 <div className="font-display text-xl leading-none mb-1 group-hover:text-orange-400 transition-colors text-white truncate">Fun Facts</div>
-                <div className="text-gray-600 text-[10px] font-black uppercase tracking-wide">NBA earnings in perspective.</div>
+                <div className="text-white/35 text-[10px] font-bold leading-relaxed mt-0.5">NBA earnings put in wild real-world perspective.</div>
               </Link>
               <Link href="/salary"
-                className="animate-fade-up-5 group card-surface border border-white/[0.04] hover:border-white/[0.12] rounded-2xl px-4 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block min-w-0">
-                <div className="text-label mb-2">Explore</div>
+                className="animate-fade-up-5 group card-surface border border-white/[0.04] hover:border-white/[0.14] rounded-2xl px-4 py-4 text-left transition-all hover:scale-[1.01] active:scale-[0.99] block min-w-0">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-label">Explore</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-white/20">Data</span>
+                </div>
+                <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center mb-2 text-sm group-hover:border-orange-500/20 group-hover:text-orange-400 transition-all">
+                  🏆
+                </div>
                 <div className="font-display text-xl leading-none mb-1 group-hover:text-orange-400 transition-colors text-white truncate">Salary Rankings</div>
-                <div className="text-gray-600 text-[10px] font-black uppercase tracking-wide">Who got paid most.</div>
+                <div className="text-white/35 text-[10px] font-bold leading-relaxed mt-0.5">All-time highest paid NBA players ranked.</div>
               </Link>
             </div>
 

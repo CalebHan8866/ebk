@@ -538,8 +538,55 @@ export default function FunFactsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+      <div className="min-h-screen py-8 sm:py-10 px-3 sm:px-4">
+        <div className="max-w-md mx-auto">
+          {/* Header skeleton */}
+          <div className="flex items-end justify-between mb-8">
+            <div className="space-y-2">
+              <div className="skeleton h-3 w-28 rounded-full" />
+              <div className="skeleton h-12 w-40 rounded-xl" />
+              <div className="skeleton h-3 w-36 rounded-full" />
+            </div>
+            <div className="skeleton h-6 w-14 rounded-full" />
+          </div>
+          {/* Search skeleton */}
+          <div className="skeleton h-11 w-full rounded-xl mb-6" />
+          {/* Nav bar skeleton */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="skeleton w-10 h-10 rounded-xl shrink-0" />
+            <div className="skeleton flex-1 h-12 rounded-xl" />
+            <div className="skeleton w-10 h-10 rounded-xl shrink-0" />
+          </div>
+          {/* Flip card skeleton — matches the real card height */}
+          <div className="card-accent rounded-2xl overflow-hidden" style={{ height: 'clamp(460px, 70vh, 520px)' }}>
+            <div className="p-7 flex flex-col h-full">
+              {/* Position + name */}
+              <div className="flex items-start justify-between mb-6">
+                <div className="space-y-2">
+                  <div className="skeleton h-5 w-12 rounded-full" />
+                  <div className="skeleton h-9 w-48 rounded-lg" />
+                  <div className="skeleton h-3 w-28 rounded-full" />
+                </div>
+                <div className="skeleton h-6 w-16 rounded-full" />
+              </div>
+              {/* Stats row */}
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="skeleton h-16 rounded-xl" />
+                ))}
+              </div>
+              {/* Earnings block */}
+              <div className="skeleton flex-1 rounded-2xl" />
+              {/* Flip hint */}
+              <div className="skeleton h-5 w-24 rounded-full mx-auto mt-5" />
+            </div>
+          </div>
+          {/* Bottom nav skeleton */}
+          <div className="flex gap-3 mt-4">
+            <div className="skeleton flex-1 h-11 rounded-xl" />
+            <div className="skeleton flex-1 h-11 rounded-xl" />
+          </div>
+        </div>
       </div>
     )
   }
@@ -548,8 +595,14 @@ export default function FunFactsPage() {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
-          <p className="text-gray-400 mb-4">Couldn&apos;t load player data. Check your connection and try again.</p>
-          <button onClick={() => window.location.reload()} className="btn-primary">Retry</button>
+          <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/25 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-7 h-7 text-red-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+          </div>
+          <p className="text-white font-black text-sm mb-1">Couldn&apos;t load player data</p>
+          <p className="text-gray-400 text-xs mb-5">Check your connection and try again.</p>
+          <button onClick={() => window.location.reload()} className="btn-primary text-sm py-3 px-6">Retry</button>
         </div>
       </div>
     )
@@ -622,15 +675,22 @@ export default function FunFactsPage() {
         {filtered.length === 0 ? (
           <div className="card-accent animate-fade-up-2">
             <div className="empty-state py-14">
-              <div className="empty-state-icon">🏀</div>
-              <p className="empty-state-title">No players found</p>
-              <p className="empty-state-body">&ldquo;{search}&rdquo; didn&apos;t match anyone</p>
-              <button
-                onClick={() => handleSearch('')}
-                className="btn-secondary mt-5 text-xs py-2 px-5"
-              >
-                Clear search
-              </button>
+              <div className="empty-state-icon">🔍</div>
+              <p className="empty-state-title">No player found</p>
+              <p className="empty-state-body">
+                &ldquo;{search}&rdquo; didn&apos;t match anyone — try a different name or team
+              </p>
+              <div className="flex flex-col items-center gap-2 mt-5">
+                <button
+                  onClick={() => handleSearch('')}
+                  className="btn-secondary text-xs py-2 px-5"
+                >
+                  Clear search
+                </button>
+                <p className="text-white/20 text-[10px] font-bold uppercase tracking-widest mt-1">
+                  Tip: try last name only
+                </p>
+              </div>
             </div>
           </div>
         ) : (
