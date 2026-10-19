@@ -501,6 +501,7 @@ export default function AuctionRoomPage() {
     const sortedByScore = [...results].sort((a, b) => a.ebkTotal - b.ebkTotal)
     const bestScore  = sortedByScore[0]?.ebkTotal ?? 0
     const worstScore = sortedByScore[sortedByScore.length - 1]?.ebkTotal ?? bestScore
+    const totalBudget = auctionState?.totalBudget ?? 100
 
     const getDraftGrade = (ebkTotal: number, rank: number): { grade: string; color: string; bg: string; label: string } => {
       const range = worstScore - bestScore
@@ -513,148 +514,205 @@ export default function AuctionRoomPage() {
       return                           { grade: 'D',  color: 'text-red-400',   bg: 'bg-red-500/10 border-red-500/20',    label: 'Overpaid' }
     }
 
-    // Lower EBK is better — best value is the player who scores least per dollar spent
+    // Lower EBK per dollar = better value
     const bestValuePlayer = (roster: RosterPlayer[]) =>
       roster.filter(p => p && p.paidPrice > 0).sort((a, b) => (a.ebkScore / a.paidPrice) - (b.ebkScore / b.paidPrice))[0]
 
+    // "Cheapest steal" — highest EBK for the lowest price paid
+    const bestStealPlayer = (roster: RosterPlayer[]) =>
+      roster.filter(p => p && p.paidPrice > 0).sort((a, b) => (b.ebkScore - b.paidPrice) - (a.ebkScore - a.paidPrice))[0]
+
     const isMe = (r: AuctionResult) => r.socketId === mySocketId
     const PODIUM_STYLES = [
-      { medal: '🥇', border: 'border-yellow-500/40', bg: 'bg-yellow-950/30', glow: 'shadow-[0_0_32px_rgba(234,179,8,0.12)]', rank: 'text-yellow-300', nameSize: 'text-xl sm:text-2xl' },
-      { medal: '🥈', border: 'border-white/[0.12]',   bg: 'bg-white/[0.03]', glow: '',                                         rank: 'text-white/60',  nameSize: 'text-lg sm:text-xl' },
-      { medal: '🥉', border: 'border-orange-800/30', bg: 'bg-orange-950/20', glow: '',                                         rank: 'text-orange-400', nameSize: 'text-base sm:text-lg' },
+      { medal: '🥇', border: 'border-yellow-500/40', bg: 'bg-yellow-950/20', glow: 'shadow-[0_0_40px_rgba(234,179,8,0.12)]', rank: 'text-yellow-300', nameSize: 'text-xl sm:text-2xl' },
+      { medal: '🥈', border: 'border-slate-500/30',  bg: 'bg-slate-900/20',  glow: '',                                         rank: 'text-slate-300', nameSize: 'text-lg sm:text-xl' },
+      { medal: '🥉', border: 'border-orange-800/35', bg: 'bg-orange-950/15', glow: '',                                         rank: 'text-orange-400', nameSize: 'text-base sm:text-lg' },
     ]
+
+    const winner = sortedByScore[0]
+    const iWon = winner && isMe(winner)
 
     return (
       <div className="min-h-screen px-4 py-8 sm:py-12 max-w-4xl mx-auto animate-fade-in">
 
-        {/* ── Header — ESPN-style recap banner ── */}
-        <div className="text-center mb-10">
-          <p className="text-[10px] font-black tracking-[0.5em] text-gray-400 uppercase mb-3">
+        {/* ── Header ── */}
+        <div className="text-center mb-8 animate-fade-up">
+          <p className="text-[10px] font-black tracking-[0.5em] text-gray-500 uppercase mb-3">
             War Room · {code} · Draft Recap
           </p>
           <h1 className="font-display text-5xl sm:text-6xl text-white tracking-wider leading-none mb-2">
             DRAFT <span className="text-orange-500">COMPLETE</span>
           </h1>
-          <p className="text-gray-400 text-sm">{results.length} GMs · {results[0]?.rosterCount} players each</p>
+          <p className="text-gray-500 text-sm">{results.length} GM{results.length !== 1 ? 's' : ''} · {results[0]?.rosterCount} players each · ${totalBudget}M budget</p>
         </div>
 
         {/* ── Winner spotlight ── */}
-        {sortedByScore[0] && (
+        {winner && (
           <div className="mb-8 animate-scale-in">
-            <div className="relative card-accent border border-yellow-500/30 p-6 sm:p-8 text-center overflow-hidden shadow-[0_0_60px_rgba(234,179,8,0.08)]">
+            <div className="relative card-accent border border-yellow-500/35 p-6 sm:p-8 text-center overflow-hidden shadow-[0_0_60px_rgba(234,179,8,0.1)]">
+              {/* Radial glow */}
               <div className="absolute inset-0 pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse 70% 90% at 50% 0%, rgba(234,179,8,0.07) 0%, transparent 70%)' }} />
+                style={{ background: 'radial-gradient(ellipse 80% 100% at 50% -10%, rgba(234,179,8,0.09) 0%, transparent 65%)' }} />
               <div className="relative">
-                <div className="text-4xl mb-2">🏆</div>
-                <p className="text-[10px] font-black tracking-[0.4em] text-yellow-600 uppercase mb-1">Best Draft</p>
-                <h2 className="font-display text-4xl sm:text-5xl text-yellow-300 tracking-wider leading-none mb-1">
-                  {sortedByScore[0].name}
-                  {isMe(sortedByScore[0]) && (
+                {iWon ? (
+                  <div className="font-display text-5xl sm:text-7xl text-yellow-400 leading-none mb-1 animate-win-pop" aria-hidden="true">🏆</div>
+                ) : (
+                  <div className="text-4xl mb-2" aria-hidden="true">🏆</div>
+                )}
+                <p className="text-[10px] font-black tracking-[0.45em] text-yellow-600/80 uppercase mb-1.5">
+                  {iWon ? 'You Won — Best Draft' : 'Best Draft'}
+                </p>
+                <h2 className="font-display text-4xl sm:text-5xl text-yellow-300 tracking-wider leading-none mb-3">
+                  {winner.name}
+                  {isMe(winner) && (
                     <span className="ml-3 text-sm text-orange-400 font-sans font-black align-middle">YOU</span>
                   )}
                 </h2>
-                <p className="text-gray-400 text-sm mt-1">
-                  EBK Total:{' '}
-                  <span className="text-yellow-400 font-black text-xl">{sortedByScore[0].ebkTotal.toFixed(1)}</span>
-                </p>
+                {/* Winner stats bar */}
+                <div className="inline-flex items-center gap-4 sm:gap-6 bg-black/30 rounded-2xl px-6 py-3 border border-yellow-700/20">
+                  <div className="text-center">
+                    <div className="font-display text-2xl text-yellow-400 leading-none tabular-nums">{winner.ebkTotal.toFixed(1)}</div>
+                    <div className="text-[9px] font-black text-white/30 uppercase tracking-widest mt-0.5">EBK Total</div>
+                  </div>
+                  <div className="w-px h-8 bg-white/[0.08]" />
+                  <div className="text-center">
+                    <div className="font-display text-2xl text-green-400 leading-none tabular-nums">${totalBudget - winner.budgetSpent}M</div>
+                    <div className="text-[9px] font-black text-white/30 uppercase tracking-widest mt-0.5">Budget Left</div>
+                  </div>
+                  <div className="w-px h-8 bg-white/[0.08]" />
+                  <div className="text-center">
+                    <div className="font-display text-2xl text-orange-400 leading-none tabular-nums">{winner.rosterCount}</div>
+                    <div className="text-[9px] font-black text-white/30 uppercase tracking-widest mt-0.5">Players</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {/* ── All GM draft cards ── */}
-        <div className="space-y-4 mb-10">
+        <div className="space-y-5 mb-10">
           {sortedByScore.map((r, i) => {
             const style = PODIUM_STYLES[i] || {
               medal: `#${i+1}`, border: 'border-white/[0.07]', bg: '', glow: '', rank: 'text-gray-400', nameSize: 'text-base',
             }
             const grade = getDraftGrade(r.ebkTotal, i)
-            const totalBudget = auctionState?.totalBudget ?? 100
             const budgetRemaining = totalBudget - r.budgetSpent
             const budgetPct = (r.budgetSpent / totalBudget) * 100
             const bestVal = bestValuePlayer(r.roster)
-            const meStyle = isMe(r) ? 'ring-2 ring-orange-500/50' : ''
+            const bestSteal = bestStealPlayer(r.roster)
+            const meStyle = isMe(r) ? 'ring-2 ring-orange-500/40' : ''
+            const avgEbkPerDollar = r.budgetSpent > 0 ? (r.ebkTotal / r.budgetSpent).toFixed(2) : '—'
 
             return (
               <div
                 key={r.socketId}
-                className={`card-surface border ${style.border} ${style.bg} ${style.glow} ${meStyle} rounded-2xl p-5 sm:p-6 animate-slide-up`}
-                style={{ animationDelay: `${i * 100}ms`, animationFillMode: 'both' }}
+                className={`card-surface border ${style.border} ${style.bg} ${style.glow} ${meStyle} rounded-2xl overflow-hidden animate-fade-up`}
+                style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}
               >
-                {/* GM header row */}
-                <div className="flex items-start gap-3 sm:gap-4 mb-5">
-                  <div className="text-3xl sm:text-4xl shrink-0 leading-none pt-0.5">{style.medal}</div>
+                {/* ── GM header ── */}
+                <div className="px-5 sm:px-6 pt-5 pb-4">
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="text-3xl sm:text-4xl shrink-0 leading-none pt-0.5" aria-hidden="true">{style.medal}</div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className={`font-display ${style.nameSize} ${style.rank} leading-none tracking-wide truncate`}>
-                        {r.name}
-                      </h3>
-                      {isMe(r) && (
-                        <span className="text-[9px] font-black text-orange-500 bg-orange-950 border border-orange-700/50 rounded px-1.5 py-[2px] uppercase tracking-wider shrink-0">
-                          YOU
-                        </span>
-                      )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className={`font-display ${style.nameSize} ${style.rank} leading-none tracking-wide truncate`}>
+                          {r.name}
+                        </h3>
+                        {isMe(r) && (
+                          <span className="text-[9px] font-black text-orange-500 bg-orange-950 border border-orange-700/50 rounded px-1.5 py-[2px] uppercase tracking-wider shrink-0">
+                            YOU
+                          </span>
+                        )}
+                      </div>
+                      {/* Budget bar */}
+                      <div className="mt-2.5 mb-1 budget-bar" style={{ height: '4px' }}>
+                        <div className="budget-bar-fill" style={{ width: `${Math.min(100, budgetPct)}%` }} />
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px] text-gray-500 flex-wrap">
+                        <span className="text-white/60 font-bold">${r.budgetSpent}M spent</span>
+                        <span className="text-gray-700">·</span>
+                        <span className={budgetRemaining <= 5 ? 'text-red-400 font-bold' : 'text-green-400/70'}>${budgetRemaining}M left</span>
+                        <span className="text-gray-700">·</span>
+                        <span>{r.rosterCount} players</span>
+                        <span className="text-gray-700">·</span>
+                        <span className="text-white/30" title="EBK points per million dollars spent">{avgEbkPerDollar} EBK/$M</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400 flex-wrap">
-                      <span>${r.budgetSpent}M spent</span>
-                      <span className="text-gray-700">·</span>
-                      <span className={budgetRemaining <= 5 ? 'text-red-400' : 'text-gray-400'}>${budgetRemaining}M left</span>
-                      <span className="text-gray-700">·</span>
-                      <span>{r.rosterCount} players</span>
-                    </div>
-                    <div className="mt-2 budget-bar" style={{ height: '3px' }}>
-                      <div className="budget-bar-fill" style={{ width: `${Math.min(100, budgetPct)}%` }} />
-                    </div>
-                  </div>
 
-                  {/* EBK score + draft grade */}
-                  <div className="text-right shrink-0">
-                    <div className="font-display text-3xl sm:text-4xl text-orange-400 leading-none tabular-nums">
-                      {r.ebkTotal.toFixed(1)}
-                    </div>
-                    <div className="text-white/30 text-[10px] uppercase tracking-widest mb-2">EBK Total</div>
-                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-black ${grade.bg} ${grade.color}`}>
-                      <span className="text-xl leading-none">{grade.grade}</span>
-                      <span className="hidden sm:inline text-[10px] font-bold opacity-80">{grade.label}</span>
+                    {/* EBK score + draft grade */}
+                    <div className="text-right shrink-0">
+                      <div className="font-display text-3xl sm:text-4xl text-orange-400 leading-none tabular-nums">
+                        {r.ebkTotal.toFixed(1)}
+                      </div>
+                      <div className="text-white/25 text-[10px] uppercase tracking-widest mb-2">EBK Total</div>
+                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-black ${grade.bg} ${grade.color}`}>
+                        <span className="text-base sm:text-xl leading-none">{grade.grade}</span>
+                        <span className="hidden sm:inline text-[10px] font-bold opacity-80">{grade.label}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Player chips */}
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {r.roster.filter(Boolean).map(p => (
-                    <div
-                      key={p.id}
-                      title={`${p.firstName} ${p.lastName}`}
-                      className="flex items-center gap-1.5 bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.06] rounded-lg px-2.5 py-1.5 transition-colors"
-                    >
-                      <PosBadge pos={p.position} />
-                      <span className="text-white text-xs font-bold">{p.firstName[0]}. {p.lastName}</span>
-                      <span className="text-orange-400 text-xs font-black tabular-nums">{p.ebkScore.toFixed(1)}</span>
-                      <span className="text-white/25 text-[10px] tabular-nums">${p.paidPrice}M</span>
-                    </div>
-                  ))}
+                {/* ── Roster — full player cards ── */}
+                <div className="px-4 sm:px-5 pb-1">
+                  <div className="text-[9px] font-black uppercase tracking-[0.2em] text-white/20 mb-2 px-1">Final Roster</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    {r.roster.filter(Boolean).sort((a, b) => a.ebkScore - b.ebkScore).map((p, pi) => {
+                      const isBestVal = bestVal && p.id === bestVal.id
+                      const isBestSteal = bestSteal && p.id === bestSteal.id && !isBestVal
+                      return (
+                        <div
+                          key={p.id}
+                          className={`flex items-center gap-2.5 rounded-xl px-3 py-2 transition-colors ${
+                            isBestVal
+                              ? 'bg-green-950/40 border border-green-700/30'
+                              : isBestSteal
+                              ? 'bg-blue-950/30 border border-blue-700/25'
+                              : 'bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.06]'
+                          }`}
+                          style={{ animationDelay: `${i * 80 + pi * 20}ms` }}
+                        >
+                          <PosBadge pos={p.position} />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-white text-xs font-bold truncate leading-none">
+                              {p.firstName[0]}. {p.lastName}
+                            </div>
+                            {(isBestVal || isBestSteal) && (
+                              <div className={`text-[9px] font-black mt-0.5 leading-none ${isBestVal ? 'text-green-400/80' : 'text-blue-400/80'}`}>
+                                {isBestVal ? '💎 Best Value' : '⚡ Best Steal'}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-orange-400 text-xs font-black tabular-nums leading-none">{p.ebkScore.toFixed(1)}</div>
+                            <div className="text-white/30 text-[10px] tabular-nums leading-none mt-0.5">${p.paidPrice}M</div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
 
-                {/* Best value callout */}
-                {bestVal && (
-                  <div className="flex items-center gap-2 pt-3 border-t border-white/[0.05] text-xs text-gray-400 flex-wrap">
-                    <span className="text-green-400 font-black shrink-0">💎 Best Value:</span>
-                    <span className="text-white font-bold">{bestVal.firstName[0]}. {bestVal.lastName}</span>
-                    <span className="text-gray-400">{bestVal.ebkScore.toFixed(1)} EBK for ${bestVal.paidPrice}M</span>
-                    <span className="text-green-500/70 ml-auto font-black tabular-nums" title="Lower is better — least EBK score per million spent">
-                      {(bestVal.paidPrice / bestVal.ebkScore).toFixed(2)}M/pt
+                {/* ── Summary footer ── */}
+                <div className="px-5 sm:px-6 py-3.5 mt-1 border-t border-white/[0.05] flex items-center gap-4 flex-wrap text-xs">
+                  {bestVal && (
+                    <span className="text-green-400/80 font-bold">
+                      💎 {bestVal.firstName[0]}. {bestVal.lastName} — {(bestVal.paidPrice / bestVal.ebkScore).toFixed(2)}M/pt
                     </span>
-                  </div>
-                )}
+                  )}
+                  <span className="ml-auto text-white/20 tabular-nums">
+                    avg ${(r.budgetSpent / Math.max(r.rosterCount, 1)).toFixed(1)}M/player
+                  </span>
+                </div>
               </div>
             )
           })}
         </div>
 
         {/* ── Action row ── */}
-        <div className="flex justify-center gap-3 flex-wrap">
+        <div className="flex justify-center gap-3 flex-wrap pb-8">
           <Link href="/auction" className="btn-primary">Play Again</Link>
           <Link href="/leaderboard" className="btn-secondary text-sm">
             Leaderboard

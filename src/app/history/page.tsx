@@ -165,6 +165,8 @@ export default function HistoryPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(false)
+  // Track the index at which newly-loaded items start — used to trigger enter animation
+  const [newItemsStart, setNewItemsStart] = useState<number | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -190,7 +192,12 @@ export default function HistoryPage() {
       const res = await fetch(`/api/games/history?cursor=${encodeURIComponent(nextCursor)}`)
       if (!res.ok) return
       const d = await res.json()
-      if (d?.records) setRecords(prev => [...prev, ...d.records])
+      if (d?.records) {
+        setRecords(prev => {
+          setNewItemsStart(prev.length)
+          return [...prev, ...d.records]
+        })
+      }
       setNextCursor(d?.nextCursor ?? null)
       setHasMore(d?.hasMore ?? false)
     } catch {
@@ -288,7 +295,12 @@ export default function HistoryPage() {
                   <div
                     key={r.id}
                     className={`rounded-xl px-4 py-3.5 flex items-center gap-3 ${cfg.accentBg} ${cfg.leftBorder} ${cfg.hoverBg} border border-white/[0.06] transition-all animate-fade-up group`}
-                    style={{ animationDelay: `${Math.min(idx * 30, 300)}ms`, animationFillMode: 'both' }}
+                    style={{
+                      animationDelay: newItemsStart !== null && idx >= newItemsStart
+                        ? `${(idx - newItemsStart) * 40}ms`
+                        : `${Math.min(idx * 30, 300)}ms`,
+                      animationFillMode: 'both',
+                    }}
                   >
                     {/* W / L / D badge */}
                     <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-display text-xl shrink-0 ${cfg.badge} transition-transform group-hover:scale-110`}>
@@ -358,19 +370,39 @@ export default function HistoryPage() {
 
             {/* ── Footer ───────────────────────────────────────────── */}
             <div className="mt-8 space-y-3">
-              {hasMore && (
+              {hasMore ? (
                 <button
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="btn-secondary w-full disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2.5 rounded-xl px-5 py-4 font-black text-sm tracking-wide uppercase transition-all duration-200 border bg-orange-950/20 border-orange-700/30 text-orange-300 hover:bg-orange-950/40 hover:border-orange-600/50 hover:text-orange-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none shadow-[0_0_20px_rgba(234,88,12,0.06)] hover:shadow-[0_0_28px_rgba(234,88,12,0.12)]"
                 >
                   {loadingMore ? (
-                    <span className="flex items-center gap-2 justify-center">
-                      <span className="w-3 h-3 border border-white/40 border-t-white/80 rounded-full animate-spin" />
-                      Loading…
-                    </span>
-                  ) : 'Load More Games'}
+                    <>
+                      <span className="w-4 h-4 border-2 border-orange-500/40 border-t-orange-400 rounded-full animate-spin shrink-0" />
+                      Loading games…
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                      Load More Games
+                    </>
+                  )}
                 </button>
+              ) : (
+                records.length > 0 && (
+                  <div className="flex items-center gap-3 py-2 animate-fade-up">
+                    <div className="h-px flex-1 bg-white/[0.05]" />
+                    <div className="flex items-center gap-2 text-white/25 text-[11px] font-bold uppercase tracking-[0.18em]">
+                      <svg className="w-3 h-3 text-orange-500/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                      You&apos;ve reached the end
+                    </div>
+                    <div className="h-px flex-1 bg-white/[0.05]" />
+                  </div>
+                )
               )}
               <Link
                 href="/profile"

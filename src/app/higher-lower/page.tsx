@@ -245,11 +245,26 @@ export default function HigherLowerPage() {
     const correctDir = challenger && current
       ? (challenger.ebkScore > current.ebkScore ? 'HIGHER' : challenger.ebkScore < current.ebkScore ? 'LOWER' : 'THE SAME')
       : ''
+    const isNewRecord = streak > 0 && streak >= bestStreak
+    // Encouraging messages based on streak length
+    const encouragement =
+      streak === 0 ? "Everyone starts somewhere. Jump back in!" :
+      streak < 5   ? "Getting started — keep at it!" :
+      streak < 10  ? "Nice run! You're getting the hang of it." :
+      streak < 20  ? "Impressive! You really know these players." :
+                     "Elite basketball IQ. Truly."
+
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
-          <div className="font-display text-6xl sm:text-7xl text-red-500/80 leading-none mb-2 select-none animate-loss-drop">RIP</div>
-          <h1 className="font-display text-4xl sm:text-5xl text-white leading-none mb-3 animate-fade-up-1">Game Over</h1>
+          {/* ── Outcome header ── */}
+          <div className="mb-4 animate-loss-drop">
+            <div className="font-display text-6xl sm:text-7xl text-red-500/70 leading-none select-none">RIP</div>
+          </div>
+          <h1 className="font-display text-4xl sm:text-5xl text-white leading-none mb-1 animate-fade-up-1">Game Over</h1>
+          <p className="text-gray-500 text-sm mb-4 animate-fade-up-1">{encouragement}</p>
+
+          {/* ── What went wrong ── */}
           {current && challenger && (
             <div className="card-surface rounded-2xl px-4 py-3 mb-5 text-sm text-left animate-fade-up-2">
               <p className="text-gray-400 leading-relaxed">
@@ -258,23 +273,56 @@ export default function HigherLowerPage() {
                 <span className="text-orange-400 font-bold">{correctDir} EBK</span>
                 {' '}than {current.firstName} {current.lastName}
               </p>
-              <p className="text-gray-700 text-xs mt-1.5">
-                {current.firstName} {current.lastName}: {current.ebkScore.toFixed(1)} · {challenger.firstName} {challenger.lastName}: {challenger.ebkScore.toFixed(1)}
-              </p>
+              <div className="flex items-center gap-3 mt-2">
+                <div className="flex-1 bg-white/[0.04] rounded-lg px-3 py-1.5 text-center">
+                  <div className="text-white/60 text-[10px] font-bold uppercase tracking-wide truncate">{current.lastName}</div>
+                  <div className="font-display text-lg text-white/80 leading-none tabular-nums">{current.ebkScore.toFixed(1)}</div>
+                </div>
+                <div className="text-gray-700 font-display text-sm">VS</div>
+                <div className="flex-1 bg-orange-950/30 rounded-lg px-3 py-1.5 text-center border border-orange-700/20">
+                  <div className="text-orange-300/60 text-[10px] font-bold uppercase tracking-wide truncate">{challenger.lastName}</div>
+                  <div className="font-display text-lg text-orange-400 leading-none tabular-nums">{challenger.ebkScore.toFixed(1)}</div>
+                </div>
+              </div>
             </div>
           )}
 
-          <div className="card-stat p-6 mb-6 grid grid-cols-2 gap-6 animate-scale-in">
-            <div className="text-center">
-              <div className="font-display text-6xl text-orange-400 leading-none tabular-nums">{streak}</div>
-              <div className="text-label mt-2">This Run</div>
-            </div>
-            <div className="text-center border-l border-white/[0.06]">
-              <div className={`font-display text-6xl leading-none tabular-nums ${streak >= bestStreak && streak > 0 ? 'win-shimmer-text' : 'text-yellow-400'}`}>{bestStreak}</div>
-              <div className="text-label mt-2">Personal Best</div>
-              {streak >= bestStreak && streak > 0 && (
-                <div className="text-[9px] font-black text-yellow-500/70 uppercase tracking-wider mt-0.5">New record!</div>
-              )}
+          {/* ── Streak stats ── */}
+          <div className={`rounded-2xl p-6 mb-6 animate-scale-in overflow-hidden relative ${
+            isNewRecord
+              ? 'bg-gradient-to-br from-yellow-950/40 to-orange-950/30 border border-yellow-500/30 shadow-[0_0_32px_rgba(234,179,8,0.1)]'
+              : 'card-stat'
+          }`}>
+            {isNewRecord && (
+              <div className="absolute inset-0 pointer-events-none"
+                style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(234,179,8,0.07) 0%, transparent 70%)' }} />
+            )}
+            {isNewRecord && (
+              <div className="relative mb-3 flex items-center justify-center gap-2">
+                <div className="h-px flex-1 bg-yellow-500/20" />
+                <span className="text-[10px] font-black text-yellow-500/80 uppercase tracking-[0.2em]">New Personal Best!</span>
+                <div className="h-px flex-1 bg-yellow-500/20" />
+              </div>
+            )}
+            <div className="relative grid grid-cols-2 gap-6">
+              <div className="text-center">
+                <div className="font-display text-6xl text-orange-400 leading-none tabular-nums">{streak}</div>
+                <div className="text-label mt-2">This Run</div>
+                {streak >= 10 && (
+                  <div className="text-[10px] font-black text-orange-400/60 mt-1">
+                    {streak >= 25 ? 'EBK Savant level' : streak >= 10 ? 'Stat Nerd level' : ''}
+                  </div>
+                )}
+              </div>
+              <div className="text-center border-l border-white/[0.06]">
+                <div className={`font-display text-6xl leading-none tabular-nums ${isNewRecord ? 'win-shimmer-text' : bestStreak > 0 ? 'text-yellow-400' : 'text-gray-600'}`}>
+                  {bestStreak}
+                </div>
+                <div className="text-label mt-2">Personal Best</div>
+                {!user && bestStreak === 0 && (
+                  <div className="text-gray-700 text-[10px] mt-1">log in to save</div>
+                )}
+              </div>
             </div>
           </div>
 
