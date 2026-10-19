@@ -672,9 +672,15 @@ function GameContent() {
           {/* Result header */}
           <div className="text-center mb-5 sm:mb-6 animate-fade-up">
             {iWon && (
-              <div className="mb-4 inline-flex items-center gap-2 bg-orange-950/60 border border-orange-500/60 rounded-full px-4 py-1.5 shadow-[0_0_24px_rgba(249,115,22,0.25)]">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
+              <div className="mb-4 inline-flex items-center gap-2.5 bg-orange-950/60 border border-orange-500/60 rounded-full px-4 py-2 shadow-[0_0_32px_rgba(249,115,22,0.35)]">
+                {/* Crown icon */}
+                <svg className="w-4 h-4 text-orange-300 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M2 19h20v2H2v-2zM2 6l5 7 5-9 5 9 5-7v11H2V6z" />
+                </svg>
                 <span className="text-orange-300 text-[11px] font-black tracking-[0.25em] uppercase">Series Champion</span>
+                <svg className="w-4 h-4 text-orange-300 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M2 19h20v2H2v-2zM2 6l5 7 5-9 5 9 5-7v11H2V6z" />
+                </svg>
               </div>
             )}
             {!iWon && !isDraw && (
@@ -973,25 +979,40 @@ function GameContent() {
           <div className="animate-fade-up-5 mt-5">
           {iWon ? (
             <div className="flex flex-col gap-2.5">
-              <button onClick={() => router.push('/lobby')} className="btn-primary w-full py-4 text-base font-display tracking-widest">
+              <button onClick={() => router.push('/lobby')} className="btn-primary w-full py-4 text-base font-display tracking-widest animate-glow">
                 Play Again
               </button>
-              <button onClick={() => router.push('/lobby')} className="btn-secondary w-full py-4 text-sm font-black uppercase tracking-widest">
-                Find New Opponent
-              </button>
+              <div className="grid grid-cols-2 gap-2.5">
+                <button onClick={() => router.push('/lobby')} className="btn-secondary w-full py-3.5 text-sm font-black uppercase tracking-widest">
+                  Find New Opponent
+                </button>
+                <button onClick={() => router.push('/')} className="btn-secondary w-full py-3.5 text-sm font-black uppercase tracking-widest">
+                  Home
+                </button>
+              </div>
             </div>
           ) : isDraw ? (
-            <button onClick={() => router.push('/lobby')} className="btn-primary w-full py-4 text-base font-display tracking-widest">
-              Rematch
-            </button>
+            <div className="flex flex-col gap-2.5">
+              <button onClick={() => router.push('/lobby')} className="btn-primary w-full py-4 text-base font-display tracking-widest">
+                Rematch
+              </button>
+              <button onClick={() => router.push('/')} className="btn-secondary w-full py-3.5 text-sm font-black uppercase tracking-widest">
+                Home
+              </button>
+            </div>
           ) : (
             <div className="flex flex-col gap-2.5">
               <button onClick={() => router.push('/lobby')} className="btn-primary w-full py-4 text-base font-display tracking-widest">
                 Rematch
               </button>
-              <button onClick={() => router.push('/practice')} className="btn-secondary w-full py-4 text-sm font-black uppercase tracking-widest">
-                Practice Draft
-              </button>
+              <div className="grid grid-cols-2 gap-2.5">
+                <button onClick={() => router.push('/practice')} className="btn-secondary w-full py-3.5 text-sm font-black uppercase tracking-widest">
+                  Practice Draft
+                </button>
+                <button onClick={() => router.push('/')} className="btn-secondary w-full py-3.5 text-sm font-black uppercase tracking-widest">
+                  Home
+                </button>
+              </div>
             </div>
           )}
           </div>
@@ -1028,6 +1049,11 @@ function GameContent() {
           <div className="text-center mb-4">
             {/* Game N of Y pill — prominent series progress label */}
             <div className="inline-flex items-center gap-2 bg-orange-950/40 border border-orange-500/30 rounded-full px-3 sm:px-4 py-1.5 mb-3">
+              {iWon && (
+                <svg className="w-3 h-3 text-orange-400 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M2 19h20v2H2v-2zM2 6l5 7 5-9 5 9 5-7v11H2V6z" />
+                </svg>
+              )}
               <span className="font-display text-orange-400 text-sm sm:text-base leading-none tracking-widest">
                 GAME {effectiveLastResult.game}{room.series > 1 ? ` OF ${room.series}` : ''}
               </span>
@@ -1197,16 +1223,21 @@ function GameContent() {
           </div>{/* end lg:grid */}
 
           {/* CTA */}
-          {role === 'host' ? (
-            <button onClick={startNextGame} className="btn-primary w-full mt-2 py-4 text-base font-display tracking-widest animate-glow">
-              Start Game {room.currentGame + 1}{room.series > 1 ? ` of ${room.series}` : ''}
+          <div className="flex flex-col gap-2.5 mt-2">
+            {role === 'host' ? (
+              <button onClick={startNextGame} className="btn-primary w-full py-4 text-base font-display tracking-widest animate-glow">
+                Start Game {room.currentGame + 1}{room.series > 1 ? ` of ${room.series}` : ''}
+              </button>
+            ) : (
+              <div className="card-surface rounded-2xl py-4 px-6 text-center flex items-center justify-center gap-3">
+                <span className="w-4 h-4 rounded-full border-2 border-orange-500/50 border-t-orange-400 animate-spin shrink-0" />
+                <span className="text-gray-400 text-sm">Waiting for <span className="text-white font-bold">{room.hostName}</span> to start Game {room.currentGame + 1}{room.series > 1 ? ` of ${room.series}` : ''}…</span>
+              </div>
+            )}
+            <button onClick={() => router.push('/')} className="btn-secondary w-full py-3 text-sm font-black uppercase tracking-widest">
+              Home
             </button>
-          ) : (
-            <div className="card-surface rounded-2xl py-4 px-6 text-center mt-2 flex items-center justify-center gap-3">
-              <span className="w-4 h-4 rounded-full border-2 border-orange-500/50 border-t-orange-400 animate-spin shrink-0" />
-              <span className="text-gray-400 text-sm">Waiting for <span className="text-white font-bold">{room.hostName}</span> to start Game {room.currentGame + 1}{room.series > 1 ? ` of ${room.series}` : ''}…</span>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     )

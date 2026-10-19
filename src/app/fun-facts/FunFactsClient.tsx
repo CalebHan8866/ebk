@@ -728,7 +728,7 @@ export default function FunFactsPage() {
                     </div>
 
                     {/* Career stats grid */}
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
                         { l: 'GP',  v: current.careerGames.toLocaleString() },
                         { l: 'PPG', v: current.careerPPG.toFixed(1) },

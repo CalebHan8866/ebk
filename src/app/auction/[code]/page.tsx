@@ -106,19 +106,20 @@ function TimerRing({ timeLeft, maxTime }: { timeLeft: number; maxTime: number })
   const r = 28
   const circ = 2 * Math.PI * r
   const offset = circ * (1 - pct)
-  const color = timeLeft <= 5 ? '#ef4444' : timeLeft <= 10 ? '#f97316' : '#22c55e'
+  // Use CSS custom property so Tailwind token colors drive the SVG stroke
+  const ringColorClass = timeLeft <= 5 ? 'text-red-400' : timeLeft <= 10 ? 'text-orange-400' : 'text-green-400'
 
   return (
     <div className="relative w-20 h-20 flex items-center justify-center" role="timer" aria-label={`${timeLeft} seconds remaining`}>
-      <svg className="absolute inset-0 -rotate-90" width="80" height="80" aria-hidden="true">
+      <svg className={`absolute inset-0 -rotate-90 ${ringColorClass}`} width="80" height="80" aria-hidden="true">
         <circle cx="40" cy="40" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
         <circle
           cx="40" cy="40" r={r} fill="none"
-          stroke={color} strokeWidth="4"
+          stroke="currentColor" strokeWidth="4"
           strokeDasharray={circ}
           strokeDashoffset={offset}
           strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 0.1s linear, stroke 0.3s' }}
+          style={{ transition: 'stroke-dashoffset 0.1s linear, color 0.3s' }}
         />
       </svg>
       <span
@@ -1276,20 +1277,34 @@ export default function AuctionRoomPage() {
           </div>
         )}
 
-        {/* End trading / timer repeat */}
-        <div className="mt-6 pb-8 flex items-center justify-between gap-4">
+        {/* End trading / bottom bar */}
+        <div className="mt-6 pb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 h-px bg-white/[0.05]" />
+            <div className={`flex items-center gap-2 text-sm font-mono px-3 py-1.5 rounded-full border transition-all ${
+              timerUrgent
+                ? 'text-red-400 bg-red-950/30 border-red-500/30'
+                : timerWarning
+                ? 'text-orange-400 bg-orange-950/20 border-orange-500/20'
+                : 'text-white/30 bg-white/[0.03] border-white/[0.06]'
+            }`}>
+              <span className={`live-dot ${timerUrgent ? 'bg-red-400' : timerWarning ? 'bg-orange-400' : ''}`} />
+              {tradeMinutes}:{tradeSecs.toString().padStart(2, '0')} remaining
+            </div>
+            <div className="flex-1 h-px bg-white/[0.05]" />
+          </div>
           {isHost && (
             <button
               onClick={handleFinishTrading}
-              className="btn-secondary text-sm"
+              className={`w-full py-3.5 rounded-xl font-black text-sm uppercase tracking-wider transition-all border ${
+                timerUrgent
+                  ? 'bg-red-950/40 border-red-500/50 text-red-300 hover:bg-red-950/60 hover:border-red-500/70'
+                  : 'btn-secondary'
+              }`}
             >
               End Trading Early
             </button>
           )}
-          <div className={`${isHost ? '' : 'ml-auto'} flex items-center gap-2 text-sm font-mono ${timerUrgent ? 'text-red-400' : timerWarning ? 'text-orange-400' : 'text-white/30'}`}>
-            <span className={`live-dot ${timerUrgent ? 'bg-red-400' : timerWarning ? 'bg-orange-400' : ''}`} />
-            {tradeMinutes}:{tradeSecs.toString().padStart(2, '0')} remaining
-          </div>
         </div>
       </div>
     )
@@ -1459,7 +1474,7 @@ export default function AuctionRoomPage() {
                 <h2 className="font-display text-5xl md:text-6xl text-white tracking-wider leading-none mb-5">
                   {cp.firstName}<br />{cp.lastName}
                 </h2>
-                <div className="grid grid-cols-4 gap-2 mb-5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
                   {[
                     { label: 'GP', value: cp.careerGames },
                     { label: 'PPG', value: cp.careerPPG?.toFixed(1) },
