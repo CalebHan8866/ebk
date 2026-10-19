@@ -399,8 +399,13 @@ function MyRankBanner({ me, totalPlayers }: { me: MeRow; totalPlayers: number })
 // ── Empty state ───────────────────────────────────────────────────────────────
 function EmptyState() {
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.025] to-transparent p-16 text-center flex flex-col items-center gap-5">
-      <div className="font-display text-[80px] text-white/[0.04] leading-none tracking-widest">—</div>
+    <div className="rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.025] to-transparent p-16 text-center flex flex-col items-center gap-5 animate-fade-in">
+      <div className="relative">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-900/40 to-yellow-950/20 border border-yellow-700/20 flex items-center justify-center shadow-[0_0_40px_rgba(234,179,8,0.06)]">
+          <span className="text-4xl leading-none select-none">🏆</span>
+        </div>
+        <div className="absolute inset-0 rounded-full bg-yellow-400/5 blur-xl pointer-events-none" />
+      </div>
       <div>
         <p className="font-display text-2xl text-white tracking-wider leading-none">No players ranked yet</p>
         <p className="text-gray-500 text-sm mt-2">Be the first on the board</p>
@@ -513,11 +518,11 @@ export default function LeaderboardPage() {
           <>
             {/* ── Podium — top 3 ── */}
             {top3.length >= 2 && (
-              <div className="mb-8">
+              <div className="mb-8 animate-fade-up">
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="h-px flex-1 bg-white/[0.05]" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600">Top Performers</span>
-                  <div className="h-px flex-1 bg-white/[0.05]" />
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent to-yellow-700/20" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-600/70">🏆 Top Performers</span>
+                  <div className="h-px flex-1 bg-gradient-to-l from-transparent to-yellow-700/20" />
                 </div>
                 <div className="grid grid-cols-3 gap-1.5 sm:gap-3 items-end px-1 sm:px-3">
                   {top3.map((u, i) => (
@@ -535,7 +540,7 @@ export default function LeaderboardPage() {
 
             {/* ── Ranks 4+ table ── */}
             {rest.length > 0 && (
-              <div className="card-surface rounded-2xl overflow-hidden">
+              <div className="card-surface rounded-2xl overflow-hidden animate-fade-up-1">
                 <div className="flex items-center justify-between px-4 pt-3.5 pb-0">
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600">Rankings</span>
                   {me && meInList >= 3 && (

@@ -114,16 +114,16 @@ function QuickStats({ records }: { records: GameRecord[] }) {
       <WinRateBar wins={wins} losses={losses} draws={draws} />
       <div className="grid grid-cols-4 gap-2.5">
         {[
-          { label: 'Wins',         value: wins,          color: 'text-green-400' },
-          { label: 'Losses',       value: losses,        color: 'text-red-400' },
-          { label: 'Win %',        value: `${pct}%`,     color: 'text-orange-400' },
-          { label: streakSubLabel, value: streakLabel,   color: streakColor },
+          { label: 'Wins',         value: wins,          color: 'text-green-400',  bg: 'bg-green-950/30 border-green-800/25' },
+          { label: 'Losses',       value: losses,        color: 'text-red-400',    bg: 'bg-red-950/20 border-red-900/20' },
+          { label: 'Win %',        value: `${pct}%`,     color: 'text-orange-400', bg: 'bg-orange-950/20 border-orange-900/20' },
+          { label: streakSubLabel, value: streakLabel,   color: streakColor,       bg: 'bg-white/[0.025] border-white/[0.06]' },
         ].map((s) => (
           <div
             key={s.label}
-            className="card-surface rounded-xl py-4 text-center"
+            className={`rounded-xl py-4 text-center border ${s.bg}`}
           >
-            <div className={`font-display text-3xl leading-none ${s.color}`}>{s.value}</div>
+            <div className={`font-display text-3xl leading-none tabular-nums ${s.color}`}>{s.value}</div>
             <div className="text-label mt-1.5">{s.label}</div>
           </div>
         ))}
@@ -211,8 +211,15 @@ export default function HistoryPage() {
             {[0,1,2,3].map(i => <div key={i} className="h-[72px] rounded-xl skeleton" />)}
           </div>
           <div className="space-y-2">
-            {[0,1,2,3,4,5].map(i => (
-              <div key={i} className="h-[76px] rounded-xl skeleton border-l-[3px] border-l-white/[0.04]" />
+            {([
+              'border-l-green-500/30',
+              'border-l-red-500/25',
+              'border-l-green-500/30',
+              'border-l-red-500/25',
+              'border-l-yellow-500/20',
+              'border-l-green-500/30',
+            ] as const).map((cls, i) => (
+              <div key={i} className={`h-[76px] rounded-xl skeleton border-l-[3px] ${cls}`} />
             ))}
           </div>
         </div>
@@ -221,19 +228,19 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="min-h-screen py-10 px-4">
+    <div className="min-h-screen py-10 px-4 animate-fade-in">
       <div className="max-w-2xl mx-auto">
 
         {/* ── Header ───────────────────────────────────────────────── */}
         <div className="flex items-end justify-between mb-7 animate-fade-up">
           <div>
-            <p className="text-label mb-2">Your Record</p>
-            <h1 className="font-display text-5xl md:text-6xl text-white leading-none tracking-wide">
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-orange-500/70 mb-2">Your Record</p>
+            <h1 className="font-display text-5xl sm:text-6xl text-white leading-none tracking-wide">
               GAME <span className="text-orange-500">HISTORY</span>
             </h1>
-            <p className="text-white/35 text-xs font-bold mt-2">
-              <span className="font-display text-orange-400 text-lg">{records.length}</span>
-              <span className="ml-1.5">game{records.length !== 1 ? 's' : ''}{hasMore ? ' loaded' : ''}</span>
+            <p className="mt-2 flex items-baseline gap-1.5">
+              <span className="font-display text-2xl text-orange-400 leading-none tabular-nums">{records.length}</span>
+              <span className="text-gray-500 text-xs font-bold uppercase tracking-[0.1em]">game{records.length !== 1 ? 's' : ''}{hasMore ? ' loaded' : ''}</span>
             </p>
           </div>
           <Link
@@ -264,6 +271,11 @@ export default function HistoryPage() {
             <QuickStats records={records} />
 
             {/* ── Game Timeline ─────────────────────────────────────── */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-px flex-1 bg-white/[0.05]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-600">Recent Games</span>
+              <div className="h-px flex-1 bg-white/[0.05]" />
+            </div>
             <div className="space-y-2">
               {records.map((r, idx) => {
                 const cfg       = RESULT_CONFIG[r.result]
@@ -275,11 +287,11 @@ export default function HistoryPage() {
                 return (
                   <div
                     key={r.id}
-                    className={`rounded-xl px-4 py-3.5 flex items-center gap-3 ${cfg.accentBg} ${cfg.leftBorder} ${cfg.hoverBg} border border-white/[0.06] transition-colors animate-fade-up`}
+                    className={`rounded-xl px-4 py-3.5 flex items-center gap-3 ${cfg.accentBg} ${cfg.leftBorder} ${cfg.hoverBg} border border-white/[0.06] transition-all animate-fade-up group`}
                     style={{ animationDelay: `${Math.min(idx * 30, 300)}ms`, animationFillMode: 'both' }}
                   >
                     {/* W / L / D badge */}
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-display text-xl shrink-0 ${cfg.badge}`}>
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-display text-xl shrink-0 ${cfg.badge} transition-transform group-hover:scale-110`}>
                       {cfg.label}
                     </div>
 
@@ -337,7 +349,7 @@ export default function HistoryPage() {
                           scoreColor={cfg.scoreColor}
                         />
                       ) : null}
-                      <div className="text-white/20 text-[10px] font-bold mt-1.5 tabular-nums">{ago}</div>
+                      <div className="text-white/25 text-[10px] font-bold mt-1.5 tabular-nums tracking-wide">{ago}</div>
                     </div>
                   </div>
                 )

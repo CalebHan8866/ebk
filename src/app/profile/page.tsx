@@ -276,7 +276,7 @@ export default function ProfilePage() {
       <div className="max-w-3xl mx-auto">
 
         {/* Page header */}
-        <div className="flex items-start justify-between mb-6 gap-4">
+        <div className="flex items-start justify-between mb-6 gap-4 animate-fade-up">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-orange-500/70 mb-2">Player Card</p>
             <h1 className="font-display text-6xl sm:text-7xl text-white leading-none tracking-wide">
@@ -316,7 +316,9 @@ export default function ProfilePage() {
               {/* Avatar column */}
               <div className="flex items-center gap-4 sm:block">
                 <div className="relative shrink-0">
-                  <div className={`w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-orange-500 to-orange-700 rounded-full flex items-center justify-center shadow-2xl shadow-orange-900/60 ${
+                  {/* Ambient glow behind avatar */}
+                  <div className="absolute inset-0 rounded-full bg-orange-500/15 blur-2xl scale-150 pointer-events-none" />
+                  <div className={`relative w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-orange-500 to-orange-700 rounded-full flex items-center justify-center shadow-2xl shadow-orange-900/60 ${
                     user.winStreak >= 5 ? 'avatar-hot' : user.winStreak >= 2 ? 'avatar-win' : ''
                   }`}>
                     <span className="font-display text-4xl sm:text-5xl text-white leading-none drop-shadow-lg">
@@ -329,10 +331,28 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </div>
-                {/* Win% — mobile only, right of avatar */}
-                <div className="sm:hidden text-center ml-auto shrink-0">
-                  <div className={`font-display text-4xl leading-none tabular-nums ${winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-orange-400' : 'text-red-400'}`}>{winPct}%</div>
-                  <div className="text-label mt-1">Win Rate</div>
+                {/* Win% + W/L/D — mobile only, right of avatar */}
+                <div className="sm:hidden ml-auto shrink-0 flex flex-col items-center gap-2">
+                  <div className="text-center">
+                    <div className={`font-display text-4xl leading-none tabular-nums ${winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-orange-400' : 'text-red-400'}`}>{winPct}%</div>
+                    <div className="text-label mt-1">Win Rate</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-center">
+                      <div className="font-display text-xl text-green-400 leading-none tabular-nums">{user.wins}</div>
+                      <div className="text-[8px] font-black uppercase tracking-[0.1em] text-green-400/50 mt-0.5">W</div>
+                    </div>
+                    <div className="w-px h-5 bg-white/[0.08]" />
+                    <div className="text-center">
+                      <div className="font-display text-xl text-red-400 leading-none tabular-nums">{user.losses}</div>
+                      <div className="text-[8px] font-black uppercase tracking-[0.1em] text-red-400/50 mt-0.5">L</div>
+                    </div>
+                    <div className="w-px h-5 bg-white/[0.08]" />
+                    <div className="text-center">
+                      <div className="font-display text-xl text-yellow-400 leading-none tabular-nums">{user.draws}</div>
+                      <div className="text-[8px] font-black uppercase tracking-[0.1em] text-yellow-400/50 mt-0.5">D</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -477,9 +497,14 @@ export default function ProfilePage() {
 
           {/* History quick-link */}
           <Link href="/history" className="card-surface p-4 flex items-center justify-between rounded-xl hover:border-orange-600/40 hover:bg-orange-950/10 transition-all group cursor-pointer block">
-            <div>
-              <div className="font-display text-xl text-white group-hover:text-orange-300 transition-colors tracking-wide leading-none">Game History</div>
-              <div className="text-[11px] text-gray-500 mt-1 font-bold">See every match result</div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-950/50 border border-orange-800/30 flex items-center justify-center shrink-0">
+                <span className="text-xl leading-none">🏀</span>
+              </div>
+              <div>
+                <div className="font-display text-xl text-white group-hover:text-orange-300 transition-colors tracking-wide leading-none">Game History</div>
+                <div className="text-[11px] text-gray-500 mt-1 font-bold">See every match result</div>
+              </div>
             </div>
             <span className="text-orange-500 text-lg font-black group-hover:translate-x-1 transition-transform leading-none">→</span>
           </Link>
