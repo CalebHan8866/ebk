@@ -615,7 +615,13 @@ export default function FunFactsPage() {
   const currentSeasonEntries = current
     ? seasonLookup.get(normPlayerName(`${current.firstName} ${current.lastName}`))
     : undefined
-  const facts = current ? generateFacts(current, currentSeasonEntries) : []
+  // generateFacts builds ~60 comparison entries and runs several reduce/filter passes —
+  // memoize so it only reruns when the player or season data actually changes, not on
+  // unrelated re-renders (e.g. isFlipped toggling).
+  const facts = useMemo(
+    () => (current ? generateFacts(current, currentSeasonEntries) : []),
+    [current, currentSeasonEntries],
+  )
   const currentFact = facts[factIndex]
   const earnings = current
     ? (current.careerEarnings > 0 ? current.careerEarnings : estimateCareerEarnings(current))
