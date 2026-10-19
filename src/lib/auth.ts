@@ -21,7 +21,9 @@ export async function createToken(payload: { userId: string; username: string; t
 
 export async function verifyToken(token: string) {
   try {
-    const { payload } = await jwtVerify(token, secret)
+    // Explicitly allowlist HS256 to prevent algorithm confusion attacks
+    // (e.g. alg:"none" or an attacker substituting an asymmetric algorithm).
+    const { payload } = await jwtVerify(token, secret, { algorithms: ['HS256'] })
     const claims = payload as { userId: string; username: string; tokenVersion: number }
 
     // Validate tokenVersion against DB to support immediate session invalidation
@@ -50,7 +52,8 @@ export async function verifyToken(token: string) {
  */
 export async function decodeToken(token: string) {
   try {
-    const { payload } = await jwtVerify(token, secret)
+    // Explicitly allowlist HS256 to prevent algorithm confusion attacks.
+    const { payload } = await jwtVerify(token, secret, { algorithms: ['HS256'] })
     return payload as { userId: string; username: string; tokenVersion: number }
   } catch {
     return null
