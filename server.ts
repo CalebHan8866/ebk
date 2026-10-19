@@ -2411,10 +2411,25 @@ app.prepare().then(async () => {
       // A sender may have at most 3 open outbound offers at once.
       const outboundCount = room.tradeOffers.filter(o => o.fromSocketId === socket.id).length
       if (outboundCount >= 3) {
-        socket.emit('auction:error', { message: 'You already have 3 pending trade offers. Cancel one before sending another.' })
+        socket.emit('auction:error', { message: 'You already have 3 pending trade offers. Retract one before sending another.' })
         return
       }
       room.tradeOffers.push(offer)
+      broadcastAuctionState(io, room)
+    })
+
+    // Allow the sender to retract an outbound offer before it is accepted/declined.
+    // Without this handler the server error "Cancel one before sending another" is
+    // unreachable — users who hit the 3-offer cap are permanently stuck.
+    socket.on('auction:trade-cancel', ({ code, offerId }: { code: string; offerId: string }) => {
+      if (typeof code !== 'string' || typeof offerId !== 'string') return
+      const room = auctionRooms.get(code.trim().toUpperCase())
+      if (!room || room.status !== 'trading') return
+      const idx = room.tradeOffers.findIndex(o => o.id === offerId)
+      if (idx === -1) return
+      // Only the original sender may retract the offer.
+      if (room.tradeOffers[idx].fromSocketId !== socket.id) return
+      room.tradeOffers.splice(idx, 1)
       broadcastAuctionState(io, room)
     })
 

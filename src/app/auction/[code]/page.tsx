@@ -1261,6 +1261,15 @@ export default function AuctionRoomPage() {
                         </div>
                       </div>
                     </div>
+                    {/* Retract offer */}
+                    <div className="px-4 pb-3">
+                      <button
+                        onClick={() => getSocket().emit('auction:trade-cancel', { code, offerId: offer.id })}
+                        className="w-full py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest border border-white/[0.08] bg-white/[0.03] text-white/35 hover:bg-red-950/30 hover:border-red-500/30 hover:text-red-400/80 transition-all"
+                      >
+                        Retract Offer
+                      </button>
+                    </div>
                     {/* Urgency bar if time is running out */}
                     {timerUrgent && (
                       <div className="px-4 pb-3">
