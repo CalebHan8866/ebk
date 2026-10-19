@@ -211,6 +211,19 @@ export default function SalaryPage() {
       </div>
 
       {/* ── STATS BAR ──────────────────────────────────────────────── */}
+      {loading && (
+        <div className="max-w-3xl mx-auto px-4 mb-6">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 animate-pulse">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="card-accent p-3 sm:p-4 text-center space-y-2">
+                <div className="h-6 bg-white/[0.06] rounded w-3/4 mx-auto" />
+                <div className="h-2.5 bg-white/[0.04] rounded w-1/2 mx-auto" />
+                <div className="h-2.5 bg-white/[0.04] rounded w-2/3 mx-auto" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {!loading && stats && (
         <div className="max-w-3xl mx-auto px-4 mb-6">
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
