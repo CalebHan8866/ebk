@@ -213,29 +213,29 @@ export default function SalaryPage() {
       {/* ── STATS BAR ──────────────────────────────────────────────── */}
       {!loading && stats && (
         <div className="max-w-3xl mx-auto px-4 mb-6">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="card-accent p-4 text-center">
-              <p className="text-orange-400 font-black text-lg sm:text-2xl leading-none mb-1">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="card-accent p-3 sm:p-4 text-center">
+              <p className="text-orange-400 font-black text-base sm:text-2xl leading-none mb-1">
                 {fmt(stats.top.earnings)}
               </p>
-              <p className="text-gray-500 text-[10px] uppercase tracking-wider">Highest Earner</p>
-              <p className="text-gray-300 text-xs mt-1 font-bold truncate">
-                {stats.top.firstName} {stats.top.lastName}
+              <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase tracking-wider">Highest Earner</p>
+              <p className="text-gray-300 text-[10px] sm:text-xs mt-1 font-bold truncate">
+                {stats.top.firstName[0]}. {stats.top.lastName}
               </p>
             </div>
-            <div className="card-accent p-4 text-center">
-              <p className="text-orange-400 font-black text-lg sm:text-2xl leading-none mb-1">
+            <div className="card-accent p-3 sm:p-4 text-center">
+              <p className="text-orange-400 font-black text-base sm:text-2xl leading-none mb-1">
                 {fmt(stats.avg)}
               </p>
-              <p className="text-gray-500 text-[10px] uppercase tracking-wider">Avg Career</p>
-              <p className="text-gray-300 text-xs mt-1 font-bold">All players</p>
+              <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase tracking-wider">Avg Career</p>
+              <p className="text-gray-300 text-[10px] sm:text-xs mt-1 font-bold">All players</p>
             </div>
-            <div className="card-accent p-4 text-center">
-              <p className="text-orange-400 font-black text-lg sm:text-2xl leading-none mb-1">
+            <div className="card-accent p-3 sm:p-4 text-center">
+              <p className="text-orange-400 font-black text-base sm:text-2xl leading-none mb-1">
                 {fmt(stats.total)}
               </p>
-              <p className="text-gray-500 text-[10px] uppercase tracking-wider">Total Paid Out</p>
-              <p className="text-gray-300 text-xs mt-1 font-bold">NBA history</p>
+              <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase tracking-wider">Total Paid Out</p>
+              <p className="text-gray-300 text-[10px] sm:text-xs mt-1 font-bold">NBA history</p>
             </div>
           </div>
         </div>
@@ -256,7 +256,7 @@ export default function SalaryPage() {
           <select
             value={sortMode}
             onChange={e => setSortMode(e.target.value as SortMode)}
-            className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-gray-300 focus:outline-none focus:border-orange-500/40 transition-colors cursor-pointer appearance-none"
+            className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-gray-300 focus:outline-none focus:border-orange-500/40 transition-colors cursor-pointer appearance-none min-w-0"
           >
             <option value="highest">Highest Earnings</option>
             <option value="lowest">Lowest Earnings</option>
@@ -267,7 +267,7 @@ export default function SalaryPage() {
           <select
             value={eraFilter}
             onChange={e => setEraFilter(e.target.value as EraFilter)}
-            className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-gray-300 focus:outline-none focus:border-orange-500/40 transition-colors cursor-pointer appearance-none"
+            className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-gray-300 focus:outline-none focus:border-orange-500/40 transition-colors cursor-pointer appearance-none min-w-0"
           >
             {ERA_OPTIONS.map(o => (
               <option key={o.value} value={o.value}>{o.label}</option>

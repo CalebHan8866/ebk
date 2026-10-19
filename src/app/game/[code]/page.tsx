@@ -595,7 +595,7 @@ function GameContent() {
     })) : []
 
     return (
-      <div className="min-h-screen px-4 py-8 overflow-y-auto">
+      <div className="min-h-screen px-3 sm:px-4 py-6 sm:py-8 overflow-y-auto">
         {/* Confetti overlay */}
         {showConfetti && iWon && (
           <div className="confetti-container">
@@ -613,12 +613,12 @@ function GameContent() {
           </div>
         )}
 
-        <div className="max-w-4xl w-full mx-auto">
+        <div className="max-w-4xl w-full mx-auto px-0 sm:px-0">
           <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
           {/* LEFT col: header + game-by-game */}
           <div>
           {/* Result header */}
-          <div className="text-center mb-6 animate-fade-up">
+          <div className="text-center mb-5 sm:mb-6 animate-fade-up">
             {iWon && (
               <div className="mb-4 inline-flex items-center gap-2 bg-orange-950/60 border border-orange-500/60 rounded-full px-4 py-1.5 shadow-[0_0_24px_rgba(249,115,22,0.25)]">
                 <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
@@ -631,16 +631,16 @@ function GameContent() {
               </div>
             )}
             <div
-              className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-red-400/80 animate-loss-drop'}`}
-              style={iWon ? { fontSize: 'clamp(7rem, 30vw, 13rem)' } : { fontSize: 'clamp(4.5rem, 18vw, 8rem)' }}>
+              className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-gray-400/90 animate-score-reveal'}`}
+              style={iWon ? { fontSize: 'clamp(5.5rem, 26vw, 13rem)' } : { fontSize: 'clamp(3.5rem, 15vw, 8rem)' }}>
               {iWon ? 'W' : isDraw ? 'DRAW' : 'L'}
             </div>
-            <div className={`font-display tracking-[0.15em] text-xl sm:text-3xl mb-5 ${iWon ? 'text-white' : isDraw ? 'text-yellow-400' : 'text-gray-500'}`}>
+            <div className={`font-display tracking-[0.15em] text-lg sm:text-3xl mb-4 sm:mb-5 ${iWon ? 'text-white' : isDraw ? 'text-yellow-400' : 'text-gray-500'}`}>
               {iWon ? 'SERIES WIN' : isDraw ? 'SERIES DRAW' : 'SERIES LOSS'}
             </div>
 
             {/* Championship scoreboard — winner gets orange glow, loser gets muted */}
-            <div className={`relative rounded-2xl overflow-hidden mb-4 animate-fade-up-1 ${
+            <div className={`relative rounded-2xl overflow-hidden mb-3 sm:mb-4 animate-fade-up-1 ${
               iWon
                 ? 'bg-gradient-to-b from-orange-950/50 to-orange-950/10 border border-orange-500/35 shadow-[0_0_48px_rgba(249,115,22,0.14)]'
                 : isDraw
@@ -967,7 +967,7 @@ function GameContent() {
       : assignToSlots(oppPicks, playerById, requiredSlots)
 
     return (
-      <div className="min-h-screen px-4 py-8 overflow-y-auto">
+      <div className="min-h-screen px-3 sm:px-4 py-6 sm:py-8 overflow-y-auto">
         <div className="max-w-4xl w-full mx-auto">
           <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
           {/* LEFT: header + scores + series */}
@@ -975,17 +975,17 @@ function GameContent() {
           {/* Result header */}
           <div className="text-center mb-4">
             {/* Game N of Y pill — prominent series progress label */}
-            <div className="inline-flex items-center gap-2 bg-orange-950/40 border border-orange-500/30 rounded-full px-4 py-1.5 mb-3">
-              <span className="font-display text-orange-400 text-base leading-none tracking-widest">
+            <div className="inline-flex items-center gap-2 bg-orange-950/40 border border-orange-500/30 rounded-full px-3 sm:px-4 py-1.5 mb-3">
+              <span className="font-display text-orange-400 text-sm sm:text-base leading-none tracking-widest">
                 GAME {effectiveLastResult.game}{room.series > 1 ? ` OF ${room.series}` : ''}
               </span>
             </div>
             <div
-              className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-gray-500 animate-loss-drop'}`}
-              style={iWon ? { fontSize: 'clamp(5.5rem, 22vw, 9rem)' } : { fontSize: 'clamp(4rem, 18vw, 7rem)' }}>
+              className={`font-display leading-none mb-1.5 sm:mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-gray-400 animate-score-reveal'}`}
+              style={iWon ? { fontSize: 'clamp(5rem, 22vw, 9rem)' } : { fontSize: 'clamp(3.5rem, 18vw, 7rem)' }}>
               {iWon ? 'W' : isDraw ? 'D' : 'L'}
             </div>
-            <div className={`font-display tracking-widest text-xl sm:text-2xl ${iWon ? 'text-white' : isDraw ? 'text-yellow-400/70' : 'text-gray-500'}`}>
+            <div className={`font-display tracking-widest text-lg sm:text-2xl ${iWon ? 'text-white' : isDraw ? 'text-yellow-400/70' : 'text-gray-500'}`}>
               {iWon ? 'YOU WIN' : isDraw ? 'DRAW' : 'YOU LOSE'}
             </div>
           </div>
@@ -1052,11 +1052,11 @@ function GameContent() {
           </div>
 
           {/* Score cards */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4">
             {([{ name: myName2, total: myTotal, isMe: true }, { name: oppName, total: oppTotal, isMe: false }] as const).map(side => {
               const isWinner = (side.isMe && iWon) || (!side.isMe && !iWon && !isDraw)
               return (
-                <div key={side.name} className={`rounded-2xl p-4 text-center transition-all relative overflow-hidden ${
+                <div key={side.name} className={`rounded-2xl p-3 sm:p-4 text-center transition-all relative overflow-hidden ${
                   isWinner
                     ? 'bg-gradient-to-b from-green-950/60 to-green-950/20 border-2 border-green-500/70 shadow-[0_0_24px_rgba(34,197,94,0.15)]'
                     : isDraw
@@ -1066,15 +1066,15 @@ function GameContent() {
                   {isWinner && !isDraw && (
                     <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-green-400/80 to-transparent" />
                   )}
-                  <div className={`text-[10px] font-black uppercase tracking-[0.15em] mb-2 truncate ${isWinner ? 'text-green-400/70' : 'text-white/30'}`}>{side.name}</div>
+                  <div className={`text-[9px] sm:text-[10px] font-black uppercase tracking-[0.12em] mb-1.5 sm:mb-2 truncate ${isWinner ? 'text-green-400/70' : 'text-white/30'}`}>{side.name}</div>
                   <div className={`font-display leading-none mb-1 ${isWinner ? 'text-green-400' : isDraw ? 'text-yellow-300' : 'text-white'}`}
-                    style={{ fontSize: 'clamp(2rem, 10vw, 3rem)' }}>
+                    style={{ fontSize: 'clamp(1.75rem, 10vw, 3rem)' }}>
                     {formatStat(side.total, effectiveLastResult.statMode)}
                   </div>
-                  <div className="text-white/25 text-[10px] leading-tight tracking-wider">{getStatUnit(effectiveLastResult.statMode)}</div>
+                  <div className="text-white/25 text-[9px] sm:text-[10px] leading-tight tracking-wider">{getStatUnit(effectiveLastResult.statMode)}</div>
                   {isWinner && !isDraw && (
-                    <div className="inline-flex items-center gap-1 mt-2 bg-green-500/15 border border-green-500/30 rounded-full px-2.5 py-0.5">
-                      <span className="text-green-400 text-[10px] font-black tracking-widest uppercase">Lower ✓</span>
+                    <div className="inline-flex items-center gap-1 mt-1.5 sm:mt-2 bg-green-500/15 border border-green-500/30 rounded-full px-2 sm:px-2.5 py-0.5">
+                      <span className="text-green-400 text-[9px] sm:text-[10px] font-black tracking-widest uppercase">Lower ✓</span>
                     </div>
                   )}
                 </div>
@@ -1595,8 +1595,11 @@ function GameContent() {
 
             {/* Pick error */}
             {pickError && (
-              <div role="alert" aria-live="assertive" className="bg-red-900/60 border border-red-500 text-red-300 rounded-lg px-4 py-2 text-sm mb-3 text-center">
-                {pickError}
+              <div role="alert" aria-live="assertive" className="bg-red-900/30 border border-red-500/60 text-red-300 rounded-xl px-4 py-2.5 text-sm mb-3 flex items-center gap-2.5 animate-slide-up">
+                <div className="w-5 h-5 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center shrink-0">
+                  <span className="text-red-400 text-xs font-black leading-none">!</span>
+                </div>
+                <span className="flex-1">{pickError}</span>
               </div>
             )}
 
@@ -1679,8 +1682,14 @@ function GameContent() {
             ) : (
               <>
                 {isSpinning && (
-                  <div className="flex items-center justify-center h-16 rounded-xl bg-yellow-900/10 border border-yellow-600/30 mb-3">
-                    <p className="text-yellow-400 font-bold text-sm animate-pulse">Locked — waiting for spin...</p>
+                  <div className="space-y-2 mb-3">
+                    <div className="flex items-center justify-center gap-2 h-10 rounded-xl bg-yellow-900/10 border border-yellow-600/30 mb-1">
+                      <span className="w-3 h-3 rounded-full border-2 border-yellow-500/50 border-t-yellow-400 animate-spin shrink-0" />
+                      <p className="text-yellow-400 font-bold text-xs tracking-widest uppercase">Spinning team assignment…</p>
+                    </div>
+                    {[0, 1, 2, 3, 4].map(i => (
+                      <div key={i} className="skeleton h-12 rounded-xl" style={{ animationDelay: `${i * 80}ms` }} />
+                    ))}
                   </div>
                 )}
 

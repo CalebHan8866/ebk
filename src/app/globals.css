@@ -298,6 +298,23 @@ body {
   border-radius: 8px;
 }
 
+/* ── Player card enter — auction center panel ─────────────────────────────── */
+@keyframes player-card-enter {
+  0%   { opacity: 0; transform: translateY(12px) scale(0.97); }
+  60%  { transform: translateY(-3px) scale(1.01); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-player-card-enter { animation: player-card-enter 0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
+
+/* ── Bid value change — subtle bounce when bid updates ───────────────────── */
+@keyframes bid-update {
+  0%   { transform: scale(1); color: inherit; }
+  30%  { transform: scale(1.12) translateY(-2px); }
+  60%  { transform: scale(0.98) translateY(1px); }
+  100% { transform: scale(1) translateY(0); }
+}
+.animate-bid-update { animation: bid-update 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
 /* ── Danger button ────────────────────────────────────────────────────────────── */
 .btn-danger {
   display: inline-flex;
@@ -468,13 +485,17 @@ textarea:focus-visible {
   padding: 8px 12px;
   border-radius: 10px;
   font-size: 13px;
-  transition: all 0.15s;
+  transition: all 0.2s cubic-bezier(0.22,1,0.36,1);
 }
 .draft-slot-empty {
   border: 1px dashed rgba(255,255,255,0.12);
   background: transparent;
 }
-.draft-slot-filled { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
+.draft-slot-filled {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  animation: slide-up 0.22s ease forwards;
+}
 .draft-slot-target { background: rgba(234,88,12,0.12); border: 1px solid rgba(234,88,12,0.5); cursor: pointer; }
 .draft-slot-target:hover { background: rgba(234,88,12,0.2); }
 .draft-slot-target:focus-visible { outline: 2px solid rgba(249,115,22,0.6); outline-offset: 2px; border-radius: 10px; }
@@ -573,10 +594,11 @@ textarea:focus-visible {
   padding: 48px 24px;
   text-align: center;
   gap: 8px;
+  animation: fade-up 0.3s cubic-bezier(0.22,1,0.36,1) both;
 }
-.empty-state-icon { font-size: 40px; opacity: 0.15; margin-bottom: 4px; }
-.empty-state-title { font-size: 14px; font-weight: 800; color: rgba(255,255,255,0.4); }
-.empty-state-body  { font-size: 12px; color: rgba(255,255,255,0.2); }
+.empty-state-icon { font-size: 40px; opacity: 0.35; margin-bottom: 4px; }
+.empty-state-title { font-size: 14px; font-weight: 800; color: rgba(255,255,255,0.5); }
+.empty-state-body  { font-size: 12px; color: rgba(255,255,255,0.28); max-width: 240px; line-height: 1.5; }
 
 /* ── Countdown ring color transitions ────────────────────────────────────────── */
 .timer-danger { color: #ef4444; }
@@ -622,7 +644,7 @@ textarea:focus-visible {
 .gm-card {
   border-radius: 12px;
   padding: 12px;
-  transition: all 0.15s;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .gm-card-me  { background: rgba(234,88,12,0.08); border: 1px solid rgba(234,88,12,0.2); }
 .gm-card-other { background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.05); }
@@ -707,6 +729,46 @@ textarea:focus-visible {
   opacity: 0.7;
 }
 
+/* ── 375px narrow screen tweaks ─────────────────────────────────────────── */
+/* Compress key UI elements on the narrowest phones to prevent overflow      */
+@media (max-width: 390px) {
+  .war-room-bar {
+    padding: 10px 12px;
+  }
+
+  /* Slightly tighter border-radius on cards */
+  .card-accent,
+  .card-surface,
+  .card-stat {
+    border-radius: 12px;
+  }
+
+  /* Bid stepper: shrink on very narrow screens */
+  .bid-stepper-btn {
+    width: 44px;
+    min-width: 44px;
+    font-size: 20px;
+  }
+  .bid-stepper-input {
+    font-size: 28px;
+  }
+
+  /* pos-badge: keep legible at tiny sizes */
+  .pos-badge {
+    font-size: 10px;
+    padding: 2px 5px;
+  }
+}
+
+/* ── Score reveal entrance — W / D / L hero letter ──────────────────────── */
+@keyframes score-reveal {
+  0%   { opacity: 0; transform: scale(0.7) translateY(16px); filter: blur(4px); }
+  60%  { transform: scale(1.06) translateY(-4px); filter: blur(0); }
+  80%  { transform: scale(0.98) translateY(2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.animate-score-reveal { animation: score-reveal 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
 /* ── Reduced motion overrides ────────────────────────────────────────────── */
 /* For users who opt out of animation via OS accessibility settings.         */
 /* We keep opacity/color transitions (low severity) and disable transform,  */
@@ -753,6 +815,27 @@ textarea:focus-visible {
 
   /* Number pop — skip the scale bounce */
   .animate-num-pop {
+    animation: none !important;
+  }
+
+  /* Player card enter — instant fade */
+  .animate-player-card-enter {
+    animation: fade-in 0.15s ease forwards !important;
+    transform: none !important;
+  }
+
+  /* Bid update — skip bounce */
+  .animate-bid-update {
+    animation: none !important;
+  }
+
+  /* Empty state — instant appearance */
+  .empty-state {
+    animation: none !important;
+  }
+
+  /* Draft slot fill — instant */
+  .draft-slot-filled {
     animation: none !important;
   }
 

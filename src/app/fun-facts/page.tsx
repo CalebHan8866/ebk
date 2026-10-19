@@ -463,7 +463,7 @@ export default function FunFactsPage() {
     : 0
 
   return (
-    <div className="min-h-screen py-10 px-4">
+    <div className="min-h-screen py-8 sm:py-10 px-3 sm:px-4">
       <div className="max-w-md mx-auto">
 
         {/* ── Header ─────────────────────────────────────────────── */}
@@ -568,7 +568,7 @@ export default function FunFactsPage() {
             {/* ── Flip card ────────────────────────────────────────── */}
             <div
               className="relative cursor-pointer select-none"
-              style={{ perspective: '1200px', height: '500px' }}
+              style={{ perspective: '1200px', height: 'clamp(460px, 70vh, 520px)' }}
               onClick={flipCard}
             >
               <div

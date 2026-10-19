@@ -214,6 +214,12 @@ export default function AuctionRoomPage() {
     const nameAtMount = guestName
     const socket = getSocket()
     setMySocketId(socket.id || '')
+    // Reset the first-state seed flag whenever code or guestName changes (e.g.
+    // navigating between auction rooms in the same component instance). If not reset,
+    // the very first auction:state from the new room skips seeding prevWinnerRef,
+    // causing the justWon flash to fire spuriously for the winner of the last round
+    // before reconnect.
+    stateInitializedRef.current = false
 
     // Named handlers so we can pass them to socket.off() precisely — calling
     // socket.off('connect') without a reference removes ALL connect listeners.
@@ -598,8 +604,8 @@ export default function AuctionRoomPage() {
             <span className="live-dot" />
             WAR ROOM LOBBY
           </div>
-          <h1 className="font-display leading-none tracking-wider"
-            style={{ fontSize: 'clamp(3.5rem, 16vw, 5rem)', color: '#ea580c' }}>
+          <h1 className="font-display leading-none tracking-wider text-orange-600"
+            style={{ fontSize: 'clamp(3.5rem, 16vw, 5rem)' }}>
             WAR ROOM
           </h1>
           <p className="text-white/25 text-sm mt-1 italic px-4">&ldquo;{warRoomQuips[quipIndex]}&rdquo;</p>
@@ -737,21 +743,21 @@ export default function AuctionRoomPage() {
       : 100
 
     return (
-      <div className="min-h-screen px-4 py-6 max-w-5xl mx-auto animate-scale-in">
+      <div className="min-h-screen px-3 sm:px-4 py-5 sm:py-6 max-w-5xl mx-auto animate-scale-in">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4 gap-3">
-          <div>
-            <div className="flex items-center gap-3 mb-0.5">
-              <h1 className="font-display text-3xl sm:text-4xl text-orange-500 tracking-wider leading-none">TRADE WINDOW</h1>
+        <div className="flex items-center justify-between mb-4 gap-2 sm:gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 mb-0.5 flex-wrap">
+              <h1 className="font-display text-2xl sm:text-4xl text-orange-500 tracking-wider leading-none">TRADE WINDOW</h1>
               <div className="live-banner shrink-0">
                 <span className="live-dot" />
                 OPEN
               </div>
             </div>
-            <p className="text-white/30 text-xs mt-1 font-mono">{code} · {auctionState.participants.length} GMs</p>
+            <p className="text-white/30 text-xs mt-1 font-mono truncate">{code} · {auctionState.participants.length} GMs</p>
           </div>
           {/* Timer — urgency pill */}
-          <div className={`relative flex flex-col items-center gap-1 rounded-2xl px-5 py-3 border transition-all overflow-hidden shrink-0 ${
+          <div className={`relative flex flex-col items-center gap-1 rounded-2xl px-3 sm:px-5 py-2.5 sm:py-3 border transition-all overflow-hidden shrink-0 ${
             timerUrgent
               ? 'bg-red-950/50 border-red-500/60 shadow-[0_0_28px_rgba(239,68,68,0.25)]'
               : timerWarning
@@ -831,22 +837,22 @@ export default function AuctionRoomPage() {
                     </div>
 
                     {/* Trade card — YOU RECEIVE / YOU GIVE */}
-                    <div className="grid grid-cols-[1fr_36px_1fr] gap-0 p-4">
+                    <div className="grid grid-cols-[1fr_28px_1fr] sm:grid-cols-[1fr_36px_1fr] gap-0 p-3 sm:p-4">
                       {/* You receive */}
                       <div className="rounded-xl border border-green-500/25 overflow-hidden">
-                        <div className="flex items-center gap-1.5 px-3 py-2 bg-green-950/40 border-b border-green-500/15">
+                        <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 bg-green-950/40 border-b border-green-500/15">
                           <svg className="w-3 h-3 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                           </svg>
-                          <span className="text-green-400 text-[10px] font-black uppercase tracking-widest">You receive</span>
-                          <span className="ml-auto text-green-400/60 font-display text-sm leading-none tabular-nums">{receiveTotalEbk.toFixed(1)}</span>
+                          <span className="text-green-400 text-[9px] sm:text-[10px] font-black uppercase tracking-widest truncate">Receive</span>
+                          <span className="ml-auto text-green-400/60 font-display text-xs sm:text-sm leading-none tabular-nums shrink-0">{receiveTotalEbk.toFixed(1)}</span>
                         </div>
                         <div className="space-y-0 divide-y divide-white/[0.04]">
                           {offeredPlayers.map(p => p && (
-                            <div key={p.id} className="flex items-center gap-2 px-3 py-2.5">
+                            <div key={p.id} className="flex items-center gap-1.5 px-2 sm:px-3 py-2">
                               <PosBadge pos={p.position} />
-                              <span className="text-white font-bold text-xs truncate flex-1">{p.firstName[0]}. {p.lastName}</span>
-                              <span className="text-orange-400 text-xs font-black shrink-0">{p.ebkScore.toFixed(1)}</span>
+                              <span className="text-white font-bold text-[11px] sm:text-xs truncate flex-1">{p.firstName[0]}. {p.lastName}</span>
+                              <span className="text-orange-400 text-[11px] sm:text-xs font-black shrink-0">{p.ebkScore.toFixed(1)}</span>
                             </div>
                           ))}
                         </div>
@@ -854,8 +860,8 @@ export default function AuctionRoomPage() {
 
                       {/* Swap arrow */}
                       <div className="flex items-center justify-center">
-                        <div className="w-8 h-8 rounded-full bg-white/[0.05] border border-white/[0.08] flex items-center justify-center">
-                          <svg className="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/[0.05] border border-white/[0.08] flex items-center justify-center">
+                          <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                           </svg>
                         </div>
@@ -863,19 +869,19 @@ export default function AuctionRoomPage() {
 
                       {/* You give */}
                       <div className="rounded-xl border border-red-500/20 overflow-hidden">
-                        <div className="flex items-center gap-1.5 px-3 py-2 bg-red-950/30 border-b border-red-500/15">
+                        <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 bg-red-950/30 border-b border-red-500/15">
                           <svg className="w-3 h-3 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                           </svg>
-                          <span className="text-red-400 text-[10px] font-black uppercase tracking-widest">You give</span>
-                          <span className="ml-auto text-red-400/60 font-display text-sm leading-none tabular-nums">{giveTotalEbk.toFixed(1)}</span>
+                          <span className="text-red-400 text-[9px] sm:text-[10px] font-black uppercase tracking-widest truncate">Give</span>
+                          <span className="ml-auto text-red-400/60 font-display text-xs sm:text-sm leading-none tabular-nums shrink-0">{giveTotalEbk.toFixed(1)}</span>
                         </div>
                         <div className="space-y-0 divide-y divide-white/[0.04]">
                           {requestedPlayers.map(p => p && (
-                            <div key={p.id} className="flex items-center gap-2 px-3 py-2.5">
+                            <div key={p.id} className="flex items-center gap-1.5 px-2 sm:px-3 py-2">
                               <PosBadge pos={p.position} />
-                              <span className="text-white font-bold text-xs truncate flex-1">{p.firstName[0]}. {p.lastName}</span>
-                              <span className="text-orange-400 text-xs font-black shrink-0">{p.ebkScore.toFixed(1)}</span>
+                              <span className="text-white font-bold text-[11px] sm:text-xs truncate flex-1">{p.firstName[0]}. {p.lastName}</span>
+                              <span className="text-orange-400 text-[11px] sm:text-xs font-black shrink-0">{p.ebkScore.toFixed(1)}</span>
                             </div>
                           ))}
                         </div>
@@ -883,7 +889,7 @@ export default function AuctionRoomPage() {
                     </div>
 
                     {/* Accept / Decline — full width, prominent */}
-                    <div className="grid grid-cols-2 gap-3 px-4 pb-4">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3 px-3 sm:px-4 pb-3 sm:pb-4">
                       <button
                         onClick={() => handleTradeRespond(offer.id, false)}
                         className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-sm uppercase tracking-wider transition-all border bg-red-950/30 border-red-500/40 text-red-400 hover:bg-red-950/50 hover:border-red-500/60 hover:text-red-300 active:bg-red-950/60"
@@ -911,8 +917,11 @@ export default function AuctionRoomPage() {
         )}
 
         {errorMsg && (
-          <div className="mb-4 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">
-            {errorMsg}
+          <div role="alert" className="mb-4 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm flex items-start gap-3 animate-slide-up">
+            <div className="w-5 h-5 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center shrink-0 mt-0.5">
+              <span className="text-red-400 text-xs font-black leading-none">!</span>
+            </div>
+            <span className="flex-1">{errorMsg}</span>
           </div>
         )}
 
@@ -927,11 +936,11 @@ export default function AuctionRoomPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Your Roster */}
-          <div className="card-surface p-5">
+          <div className="card-surface p-4 sm:p-5">
             <div className="flex items-center justify-between mb-1">
-              <h2 className="font-display text-lg text-white/80 tracking-wider">YOUR ROSTER</h2>
+              <h2 className="font-display text-base sm:text-lg text-white/80 tracking-wider">YOUR ROSTER</h2>
               <div className="flex items-center gap-2">
                 {selectedToOffer.length > 0 && (
                   <span className="text-[10px] font-black uppercase tracking-widest bg-orange-600/20 border border-orange-500/40 text-orange-400 rounded-lg px-2 py-1">
@@ -942,23 +951,23 @@ export default function AuctionRoomPage() {
               </div>
             </div>
             <p className="text-white/25 text-[10px] mb-3 font-semibold uppercase tracking-wider">
-              {selectedToOffer.length === 0 ? 'Step 1 — tap players to offer' : 'Now select a GM and their players below'}
+              {selectedToOffer.length === 0 ? 'Step 1 — tap to offer' : 'Pick a GM and their players below'}
             </p>
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               {me?.roster.map(p => p && (
                 <button
                   key={p.id}
                   onClick={() => toggleOffer(p.id)}
-                  className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 border transition-all ${
+                  className={`w-full flex items-center gap-2 sm:gap-3 rounded-xl px-2.5 sm:px-3 py-2.5 sm:py-3 border transition-all ${
                     selectedToOffer.includes(p.id)
                       ? 'bg-orange-600/20 border-orange-500/50 shadow-[0_0_12px_rgba(234,88,12,0.15)]'
                       : 'bg-white/[0.03] border-white/[0.05] hover:border-white/20 hover:bg-white/[0.05]'
                   }`}
                 >
                   <PosBadge pos={p.position} />
-                  <span className="flex-1 text-left text-white text-sm font-bold truncate" title={`${p.firstName} ${p.lastName}`}>{p.firstName} {p.lastName}</span>
+                  <span className="flex-1 text-left text-white text-xs sm:text-sm font-bold truncate" title={`${p.firstName} ${p.lastName}`}>{p.firstName} {p.lastName}</span>
                   <span className="text-orange-400 text-xs font-black">{p.ebkScore.toFixed(1)}</span>
-                  <span className="text-white/25 text-xs">${p.paidPrice}M</span>
+                  <span className="text-white/25 text-xs hidden xs:inline">${p.paidPrice}M</span>
                   {selectedToOffer.includes(p.id)
                     ? <span className="w-4 h-4 rounded-full bg-orange-500/30 border border-orange-400 flex items-center justify-center shrink-0"><svg className="w-2.5 h-2.5 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></span>
                     : <span className="w-4 h-4 rounded-full border border-white/[0.12] shrink-0" />
@@ -1049,42 +1058,42 @@ export default function AuctionRoomPage() {
                         )
                       })()}
                     </div>
-                    <div className="grid grid-cols-[1fr_36px_1fr] gap-0 mb-4">
+                    <div className="grid grid-cols-[1fr_28px_1fr] sm:grid-cols-[1fr_36px_1fr] gap-0 mb-4">
                       <div className={`rounded-xl border overflow-hidden transition-all ${
                         selectedToOffer.length > 0
                           ? 'border-orange-500/30 bg-orange-950/20'
                           : 'border-white/[0.08] bg-white/[0.02]'
                       }`}>
-                        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-white/[0.05]">
+                        <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 border-b border-white/[0.05]">
                           <svg className="w-3 h-3 text-orange-400/60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                           </svg>
-                          <p className="text-orange-400/60 text-[9px] font-black uppercase tracking-widest">You give</p>
+                          <p className="text-orange-400/60 text-[9px] font-black uppercase tracking-widest truncate">You give</p>
                           {selectedToOffer.length > 0 && (
-                            <span className="ml-auto text-orange-400/60 font-display text-xs tabular-nums">
+                            <span className="ml-auto text-orange-400/60 font-display text-xs tabular-nums shrink-0">
                               {selectedToOffer.reduce((s, id) => s + (me?.roster.find(p => p?.id === id)?.ebkScore ?? 0), 0).toFixed(1)}
                             </span>
                           )}
                         </div>
-                        <div className="px-3 py-2 space-y-1.5 min-h-[52px]">
+                        <div className="px-2 sm:px-3 py-2 space-y-1.5 min-h-[48px]">
                           {selectedToOffer.length > 0 ? selectedToOffer.map(id => {
                             const p = me?.roster.find(r => r?.id === id)
                             return p ? (
                               <div key={id} className="flex items-center gap-1.5">
                                 <PosBadge pos={p.position} />
-                                <span className="text-white text-xs font-bold truncate flex-1">{p.firstName[0]}. {p.lastName}</span>
+                                <span className="text-white text-[11px] sm:text-xs font-bold truncate flex-1">{p.firstName[0]}. {p.lastName}</span>
                                 <span className="text-orange-400 text-[10px] font-black shrink-0">{p.ebkScore.toFixed(1)}</span>
                               </div>
                             ) : null
                           }) : (
-                            <p className="text-white/20 text-[11px] italic pt-1">Select from your roster above</p>
+                            <p className="text-white/20 text-[10px] sm:text-[11px] italic pt-1">Select from roster</p>
                           )}
                         </div>
                       </div>
                       {/* Swap icon */}
                       <div className="flex items-center justify-center">
-                        <div className="w-7 h-7 rounded-full bg-white/[0.05] border border-white/[0.08] flex items-center justify-center">
-                          <svg className="w-3.5 h-3.5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/[0.05] border border-white/[0.08] flex items-center justify-center">
+                          <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                           </svg>
                         </div>
@@ -1094,29 +1103,29 @@ export default function AuctionRoomPage() {
                           ? 'border-blue-500/30 bg-blue-950/20'
                           : 'border-white/[0.08] bg-white/[0.02]'
                       }`}>
-                        <div className="flex items-center gap-1.5 px-3 py-2 border-b border-white/[0.05]">
+                        <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 border-b border-white/[0.05]">
                           <svg className="w-3 h-3 text-blue-400/60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
                           </svg>
-                          <p className="text-blue-400/60 text-[9px] font-black uppercase tracking-widest">You get</p>
+                          <p className="text-blue-400/60 text-[9px] font-black uppercase tracking-widest truncate">You get</p>
                           {selectedToRequest.length > 0 && (
-                            <span className="ml-auto text-blue-400/60 font-display text-xs tabular-nums">
+                            <span className="ml-auto text-blue-400/60 font-display text-xs tabular-nums shrink-0">
                               {selectedToRequest.reduce((s, id) => s + (gm.roster.find(p => p?.id === id)?.ebkScore ?? 0), 0).toFixed(1)}
                             </span>
                           )}
                         </div>
-                        <div className="px-3 py-2 space-y-1.5 min-h-[52px]">
+                        <div className="px-2 sm:px-3 py-2 space-y-1.5 min-h-[48px]">
                           {selectedToRequest.length > 0 ? selectedToRequest.map(id => {
                             const p = gm.roster.find(r => r?.id === id)
                             return p ? (
                               <div key={id} className="flex items-center gap-1.5">
                                 <PosBadge pos={p.position} />
-                                <span className="text-white text-xs font-bold truncate flex-1">{p.firstName[0]}. {p.lastName}</span>
+                                <span className="text-white text-[11px] sm:text-xs font-bold truncate flex-1">{p.firstName[0]}. {p.lastName}</span>
                                 <span className="text-orange-400 text-[10px] font-black shrink-0">{p.ebkScore.toFixed(1)}</span>
                               </div>
                             ) : null
                           }) : (
-                            <p className="text-white/20 text-[11px] italic pt-1">Tap their players above</p>
+                            <p className="text-white/20 text-[10px] sm:text-[11px] italic pt-1">Tap their players</p>
                           )}
                         </div>
                       </div>
@@ -1268,8 +1277,11 @@ export default function AuctionRoomPage() {
         </div>
 
         {errorMsg && (
-          <div role="alert" aria-live="assertive" className="mx-4 mt-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2 text-red-400 text-sm text-center">
-            {errorMsg}
+          <div role="alert" aria-live="assertive" className="mx-4 mt-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2.5 text-red-400 text-sm flex items-center gap-2.5 animate-slide-up">
+            <div className="w-5 h-5 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center shrink-0">
+              <span className="text-red-400 text-xs font-black leading-none">!</span>
+            </div>
+            <span className="flex-1 text-center">{errorMsg}</span>
           </div>
         )}
 
@@ -1358,7 +1370,10 @@ export default function AuctionRoomPage() {
                         </div>
                       ))}
                       {p.roster.length === 0 && (
-                        <p className="text-white/20 text-[10px] italic py-1">No players yet</p>
+                        <div className="flex items-center gap-1.5 py-2 px-1 opacity-40">
+                          <span className="text-white/30 text-base">🏀</span>
+                          <span className="text-white/25 text-[10px] font-semibold italic">No players yet</span>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1380,7 +1395,7 @@ export default function AuctionRoomPage() {
 
             {/* Player card — keyed to cp.id so each new player remounts with a fresh animation */}
             {cp && (
-              <div key={cp.id} className="card-accent w-full max-w-sm p-6 text-center animate-scale-in">
+              <div key={cp.id} className="card-accent w-full max-w-sm p-6 text-center animate-player-card-enter">
                 {/* ON THE BLOCK badge */}
                 <div className="inline-flex items-center gap-1.5 bg-orange-950/50 border border-orange-500/40 rounded-full px-3 py-1 mb-4">
                   <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse shrink-0" />
@@ -1429,7 +1444,7 @@ export default function AuctionRoomPage() {
               </div>
               <div
                 key={auctionState.currentBid}
-                className={`bid-hero animate-num-pop ${
+                className={`bid-hero animate-bid-update ${
                   justWon ? 'text-green-400' :
                   auctionState.currentBid > 0 ? (amLeading ? 'text-orange-400' : 'text-white') : 'text-white/15'
                 }`}
