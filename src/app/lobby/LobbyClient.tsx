@@ -919,18 +919,30 @@ export default function LobbyPage() {
 
                 {onlineState === 'listing' && (
                   <div className="card-accent rounded-2xl p-5 flex flex-col gap-4">
-                    {/* Live indicator */}
-                    <div className="flex items-center gap-2">
-                      <div className="live-dot" />
-                      <span className="text-green-400 text-xs font-black uppercase tracking-widest">Game Live</span>
+                    {/* Status hero — spinner + headline */}
+                    <div className="text-center py-2">
+                      <div className="flex items-center justify-center gap-3 mb-3">
+                        <div className="relative w-8 h-8 shrink-0">
+                          <div className="absolute inset-0 rounded-full border-2 border-orange-500/20" />
+                          <div className="absolute inset-0 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+                        </div>
+                        <span className="font-display text-2xl text-white tracking-wider leading-none">SEARCHING</span>
+                      </div>
+                      <p className="text-white/40 text-xs leading-relaxed">
+                        Your game is live — waiting for an opponent to join.
+                      </p>
                     </div>
 
                     {/* Host row */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 bg-white/[0.03] border border-white/[0.05] rounded-xl px-3 py-2.5">
                       <Avatar name={user.username} />
-                      <div>
-                        <div className="text-white font-black">{user.username}</div>
-                        <div className="text-gray-400 text-xs">{user.wins}W {user.losses}L · {winPct(user.wins, user.losses)}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-black text-sm truncate">{user.username}</div>
+                        <div className="text-gray-500 text-xs">{user.wins}W {user.losses}L · {winPct(user.wins, user.losses)}</div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="live-dot" />
+                        <span className="text-green-400 text-[10px] font-black uppercase tracking-widest">Live</span>
                       </div>
                     </div>
 
@@ -950,9 +962,16 @@ export default function LobbyPage() {
                       </div>
                     </div>
 
-                    <p className="text-gray-400 text-xs text-center leading-relaxed">
-                      Your game is visible to all players.<br />Waiting for someone to join...
-                    </p>
+                    {/* Animated waiting dots */}
+                    <div className="flex items-center justify-center gap-1.5 py-1">
+                      {[0, 1, 2].map(d => (
+                        <span
+                          key={d}
+                          className="w-1.5 h-1.5 rounded-full bg-orange-500/50 animate-pulse"
+                          style={{ animationDelay: `${d * 300}ms` }}
+                        />
+                      ))}
+                    </div>
 
                     {listingError && (
                       <div className="bg-red-900/20 border border-red-500/30 text-red-400 rounded-xl px-3 py-2 text-xs text-center">

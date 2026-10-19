@@ -48,6 +48,8 @@ function AuctionPageInner() {
   const [isHost, setIsHost] = useState(false)
   const [mySocketId, setMySocketId] = useState('')
   const [copied, setCopied] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  const [isJoining, setIsJoining] = useState(false)
 
   const userName = user?.username || guestName
 
@@ -68,12 +70,14 @@ function AuctionPageInner() {
       setMySocketId(socket.id || '')
       setCode(c)
       setIsHost(true)
+      setIsCreating(false)
       setPhase('waiting')
     }
     const onJoined = ({ code: c }: { code: string }) => {
       setMySocketId(socket.id || '')
       setCode(c)
       setIsHost(false)
+      setIsJoining(false)
       setPhase('waiting')
     }
     const onState = (state: { status: string; participants: ParticipantInfo[]; code: string; teamSize?: number; maxPlayers?: number; totalBudget?: number; hostSocketId?: string }) => {
@@ -87,6 +91,8 @@ function AuctionPageInner() {
     }
     const onError = ({ message }: { message: string }) => {
       setErrorMsg(message)
+      setIsCreating(false)
+      setIsJoining(false)
       setTimeout(() => setErrorMsg(''), 4000)
     }
 
@@ -114,6 +120,7 @@ function AuctionPageInner() {
   function handleCreate() {
     if (!userName.trim()) { setErrorMsg('Enter a display name'); return }
     setErrorMsg('')
+    setIsCreating(true)
     const socket = getSocket()
     socket.emit('auction:create', { teamSize, maxPlayers, userName: userName.trim() })
   }
@@ -122,6 +129,7 @@ function AuctionPageInner() {
     if (!userName.trim()) { setErrorMsg('Enter a display name'); return }
     if (!joinCode.trim()) { setErrorMsg('Enter a room code'); return }
     setErrorMsg('')
+    setIsJoining(true)
     const socket = getSocket()
     socket.emit('auction:join', { code: joinCode.trim().toUpperCase(), userName: userName.trim() })
   }
@@ -265,7 +273,10 @@ function AuctionPageInner() {
 
               {/* Team Size */}
               <div>
-                <label className="text-label block mb-3">Team Size</label>
+                <div className="flex items-baseline gap-2 mb-3">
+                  <label className="text-label">Team Size</label>
+                  <span className="text-white/20 text-[10px] normal-case tracking-normal font-normal">how many players each GM drafts</span>
+                </div>
                 <div className="grid grid-cols-3 gap-3">
                   {([5, 8, 12] as const).map(size => {
                     const c = TEAM_SIZE_CONFIG[size]
@@ -303,9 +314,10 @@ function AuctionPageInner() {
 
               {/* Max GMs */}
               <div>
-                <label className="text-label block mb-3">
-                  GMs in Room <span className="text-white/20 normal-case tracking-normal lowercase font-normal">({maxPlayers} selected)</span>
-                </label>
+                <div className="flex items-baseline gap-2 mb-3">
+                  <label className="text-label">GMs in Room</label>
+                  <span className="text-white/20 text-[10px] normal-case tracking-normal font-normal">max players — start anytime with 2+</span>
+                </div>
                 <div className="flex gap-2">
                   {([2, 3, 4, 5, 6] as const).map(n => (
                     <button
@@ -339,8 +351,19 @@ function AuctionPageInner() {
                 </div>
               </div>
 
-              <button onClick={handleCreate} className="btn-primary w-full text-lg font-display tracking-widest">
-                Open War Room
+              <button
+                onClick={handleCreate}
+                disabled={isCreating}
+                className="btn-primary w-full text-lg font-display tracking-widest disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isCreating ? (
+                  <span className="inline-flex items-center gap-2.5">
+                    <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin shrink-0" />
+                    Opening...
+                  </span>
+                ) : (
+                  'Open War Room'
+                )}
               </button>
             </div>
           )}
@@ -358,8 +381,19 @@ function AuctionPageInner() {
                 />
                 <p className="text-white/25 text-xs text-center mt-2">Ask the room host for the 6-character code</p>
               </div>
-              <button onClick={handleJoin} className="btn-primary w-full text-lg font-display tracking-widest">
-                Enter War Room
+              <button
+                onClick={handleJoin}
+                disabled={isJoining}
+                className="btn-primary w-full text-lg font-display tracking-widest disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isJoining ? (
+                  <span className="inline-flex items-center gap-2.5">
+                    <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin shrink-0" />
+                    Joining...
+                  </span>
+                ) : (
+                  'Enter War Room'
+                )}
               </button>
             </div>
           )}

@@ -112,7 +112,7 @@ function QuickStats({ records }: { records: GameRecord[] }) {
   return (
     <div className="mb-7 animate-fade-up-1">
       <WinRateBar wins={wins} losses={losses} draws={draws} />
-      <div className="grid grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-4 gap-1.5 sm:gap-2.5">
         {[
           { label: 'Wins',         value: wins,          color: 'text-green-400',  bg: 'bg-green-950/30 border-green-800/25' },
           { label: 'Losses',       value: losses,        color: 'text-red-400',    bg: 'bg-red-950/20 border-red-900/20' },
@@ -121,10 +121,10 @@ function QuickStats({ records }: { records: GameRecord[] }) {
         ].map((s) => (
           <div
             key={s.label}
-            className={`rounded-xl py-4 text-center border ${s.bg}`}
+            className={`rounded-xl py-3 sm:py-4 text-center border ${s.bg}`}
           >
-            <div className={`font-display text-3xl leading-none tabular-nums ${s.color}`}>{s.value}</div>
-            <div className="text-label mt-1.5">{s.label}</div>
+            <div className={`font-display text-2xl sm:text-3xl leading-none tabular-nums ${s.color}`}>{s.value}</div>
+            <div className="text-label mt-1 text-[9px] sm:text-[10px]">{s.label}</div>
           </div>
         ))}
       </div>

@@ -728,18 +728,18 @@ function PracticeContent() {
           <div className={`font-black text-base mb-5 uppercase tracking-wider ${gradeColor}`}>{gradeLabel}</div>
 
           {/* Score comparison row */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
-            <div className="rounded-xl p-3 text-center bg-white/[0.04] border border-white/[0.07]">
-              <div className={`font-display text-3xl leading-none tabular-nums ${gradeColor}`}>{totalEBK.toFixed(1)}</div>
-              <div className="text-label mt-1.5 text-[10px]">Your EBK</div>
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-3 mb-4">
+            <div className="rounded-xl p-2 sm:p-3 text-center bg-white/[0.04] border border-white/[0.07]">
+              <div className={`font-display text-2xl sm:text-3xl leading-none tabular-nums ${gradeColor}`}>{totalEBK.toFixed(1)}</div>
+              <div className="text-label mt-1.5 text-[9px] sm:text-[10px]">Your EBK</div>
             </div>
-            <div className="rounded-xl p-3 text-center bg-white/[0.04] border border-white/[0.07] flex flex-col items-center justify-center">
-              <div className={`font-display text-2xl leading-none tabular-nums ${gradeColor}`}>{pct.toFixed(0)}%</div>
-              <div className="text-label mt-1.5 text-[10px]">of Optimal</div>
+            <div className="rounded-xl p-2 sm:p-3 text-center bg-white/[0.04] border border-white/[0.07] flex flex-col items-center justify-center">
+              <div className={`font-display text-2xl sm:text-3xl leading-none tabular-nums ${gradeColor}`}>{pct.toFixed(0)}%</div>
+              <div className="text-label mt-1.5 text-[9px] sm:text-[10px]">Optimal</div>
             </div>
-            <div className="rounded-xl p-3 text-center bg-white/[0.04] border border-white/[0.07]">
-              <div className="font-display text-3xl leading-none text-gray-400 tabular-nums">{bestEBK.toFixed(1)}</div>
-              <div className="text-label mt-1.5 text-[10px]">Best Possible</div>
+            <div className="rounded-xl p-2 sm:p-3 text-center bg-white/[0.04] border border-white/[0.07]">
+              <div className="font-display text-2xl sm:text-3xl leading-none text-gray-400 tabular-nums">{bestEBK.toFixed(1)}</div>
+              <div className="text-label mt-1.5 text-[9px] sm:text-[10px]">Best</div>
             </div>
           </div>
 
