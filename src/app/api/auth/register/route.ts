@@ -21,6 +21,9 @@ export async function POST(request: NextRequest) {
     if (!username || !rawEmail || !password || typeof username !== 'string' || typeof rawEmail !== 'string' || typeof password !== 'string') {
       return noStore({ error: 'All fields required' }, { status: 400 })
     }
+    // Reject oversized email strings before any further processing —
+    // 254 chars is the RFC 5321 maximum for an email address.
+    if (rawEmail.length > 254) return noStore({ error: 'Invalid email address' }, { status: 400 })
     // Normalize email to lowercase so "User@Example.COM" and "user@example.com"
     // are treated as the same address and cannot register as separate accounts.
     const email = rawEmail.toLowerCase()
