@@ -192,6 +192,10 @@ const PLAYER_REFRESH_MS = 5 * 60 * 1000
 const COOLDOWN_PRUNE_MS = 60 * 60 * 1000
 /** How often the socket/room metrics heartbeat is logged */
 const METRICS_HEARTBEAT_MS = 5 * 60 * 1000
+/** How often stale pre-game rooms (waiting/waiting-auction) are swept */
+const STALE_ROOM_SWEEP_MS = 5 * 60 * 1000
+/** Maximum age of a room stuck in a pre-game state before it is force-deleted */
+const STALE_WAITING_ROOM_MS = 30 * 60 * 1000
 /** Maximum Socket.IO per-message payload — prevents memory exhaustion from oversized frames */
 const MAX_HTTP_BUFFER_BYTES = 10 * 1024
 /** Per-socket bid throttle: max bids allowed within BID_THROTTLE_WINDOW_MS */
@@ -1220,6 +1224,44 @@ app.prepare().then(async () => {
     const auctionCount = auctionRooms.size
     console.log('[metrics] connections=%d game_rooms=%d auction_rooms=%d', socketCount, roomCount, auctionCount)
   }, METRICS_HEARTBEAT_MS)
+
+  // ─── Stale pre-game room sweep (every 5 min) ─────────────────────────────────
+  // A 'waiting' draft room or 'waiting' auction room can leak indefinitely when the
+  // host's socket stays connected but no guest ever joins (e.g. the host opens the
+  // share-link screen and walks away without closing the tab).  The disconnect handler
+  // cleans up rooms when the host disconnects, but that never fires for a live-but-idle
+  // socket.  This sweep deletes any room that has been in a pre-game state for longer
+  // than STALE_WAITING_ROOM_MS (30 min) regardless of socket liveness.
+  setInterval(() => {
+    const now = Date.now()
+    const cutoff = now - STALE_WAITING_ROOM_MS
+
+    for (const [code, room] of rooms.entries()) {
+      if (room.status === 'waiting' && room.createdAt < cutoff) {
+        // Cancel any pending cleanup timer so scheduleRoomCleanup doesn't double-fire
+        const existing = roomCleanupTimers.get(code)
+        if (existing) { clearTimeout(existing); roomCleanupTimers.delete(code) }
+        rooms.delete(code)
+        pickTimers.delete(code)
+        pickTimerStartedAt.delete(code)
+        consecutiveTimeouts.delete(code)
+        io.in(code).socketsLeave(code)
+        console.log('[room] stale-sweep evicted waiting room code=%s age_min=%d game_rooms=%d',
+          code, Math.round((now - room.createdAt) / 60_000), rooms.size)
+      }
+    }
+
+    for (const [code, room] of auctionRooms.entries()) {
+      if (room.status === 'waiting' && room.createdAt < cutoff) {
+        if (room.bidTimer) clearTimeout(room.bidTimer)
+        auctionRooms.delete(code)
+        auctionRoundCounter.delete(code)
+        io.in(`auction:${code}`).socketsLeave(`auction:${code}`)
+        console.log('[auction] stale-sweep evicted waiting room code=%s age_min=%d auction_rooms=%d',
+          code, Math.round((now - room.createdAt) / 60_000), auctionRooms.size)
+      }
+    }
+  }, STALE_ROOM_SWEEP_MS)
 
   // ─── Graceful SIGTERM (Railway zero-downtime deploys) ────────────────────────
   // Railway sends SIGTERM to the old instance before starting the new one.
