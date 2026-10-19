@@ -1359,6 +1359,14 @@ app.prepare().then(async () => {
       if (userId && isUserActiveInAnyRoom(userId)) {
         socket.emit('room-error', { message: 'You are already in an active game' }); return
       }
+      // Guard: reject join if the host socket has already disconnected.  The room
+      // stays in the Map for ROOM_CLEANUP_GRACE_MS (60 s) after the host leaves, so
+      // without this check a guest could start a draft against a dead host socket —
+      // picks would auto-fire through the timer, the host would time out twice, and
+      // the guest would receive a disqualification "win" against a phantom opponent.
+      if (!io.sockets.sockets.has(room.hostSocketId)) {
+        socket.emit('room-error', { message: 'Room is no longer available' }); return
+      }
 
       room.guestSocketId = socket.id
       room.guestUserId = userId
