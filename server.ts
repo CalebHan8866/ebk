@@ -2040,6 +2040,19 @@ app.prepare().then(async () => {
 
     socket.on('auction:join', ({ code, userName }: { code: string; userName: string }) => {
       if (typeof code !== 'string') return
+      // Rate limit: max 10 auction:join attempts per minute per socket to prevent room-code brute-force.
+      // This mirrors the identical guard on join-room (game rooms).
+      const ajNow = Date.now()
+      const ajThrottle = joinRoomThrottle.get(socket.id)
+      if (ajThrottle && ajNow - ajThrottle.windowStart < 60_000) {
+        if (ajThrottle.count >= 10) {
+          socket.emit('auction:error', { message: 'Too many join attempts. Please wait a moment.' })
+          return
+        }
+        ajThrottle.count++
+      } else {
+        joinRoomThrottle.set(socket.id, { count: 1, windowStart: ajNow })
+      }
       // Prefer the server-verified JWT username; fall back to sanitized client name for anonymous players.
       userName = ((socket.data.username as string | null) || (userName ?? '').trim()).slice(0, 20) || 'Player'
       const room = auctionRooms.get(code.trim().toUpperCase())
@@ -2382,6 +2395,21 @@ app.prepare().then(async () => {
           if (room.currentBidderSocketId === oldSocketId) room.currentBidderSocketId = socket.id
           if (room.nominatorSocketId === oldSocketId) room.nominatorSocketId = socket.id
           socket.join(`auction:${room.code}`)
+        }
+      }
+
+      // Access control for completed rooms: only participants may retrieve full state
+      // (which includes finalResults with team compositions and individual bid amounts).
+      // Without this check, any socket that learns a 6-char room code could call
+      // auction:get-state after the auction finishes and receive all private draft data.
+      // Active/waiting rooms are implicitly protected because non-participants have no
+      // reason to call this handler (they haven't joined via auction:join), and the
+      // in-progress state doesn't contain finalResults anyway.
+      if (room.status === 'complete') {
+        const isParticipant = room.participants.some(p => p.socketId === socket.id)
+        if (!isParticipant) {
+          socket.emit('auction:error', { message: 'Unauthorized' })
+          return
         }
       }
 
