@@ -157,7 +157,7 @@ function expandComments(html: string): string {
   return html.replace(/<!--([\s\S]*?)-->/g, (_, inner) => inner)
 }
 
-function rawPath(year: number, kind: 'salary' | 'advanced'): string {
+function rawPath(year: number, kind: string): string {
   return path.join(RAW_DIR, `${year}_${kind}.html`)
 }
 
@@ -189,14 +189,89 @@ async function fetchOrCache(url: string, cachePath: string): Promise<string> {
 
 interface SalaryRow { name: string; team: string; salary: number }
 
+/** Parse salary rows from a page that has data-stat="salary" cells inline (not in comments) */
+function parseSalaryRows(html: string, defaultTeam: string): SalaryRow[] {
+  const expanded = expandComments(html)
+  const $ = cheerio.load(expanded)
+  const rows: SalaryRow[] = []
+  $('table tbody tr').each((_, row) => {
+    const $row = $(row)
+    if ($row.hasClass('thead') || $row.hasClass('over_header') || $row.hasClass('partial_table')) return
+    const nameEl   = $row.find('[data-stat="player"] a')
+    const salaryEl = $row.find('[data-stat="salary"]')
+    const name = nameEl.text().trim()
+    if (!name || !salaryEl.length) return
+    const csk  = salaryEl.attr('csk')
+    const raw  = csk ? csk : salaryEl.text().replace(/[$,]/g, '').trim()
+    const salary = parseInt(raw, 10)
+    if (!isNaN(salary) && salary > 0) {
+      rows.push({ name, team: defaultTeam, salary })
+    }
+  })
+  return rows
+}
+
+/** Fallback: get team abbreviations from the standings page for a given year */
+async function getTeamsForYear(year: number): Promise<string[]> {
+  const url = `https://www.basketball-reference.com/leagues/NBA_${year}_standings.html`
+  const cachePath = rawPath(year, 'standings')
+  try {
+    const html = await fetchOrCache(url, cachePath)
+    const $ = cheerio.load(html)
+    const teams = new Set<string>()
+    $(`a[href^="/teams/"]`).each((_, el) => {
+      const match = ($(el).attr('href') || '').match(/\/teams\/([A-Z]+)\/\d+\.html/)
+      if (match) teams.add(match[1])
+    })
+    return Array.from(teams)
+  } catch {
+    return []
+  }
+}
+
+/** Fallback: scrape salary from each team's roster page when aggregate page is unavailable */
+async function scrapeSalariesFromTeams(year: number): Promise<SalaryRow[]> {
+  const teams = await getTeamsForYear(year)
+  if (teams.length === 0) return []
+
+  // name (normalized) → best salary row — dedup traded players by taking the max salary entry
+  const byName = new Map<string, SalaryRow>()
+
+  for (const team of teams) {
+    const url = `https://www.basketball-reference.com/teams/${team}/${year}.html`
+    const cachePath = rawPath(year, `team_${team}`)
+    try {
+      const html = await fetchOrCache(url, cachePath)
+      const teamRows = parseSalaryRows(html, team)
+      for (const r of teamRows) {
+        const key = normName(r.name)
+        const existing = byName.get(key)
+        if (!existing || r.salary > existing.salary) byName.set(key, r)
+      }
+    } catch (err: any) {
+      if (err?.response?.status !== 404) {
+        console.warn(`    Team ${team}/${year}: ${err?.response?.status ?? err.message}`)
+      }
+    }
+    await sleep(DELAY_MS)
+  }
+  return Array.from(byName.values())
+}
+
 async function scrapeSalaries(year: number): Promise<SalaryRow[]> {
-  // BBRef salary pages: /leagues/NBA_YEAR_salaries.html
+  // Primary: BBRef aggregate salary page (may 404 on newer BBRef — fall back to team pages)
   const url = `https://www.basketball-reference.com/leagues/NBA_${year}_salaries.html`
   let html: string
   try {
     html = await fetchOrCache(url, rawPath(year, 'salary'))
   } catch (err: any) {
-    console.warn(`  Salary page ${year}: ${err?.response?.status ?? err.message}`)
+    if (err?.response?.status === 404) {
+      // BBRef removed aggregate salary pages — fall back to individual team roster pages
+      const rows = await scrapeSalariesFromTeams(year)
+      console.log(`${rows.length} rows (team-page fallback, 30 teams)`)
+      return rows
+    }
+    console.warn(`${err?.response?.status ?? err.message}`)
     return []
   }
   const expanded = expandComments(html)
@@ -223,6 +298,7 @@ async function scrapeSalaries(year: number): Promise<SalaryRow[]> {
       rows.push({ name, team, salary })
     }
   })
+  console.log(`${rows.length} rows`)
   return rows
 }
 
@@ -430,10 +506,9 @@ async function main() {
     const label = CAP_HISTORY[year].label
     console.log(`\n[${year}] ${label}`)
 
-    // Fetch salary page
+    // Fetch salary page (falls back to team pages automatically if 404)
     process.stdout.write(`  Salaries... `)
     const salaries = await scrapeSalaries(year)
-    console.log(`${salaries.length} rows`)
     await sleep(DELAY_MS)
 
     // Fetch advanced stats
