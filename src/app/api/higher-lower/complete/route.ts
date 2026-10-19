@@ -84,26 +84,52 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: { unlockedBadges: true },
-    })
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
-
-    let unlocked: string[] = []
-    try { unlocked = JSON.parse(user.unlockedBadges) } catch {}
-
-    if (unlocked.includes(milestone)) {
-      return NextResponse.json({ alreadyUnlocked: true })
-    }
-
     const badge = BADGES.find(b => b.id === milestone)
     if (!badge) return NextResponse.json({ error: 'Badge not found' }, { status: 404 })
 
-    await prisma.user.update({
-      where: { id: payload.userId },
-      data: { unlockedBadges: JSON.stringify([...unlocked, milestone]) },
+    // Atomic badge unlock: use a $transaction that reads and writes under a
+    // serializable-equivalent lock so concurrent requests for the same milestone
+    // cannot both pass the already-unlocked check and double-append the badge.
+    // The inner updateMany WHERE guard (string NOT-contains the milestone) acts as
+    // a final compare-and-swap: even if two requests enter the transaction
+    // simultaneously, exactly one will match the WHERE and update; the other will
+    // see count === 0 and return alreadyUnlocked — preventing duplicate badge grants.
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: payload.userId },
+        select: { unlockedBadges: true },
+      })
+      if (!user) return { notFound: true } as const
+
+      let unlocked: string[] = []
+      try { unlocked = JSON.parse(user.unlockedBadges) } catch {}
+
+      if (unlocked.includes(milestone)) {
+        return { alreadyUnlocked: true } as const
+      }
+
+      // Atomic guard: the WHERE clause requires the badge is still absent.
+      // If a concurrent transaction already appended it, this update matches
+      // zero rows and we treat it as alreadyUnlocked.
+      const updated = await tx.user.updateMany({
+        where: {
+          id: payload.userId,
+          // string_contains: milestone checks that the JSON array text does NOT
+          // contain this badge id.  We invert with NOT to guard against a race.
+          NOT: { unlockedBadges: { string_contains: `"${milestone}"` } },
+        },
+        data: { unlockedBadges: JSON.stringify([...unlocked, milestone]) },
+      })
+
+      if (updated.count === 0) {
+        return { alreadyUnlocked: true } as const
+      }
+
+      return { unlocked: true } as const
     })
+
+    if ('notFound' in result) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (result.alreadyUnlocked) return NextResponse.json({ alreadyUnlocked: true })
 
     return NextResponse.json({ unlocked: true, badge: { id: badge.id, name: badge.name } })
   } catch {
