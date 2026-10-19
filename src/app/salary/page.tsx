@@ -55,11 +55,8 @@ function estimateCareerEarnings(p: Player): number {
 }
 
 function getEarnings(p: Player): { value: number; estimated: boolean } {
-  if (p.careerEarnings <= 0) return { value: estimateCareerEarnings(p), estimated: true }
-  // Sanity check: if scraped value < 15% of estimate, scraper caught only one season
-  const est = estimateCareerEarnings(p)
-  if (est > 0 && p.careerEarnings < est * 0.15) return { value: est, estimated: true }
-  return { value: p.careerEarnings, estimated: false }
+  if (p.careerEarnings > 0) return { value: p.careerEarnings, estimated: false }
+  return { value: estimateCareerEarnings(p), estimated: true }
 }
 
 function fmt(n: number): string {

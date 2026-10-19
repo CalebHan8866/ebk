@@ -731,7 +731,7 @@ export default function FunFactsPage() {
             {/* ── Flip card ────────────────────────────────────────── */}
             <div
               className="relative cursor-pointer select-none"
-              style={{ perspective: '1200px', height: 'clamp(460px, 70vh, 520px)' }}
+              style={{ perspective: '1200px', height: 'clamp(380px, 62vh, 520px)' }}
               onClick={flipCard}
               role="button"
               tabIndex={0}
@@ -743,6 +743,7 @@ export default function FunFactsPage() {
                   position: 'relative',
                   width: '100%',
                   height: '100%',
+                  transformStyle: 'preserve-3d',
                   transformStyle: 'preserve-3d',
                   transition: 'transform 0.48s cubic-bezier(0.34, 1.1, 0.64, 1)',
                   transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
