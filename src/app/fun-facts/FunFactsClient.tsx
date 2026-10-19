@@ -171,6 +171,7 @@ function eligibleEvents(earnings: number) {
 }
 
 function fmt(n: number): string {
+  if (n < 0) return `-${fmt(-n)}`
   if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(2)}B`
   if (n >= 1_000_000)     return `$${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000)         return `$${Math.round(n / 1_000)}K`
@@ -386,7 +387,7 @@ function generateFacts(p: Player, seasonEntries?: SeasonEntry[]): Fact[] {
     const best = seasonEntries.reduce((a, b) => (a.surplusNow > b.surplusNow ? a : b))
     const worst = seasonEntries.reduce((a, b) => (a.surplusNow < b.surplusNow ? a : b))
 
-    if (best.surplusNow > 0) {
+    if (best.surplusNow > 0 && best.rank > 0 && best.rank < 500) {
       const ordinal = (n: number) => {
         const s = ['th', 'st', 'nd', 'rd']
         const v = n % 100
