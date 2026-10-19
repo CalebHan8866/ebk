@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "ts-node --project tsconfig.server.json server.ts",
+    "build:server": "tsc --project tsconfig.server.json",
     "build:_WARN_accept-data-loss": "DANGER: --accept-data-loss silently drops columns/tables removed from schema.prisma. Before any schema change that REMOVES a field, verify the migration is purely additive or use prisma migrate deploy instead.",
-    "build": "prisma db push --accept-data-loss || true && prisma generate && ts-node --project tsconfig.seed.json scripts/patch-missing-players.ts || true && ts-node --project tsconfig.seed.json scripts/update-season.ts 2025 || true && ts-node --project tsconfig.seed.json scripts/update-season.ts 2026 || true && next build",
-    "start": "NODE_ENV=production ts-node --project tsconfig.server.json server.ts",
+    "build": "prisma db push --accept-data-loss || true && prisma generate && ts-node --project tsconfig.seed.json scripts/patch-missing-players.ts || true && ts-node --project tsconfig.seed.json scripts/update-season.ts 2025 || true && ts-node --project tsconfig.seed.json scripts/update-season.ts 2026 || true && next build && npm run build:server",
+    "start": "NODE_ENV=production node dist/server.js",
     "db:push": "prisma db push",
     "db:seed": "ts-node --project tsconfig.seed.json prisma/seed.ts",
     "scrape": "ts-node --project tsconfig.seed.json scripts/scrape-bbref.ts",
