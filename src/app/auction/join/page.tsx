@@ -7,12 +7,20 @@ import { useRouter, useSearchParams } from 'next/navigation'
  * /auction/join?code=XXXX — invite link handler for auction (War Room) rooms.
  *
  * Redirects immediately to /auction so the invitee lands on the auction lobby
- * with the code pre-filled. If no code is provided, sends them to /auction.
+ * with the code pre-filled. If no code is provided, or if the code fails
+ * validation, sends them to /auction.
+ *
+ * Security: same ROOM_CODE_RE guard as /join/page.tsx — prevents path traversal
+ * or arbitrary query-string injection via the forwarded ?join= parameter.
  */
+const ROOM_CODE_RE = /^[A-Z0-9]{6}$/
+
 function AuctionJoinRedirect() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const code = searchParams.get('code')?.toUpperCase().trim()
+  const raw = searchParams.get('code')?.toUpperCase().trim() ?? ''
+  // Only accept well-formed room codes — reject path traversal or arbitrary strings.
+  const code = ROOM_CODE_RE.test(raw) ? raw : null
 
   useEffect(() => {
     if (code) {

@@ -15,7 +15,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
  * ?code=../../../evil URL that escapes the /game/ prefix via path traversal
  * (open redirect).  Anything that doesn't match is treated as absent.
  */
-const ROOM_CODE_RE = /^[A-Z0-9]{4,8}$/
+const ROOM_CODE_RE = /^[A-Z0-9]{6}$/
 
 function JoinRedirect() {
   const router = useRouter()

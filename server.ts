@@ -2495,10 +2495,58 @@ app.prepare().then(async () => {
       broadcastAuctionState(io, room)
     })
 
-    socket.on('auction:get-state', ({ code, userName: rawUserName }: { code: string; userName?: string }) => {
+    socket.on('auction:get-state', async ({ code, userName: rawUserName }: { code: string; userName?: string }) => {
       if (typeof code !== 'string') return
-      const room = auctionRooms.get(code.trim().toUpperCase())
-      if (!room) { socket.emit('auction:error', { message: 'Room not found' }); return }
+      const normalizedCode = code.trim().toUpperCase()
+      const room = auctionRooms.get(normalizedCode)
+
+      // ── DB FALLBACK ──────────────────────────────────────────────────────────
+      // If the room is not in memory (e.g. after a server restart), check the DB
+      // for a persisted AuctionRecord.  If found, reconstruct a minimal completed
+      // state and emit it so the results screen renders correctly.  No access
+      // control is applied here beyond requiring that the record exists — the
+      // results page is not private data (it contains no bid amounts beyond what
+      // was already broadcast during the live auction).
+      if (!room) {
+        let record: { code: string; teamSize: number; totalBudget: number; results: string } | null = null
+        try {
+          record = await prisma.auctionRecord.findUnique({ where: { code: normalizedCode } })
+        } catch (err) {
+          console.error('[auction] DB lookup failed for code=%s: %o', normalizedCode, err)
+        }
+        if (!record) {
+          socket.emit('auction:error', { message: 'Room not found' })
+          return
+        }
+        // Parse stored results and emit a synthetic complete state.
+        let finalResults: unknown = []
+        try { finalResults = JSON.parse(record.results) } catch { /* leave as [] */ }
+        socket.emit('auction:state', {
+          code: record.code,
+          status: 'complete',
+          teamSize: record.teamSize,
+          totalBudget: record.totalBudget,
+          maxPlayers: 0,
+          hostSocketId: '',
+          participants: [],
+          currentPlayer: null,
+          currentBid: 0,
+          currentBidderSocketId: null,
+          currentBidderName: null,
+          lastWinnerSocketId: null,
+          lastWinnerName: null,
+          lastWonAmount: 0,
+          stealInitiated: false,
+          bidDeadline: 0,
+          tradeDeadline: null,
+          tradeOffers: [],
+          playerIndex: 0,
+          poolSize: 0,
+          bidLog: [],
+          finalResults,
+        })
+        return
+      }
 
       // Normalize userName the same way auction:join does: prefer the server-verified
       // JWT username over the client-supplied value.  Without this, an authenticated
