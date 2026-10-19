@@ -214,6 +214,10 @@ const GET_LISTINGS_THROTTLE_MAX = 5
 const GET_LISTINGS_WINDOW_MS = 5_000
 /** Per-socket join-listing throttle: max join-listing attempts per THROTTLE_WINDOW_MS */
 const JOIN_LISTING_THROTTLE_MAX = 10
+/** Per-socket auction:get-state throttle: max state-sync/reconnect calls per GET_AUCTION_STATE_WINDOW_MS */
+const GET_AUCTION_STATE_THROTTLE_MAX = 20
+/** Sliding-window duration for the auction:get-state throttle (ms) */
+const GET_AUCTION_STATE_WINDOW_MS = 60_000
 
 interface GameResult {
   game: number
@@ -404,6 +408,9 @@ const getListingsThrottle = new Map<string, { count: number; windowStart: number
 // Per-socket join-listing throttle: each attempt runs two Prisma queries; cap at
 // JOIN_LISTING_THROTTLE_MAX per minute to prevent DB query flooding.
 const joinListingThrottle = new Map<string, { count: number; windowStart: number }>()
+// Per-socket auction:get-state throttle: state-sync hits Prisma on cache miss; cap at
+// GET_AUCTION_STATE_THROTTLE_MAX per minute to prevent DB flooding from unknown codes.
+const getAuctionStateThrottle = new Map<string, { count: number; windowStart: number }>()
 // cooldown: userId → Map(opponentId → timestamp of last game end)
 const recentMatchups = new Map<string, Map<string, number>>()
 // grudge: userId → Map(opponentId → total games played together)
@@ -2498,6 +2505,20 @@ app.prepare().then(async () => {
 
     socket.on('auction:get-state', async ({ code, userName: rawUserName }: { code: string; userName?: string }) => {
       if (typeof code !== 'string') return
+      // Rate limit: max 20 get-state calls per minute per socket to prevent DB flooding.
+      // Each call that misses the in-memory room cache hits Prisma; unthrottled spam
+      // with random codes saturates the DB with pointless findUnique queries.
+      const gasNow = Date.now()
+      const gasThrottle = getAuctionStateThrottle.get(socket.id)
+      if (gasThrottle && gasNow - gasThrottle.windowStart < GET_AUCTION_STATE_WINDOW_MS) {
+        if (gasThrottle.count >= GET_AUCTION_STATE_THROTTLE_MAX) {
+          socket.emit('auction:error', { message: 'Too many requests. Please wait a moment.' })
+          return
+        }
+        gasThrottle.count++
+      } else {
+        getAuctionStateThrottle.set(socket.id, { count: 1, windowStart: gasNow })
+      }
       const normalizedCode = code.trim().toUpperCase()
       const room = auctionRooms.get(normalizedCode)
 
@@ -2629,6 +2650,7 @@ app.prepare().then(async () => {
       getRoomThrottle.delete(socket.id)
       getListingsThrottle.delete(socket.id)
       joinListingThrottle.delete(socket.id)
+      getAuctionStateThrottle.delete(socket.id)
       // Remove any open listing by this socket
       for (const [code, listing] of gameListings.entries()) {
         if (listing.hostSocketId === socket.id) {
