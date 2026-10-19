@@ -85,6 +85,19 @@ export function verifyGameToken(token: string, userId: string): boolean {
 }
 
 /**
+ * Like verifyGameToken but also returns issuedAt so the caller can enforce a
+ * minimum elapsed time between game start and badge claim.
+ * Returns null if the token is invalid or the nonce has been consumed.
+ */
+export function verifyGameTokenIssuedAt(token: string, userId: string): number | null {
+  pruneExpiredNonces()
+  const result = verifyTokenSignature(token, userId)
+  if (!result) return null
+  if (usedNonces.has(result.nonce)) return null
+  return result.issuedAt
+}
+
+/**
  * Verifies a game token and marks its nonce as consumed.
  * Returns false if the token is invalid, expired, or has already been used.
  * Once this returns true the nonce is burned — subsequent calls with the same
@@ -99,4 +112,19 @@ export function verifyAndConsumeGameToken(token: string, userId: string): boolea
   // Burn the nonce — any future call with this token will be rejected
   usedNonces.set(result.nonce, result.issuedAt + SESSION_TTL_MS)
   return true
+}
+
+/**
+ * Like verifyAndConsumeGameToken but also returns issuedAt so the caller can
+ * enforce a minimum elapsed time between game start and badge claim.
+ * Returns null if the token is invalid, expired, or already consumed.
+ * On success the nonce is burned.
+ */
+export function verifyAndConsumeGameTokenIssuedAt(token: string, userId: string): number | null {
+  pruneExpiredNonces()
+  const result = verifyTokenSignature(token, userId)
+  if (!result) return null
+  if (usedNonces.has(result.nonce)) return null
+  usedNonces.set(result.nonce, result.issuedAt + SESSION_TTL_MS)
+  return result.issuedAt
 }

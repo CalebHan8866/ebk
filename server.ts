@@ -186,6 +186,24 @@ const PARTNER_DISCONNECT_GRACE_MS = 8_000
 const STEAL_MULTIPLIER = 1.5
 /** Auction budget by team size */
 const AUCTION_BUDGETS: Record<number, number> = { 5: 125, 8: 175, 12: 250 }
+/** How often the in-memory player list is refreshed from the DB (scrape-bbref runs in background) */
+const PLAYER_REFRESH_MS = 5 * 60 * 1000
+/** How often stale cooldown / grudge-count map entries are pruned */
+const COOLDOWN_PRUNE_MS = 60 * 60 * 1000
+/** How often the socket/room metrics heartbeat is logged */
+const METRICS_HEARTBEAT_MS = 5 * 60 * 1000
+/** Maximum Socket.IO per-message payload — prevents memory exhaustion from oversized frames */
+const MAX_HTTP_BUFFER_BYTES = 10 * 1024
+/** Per-socket bid throttle: max bids allowed within BID_THROTTLE_WINDOW_MS */
+const BID_THROTTLE_MAX = 5
+/** Sliding-window duration for the bid throttle (ms) */
+const BID_THROTTLE_WINDOW_MS = 1_000
+/** Per-socket join-room throttle: max join attempts per THROTTLE_WINDOW_MS */
+const JOIN_THROTTLE_MAX = 10
+/** Per-socket room-creation throttle: max rooms created per THROTTLE_WINDOW_MS */
+const CREATE_THROTTLE_MAX = 5
+/** Sliding-window duration shared by join and create throttles (ms) */
+const THROTTLE_WINDOW_MS = 60_000
 
 interface GameResult {
   game: number
@@ -1084,7 +1102,7 @@ app.prepare().then(async () => {
     } catch (e) {
       console.error('Failed to refresh player data:', e)
     }
-  }, 5 * 60 * 1000)
+  }, PLAYER_REFRESH_MS)
 
   // Prune stale cooldown and grudge-count entries every hour to prevent unbounded growth.
   // recentMatchups: entries expire after the cooldown window (30 min).
@@ -1110,7 +1128,7 @@ app.prepare().then(async () => {
       }
       if (opponents.size === 0) matchupCount.delete(userId)
     }
-  }, 60 * 60 * 1000)
+  }, COOLDOWN_PRUNE_MS)
 
   const httpServer = createServer((req, res) => {
     const parsedUrl = parse(req.url!, true)
@@ -1129,7 +1147,7 @@ app.prepare().then(async () => {
     pingTimeout: 25_000,
     // Limit per-message size to 10 KB (default is 1 MB).
     // Prevents a malicious client from flooding memory with a single oversized frame.
-    maxHttpBufferSize: 10 * 1024,
+    maxHttpBufferSize: MAX_HTTP_BUFFER_BYTES,
   })
 
   // ─── Socket.IO error logging ─────────────────────────────────────────────────
@@ -1143,7 +1161,7 @@ app.prepare().then(async () => {
     const roomCount = rooms.size
     const auctionCount = auctionRooms.size
     console.log('[metrics] connections=%d game_rooms=%d auction_rooms=%d', socketCount, roomCount, auctionCount)
-  }, 5 * 60 * 1000)
+  }, METRICS_HEARTBEAT_MS)
 
   // ─── Graceful SIGTERM (Railway zero-downtime deploys) ────────────────────────
   // Railway sends SIGTERM to the old instance before starting the new one.
@@ -1314,8 +1332,8 @@ app.prepare().then(async () => {
       // Rate limit: max 5 room creations per minute per socket to prevent memory-exhaustion spam
       const crNow0 = Date.now()
       const crThrottle0 = createRoomThrottle.get(socket.id)
-      if (crThrottle0 && crNow0 - crThrottle0.windowStart < 60_000) {
-        if (crThrottle0.count >= 5) { socket.emit('room-error', { message: 'Too many rooms created. Please wait a moment.' }); return }
+      if (crThrottle0 && crNow0 - crThrottle0.windowStart < THROTTLE_WINDOW_MS) {
+        if (crThrottle0.count >= CREATE_THROTTLE_MAX) { socket.emit('room-error', { message: 'Too many rooms created. Please wait a moment.' }); return }
         crThrottle0.count++
       } else { createRoomThrottle.set(socket.id, { count: 1, windowStart: crNow0 }) }
 
@@ -1373,8 +1391,8 @@ app.prepare().then(async () => {
       // Rate limit: max 10 join-room attempts per minute per socket to prevent brute-force
       const jrNow = Date.now()
       const jrThrottle = joinRoomThrottle.get(socket.id)
-      if (jrThrottle && jrNow - jrThrottle.windowStart < 60_000) {
-        if (jrThrottle.count >= 10) {
+      if (jrThrottle && jrNow - jrThrottle.windowStart < THROTTLE_WINDOW_MS) {
+        if (jrThrottle.count >= JOIN_THROTTLE_MAX) {
           socket.emit('room-error', { message: 'Too many join attempts. Please wait a moment.' })
           return
         }
@@ -1928,18 +1946,19 @@ app.prepare().then(async () => {
       const emoteEntry = EMOTES.find(e => e.text === emoteText)
       if (!emoteEntry) return
 
-      // Enforce unlock gate: verify the sender actually owns this emote.
-      // Authenticated users: check their unlockedEmotes list from DB.
-      // Anonymous users: only allow free emotes (winsRequired === 0).
+      // Enforce equip gate: the sender must have this emote currently equipped,
+      // not merely unlocked. This matches the product intent — players choose one
+      // active emote from the equip screen. Checking equippedEmote (a single field)
+      // is also cheaper than parsing the full unlockedEmotes JSON array.
+      // Anonymous users may only send free emotes (winsRequired === 0) since they
+      // have no equip state.
       const userId = socket.data.userId as string | null
       if (userId) {
         const dbUser = await prisma.user.findUnique({
           where: { id: userId },
-          select: { unlockedEmotes: true },
+          select: { equippedEmote: true },
         }).catch(() => null)
-        let unlocked: string[] = []
-        try { unlocked = JSON.parse(dbUser?.unlockedEmotes || '[]') } catch { unlocked = [] }
-        if (!unlocked.includes(emoteEntry.id)) return
+        if (!dbUser || dbUser.equippedEmote !== emoteEntry.id) return
       } else {
         // Anonymous players may only use emotes with winsRequired === 0
         if (emoteEntry.winsRequired > 0) return
@@ -2000,8 +2019,8 @@ app.prepare().then(async () => {
       // Rate limit: max 5 room creations per minute per socket (shared with create-room)
       const acNow0 = Date.now()
       const acThrottle0 = createRoomThrottle.get(socket.id)
-      if (acThrottle0 && acNow0 - acThrottle0.windowStart < 60_000) {
-        if (acThrottle0.count >= 5) { socket.emit('auction:error', { message: 'Too many rooms created. Please wait a moment.' }); return }
+      if (acThrottle0 && acNow0 - acThrottle0.windowStart < THROTTLE_WINDOW_MS) {
+        if (acThrottle0.count >= CREATE_THROTTLE_MAX) { socket.emit('auction:error', { message: 'Too many rooms created. Please wait a moment.' }); return }
         acThrottle0.count++
       } else { createRoomThrottle.set(socket.id, { count: 1, windowStart: acNow0 }) }
 

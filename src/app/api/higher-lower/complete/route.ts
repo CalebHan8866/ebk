@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { BADGES } from '@/lib/accessories'
-import { verifyAndConsumeGameToken, verifyGameToken } from '@/lib/higher-lower-token'
+import { verifyAndConsumeGameTokenIssuedAt, verifyGameTokenIssuedAt } from '@/lib/higher-lower-token'
 import { rateLimit } from '@/lib/ratelimit'
 
 const HL_BADGE_IDS = ['hl_10', 'hl_25', 'hl_gauntlet']
@@ -19,6 +19,17 @@ const HL_BADGE_REQUIREMENTS: Record<string, { streakRequired?: number; requiresC
   hl_10:      { streakRequired: 10 },
   hl_25:      { streakRequired: 25 },
   hl_gauntlet: { requiresComplete: true, streakRequired: 25 },
+}
+
+// Minimum milliseconds that must have elapsed between /start and /complete for
+// each milestone. At ~2 s per guess a legitimate 10-streak takes ≥ 20 s;
+// a full 66-comparison gauntlet takes ≥ 132 s. We use conservative lower bounds
+// to accommodate slow connections and deliberate play styles while blocking
+// instant scripted claims (which arrive in < 1 s after /start).
+const HL_MIN_ELAPSED_MS: Record<string, number> = {
+  hl_10:       15_000,   // 10 guesses × ~1.5 s minimum cadence
+  hl_25:       40_000,   // 25 guesses × ~1.6 s minimum cadence
+  hl_gauntlet: 90_000,   // 66 guesses × ~1.4 s minimum cadence
 }
 
 export async function POST(request: NextRequest) {
@@ -51,12 +62,25 @@ export async function POST(request: NextRequest) {
     // prevents double-awarding without needing a nonce burn.
     // hl_gauntlet consumes (burns) the nonce — it is always the last claim for a
     // session and we want full replay protection on that badge.
-    const isGauntlet = milestone === 'hl_gauntlet'
-    const tokenValid = isGauntlet
-      ? verifyAndConsumeGameToken(gameToken ?? '', payload.userId)
-      : verifyGameToken(gameToken ?? '', payload.userId)
-    if (!gameToken || typeof gameToken !== 'string' || !tokenValid) {
+    //
+    // We also enforce a minimum elapsed time between /start and /complete per
+    // milestone (see HL_MIN_ELAPSED_MS). This blocks instant scripted claims
+    // where a client calls /start and immediately POSTs /complete with a
+    // fabricated streak — the token's issuedAt is HMAC-protected and cannot be
+    // forged without the server secret.
+    if (!gameToken || typeof gameToken !== 'string') {
       return NextResponse.json({ error: 'Invalid or expired game session' }, { status: 403 })
+    }
+    const isGauntlet = milestone === 'hl_gauntlet'
+    const issuedAt = isGauntlet
+      ? verifyAndConsumeGameTokenIssuedAt(gameToken, payload.userId)
+      : verifyGameTokenIssuedAt(gameToken, payload.userId)
+    if (issuedAt === null) {
+      return NextResponse.json({ error: 'Invalid or expired game session' }, { status: 403 })
+    }
+    const minElapsed = HL_MIN_ELAPSED_MS[milestone] ?? 0
+    if (Date.now() - issuedAt < minElapsed) {
+      return NextResponse.json({ error: 'Game session too short' }, { status: 403 })
     }
 
     if (!milestone || !HL_BADGE_IDS.includes(milestone)) {
