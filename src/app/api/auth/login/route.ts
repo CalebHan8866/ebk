@@ -64,7 +64,9 @@ export async function POST(request: NextRequest) {
       user: { id: user.id, username: user.username, email: user.email, wins: user.wins, losses: user.losses, draws: user.draws, equippedBadges: user.equippedBadges }
     })
   } catch (e) {
-    console.error(e)
+    // Log only the error message/code — never the full error object, which may contain
+    // Prisma query strings with embedded email addresses or other PII.
+    console.error('[login] Unexpected error: %s', e instanceof Error ? e.message : String(e))
     return noStore({ error: 'Server error' }, { status: 500 })
   }
 }

@@ -76,7 +76,9 @@ export async function POST(request: NextRequest) {
 
     return noStore({ message: 'Password reset successfully.' })
   } catch (e) {
-    console.error(e)
+    // Log only the error message/code — never the full error object, which may contain
+    // Prisma query strings with embedded email addresses or other PII.
+    console.error('[reset-password] Unexpected error: %s', e instanceof Error ? e.message : String(e))
     return noStore({ error: 'Server error' }, { status: 500 })
   }
 }
