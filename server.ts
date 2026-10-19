@@ -995,9 +995,9 @@ function handleAuctionBidExpiry(io: SocketServer, room: AuctionRoom) {
   room.stealInitiated = false
   room.status = 'steal-window'
   room.bidDeadline = Date.now() + STEAL_WINDOW_MS
-  broadcastAuctionState(io, room)
-  if (room.bidTimer) clearTimeout(room.bidTimer)
+  // room.bidTimer was already set to null at the top of this function; no clearTimeout needed.
   room.bidTimer = setTimeout(() => advanceAuction(io, room), STEAL_WINDOW_MS)
+  broadcastAuctionState(io, room)
 }
 
 function startAuctionTradePhase(io: SocketServer, room: AuctionRoom) {
@@ -2217,10 +2217,12 @@ app.prepare().then(async () => {
       // keeps displaying the old steal-window deadline (already near zero), making
       // the countdown jump backward or expire immediately after the steal.
       room.bidDeadline = Date.now() + POST_STEAL_ADVANCE_MS
-      broadcastAuctionState(io, room)
-
+      // Cancel the steal-window timer and arm the post-steal advance timer BEFORE
+      // broadcasting so that room.bidTimer reflects the live handle when the state
+      // snapshot is built (prevents a brief window where bidTimer is null).
       if (room.bidTimer) clearTimeout(room.bidTimer)
       room.bidTimer = setTimeout(() => advanceAuction(io, room), POST_STEAL_ADVANCE_MS)
+      broadcastAuctionState(io, room)
     })
 
     socket.on('auction:trade-offer', ({ code, toSocketId, offeredPlayerIds, requestedPlayerIds }: {
