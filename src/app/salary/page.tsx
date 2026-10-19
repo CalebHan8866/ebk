@@ -55,8 +55,11 @@ function estimateCareerEarnings(p: Player): number {
 }
 
 function getEarnings(p: Player): { value: number; estimated: boolean } {
-  if (p.careerEarnings > 0) return { value: p.careerEarnings, estimated: false }
-  return { value: estimateCareerEarnings(p), estimated: true }
+  if (p.careerEarnings <= 0) return { value: estimateCareerEarnings(p), estimated: true }
+  // Sanity check: if scraped value < 15% of estimate, scraper caught only one season
+  const est = estimateCareerEarnings(p)
+  if (est > 0 && p.careerEarnings < est * 0.15) return { value: est, estimated: true }
+  return { value: p.careerEarnings, estimated: false }
 }
 
 function fmt(n: number): string {
@@ -86,6 +89,42 @@ function matchesEra(p: Player, era: EraFilter): boolean {
 }
 
 const PAGE_SIZE = 50
+
+/** Returns Tailwind classes for the rank number color + shimmer treatment */
+function rankStyle(rank: number): string {
+  if (rank === 1) return 'text-yellow-400'
+  if (rank === 2) return 'text-slate-300'
+  if (rank === 3) return 'text-amber-600'
+  return 'text-gray-600'
+}
+
+/** Returns an inline style for top-3 glow on the earnings bar */
+function barGlow(rank: number): React.CSSProperties {
+  if (rank === 1) return { boxShadow: '0 0 6px 1px rgba(250,204,21,0.55)' }
+  if (rank === 2) return { boxShadow: '0 0 6px 1px rgba(203,213,225,0.45)' }
+  if (rank === 3) return { boxShadow: '0 0 6px 1px rgba(217,119,6,0.45)' }
+  return {}
+}
+
+/** Gold/silver/bronze shimmer background for rank number wrapper */
+function rankWrapperStyle(rank: number): React.CSSProperties {
+  if (rank === 1) return {
+    background: 'linear-gradient(135deg, rgba(234,179,8,0.18) 0%, rgba(250,204,21,0.08) 100%)',
+    border: '1px solid rgba(234,179,8,0.35)',
+    borderRadius: '8px',
+  }
+  if (rank === 2) return {
+    background: 'linear-gradient(135deg, rgba(148,163,184,0.15) 0%, rgba(203,213,225,0.06) 100%)',
+    border: '1px solid rgba(148,163,184,0.3)',
+    borderRadius: '8px',
+  }
+  if (rank === 3) return {
+    background: 'linear-gradient(135deg, rgba(180,83,9,0.18) 0%, rgba(217,119,6,0.08) 100%)',
+    border: '1px solid rgba(180,83,9,0.35)',
+    borderRadius: '8px',
+  }
+  return {}
+}
 
 export default function SalaryPage() {
   const [players, setPlayers] = useState<Player[]>([])
@@ -152,13 +191,6 @@ export default function SalaryPage() {
 
   // Reset pagination when filters change
   useEffect(() => { setVisibleCount(PAGE_SIZE) }, [search, sortMode, eraFilter])
-
-  const rankColor = (rank: number) => {
-    if (rank === 1) return 'text-yellow-400'
-    if (rank === 2) return 'text-gray-300'
-    if (rank === 3) return 'text-amber-600'
-    return 'text-gray-500'
-  }
 
   return (
     <div className="min-h-screen animate-fade-in pb-24 sm:pb-8">
@@ -264,19 +296,44 @@ export default function SalaryPage() {
         </div>
       </div>
 
-      {/* ── LOADING ────────────────────────────────────────────────── */}
+      {/* ── LOADING SKELETONS ──────────────────────────────────────── */}
       {loading && (
-        <div className="flex items-center justify-center py-24">
-          <div className="w-8 h-8 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+        <div className="max-w-3xl mx-auto px-4 space-y-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="card-surface rounded-xl px-4 py-3">
+              <div className="flex items-center gap-3 animate-pulse">
+                {/* Rank skeleton */}
+                <div className="w-8 h-7 bg-white/5 rounded shrink-0" />
+                {/* Info skeleton */}
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="h-3.5 bg-white/5 rounded w-2/5" />
+                  <div className="h-2.5 bg-white/5 rounded w-1/4" />
+                  <div className="mt-2 h-[3px] bg-white/5 rounded-full w-full" />
+                </div>
+                {/* Earnings skeleton */}
+                <div className="shrink-0 text-right space-y-1.5">
+                  <div className="h-5 bg-white/5 rounded w-16" />
+                  <div className="h-2.5 bg-white/5 rounded w-20" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
       {/* ── VALUE TAB (coming soon) ─────────────────────────────────── */}
       {!loading && tab === 'value' && (
         <div className="max-w-3xl mx-auto px-4">
-          <div className="card-accent p-10 text-center rounded-2xl">
-            <p className="font-display text-5xl text-orange-500/40 mb-4">Soon</p>
-            <p className="text-white font-black text-lg mb-2">Value Rankings Coming Soon</p>
+          <div className="rounded-2xl p-10 text-center"
+            style={{
+              background: 'rgba(234,88,12,0.04)',
+              border: '1px solid rgba(234,88,12,0.25)',
+            }}
+          >
+            <div className="text-5xl mb-4 select-none">🔒</div>
+            <p className="font-display text-2xl text-orange-400 tracking-wide mb-2">
+              Value Rankings Coming Soon
+            </p>
             <p className="text-gray-500 text-sm max-w-sm mx-auto leading-relaxed">
               We&apos;re building a pipeline to calculate true player value using Win Shares and VORP —
               who actually earned their contract vs. who was overpaid.
@@ -296,17 +353,28 @@ export default function SalaryPage() {
                 {visible.map((p, idx) => {
                   const rank = idx + 1
                   const barPct = Math.round((p.earnings / maxEarnings) * 100)
+                  const isTop3 = rank <= 3
                   return (
-                    <div key={p.id} className="card-surface rounded-xl px-4 py-3 hover:border-orange-700/30 transition-all">
+                    <div
+                      key={p.id}
+                      className="card-surface rounded-xl px-4 py-3 hover:border-orange-700/30 transition-all"
+                    >
+                      {/* ── Mobile layout: stacked; Desktop: single row ── */}
                       <div className="flex items-center gap-3">
 
-                        {/* Rank */}
-                        <span className={`font-display text-xl w-8 text-right shrink-0 ${rankColor(rank)}`}>
-                          {rank}
-                        </span>
+                        {/* Rank number */}
+                        <div
+                          className="shrink-0 w-10 h-10 flex items-center justify-center"
+                          style={rankWrapperStyle(rank)}
+                        >
+                          <span className={`font-display text-2xl leading-none ${rankStyle(rank)}`}>
+                            {rank}
+                          </span>
+                        </div>
 
-                        {/* Info */}
+                        {/* Info block */}
                         <div className="flex-1 min-w-0">
+                          {/* Name + years row */}
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-black text-white text-sm">
                               {p.firstName} {p.lastName}
@@ -315,38 +383,54 @@ export default function SalaryPage() {
                               {p.yearFrom}–{p.yearTo}
                             </span>
                           </div>
+
+                          {/* Position + team row */}
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-gray-600 text-[10px] uppercase tracking-wide">{p.position}</span>
                             <span className="text-gray-700 text-[10px]">·</span>
                             <span className="text-gray-600 text-[10px] truncate">{p.team}</span>
                           </div>
 
-                          {/* Earnings bar */}
-                          <div className="mt-2 h-1 rounded-full bg-white/[0.05] overflow-hidden">
+                          {/* Earnings bar — 3px track, orange fill, top-3 glow */}
+                          <div className="mt-2 h-[3px] rounded-full bg-white/[0.06] overflow-visible relative">
                             <div
-                              className="h-full bg-orange-500 rounded-full"
-                              style={{ width: `${barPct}%` }}
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${barPct}%`,
+                                background: isTop3
+                                  ? 'linear-gradient(90deg, #f97316, #fb923c)'
+                                  : '#ea580c',
+                                ...barGlow(rank),
+                              }}
                             />
+                          </div>
+
+                          {/* Secondary stats — visible inline on mobile too */}
+                          <div className="flex gap-2 mt-1.5">
+                            <span className="text-gray-600 text-[10px]">{fmt(p.perGame)}/gm</span>
+                            <span className="text-gray-700 text-[10px]">·</span>
+                            <span className="text-gray-600 text-[10px]">{fmt(p.perSeason)}/yr</span>
+                            <span className="text-gray-700 text-[10px]">·</span>
+                            <span className="text-gray-600 text-[10px]">{p.seasons}y · {p.careerGames}gp</span>
                           </div>
                         </div>
 
-                        {/* Earnings + secondary stats */}
+                        {/* Earnings + est. badge */}
                         <div className="text-right shrink-0">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <span className="text-orange-400 font-black text-base sm:text-lg leading-none">
-                              {fmt(p.earnings)}
+                          <span className="text-orange-400 font-black text-base sm:text-lg leading-none">
+                            {fmt(p.earnings)}
+                          </span>
+                          {p.estimated && (
+                            <span
+                              className="block mt-1 text-[9px] font-bold tracking-wide text-orange-400/80 px-1.5 py-0.5 rounded-full"
+                              style={{
+                                border: '1px solid rgba(234,88,12,0.45)',
+                                background: 'rgba(234,88,12,0.08)',
+                              }}
+                            >
+                              est.
                             </span>
-                            {p.estimated && (
-                              <span className="text-gray-600 text-[9px] font-bold">est.</span>
-                            )}
-                          </div>
-                          <div className="flex gap-2 mt-1 justify-end">
-                            <span className="text-gray-600 text-[10px]">{fmt(p.perGame)}/gm</span>
-                            <span className="text-gray-700 text-[10px]">·</span>
-                            <span className="text-gray-600 text-[10px]">{p.seasons}y</span>
-                            <span className="text-gray-700 text-[10px]">·</span>
-                            <span className="text-gray-600 text-[10px]">{p.careerGames}gp</span>
-                          </div>
+                          )}
                         </div>
 
                       </div>
@@ -357,7 +441,7 @@ export default function SalaryPage() {
 
               {/* Load more */}
               {visibleCount < filtered.length && (
-                <div className="text-center mt-6 pb-4">
+                <div className="flex justify-center mt-6 pb-4">
                   <button
                     onClick={() => setVisibleCount(v => v + PAGE_SIZE)}
                     className="btn-secondary text-sm px-8 py-2.5"
