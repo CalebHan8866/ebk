@@ -346,6 +346,13 @@ function GameContent() {
       socket.emit('get-room', { code, role })
     }
 
+    // Server emits 'session-expired' before force-disconnecting a socket whose
+    // tokenVersion no longer matches the DB (logout or password change mid-game).
+    // Redirect to login so the user gets clear feedback rather than a silent drop.
+    const handleSessionExpired = () => {
+      router.replace('/login?reason=session_expired')
+    }
+
     socket.on('connect', handleConnect)
     socket.on('room-state', handleRoomState)
     socket.on('draft-started', handleDraftStarted)
@@ -360,6 +367,7 @@ function GameContent() {
     socket.on('pick-error', handlePickError)
     socket.on('opponent-emote', handleOpponentEmote)
     socket.on('accessories-unlocked', handleAccessoriesUnlocked)
+    socket.on('session-expired', handleSessionExpired)
 
     // Request current room state from server
     socket.emit('get-room', { code, role })
@@ -379,6 +387,7 @@ function GameContent() {
       socket.off('pick-error', handlePickError)
       socket.off('opponent-emote', handleOpponentEmote)
       socket.off('accessories-unlocked', handleAccessoriesUnlocked)
+      socket.off('session-expired', handleSessionExpired)
       if (pickTimerRef.current) clearInterval(pickTimerRef.current)
       if (spinIntervalRef.current) clearInterval(spinIntervalRef.current)
       if (emoteTimerRef.current) clearTimeout(emoteTimerRef.current)

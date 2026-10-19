@@ -264,10 +264,15 @@ export default function AuctionRoomPage() {
       setTimeout(() => setErrorMsg(''), 4000)
     }
 
+    function handleSessionExpired() {
+      router.replace('/login?reason=session_expired')
+    }
+
     socket.on('connect', handleConnect)
     socket.on('auction:state', handleAuctionState)
     socket.on('auction:complete', handleAuctionComplete)
     socket.on('auction:error', handleAuctionError)
+    socket.on('session-expired', handleSessionExpired)
 
     // Request state on mount — include userName so server can re-seat
     // this socket if we reconnected with a new socketId
@@ -283,6 +288,7 @@ export default function AuctionRoomPage() {
       socket.off('auction:state', handleAuctionState)
       socket.off('auction:complete', handleAuctionComplete)
       socket.off('auction:error', handleAuctionError)
+      socket.off('session-expired', handleSessionExpired)
       clearTimeout(loadTimeout)
     }
   }, [code, guestName])

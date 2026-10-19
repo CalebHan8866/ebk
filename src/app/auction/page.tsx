@@ -81,11 +81,16 @@ export default function AuctionPage() {
       setTimeout(() => setErrorMsg(''), 4000)
     }
 
+    const onSessionExpired = () => {
+      router.replace('/login?reason=session_expired')
+    }
+
     socket.on('connect', onConnect)
     socket.on('auction:created', onCreated)
     socket.on('auction:joined', onJoined)
     socket.on('auction:state', onState)
     socket.on('auction:error', onError)
+    socket.on('session-expired', onSessionExpired)
 
     return () => {
       socket.off('connect', onConnect)
@@ -93,6 +98,7 @@ export default function AuctionPage() {
       socket.off('auction:joined', onJoined)
       socket.off('auction:state', onState)
       socket.off('auction:error', onError)
+      socket.off('session-expired', onSessionExpired)
     }
   }, [router])
 

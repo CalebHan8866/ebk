@@ -102,6 +102,7 @@ export async function PATCH(request: NextRequest) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         maxAge: 60 * 60 * 24 * 7,
+        path: '/',
       })
 
       // Strip tokenVersion — it's an internal session counter, not client data
