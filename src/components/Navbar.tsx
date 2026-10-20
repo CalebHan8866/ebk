@@ -173,9 +173,8 @@ function BottomNav({ pathname }: { pathname: string }) {
         borderTop: '1px solid rgba(255,255,255,0.07)',
         boxShadow: '0 -4px 24px rgba(0,0,0,0.5)',
       }}>
-      {/* Safe-area padding for notched phones */}
-      <div className="flex items-center justify-around h-14 pb-safe"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      {/* Safe-area padding for notched phones — min-h so the bar expands on notched iPhones */}
+      <div className="flex items-center justify-around min-h-14">
         {items.map(({ href, label, icon }) => {
           const active = pathname === href || (href !== '/' && pathname?.startsWith(href))
           return (

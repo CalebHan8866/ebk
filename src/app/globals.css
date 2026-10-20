@@ -993,6 +993,13 @@ textarea:focus-visible {
   /* sits above safe-area on notched phones */
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* ── Sticky action bars (game/auction) — adds safe-area to normal padding ── */
+/* Use on any sticky bottom bar that has a fixed pb (e.g. pb-4 = 16px).       */
+/* The bar grows by the iPhone home-indicator height (~34px) on notched phones */
+.sticky-bar-safe {
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
 .bottom-nav-item {
   /* larger tap target than the icon itself */
   min-width: 56px;

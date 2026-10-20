@@ -1049,7 +1049,7 @@ function GameContent() {
 
           {/* CTA — differentiate win vs loss */}
           {/* On mobile: sticky bottom bar so CTAs are always reachable. On lg+: normal flow. */}
-          <div className="animate-fade-up-5 mt-5 lg:mt-5 sticky bottom-0 lg:static bg-[#0a0a0f]/90 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none border-t border-white/[0.05] lg:border-0 -mx-3 sm:-mx-4 lg:mx-0 px-3 sm:px-4 lg:px-0 pt-3 pb-4 lg:pb-0 lg:pt-0 z-10">
+          <div className="animate-fade-up-5 mt-5 lg:mt-5 sticky bottom-0 lg:static bg-[#0a0a0f]/90 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none border-t border-white/[0.05] lg:border-0 -mx-3 sm:-mx-4 lg:mx-0 px-3 sm:px-4 lg:px-0 pt-3 sticky-bar-safe lg:pb-0 lg:pt-0 z-10">
           {iWon ? (
             <div className="flex flex-col gap-2.5">
               <button onClick={() => router.push('/lobby')} className="btn-primary w-full py-4 text-base font-display tracking-widest animate-glow">
@@ -1306,7 +1306,7 @@ function GameContent() {
 
           {/* CTA */}
           {/* Sticky on mobile so the Start/Waiting button is always in reach */}
-          <div className="flex flex-col gap-2.5 mt-2 sticky bottom-0 lg:static bg-[#0a0a0f]/90 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none border-t border-white/[0.05] lg:border-0 -mx-3 sm:-mx-4 lg:mx-0 px-3 sm:px-4 lg:px-0 pt-3 pb-4 lg:pb-0 lg:pt-0 z-10">
+          <div className="flex flex-col gap-2.5 mt-2 sticky bottom-0 lg:static bg-[#0a0a0f]/90 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none border-t border-white/[0.05] lg:border-0 -mx-3 sm:-mx-4 lg:mx-0 px-3 sm:px-4 lg:px-0 pt-3 sticky-bar-safe lg:pb-0 lg:pt-0 z-10">
             {role === 'host' ? (
               <button onClick={startNextGame} className="btn-primary w-full py-4 text-base font-display tracking-widest animate-glow">
                 Start Game {room.currentGame + 1}{room.series > 1 ? ` of ${room.series}` : ''}
