@@ -182,6 +182,10 @@ export default function AuctionRoomPage() {
   // True after the first auction:state event is received — prevents a spurious
   // justWon flash when reconnecting to a room where we already won the last player.
   const stateInitializedRef = useRef(false)
+  // Flash "You were outbid!" when currentBidderSocketId transitions away from us
+  const [justOutbid, setJustOutbid] = useState(false)
+  const outbidTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const prevBidderRef = useRef<string | null>(null)
   // Persistent error message for the error phase (errorMsg auto-clears after 4s)
   const persistentErrorRef = useRef('')
   // If the user is authenticated, always use their username so the server can reliably
@@ -227,6 +231,26 @@ export default function AuctionRoomPage() {
     }
     prevWinnerRef.current = winner ?? null
   }, [auctionState?.lastWinnerSocketId, mySocketId])
+
+  // Flash "You were outbid!" when currentBidderSocketId transitions away from mySocketId.
+  // Guards: only fire when stateInitializedRef is true (not on the first state snapshot)
+  // and only when the current player hasn't changed (bid on same player, not a new round).
+  useEffect(() => {
+    const bidder = auctionState?.currentBidderSocketId ?? null
+    const prev = prevBidderRef.current
+    if (
+      stateInitializedRef.current &&
+      prev === mySocketId &&
+      bidder !== mySocketId &&
+      bidder !== null &&
+      phase === 'bidding'
+    ) {
+      setJustOutbid(true)
+      if (outbidTimerRef.current) clearTimeout(outbidTimerRef.current)
+      outbidTimerRef.current = setTimeout(() => setJustOutbid(false), 2500)
+    }
+    prevBidderRef.current = bidder
+  }, [auctionState?.currentBidderSocketId, mySocketId, phase])
 
   // Scroll bid log
   useEffect(() => {
@@ -276,11 +300,11 @@ export default function AuctionRoomPage() {
     function handleAuctionState(state: AuctionState) {
       // Keep mySocketId fresh in case of reconnects
       setMySocketId(socket.id || '')
-      // Seed prevWinnerRef on the very first state event so the justWon flash
-      // effect doesn't spuriously fire when reconnecting to a room where we
-      // already won the last player (prevWinnerRef starts as null).
+      // Seed prevWinnerRef and prevBidderRef on the very first state event so the
+      // justWon / justOutbid flashes don't spuriously fire when reconnecting.
       if (!stateInitializedRef.current) {
         prevWinnerRef.current = state.lastWinnerSocketId ?? null
+        prevBidderRef.current = state.currentBidderSocketId ?? null
         stateInitializedRef.current = true
       }
       setAuctionState(state)
@@ -350,6 +374,7 @@ export default function AuctionRoomPage() {
       socket.off('auction:room-token', handleAuctionRoomToken)
       clearTimeout(loadTimeout)
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current)
+      if (outbidTimerRef.current) clearTimeout(outbidTimerRef.current)
     }
   }, [code, guestName])
 
@@ -1692,6 +1717,17 @@ export default function AuctionRoomPage() {
 
             {/* Timer */}
             <TimerRing timeLeft={timeLeft} maxTime={maxTime} />
+
+            {/* Outbid flash — appears briefly when another GM outbids you */}
+            {justOutbid && (
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="w-full max-w-sm rounded-xl px-4 py-2.5 text-center text-sm font-black tracking-wide uppercase animate-slide-up bg-red-950/60 border border-red-500/50 text-red-300"
+              >
+                You were outbid!
+              </div>
+            )}
 
             {/* Bid controls */}
             {phase === 'bidding' && (
