@@ -700,7 +700,7 @@ function GameContent() {
     })) : []
 
     return (
-      <div className="min-h-screen px-3 sm:px-4 py-6 sm:py-8 overflow-y-auto">
+      <div className="min-h-screen px-3 sm:px-4 py-6 sm:py-8 pb-32 lg:pb-8 overflow-y-auto animate-fade-in">
         {/* Confetti overlay */}
         {showConfetti && iWon && (
           <div className="confetti-container">
@@ -762,55 +762,55 @@ function GameContent() {
               <div className={`h-[2px] w-full ${iWon ? 'bg-gradient-to-r from-transparent via-orange-500 to-transparent' : isDraw ? 'bg-gradient-to-r from-transparent via-yellow-600/50 to-transparent' : 'bg-gradient-to-r from-transparent via-red-800/40 to-transparent'}`} />
               <div className="flex items-stretch">
                 {/* Host side */}
-                <div className={`flex-1 min-w-0 px-4 py-5 text-center ${
-                  (role === 'host' && iWon) || (role === 'guest' && !iWon && !isDraw)
-                    ? 'bg-green-950/10'
-                    : ''
-                }`}>
-                  <div className={`text-[10px] font-black tracking-[0.15em] uppercase mb-1.5 truncate ${
-                    (role === 'host' && iWon) || (role === 'guest' && !iWon && !isDraw) ? 'text-white/50' : 'text-white/25'
-                  }`}>{room.hostName}</div>
-                  <div className={`font-display leading-none tabular-nums ${
-                    iWon && role === 'host' ? 'win-shimmer-text animate-win-pop'
-                    : (!iWon && !isDraw && role === 'guest') ? 'text-green-400'
-                    : isDraw ? 'text-yellow-300' : 'text-white/70'
-                  }`}
-                    style={{ fontSize: 'clamp(3rem, 13vw, 5.5rem)' }}>
-                    {room.hostSeriesScore}
-                  </div>
-                  {(role === 'host' ? iWon : (!iWon && !isDraw)) && (
-                    <div className="mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 bg-green-500/10 border border-green-500/25">
-                      <span className="text-green-400 text-[9px] font-black tracking-widest uppercase">Winner</span>
+                {(() => {
+                  const hostIsWinner = seriesWinner === 'host'
+                  return (
+                    <div className={`flex-1 min-w-0 px-4 py-5 text-center ${hostIsWinner ? 'bg-orange-950/15' : ''}`}>
+                      <div className={`text-[10px] font-black tracking-[0.15em] uppercase mb-1.5 truncate ${
+                        hostIsWinner ? 'text-orange-300' : isDraw ? 'text-white/40' : 'text-white/20'
+                      }`}>{room.hostName}</div>
+                      <div className={`font-display leading-none tabular-nums ${
+                        hostIsWinner ? (role === 'host' ? 'win-shimmer-text animate-win-pop' : 'text-orange-400')
+                        : isDraw ? 'text-yellow-300' : 'text-white/35'
+                      }`}
+                        style={{ fontSize: hostIsWinner ? 'clamp(3.5rem, 15vw, 6.5rem)' : 'clamp(2.5rem, 10vw, 4.5rem)' }}>
+                        {room.hostSeriesScore}
+                      </div>
+                      {hostIsWinner && !isDraw && (
+                        <div className="mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 bg-orange-500/15 border border-orange-500/30">
+                          <span className="text-orange-400 text-[9px] font-black tracking-widest uppercase">Winner</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  )
+                })()}
                 {/* Divider */}
                 <div className="flex items-center justify-center px-2 shrink-0">
                   <div className="text-white/15 font-display text-2xl leading-none">–</div>
                 </div>
                 {/* Guest side */}
-                <div className={`flex-1 min-w-0 px-4 py-5 text-center ${
-                  (role === 'guest' && iWon) || (role === 'host' && !iWon && !isDraw)
-                    ? 'bg-green-950/10'
-                    : ''
-                }`}>
-                  <div className={`text-[10px] font-black tracking-[0.15em] uppercase mb-1.5 truncate ${
-                    (role === 'guest' && iWon) || (role === 'host' && !iWon && !isDraw) ? 'text-white/50' : 'text-white/25'
-                  }`}>{room.guestName}</div>
-                  <div className={`font-display leading-none tabular-nums ${
-                    iWon && role === 'guest' ? 'win-shimmer-text animate-win-pop'
-                    : (!iWon && !isDraw && role === 'host') ? 'text-green-400'
-                    : isDraw ? 'text-yellow-300' : 'text-white/70'
-                  }`}
-                    style={{ fontSize: 'clamp(3rem, 13vw, 5.5rem)' }}>
-                    {room.guestSeriesScore}
-                  </div>
-                  {(role === 'guest' ? iWon : (!iWon && !isDraw)) && (
-                    <div className="mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 bg-green-500/10 border border-green-500/25">
-                      <span className="text-green-400 text-[9px] font-black tracking-widest uppercase">Winner</span>
+                {(() => {
+                  const guestIsWinner = seriesWinner === 'guest'
+                  return (
+                    <div className={`flex-1 min-w-0 px-4 py-5 text-center ${guestIsWinner ? 'bg-orange-950/15' : ''}`}>
+                      <div className={`text-[10px] font-black tracking-[0.15em] uppercase mb-1.5 truncate ${
+                        guestIsWinner ? 'text-orange-300' : isDraw ? 'text-white/40' : 'text-white/20'
+                      }`}>{room.guestName}</div>
+                      <div className={`font-display leading-none tabular-nums ${
+                        guestIsWinner ? (role === 'guest' ? 'win-shimmer-text animate-win-pop' : 'text-orange-400')
+                        : isDraw ? 'text-yellow-300' : 'text-white/35'
+                      }`}
+                        style={{ fontSize: guestIsWinner ? 'clamp(3.5rem, 15vw, 6.5rem)' : 'clamp(2.5rem, 10vw, 4.5rem)' }}>
+                        {room.guestSeriesScore}
+                      </div>
+                      {guestIsWinner && !isDraw && (
+                        <div className="mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 bg-orange-500/15 border border-orange-500/30">
+                          <span className="text-orange-400 text-[9px] font-black tracking-widest uppercase">Winner</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  )
+                })()}
               </div>
               <div className="border-t border-white/[0.05] text-white/20 text-[9px] font-black tracking-[0.2em] uppercase text-center py-2.5">
                 Lower {STAT_CATEGORY_LABELS[room.statCategory] ?? 'stat'} total wins each game
@@ -1029,7 +1029,8 @@ function GameContent() {
           </div>{/* end lg:grid */}
 
           {/* CTA — differentiate win vs loss */}
-          <div className="animate-fade-up-5 mt-5">
+          {/* On mobile: sticky bottom bar so CTAs are always reachable. On lg+: normal flow. */}
+          <div className="animate-fade-up-5 mt-5 lg:mt-5 sticky bottom-0 lg:static bg-[#0a0a0f]/90 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none border-t border-white/[0.05] lg:border-0 -mx-3 sm:-mx-4 lg:mx-0 px-3 sm:px-4 lg:px-0 pt-3 pb-4 lg:pb-0 lg:pt-0 z-10">
           {iWon ? (
             <div className="flex flex-col gap-2.5">
               <button onClick={() => router.push('/lobby')} className="btn-primary w-full py-4 text-base font-display tracking-widest animate-glow">
@@ -1093,7 +1094,7 @@ function GameContent() {
       : assignToSlots(oppPicks, playerById, requiredSlots)
 
     return (
-      <div className="min-h-screen px-3 sm:px-4 py-6 sm:py-8 overflow-y-auto">
+      <div className="min-h-screen px-3 sm:px-4 py-6 sm:py-8 pb-32 lg:pb-8 overflow-y-auto animate-fade-in">
         {socketStatus && (
           <div className={`reconnect-banner ${socketStatus === 'reconnected' ? 'reconnect-banner-success' : 'reconnect-banner-warning'}`}>
             {socketStatus === 'reconnecting' ? (
@@ -1108,7 +1109,7 @@ function GameContent() {
           {/* LEFT: header + scores + series */}
           <div>
           {/* Result header */}
-          <div className="text-center mb-4">
+          <div className="text-center mb-4 animate-fade-up">
             {/* Game N of Y pill — prominent series progress label */}
             <div className="inline-flex items-center gap-2 bg-orange-950/40 border border-orange-500/30 rounded-full px-3 sm:px-4 py-1.5 mb-3">
               {iWon && (
@@ -1207,8 +1208,8 @@ function GameContent() {
                     <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-green-400/80 to-transparent" />
                   )}
                   <div className={`text-[9px] sm:text-[10px] font-black uppercase tracking-[0.12em] mb-1.5 sm:mb-2 truncate ${isWinner ? 'text-green-400/70' : 'text-white/30'}`}>{side.name}</div>
-                  <div className={`font-display leading-none mb-1 ${isWinner ? 'text-green-400' : isDraw ? 'text-yellow-300' : 'text-white'}`}
-                    style={{ fontSize: 'clamp(1.75rem, 10vw, 3rem)' }}>
+                  <div className={`font-display leading-none mb-1 ${isWinner ? 'text-green-400' : isDraw ? 'text-yellow-300' : 'text-white/60'}`}
+                    style={{ fontSize: isWinner ? 'clamp(2.25rem, 13vw, 4rem)' : 'clamp(1.75rem, 10vw, 3rem)' }}>
                     {formatStat(side.total, effectiveLastResult.statMode)}
                   </div>
                   <div className="text-white/25 text-[9px] sm:text-[10px] leading-tight tracking-wider">{getStatUnit(effectiveLastResult.statMode)}</div>
@@ -1285,7 +1286,8 @@ function GameContent() {
           </div>{/* end lg:grid */}
 
           {/* CTA */}
-          <div className="flex flex-col gap-2.5 mt-2">
+          {/* Sticky on mobile so the Start/Waiting button is always in reach */}
+          <div className="flex flex-col gap-2.5 mt-2 sticky bottom-0 lg:static bg-[#0a0a0f]/90 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none border-t border-white/[0.05] lg:border-0 -mx-3 sm:-mx-4 lg:mx-0 px-3 sm:px-4 lg:px-0 pt-3 pb-4 lg:pb-0 lg:pt-0 z-10">
             {role === 'host' ? (
               <button onClick={startNextGame} className="btn-primary w-full py-4 text-base font-display tracking-widest animate-glow">
                 Start Game {room.currentGame + 1}{room.series > 1 ? ` of ${room.series}` : ''}
