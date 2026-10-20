@@ -222,6 +222,12 @@ const JOIN_LISTING_THROTTLE_MAX = 10
 const GET_AUCTION_STATE_THROTTLE_MAX = 20
 /** Sliding-window duration for the auction:get-state throttle (ms) */
 const GET_AUCTION_STATE_WINDOW_MS = 60_000
+/** Per-socket create-listing throttle: max listing create attempts per THROTTLE_WINDOW_MS */
+const CREATE_LISTING_THROTTLE_MAX = 5
+/** Per-socket auction:trade throttle: max trade actions (offer/cancel/respond) per TRADE_THROTTLE_WINDOW_MS */
+const TRADE_THROTTLE_MAX = 10
+/** Sliding-window duration for the trade action throttle (ms) */
+const TRADE_THROTTLE_WINDOW_MS = 10_000
 
 interface GameResult {
   game: number
@@ -429,6 +435,12 @@ const joinListingThrottle = new Map<string, { count: number; windowStart: number
 // Per-socket auction:get-state throttle: state-sync hits Prisma on cache miss; cap at
 // GET_AUCTION_STATE_THROTTLE_MAX per minute to prevent DB flooding from unknown codes.
 const getAuctionStateThrottle = new Map<string, { count: number; windowStart: number }>()
+// Per-socket create-listing throttle: each call runs Prisma queries and broadcasts to all
+// lobby clients; cap at CREATE_LISTING_THROTTLE_MAX per minute.
+const createListingThrottle = new Map<string, { count: number; windowStart: number }>()
+// Per-socket trade-action throttle: offer/cancel/respond all trigger broadcastAuctionState;
+// cap at TRADE_THROTTLE_MAX per TRADE_THROTTLE_WINDOW_MS to prevent broadcast flooding.
+const tradeThrottle = new Map<string, { count: number; windowStart: number }>()
 // cooldown: userId → Map(opponentId → timestamp of last game end)
 const recentMatchups = new Map<string, Map<string, number>>()
 // grudge: userId → Map(opponentId → total games played together)
@@ -1154,14 +1166,37 @@ function finishAuction(io: SocketServer, room: AuctionRoom) {
 // ─── Server ──────────────────────────────────────────────────────────────────
 
 app.prepare().then(async () => {
-  // Load players from DB
+  // Load players from DB — retry up to 3 times (5 s apart) before giving up.
+  // Railway cold-starts can leave Postgres briefly unreachable for a few seconds.
   const playerSelect = {
     id: true, firstName: true, lastName: true, team: true,
     position: true, positions: true, careerGames: true,
     careerPPG: true, careerRPG: true, careerAPG: true, careerMPG: true,
     ebkScore: true, yearFrom: true, yearTo: true, careerEarnings: true,
   } as const
-  allPlayers = await prisma.player.findMany({ select: playerSelect })
+
+  const DB_CONNECT_ATTEMPTS = 3
+  const DB_CONNECT_DELAY_MS = 5_000
+  let lastDbErr: unknown
+  for (let attempt = 1; attempt <= DB_CONNECT_ATTEMPTS; attempt++) {
+    try {
+      allPlayers = await prisma.player.findMany({ select: playerSelect })
+      lastDbErr = undefined
+      break
+    } catch (err) {
+      lastDbErr = err
+      console.error(`[server] DB load attempt ${attempt}/${DB_CONNECT_ATTEMPTS} failed:`, err)
+      if (attempt < DB_CONNECT_ATTEMPTS) {
+        await new Promise(resolve => setTimeout(resolve, DB_CONNECT_DELAY_MS))
+      }
+    }
+  }
+  if (lastDbErr) {
+    console.error('[server] Could not load players from DB after all retries — exiting')
+    await prisma.$disconnect().catch(() => {})
+    process.exit(1)
+  }
+
   playerById = new Map(allPlayers.map(p => [p.id, p]))
   refreshJCId()
   console.log(`Loaded ${allPlayers.length} players from DB`)
@@ -1924,6 +1959,19 @@ app.prepare().then(async () => {
     }) => {
       if (!['starter5', 'bench8', 'full12'].includes(teamMode)) return
       if (![1, 3, 5].includes(series)) return
+      // Rate limit: max 5 listing creations per minute per socket.
+      // Each call runs two Prisma reads and broadcasts to all lobby clients.
+      const clNow = Date.now()
+      const clThrottle = createListingThrottle.get(socket.id)
+      if (clThrottle && clNow - clThrottle.windowStart < THROTTLE_WINDOW_MS) {
+        if (clThrottle.count >= CREATE_LISTING_THROTTLE_MAX) {
+          socket.emit('listing-error', { message: 'Too many listings created. Please wait a moment.' })
+          return
+        }
+        clThrottle.count++
+      } else {
+        createListingThrottle.set(socket.id, { count: 1, windowStart: clNow })
+      }
       if (pendingListingCreate.has(socket.id)) return // prevent double-fire race
       pendingListingCreate.add(socket.id)
       // Always use the server-verified username from the JWT — never trust the client payload.
@@ -2151,6 +2199,13 @@ app.prepare().then(async () => {
       const emoteEntry = EMOTES.find(e => e.text === emoteText)
       if (!emoteEntry) return
 
+      // Apply the 3-second cooldown BEFORE any DB work so a malicious client cannot
+      // spam this handler to trigger one Prisma read per call.
+      const now = Date.now()
+      const last = emoteLastSent.get(socket.id) ?? 0
+      if (now - last < 3000) return // 3s cooldown
+      emoteLastSent.set(socket.id, now)
+
       // Enforce equip gate: the sender must have this emote currently equipped,
       // not merely unlocked. This matches the product intent — players choose one
       // active emote from the equip screen. Checking equippedEmote (a single field)
@@ -2163,16 +2218,18 @@ app.prepare().then(async () => {
           where: { id: userId },
           select: { equippedEmote: true },
         }).catch(() => null)
-        if (!dbUser || dbUser.equippedEmote !== emoteEntry.id) return
+        if (!dbUser || dbUser.equippedEmote !== emoteEntry.id) {
+          // Undo the timestamp reservation so a failed validation doesn't consume the cooldown
+          emoteLastSent.set(socket.id, last)
+          return
+        }
       } else {
         // Anonymous players may only use emotes with winsRequired === 0
-        if (emoteEntry.winsRequired > 0) return
+        if (emoteEntry.winsRequired > 0) {
+          emoteLastSent.set(socket.id, last)
+          return
+        }
       }
-
-      const now = Date.now()
-      const last = emoteLastSent.get(socket.id) ?? 0
-      if (now - last < 3000) return // 3s cooldown
-      emoteLastSent.set(socket.id, now)
       const targetSocketId = isHost ? room.guestSocketId : room.hostSocketId
       if (targetSocketId) io.to(targetSocketId).emit('opponent-emote', { emoteText })
     })
@@ -2763,6 +2820,8 @@ app.prepare().then(async () => {
       getListingsThrottle.delete(socket.id)
       joinListingThrottle.delete(socket.id)
       getAuctionStateThrottle.delete(socket.id)
+      createListingThrottle.delete(socket.id)
+      tradeThrottle.delete(socket.id)
       // Remove any open listing by this socket
       for (const [code, listing] of gameListings.entries()) {
         if (listing.hostSocketId === socket.id) {
@@ -2891,4 +2950,7 @@ app.prepare().then(async () => {
   httpServer.listen(port, () => {
     console.log(`> Ready on http://${hostname}:${port}`)
   })
+}).catch((err) => {
+  console.error('[server] Fatal error during startup — exiting:', err)
+  process.exit(1)
 })
