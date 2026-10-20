@@ -2,6 +2,9 @@
   "name": "ebk",
   "version": "0.1.1",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "ts-node --project tsconfig.server.json server.ts",
     "build:server": "tsc --project tsconfig.server.json",
@@ -19,12 +22,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@prisma/client": "^5.16.2",
-    "@types/cheerio": "^0.22.35",
-    "@types/nodemailer": "^8.0.2",
     "@upstash/ratelimit": "2.2.0",
     "@upstash/redis": "1.39.0",
     "axios": "^1.20.0",
@@ -32,7 +34,6 @@
     "cheerio": "^1.2.0",
     "jose": "^5.6.3",
     "next": "^14.2.35",
-    "nodemailer": "^10.0.16",
     "react": "^18",
     "react-dom": "^18",
     "resend": "^6.32.1",
@@ -43,6 +44,7 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/cheerio": "^0.22.35",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
