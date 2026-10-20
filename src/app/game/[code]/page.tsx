@@ -142,6 +142,7 @@ function GameContent() {
   // Pick timer state
   const [pickTimeLeft, setPickTimeLeft] = useState(30)
   const pickTimerDurationRef = useRef(30) // tracks the initial duration for the progress bar
+  const pickTimerDeadlineRef = useRef<number>(0) // absolute Date.now() when the timer expires
   const [currentPickerInTimer, setCurrentPickerInTimer] = useState<'host' | 'guest' | null>(null)
   const [timeoutWarning, setTimeoutWarning] = useState<string | null>(null)
   const pickTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -235,6 +236,9 @@ function GameContent() {
 
     const handlePickTimerStart = ({ picker, duration, spunTeam: team }: { picker: 'host' | 'guest'; duration: number; spunTeam: string }) => {
       if (pickTimerRef.current) clearInterval(pickTimerRef.current)
+      // Anchor the deadline to wall-clock time so drift and reconnect skew don't accumulate.
+      // Each interval tick recomputes from Date.now() rather than decrementing blindly.
+      pickTimerDeadlineRef.current = Date.now() + duration * 1000
       setPickTimeLeft(duration)
       pickTimerDurationRef.current = duration
       setCurrentPickerInTimer(picker)
@@ -293,11 +297,10 @@ function GameContent() {
       }
 
       pickTimerRef.current = setInterval(() => {
-        setPickTimeLeft(t => {
-          if (t <= 1) { clearInterval(pickTimerRef.current!); return 0 }
-          return t - 1
-        })
-      }, 1000)
+        const remaining = Math.round((pickTimerDeadlineRef.current - Date.now()) / 1000)
+        if (remaining <= 0) { clearInterval(pickTimerRef.current!); setPickTimeLeft(0); return }
+        setPickTimeLeft(remaining)
+      }, 500)
     }
 
     const handlePickError = ({ message }: { message: string }) => {
