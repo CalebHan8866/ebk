@@ -1030,6 +1030,11 @@ function broadcastAuctionState(io: SocketServer, room: AuctionRoom) {
 const auctionRoundCounter = new Map<string, number>()
 
 function advanceAuction(io: SocketServer, room: AuctionRoom) {
+  // Guard: if the room has already finished or moved to the trade phase, do not
+  // advance again.  A steal-window timer or bid-expiry timer that fires slightly
+  // after the host manually ended the auction (or after finishAuction ran) must not
+  // push new bidding state to a completed/trading room.
+  if (room.status === 'complete' || room.status === 'trading') return
   const wonIds = new Set(room.participants.flatMap(p => p.roster))
   room.currentPlayerIndex++
   while (room.currentPlayerIndex < room.playerPool.length) {
@@ -1045,12 +1050,20 @@ function advanceAuction(io: SocketServer, room: AuctionRoom) {
       room.lastWinnerName = null
       room.lastWonPlayerId = null
       room.stealInitiated = false
-      // Assign the nominator for this round using a round-robin through participants.
-      // Only the nominator may call auction:pass — no other participant can unilaterally
-      // skip a player before a bid has been placed.
+      // Assign the nominator for this round using a round-robin through participants,
+      // skipping any whose socket has disconnected.  Without this, a disconnected
+      // participant would be appointed nominator and nobody could pass — the round
+      // would silently wait the full 25-second BID_TIMER before auto-expiring.
       const round = (auctionRoundCounter.get(room.code) ?? 0) + 1
       auctionRoundCounter.set(room.code, round)
-      room.nominatorSocketId = room.participants[round % room.participants.length]?.socketId ?? null
+      const connectedParticipants = room.participants.filter(p => io.sockets.sockets.has(p.socketId))
+      if (connectedParticipants.length > 0) {
+        room.nominatorSocketId = connectedParticipants[round % connectedParticipants.length].socketId
+      } else {
+        // All participants are disconnected — no nominator can act; set null so the
+        // timer will auto-expire the round without blocking on a specific socket.
+        room.nominatorSocketId = null
+      }
       room.status = 'bidding'
       room.bidDeadline = Date.now() + BID_TIMER_MS
       if (room.bidTimer) clearTimeout(room.bidTimer)
@@ -1072,6 +1085,19 @@ function handleAuctionBidExpiry(io: SocketServer, room: AuctionRoom) {
   // Guard: only execute if we're still in bidding or steal-window phase.
   // This prevents double-advancement if the timer fires after an explicit pass.
   if (room.status !== 'bidding' && room.status !== 'steal-window') return
+  // Guard: if the timer fires after all participants have disconnected (a race between
+  // the timer callback and the disconnect handler's clearTimeout), bail out and clean up.
+  // The disconnect handler may have already deleted the room from auctionRooms but the
+  // local `room` reference is still alive — processing it would write corrupt DB results
+  // for a game that nobody is watching.
+  const allGone = room.participants.every(p => !io.sockets.sockets.has(p.socketId))
+  if (allGone) {
+    if (room.bidTimer) clearTimeout(room.bidTimer)
+    if (room.tradeTimer) clearTimeout(room.tradeTimer)
+    auctionRooms.delete(room.code)
+    auctionRoundCounter.delete(room.code)
+    return
+  }
 
   if (room.currentBid === 0 || !room.currentBidderSocketId || !room.currentPlayer) {
     room.bidLog.push({ name: 'Nobody', amount: 0, action: 'pass' })
