@@ -1918,16 +1918,24 @@ app.prepare().then(async () => {
         // The token check closes the simultaneous-disconnect role-swap window: without
         // it, any anonymous socket that knows the room code can claim the host slot
         // once the original host socket is gone, because socket IDs change on reconnect.
+        const tokenUsed = !room.hostUserId && !origConnected && typeof token === 'string' && token === room.hostReconnectToken
         const isLegit = room.hostUserId
           ? userId === room.hostUserId
-          : socket.id === room.hostSocketId
-            || (!origConnected && typeof token === 'string' && token === room.hostReconnectToken)
+          : socket.id === room.hostSocketId || tokenUsed
         if (!isLegit) {
           console.warn('[room] Unauthorized host takeover attempt code=%s userId=[redacted]', code)
           socket.emit('room-error', { message: 'Unauthorized' })
           return
         }
         room.hostSocketId = socket.id
+        // Rotate the reconnect token after a successful anonymous token-based reconnect.
+        // Without rotation the old token stays valid indefinitely: an attacker who
+        // intercepted or observed the token can wait for the real player to disconnect
+        // again and replay it to steal the slot permanently.
+        if (tokenUsed) {
+          room.hostReconnectToken = crypto.randomBytes(16).toString('hex')
+          socket.emit('room-token', { code: room.code, role: 'host', token: room.hostReconnectToken })
+        }
       } else if (role === 'guest') {
         // Prevent the host player from claiming the guest slot (role swap).
         const callerIsHost = room.hostUserId
@@ -1951,16 +1959,21 @@ app.prepare().then(async () => {
         }
         const origConnected = io.sockets.sockets.has(room.guestSocketId)
         // Same token-based logic as the host path above.
+        const guestTokenUsed = !room.guestUserId && !origConnected && typeof token === 'string' && token === room.guestReconnectToken
         const isLegit = room.guestUserId
           ? userId === room.guestUserId
-          : socket.id === room.guestSocketId
-            || (!origConnected && typeof token === 'string' && token === room.guestReconnectToken)
+          : socket.id === room.guestSocketId || guestTokenUsed
         if (!isLegit) {
           console.warn('[room] Unauthorized guest takeover attempt code=%s userId=[redacted]', code)
           socket.emit('room-error', { message: 'Unauthorized' })
           return
         }
         room.guestSocketId = socket.id
+        // Rotate the reconnect token after a successful anonymous token-based reconnect.
+        if (guestTokenUsed) {
+          room.guestReconnectToken = crypto.randomBytes(16).toString('hex')
+          socket.emit('room-token', { code: room.code, role: 'guest', token: room.guestReconnectToken })
+        }
       }
 
       // If a forfeit grace-period timer was pending for this room (because this
@@ -2490,8 +2503,12 @@ app.prepare().then(async () => {
         if (room.nominatorSocketId === oldSocketId) room.nominatorSocketId = socket.id
         socket.join(`auction:${room.code}`)
         socket.emit('auction:joined', { code: room.code })
-        // Re-issue reconnect token after a successful reconnect so the client's
-        // sessionStorage stays current with the (now re-seated) participant.
+        // Rotate and re-issue the reconnect token so the client's sessionStorage
+        // stays current.  Rotation prevents an intercepted token from being replayed
+        // on the next disconnect to permanently steal the participant's slot.
+        if (!existingByName.userId) {
+          existingByName.reconnectToken = crypto.randomBytes(16).toString('hex')
+        }
         socket.emit('auction:room-token', { code: room.code, token: existingByName.reconnectToken })
         broadcastAuctionState(io, room)
         return
@@ -2923,6 +2940,14 @@ app.prepare().then(async () => {
           if (room.currentBidderSocketId === oldSocketId) room.currentBidderSocketId = socket.id
           if (room.nominatorSocketId === oldSocketId) room.nominatorSocketId = socket.id
           socket.join(`auction:${room.code}`)
+          // Rotate the reconnect token after a successful anonymous token-based reconnect.
+          // Without rotation the old token remains usable indefinitely: an attacker who
+          // captured the token can replay it every time the real participant disconnects
+          // to persistently steal their auction slot.
+          if (!byName.userId && tokenValid) {
+            byName.reconnectToken = crypto.randomBytes(16).toString('hex')
+            socket.emit('auction:room-token', { code: room.code, token: byName.reconnectToken })
+          }
         }
       }
 
@@ -3005,12 +3030,32 @@ app.prepare().then(async () => {
             }
             return
           }
-          // Don't fire partner-disconnected for completed series or between-game result
-          // screens — the game is already over so a disconnect here is not a forfeit.
-          // Without the 'result' guard a player refreshing on the result screen would
-          // trigger the 8-second forfeit timer, which would emit 'partner-disconnected'
-          // to the remaining player before they could click "next game".
-          if (room.status === 'complete' || room.status === 'result') return
+          // Completed series: nothing to do — room is already done.
+          if (room.status === 'complete') return
+          // Between-game result screen: not a forfeit (no game in progress), but the
+          // remaining player should still be notified if their opponent doesn't reconnect.
+          // Start a grace timer — if the disconnected player calls get-room within
+          // PARTNER_DISCONNECT_GRACE_MS the timer is cancelled and they are re-seated.
+          // Without this, a host who closes their tab between games leaves the guest
+          // silently stuck on the result screen until the room cleanup timer fires (up to
+          // 60 s later), at which point any action the guest takes returns "Room not found"
+          // with no explanation.
+          if (room.status === 'result') {
+            if (partnerDisconnectTimers.has(code)) return
+            const disconnectorIsHost = room.hostSocketId === socket.id
+            const resultGraceTimer = setTimeout(() => {
+              partnerDisconnectTimers.delete(code)
+              if (!rooms.has(code) || room.status === 'complete') return
+              // Still on the result screen: notify the remaining player and ensure cleanup.
+              if (room.status === 'result') {
+                const remainingSocketId = disconnectorIsHost ? room.guestSocketId : room.hostSocketId
+                if (remainingSocketId) io.to(remainingSocketId).emit('partner-disconnected')
+                if (!roomCleanupTimers.has(code)) scheduleRoomCleanup(code, io)
+              }
+            }, PARTNER_DISCONNECT_GRACE_MS)
+            partnerDisconnectTimers.set(code, resultGraceTimer)
+            return
+          }
           // If a forfeit timer is already pending for this room (the other player also
           // recently disconnected), don't start a second one — let the existing timer fire.
           if (partnerDisconnectTimers.has(code)) return
