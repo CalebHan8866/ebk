@@ -788,7 +788,13 @@ function startPickTimer(io: SocketServer, room: Room) {
     const currentRoom = rooms.get(code)
     if (!currentRoom || currentRoom.status !== 'drafting') return
 
+    // Stale-timer guard: if the live index no longer points to the player this
+    // timer was set for (e.g. a manual pick advanced the turn between the timer
+    // being set and firing), bail out.  Node's clearTimeout is reliable, so this
+    // should never trigger in practice, but it makes the invariant explicit and
+    // protects against any future state-mutation bug that bypasses clearTimeout.
     const picker = currentRoom.draftOrder[currentRoom.currentPickIndex]
+    if (picker !== currentPicker) return
     const autoPick = autoPickPlayer(currentRoom)
     if (autoPick === null) {
       // No eligible players — emit an error to both clients so they are not left
@@ -2026,6 +2032,7 @@ app.prepare().then(async () => {
     socket.on('create-listing', async ({ teamMode, series, statCategory }: {
       userName?: string, teamMode: TeamMode, series: SeriesLength, statCategory?: StatCategory
     }) => {
+      try {
       if (!['starter5', 'bench8', 'full12'].includes(teamMode)) return
       if (![1, 3, 5].includes(series)) return
       // Rate limit: max 5 listing creations per minute per socket.
@@ -2128,6 +2135,11 @@ app.prepare().then(async () => {
       pendingListingCreate.delete(socket.id)
       socket.emit('listing-created', { code })
       io.to('lobby').emit('listings-updated', { listings: Array.from(gameListings.values()) })
+      } catch (err) {
+        console.error('[socket] create-listing unhandled error:', err)
+        pendingListingCreate.delete(socket.id)
+        socket.emit('listing-error', { message: 'Internal server error' })
+      }
     })
 
     socket.on('cancel-listing', ({ code }: { code: string }) => {
@@ -2144,6 +2156,7 @@ app.prepare().then(async () => {
     socket.on('join-listing', async ({ code: rawCode }: {
       code: string, userName?: string
     }) => {
+      try {
       if (typeof rawCode !== 'string') return
       // Rate limit: max 10 join-listing attempts per minute per socket.
       // Each call triggers two Prisma queries; unthrottled spam floods the DB.
@@ -2256,9 +2269,14 @@ app.prepare().then(async () => {
         myTeamMode: listing.teamMode, mySeries: listing.series,
         opponentTeamMode: listing.teamMode, opponentSeries: listing.series,
       })
+      } catch (err) {
+        console.error('[socket] join-listing unhandled error:', err)
+        socket.emit('listing-error', { message: 'Internal server error' })
+      }
     })
 
     socket.on('use-emote', async ({ code, emoteText }: { code: string; emoteText: string }) => {
+      try {
       const room = rooms.get(typeof code === 'string' ? code.trim().toUpperCase() : '')
       if (!room || room.status !== 'drafting') return
       const isHost = socket.id === room.hostSocketId
@@ -2301,6 +2319,9 @@ app.prepare().then(async () => {
       }
       const targetSocketId = isHost ? room.guestSocketId : room.hostSocketId
       if (targetSocketId) io.to(targetSocketId).emit('opponent-emote', { emoteText })
+      } catch (err) {
+        console.error('[socket] use-emote unhandled error:', err)
+      }
     })
 
     socket.on('decline-match', ({ code }: { code: string }) => {
@@ -2783,6 +2804,7 @@ app.prepare().then(async () => {
     })
 
     socket.on('auction:get-state', async ({ code, userName: rawUserName, token }: { code: string; userName?: string; token?: string }) => {
+      try {
       if (typeof code !== 'string') return
       // Rate limit: max 20 get-state calls per minute per socket to prevent DB flooding.
       // Each call that misses the in-memory room cache hits Prisma; unthrottled spam
@@ -2920,6 +2942,10 @@ app.prepare().then(async () => {
       // Pass socket.id so trade offers are filtered to only those involving this socket.
       const state = buildAuctionStateForSocket(room, socket.id)
       socket.emit('auction:state', state)
+      } catch (err) {
+        console.error('[socket] auction:get-state unhandled error:', err)
+        socket.emit('auction:error', { message: 'Internal server error' })
+      }
     })
 
     socket.on('auction:finish-trading', ({ code }: { code: string }) => {
