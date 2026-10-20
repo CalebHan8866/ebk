@@ -112,7 +112,10 @@ async function fetchCareerEarnings(href: string): Promise<number> {
       // Use cheerio to find salary cells — more robust than regex since
       // BBRef sometimes puts csk= before data-stat= (varying attribute order).
       // Skip any summary/totals row where the year cell is empty or says "Career".
+      // Also skip future seasons — BBRef includes contracted future years for active
+      // players, which would inflate their career totals above retired legends.
       const $ = cheerio.load(expanded)
+      const NOW_YEAR = new Date().getFullYear()
       let total = 0
       $('td[data-stat="salary"]').each((_, el) => {
         const row = $(el).closest('tr')
@@ -120,6 +123,13 @@ async function fetchCareerEarnings(href: string): Promise<number> {
         const yearCell = row.find('th[data-stat="year_id"], td[data-stat="year_id"]')
         const yearText = yearCell.text().trim()
         if (!yearText || yearText.toLowerCase() === 'career') return
+        // Skip future seasons: BBRef uses "YYYY-YY" format (e.g. "2025-26").
+        // Parse the start year; season ends the following calendar year.
+        const startYearMatch = yearText.match(/^(\d{4})/)
+        if (startYearMatch) {
+          const seasonEndYear = parseInt(startYearMatch[1], 10) + 1
+          if (seasonEndYear > NOW_YEAR) return
+        }
         const csk = $(el).attr('csk')
         if (csk) total += parseInt(csk, 10)
         else {
