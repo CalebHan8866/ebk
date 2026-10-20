@@ -24,6 +24,11 @@ export async function POST(req: NextRequest) {
     const payload = await verifyToken(token)
     if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    // Per-user rate limit: 10 equip actions per minute — prevents a single account
+    // from generating excessive DB writes even when rotating IPs to bypass the IP limit.
+    const { success: userOk } = rateLimit(`equip:user:${payload.userId}`, 10, 60 * 1000)
+    if (!userOk) return NextResponse.json({ error: 'Too many requests. Try again in a minute.' }, { status: 429 })
+
     let body: { type: 'badge' | 'emote'; id: string }
     try {
       body = await req.json()
