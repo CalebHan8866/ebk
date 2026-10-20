@@ -143,7 +143,7 @@ export default function RegisterPage() {
             style={{ textShadow: '0 0 60px rgba(249,115,22,0.3)' }}>
             EBK
           </h1>
-          <p className="text-[10px] font-bold tracking-[0.4em] text-gray-400 uppercase">Create Your Account</p>
+          <p className="text-label tracking-[0.4em]">Create Your Account</p>
         </div>
 
         {/* Value prop chips — what you unlock by registering */}
@@ -182,7 +182,7 @@ export default function RegisterPage() {
 
             {/* Username */}
             <div>
-              <label htmlFor="register-username" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">Username</label>
+              <label htmlFor="register-username" className="text-label block mb-2">Username</label>
               <div className="relative flex items-center">
                 <input
                   id="register-username"
@@ -207,7 +207,7 @@ export default function RegisterPage() {
 
             {/* Email */}
             <div>
-              <label htmlFor="register-email" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">Email</label>
+              <label htmlFor="register-email" className="text-label block mb-2">Email</label>
               <div className="relative flex items-center">
                 <input
                   id="register-email"
@@ -227,7 +227,7 @@ export default function RegisterPage() {
 
             {/* Password */}
             <div>
-              <label htmlFor="register-password" className="block text-gray-400 text-xs font-semibold tracking-wide uppercase mb-2">Password</label>
+              <label htmlFor="register-password" className="text-label block mb-2">Password</label>
               <div className="relative flex items-center">
                 <input
                   id="register-password"
