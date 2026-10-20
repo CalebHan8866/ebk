@@ -510,7 +510,7 @@ export default function AuctionRoomPage() {
           <div className="absolute inset-0 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
         </div>
         <p className="text-label tracking-[0.3em]">LOADING FINAL RESULTS...</p>
-        <Link href="/auction" className="mt-2 text-white/25 text-xs hover:text-white/50 underline transition-colors">Back to lobby</Link>
+        <Link href="/auction" className="mt-2 text-white/60 text-xs hover:text-white/80 underline transition-colors">Back to lobby</Link>
       </div>
     )
   }
@@ -1890,7 +1890,7 @@ export default function AuctionRoomPage() {
     <div className="min-h-screen flex flex-col items-center justify-center gap-4">
       <div className="w-10 h-10 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
       <p className="text-label tracking-[0.25em]">RECONNECTING...</p>
-      <Link href="/auction" className="mt-2 text-white/25 text-xs hover:text-white/50 underline transition-colors">Back to lobby</Link>
+      <Link href="/auction" className="mt-2 text-white/60 text-xs hover:text-white/80 underline transition-colors">Back to lobby</Link>
     </div>
   )
 }

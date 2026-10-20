@@ -135,7 +135,7 @@ function ResetContent() {
             <button
               type="button"
               onClick={() => setShowPassword(s => !s)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/60 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80 transition-colors"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? (
@@ -182,7 +182,7 @@ function ResetContent() {
             <button
               type="button"
               onClick={() => setShowConfirm(s => !s)}
-              className="absolute right-8 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/60 transition-colors"
+              className="absolute right-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80 transition-colors"
               aria-label={showConfirm ? 'Hide password' : 'Show password'}
             >
               {showConfirm ? (
@@ -237,7 +237,7 @@ function ResetContent() {
 
       <Link
         href="/login"
-        className="flex items-center justify-center gap-2 text-white/40 hover:text-white/80 text-sm font-bold transition-colors group"
+        className="flex items-center justify-center gap-2 text-white/60 hover:text-white/80 text-sm font-bold transition-colors group"
       >
         <svg className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />

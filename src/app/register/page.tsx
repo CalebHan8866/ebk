@@ -123,7 +123,7 @@ export default function RegisterPage() {
               <p className="text-green-400 text-xs">{resendMsg}</p>
             ) : (
               <button onClick={handleResend} disabled={resendLoading}
-                className="text-white/25 hover:text-white/60 text-xs transition-colors">
+                className="text-white/50 hover:text-white/80 text-xs transition-colors">
                 {resendLoading ? 'Sending...' : "Didn't get it? Resend email"}
               </button>
             )}

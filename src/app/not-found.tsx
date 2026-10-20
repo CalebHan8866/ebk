@@ -88,7 +88,7 @@ export default function NotFound() {
                 <Link
                   key={href}
                   href={href}
-                  className="text-xs font-bold text-white/40 hover:text-orange-400 transition-colors px-3 py-1.5 rounded-lg border border-white/[0.06] hover:border-orange-500/30 bg-white/[0.02] hover:bg-orange-950/20"
+                  className="text-xs font-bold text-white/60 hover:text-orange-400 transition-colors px-3 py-1.5 rounded-lg border border-white/[0.06] hover:border-orange-500/30 bg-white/[0.02] hover:bg-orange-950/20"
                 >
                   {label}
                 </Link>

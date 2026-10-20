@@ -184,7 +184,7 @@ function BottomNav({ pathname }: { pathname: string }) {
               aria-label={label}
               className={[
                 'bottom-nav-item flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-all',
-                active ? 'text-orange-400' : 'text-white/35 hover:text-white/70',
+                active ? 'text-orange-400' : 'text-white/55 hover:text-white/80',
               ].join(' ')}>
               <span className={['transition-transform', active ? 'scale-105' : ''].join(' ')}>
                 {icon}

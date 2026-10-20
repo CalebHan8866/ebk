@@ -639,7 +639,7 @@ export default function FunFactsPage() {
           </div>
           <Link
             href="/lobby"
-            className="inline-flex items-center gap-1.5 text-white/40 hover:text-white/80 transition-colors text-sm group shrink-0"
+            className="inline-flex items-center gap-1.5 text-white/60 hover:text-white/80 transition-colors text-sm group shrink-0"
           >
             <svg className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -665,7 +665,7 @@ export default function FunFactsPage() {
           {search && (
             <button
               onClick={() => handleSearch('')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/60 transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -712,7 +712,7 @@ export default function FunFactsPage() {
             <div className="flex items-center gap-3 mb-3 sm:mb-4 animate-fade-up-2">
               <button
                 onClick={prevPlayer}
-                className="w-10 h-10 rounded-xl card-surface border border-white/[0.07] text-white/40 hover:text-white hover:border-white/20 flex items-center justify-center transition-all shrink-0"
+                className="w-10 h-10 rounded-xl card-surface border border-white/[0.07] text-white/60 hover:text-white hover:border-white/20 flex items-center justify-center transition-all shrink-0"
                 aria-label="Previous player"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -732,7 +732,7 @@ export default function FunFactsPage() {
 
               <button
                 onClick={nextPlayer}
-                className="w-10 h-10 rounded-xl card-surface border border-white/[0.07] text-white/40 hover:text-white hover:border-white/20 flex items-center justify-center transition-all shrink-0"
+                className="w-10 h-10 rounded-xl card-surface border border-white/[0.07] text-white/60 hover:text-white hover:border-white/20 flex items-center justify-center transition-all shrink-0"
                 aria-label="Next player"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">

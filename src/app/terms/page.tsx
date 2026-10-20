@@ -123,7 +123,7 @@ export default function TermsPage() {
         <div className="mb-10">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-white/30 hover:text-white/70 text-xs font-bold uppercase tracking-widest transition-colors group"
+            className="inline-flex items-center gap-1.5 text-white/60 hover:text-white/80 text-xs font-bold uppercase tracking-widest transition-colors group"
           >
             <svg className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -188,8 +188,8 @@ export default function TermsPage() {
             </a>
           </p>
           <div className="flex items-center gap-4">
-            <Link href="/privacy" className="text-white/30 hover:text-orange-400 text-xs font-semibold transition-colors">Privacy</Link>
-            <Link href="/" className="text-white/30 hover:text-white/70 text-xs font-semibold transition-colors">Back to EBK</Link>
+            <Link href="/privacy" className="text-white/60 hover:text-orange-400 text-xs font-semibold transition-colors">Privacy</Link>
+            <Link href="/" className="text-white/60 hover:text-white/80 text-xs font-semibold transition-colors">Back to EBK</Link>
           </div>
         </div>
 

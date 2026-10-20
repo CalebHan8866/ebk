@@ -1654,7 +1654,7 @@ function GameContent() {
                     key={i}
                     onClick={isValidTarget ? () => pickIntoSlot(i) : undefined}
                     aria-label={isValidTarget ? slotLabel : undefined}
-                    className={`rounded px-2 py-1 text-xs flex items-center gap-1.5 transition-all ${
+                    className={`rounded px-2 py-1 text-xs flex items-center gap-1.5 transition-all ${isValidTarget ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60' : ''} ${
                       isNewMyPick
                         ? 'bg-orange-500/20 border border-orange-400/60 animate-slide-up'
                         : isValidTarget
@@ -1734,7 +1734,7 @@ function GameContent() {
                     key={i}
                     onClick={isValidTarget ? () => pickIntoSlot(i) : undefined}
                     aria-label={isValidTarget ? slotLabelDesktop : undefined}
-                    className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 transition-all ${
+                    className={`rounded-lg px-3 py-2 text-xs flex items-center gap-2 transition-all ${isValidTarget ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60' : ''} ${
                       isNewMyPickDesk
                         ? 'bg-orange-500/20 border border-orange-400/60 animate-slide-up'
                         : isValidTarget
@@ -1836,7 +1836,7 @@ function GameContent() {
                 className="input-field pl-9 pr-8 py-2.5 text-sm rounded-xl"
               />
               {searchQuery && (
-                <button onClick={() => { setSearchQuery(''); setDebouncedSearch('') }} aria-label="Clear search" className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 active:text-white transition-colors text-xs w-7 h-7 flex items-center justify-center rounded touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50">✕</button>
+                <button onClick={() => { setSearchQuery(''); setDebouncedSearch('') }} aria-label="Clear search" className="absolute right-2 top-1/2 -translate-y-1/2 text-white/60 hover:text-white/80 active:text-white transition-colors text-xs w-7 h-7 flex items-center justify-center rounded touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50">✕</button>
               )}
             </div>
 
