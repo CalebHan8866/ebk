@@ -16,6 +16,8 @@ function computeETag(data: unknown): string {
 }
 
 async function fetchAndCache(): Promise<void> {
+  console.log('[players] cache miss, querying DB...')
+  const dbStart = Date.now()
   const players = await prisma.player.findMany({
     select: {
       id: true,
@@ -36,6 +38,7 @@ async function fetchAndCache(): Promise<void> {
     },
   })
   cache = { data: players, etag: computeETag(players), at: Date.now() }
+  console.log(`[players] served ${players.length} players in ${Date.now() - dbStart}ms`)
 }
 
 function triggerBackgroundRefresh(): void {

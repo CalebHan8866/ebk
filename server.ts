@@ -1249,6 +1249,22 @@ app.prepare().then(async () => {
 
   const httpServer = createServer((req, res) => {
     const parsedUrl = parse(req.url!, true)
+
+    // ─── Health check (Railway zero-downtime deploys) ─────────────────────────
+    if (req.method === 'GET' && parsedUrl.pathname === '/health') {
+      const body = JSON.stringify({ status: 'ok', uptime: process.uptime() })
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) })
+      res.end(body)
+      return
+    }
+
+    // ─── Request logging ──────────────────────────────────────────────────────
+    const reqStart = Date.now()
+    res.on('finish', () => {
+      const ms = Date.now() - reqStart
+      console.log('[http] %s %s → %d in %dms', req.method, parsedUrl.pathname, res.statusCode, ms)
+    })
+
     handle(req, res, parsedUrl)
   })
 
@@ -1279,6 +1295,15 @@ app.prepare().then(async () => {
     const auctionCount = auctionRooms.size
     console.log('[metrics] connections=%d game_rooms=%d auction_rooms=%d', socketCount, roomCount, auctionCount)
   }, METRICS_HEARTBEAT_MS)
+
+  // ─── Memory usage logging (every 5 min, only when heap > 200 MB) ─────────────
+  setInterval(() => {
+    const { heapUsed, heapTotal } = process.memoryUsage()
+    const usedMB = heapUsed / 1024 / 1024
+    if (usedMB > 200) {
+      console.warn('[memory] heap_used=%.1fMB heap_total=%.1fMB', usedMB, heapTotal / 1024 / 1024)
+    }
+  }, 5 * 60 * 1000)
 
   // ─── Stale pre-game room sweep (every 5 min) ─────────────────────────────────
   // A 'waiting' draft room or 'waiting' auction room can leak indefinitely when the
