@@ -218,6 +218,6 @@
       "shortened": false
     }
   ],
-  "updatedAt": "2026-10-19T11:35:55.762Z",
+  "updatedAt": "2026-10-20T01:10:08.836Z",
   "note": "Value formula: surplus_pct = fair_pct - cap_pct; fair_pct = min(cap_pct,min_pct) + rate * max(0,production); production = 0.5*WS + 0.5*(2.7*VORP). See scripts/scrape-season-data.ts."
 }

@@ -780,7 +780,7 @@ function GameContent() {
                 : 'bg-white/[0.025] border border-white/[0.06]'
             }`}>
               {/* Top accent line — orange for win, red for loss */}
-              <div className={`h-[2px] w-full ${iWon ? 'bg-gradient-to-r from-transparent via-orange-500 to-transparent' : isDraw ? 'bg-gradient-to-r from-transparent via-yellow-600/50 to-transparent' : 'bg-gradient-to-r from-transparent via-red-800/40 to-transparent'}`} />
+              <div className={`h-[2px] w-full ${iWon ? 'bg-gradient-to-r from-transparent via-orange-500 to-transparent' : isDraw ? 'bg-gradient-to-r from-transparent via-yellow-600/50 to-transparent' : 'bg-gradient-to-r from-transparent via-red-500/50 to-transparent'}`} />
               <div className="flex items-stretch">
                 {/* Host side */}
                 {(() => {
@@ -788,11 +788,11 @@ function GameContent() {
                   return (
                     <div className={`flex-1 min-w-0 px-4 py-5 text-center ${hostIsWinner ? 'bg-orange-950/15' : ''}`}>
                       <div className={`text-[10px] font-black tracking-[0.15em] uppercase mb-1.5 truncate ${
-                        hostIsWinner ? 'text-orange-300' : isDraw ? 'text-white/40' : 'text-white/20'
+                        hostIsWinner ? 'text-orange-300' : isDraw ? 'text-white/40' : 'text-white/35'
                       }`}>{room.hostName}</div>
                       <div className={`font-display leading-none tabular-nums ${
                         hostIsWinner ? (role === 'host' ? 'win-shimmer-text animate-win-pop' : 'text-orange-400')
-                        : isDraw ? 'text-yellow-300' : 'text-white/35'
+                        : isDraw ? 'text-yellow-300' : 'text-white/45'
                       }`}
                         style={{ fontSize: hostIsWinner ? 'clamp(3.5rem, 15vw, 6.5rem)' : 'clamp(2.5rem, 10vw, 4.5rem)' }}>
                         {room.hostSeriesScore}
@@ -807,7 +807,7 @@ function GameContent() {
                 })()}
                 {/* Divider */}
                 <div className="flex items-center justify-center px-2 shrink-0">
-                  <div className="text-white/15 font-display text-2xl leading-none">–</div>
+                  <div className="text-white/30 font-display text-2xl leading-none">–</div>
                 </div>
                 {/* Guest side */}
                 {(() => {
@@ -815,11 +815,11 @@ function GameContent() {
                   return (
                     <div className={`flex-1 min-w-0 px-4 py-5 text-center ${guestIsWinner ? 'bg-orange-950/15' : ''}`}>
                       <div className={`text-[10px] font-black tracking-[0.15em] uppercase mb-1.5 truncate ${
-                        guestIsWinner ? 'text-orange-300' : isDraw ? 'text-white/40' : 'text-white/20'
+                        guestIsWinner ? 'text-orange-300' : isDraw ? 'text-white/40' : 'text-white/35'
                       }`}>{room.guestName}</div>
                       <div className={`font-display leading-none tabular-nums ${
                         guestIsWinner ? (role === 'guest' ? 'win-shimmer-text animate-win-pop' : 'text-orange-400')
-                        : isDraw ? 'text-yellow-300' : 'text-white/35'
+                        : isDraw ? 'text-yellow-300' : 'text-white/45'
                       }`}
                         style={{ fontSize: guestIsWinner ? 'clamp(3.5rem, 15vw, 6.5rem)' : 'clamp(2.5rem, 10vw, 4.5rem)' }}>
                         {room.guestSeriesScore}
@@ -1986,7 +1986,7 @@ function GameContent() {
                         }`}
                       >
                         <button
-                          className="w-full flex items-center gap-3 px-3 py-2.5 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60 rounded-xl"
+                          className="w-full flex items-center gap-3 px-3 py-3 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60 rounded-xl"
                           onClick={() => canPick && selectAndPick(player.id)}
                           disabled={!canPick}
                           aria-label={`${player.firstName} ${player.lastName}, ${playerPositions.join('/')}, EBK ${player.ebkScore.toFixed(1)}${room.difficulty === 'casual' ? `, ${formatStat(statVal, statMode)} ${STAT_CATEGORY_SHORT[statMode as keyof typeof STAT_CATEGORY_SHORT] ?? statMode}` : ''}`}

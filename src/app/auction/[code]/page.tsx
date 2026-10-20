@@ -1054,7 +1054,7 @@ export default function AuctionRoomPage() {
                           <svg className="w-3 h-3 text-green-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                           </svg>
-                          <span className="text-green-400 text-[9px] sm:text-[10px] font-black uppercase tracking-widest truncate">Receive</span>
+                          <span className="text-green-400 text-[9px] sm:text-[10px] font-black uppercase tracking-widest truncate">You Receive</span>
                           <span className="ml-auto text-green-400/60 font-display text-xs sm:text-sm leading-none tabular-nums shrink-0">{receiveTotalEbk.toFixed(1)}</span>
                         </div>
                         <div className="space-y-0 divide-y divide-white/[0.04]">
@@ -1083,7 +1083,7 @@ export default function AuctionRoomPage() {
                           <svg className="w-3 h-3 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                           </svg>
-                          <span className="text-red-400 text-[9px] sm:text-[10px] font-black uppercase tracking-widest truncate">Give</span>
+                          <span className="text-red-400 text-[9px] sm:text-[10px] font-black uppercase tracking-widest truncate">You Give</span>
                           <span className="ml-auto text-red-400/60 font-display text-xs sm:text-sm leading-none tabular-nums shrink-0">{giveTotalEbk.toFixed(1)}</span>
                         </div>
                         <div className="space-y-0 divide-y divide-white/[0.04]">
@@ -1142,7 +1142,7 @@ export default function AuctionRoomPage() {
               <span className="w-2 h-2 rounded-full bg-yellow-400/70 animate-pulse shrink-0" />
               <span className="text-label tracking-[0.18em]">Pending Offers</span>
               <span className="text-[10px] font-black bg-white/[0.06] border border-white/[0.10] text-white/40 rounded-full px-2 py-0.5">{myOutgoingOffers.length}</span>
-              <div className="flex-1 h-px bg-white/[0.05]" />
+              <div className="flex-1 h-px bg-white/[0.12]" />
             </div>
             <div className="space-y-2">
               {myOutgoingOffers.map(offer => {
@@ -1163,7 +1163,7 @@ export default function AuctionRoomPage() {
                     </div>
                     <div className="grid grid-cols-[1fr_32px_1fr] gap-0 px-4 py-3 items-start">
                       <div>
-                        <p className="text-orange-400/50 text-[9px] font-black uppercase tracking-widest mb-1.5">Offering</p>
+                        <p className="text-orange-400/70 text-[9px] font-black uppercase tracking-widest mb-1.5">You Give</p>
                         <div className="space-y-1">
                           {offeredPlayers.map(p => p && (
                             <div key={p.id} className="flex items-center gap-1.5">
@@ -1182,7 +1182,7 @@ export default function AuctionRoomPage() {
                         </div>
                       </div>
                       <div>
-                        <p className="text-blue-400/50 text-[9px] font-black uppercase tracking-widest mb-1.5">Requesting</p>
+                        <p className="text-blue-400/70 text-[9px] font-black uppercase tracking-widest mb-1.5">You Receive</p>
                         <div className="space-y-1">
                           {requestedPlayers.map(p => p && (
                             <div key={p.id} className="flex items-center gap-1.5">
@@ -1221,8 +1221,8 @@ export default function AuctionRoomPage() {
 
         {/* Section divider */}
         <div className="flex items-center gap-3 mb-4">
-          <span className="text-white/20 text-[10px] font-black uppercase tracking-widest">Build a Trade</span>
-          <div className="flex-1 h-px bg-white/[0.05]" />
+          <span className="text-white/40 text-[10px] font-black uppercase tracking-widest">Build a Trade</span>
+          <div className="flex-1 h-px bg-white/[0.12]" />
           {selectedToOffer.length > 0 && (
             <span className="text-orange-400 text-[10px] font-black uppercase tracking-widest">
               {selectedToOffer.length} selected to offer
@@ -1359,12 +1359,12 @@ export default function AuctionRoomPage() {
                           : 'border-white/[0.08] bg-white/[0.02]'
                       }`}>
                         <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 border-b border-white/[0.05]">
-                          <svg className="w-3 h-3 text-orange-400/60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3 h-3 text-orange-400/80 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                           </svg>
-                          <p className="text-orange-400/60 text-[9px] font-black uppercase tracking-widest truncate">You give</p>
+                          <p className="text-orange-400/80 text-[9px] font-black uppercase tracking-widest truncate">You Give</p>
                           {selectedToOffer.length > 0 && (
-                            <span className="ml-auto text-orange-400/60 font-display text-xs tabular-nums shrink-0">
+                            <span className="ml-auto text-orange-400/70 font-display text-xs tabular-nums shrink-0">
                               {selectedToOffer.reduce((s, id) => s + (me?.roster.find(p => p?.id === id)?.ebkScore ?? 0), 0).toFixed(1)}
                             </span>
                           )}
@@ -1398,12 +1398,12 @@ export default function AuctionRoomPage() {
                           : 'border-white/[0.08] bg-white/[0.02]'
                       }`}>
                         <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 border-b border-white/[0.05]">
-                          <svg className="w-3 h-3 text-blue-400/60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3 h-3 text-blue-400/80 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
                           </svg>
-                          <p className="text-blue-400/60 text-[9px] font-black uppercase tracking-widest truncate">You get</p>
+                          <p className="text-blue-400/80 text-[9px] font-black uppercase tracking-widest truncate">You Receive</p>
                           {selectedToRequest.length > 0 && (
-                            <span className="ml-auto text-blue-400/60 font-display text-xs tabular-nums shrink-0">
+                            <span className="ml-auto text-blue-400/70 font-display text-xs tabular-nums shrink-0">
                               {selectedToRequest.reduce((s, id) => s + (gm.roster.find(p => p?.id === id)?.ebkScore ?? 0), 0).toFixed(1)}
                             </span>
                           )}
