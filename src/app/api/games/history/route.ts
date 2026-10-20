@@ -22,7 +22,13 @@ export async function GET(request: NextRequest) {
     if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     // Cursor-based pagination: ?cursor=<gameRecordId>
-    const cursor = request.nextUrl.searchParams.get('cursor') ?? undefined
+    // CUIDs are 25 characters; reject anything longer to prevent oversized strings
+    // from being forwarded to Postgres unchanged.
+    const rawCursor = request.nextUrl.searchParams.get('cursor')
+    if (rawCursor !== null && rawCursor.length > 64) {
+      return NextResponse.json({ error: 'Invalid cursor' }, { status: 400 })
+    }
+    const cursor = rawCursor ?? undefined
 
     const records = await prisma.gameRecord.findMany({
       where: { userId: payload.userId },
