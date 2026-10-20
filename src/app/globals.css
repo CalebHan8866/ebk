@@ -115,7 +115,7 @@ body {
   box-shadow: 0 4px 20px rgba(249,115,22,0.45);
   transform: translateY(-1px);
 }
-.btn-primary:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(234,88,12,0.3); }
+.btn-primary:active { transform: scale(0.97); box-shadow: 0 2px 8px rgba(234,88,12,0.3); transition: transform 0.08s ease, box-shadow 0.08s ease; }
 .btn-primary:focus-visible { outline: 2px solid rgba(249,115,22,0.7); outline-offset: 3px; }
 .btn-primary:disabled { opacity: 0.38; cursor: not-allowed; transform: none; box-shadow: none; pointer-events: none; }
 
@@ -141,7 +141,7 @@ body {
   border-color: rgba(255,255,255,0.2);
   color: #fff;
 }
-.btn-secondary:active { background: rgba(255,255,255,0.08); }
+.btn-secondary:active { background: rgba(255,255,255,0.08); transform: scale(0.97); transition: transform 0.08s ease, background 0.08s ease; }
 .btn-secondary:focus-visible { outline: 2px solid rgba(249,115,22,0.7); outline-offset: 3px; }
 .btn-secondary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; pointer-events: none; }
 
@@ -467,7 +467,7 @@ body {
   touch-action: manipulation;
 }
 .btn-danger:hover { background: rgba(239,68,68,0.25); border-color: rgba(239,68,68,0.5); color: #fca5a5; }
-.btn-danger:active { background: rgba(239,68,68,0.3); }
+.btn-danger:active { background: rgba(239,68,68,0.3); transform: scale(0.97); transition: transform 0.08s ease, background 0.08s ease; }
 .btn-danger:focus-visible { outline: 2px solid rgba(239,68,68,0.5); outline-offset: 3px; }
 .btn-danger:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
 
@@ -1162,9 +1162,12 @@ textarea:focus-visible {
     transition: none !important;
   }
 
-  /* Hover transforms on buttons — remove lift effect */
+  /* Hover and active transforms on buttons — remove lift/press effects */
   .btn-primary:hover,
-  .btn-secondary:hover {
+  .btn-primary:active,
+  .btn-secondary:hover,
+  .btn-secondary:active,
+  .btn-danger:active {
     transform: none !important;
   }
 
