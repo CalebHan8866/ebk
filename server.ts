@@ -228,6 +228,11 @@ const CREATE_LISTING_THROTTLE_MAX = 5
 const TRADE_THROTTLE_MAX = 10
 /** Sliding-window duration for the trade action throttle (ms) */
 const TRADE_THROTTLE_WINDOW_MS = 10_000
+/** Per-socket confirm-ready throttle: max ready confirmations per CONFIRM_READY_WINDOW_MS.
+ *  Each call broadcasts ready-update to both sockets; uncapped spam would flood both clients. */
+const CONFIRM_READY_THROTTLE_MAX = 5
+/** Sliding-window duration for the confirm-ready throttle (ms) */
+const CONFIRM_READY_WINDOW_MS = 5_000
 
 interface GameResult {
   game: number
@@ -449,6 +454,10 @@ const createListingThrottle = new Map<string, { count: number; windowStart: numb
 // Per-socket trade-action throttle: offer/cancel/respond all trigger broadcastAuctionState;
 // cap at TRADE_THROTTLE_MAX per TRADE_THROTTLE_WINDOW_MS to prevent broadcast flooding.
 const tradeThrottle = new Map<string, { count: number; windowStart: number }>()
+// Per-socket confirm-ready throttle: each call broadcasts ready-update to both match
+// participants; cap at CONFIRM_READY_THROTTLE_MAX per CONFIRM_READY_WINDOW_MS to prevent
+// a malicious socket from flooding both players' connections before the match starts.
+const confirmReadyThrottle = new Map<string, { count: number; windowStart: number }>()
 // cooldown: userId → Map(opponentId → timestamp of last game end)
 const recentMatchups = new Map<string, Map<string, number>>()
 // grudge: userId → Map(opponentId → total games played together)
@@ -2361,6 +2370,17 @@ app.prepare().then(async () => {
 
     socket.on('confirm-ready', ({ code }: { code: string }) => {
       if (typeof code !== 'string') return
+      // Rate limit: max 5 confirmations per 5 seconds per socket.
+      // Each call broadcasts ready-update to both match participants; unthrottled spam
+      // would flood both sockets before the game starts.
+      const crNow = Date.now()
+      const crThrottle = confirmReadyThrottle.get(socket.id)
+      if (crThrottle && crNow - crThrottle.windowStart < CONFIRM_READY_WINDOW_MS) {
+        if (crThrottle.count >= CONFIRM_READY_THROTTLE_MAX) return // silently drop
+        crThrottle.count++
+      } else {
+        confirmReadyThrottle.set(socket.id, { count: 1, windowStart: crNow })
+      }
       const normCode = code.trim().toUpperCase()
       const rr = readyRooms.get(normCode)
       if (!rr) return
@@ -2996,6 +3016,7 @@ app.prepare().then(async () => {
       getAuctionStateThrottle.delete(socket.id)
       createListingThrottle.delete(socket.id)
       tradeThrottle.delete(socket.id)
+      confirmReadyThrottle.delete(socket.id)
       // Remove any open listing by this socket
       for (const [code, listing] of gameListings.entries()) {
         if (listing.hostSocketId === socket.id) {
