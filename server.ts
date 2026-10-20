@@ -2549,6 +2549,13 @@ app.prepare().then(async () => {
       code: string; toSocketId: string; offeredPlayerIds: number[]; requestedPlayerIds: number[]
     }) => {
       if (typeof code !== 'string' || typeof toSocketId !== 'string') return
+      // Rate limit: max 10 trade actions per 10 seconds per socket to prevent broadcast flooding.
+      const toNow = Date.now()
+      const toThrottle = tradeThrottle.get(socket.id)
+      if (toThrottle && toNow - toThrottle.windowStart < TRADE_THROTTLE_WINDOW_MS) {
+        if (toThrottle.count >= TRADE_THROTTLE_MAX) { socket.emit('auction:error', { message: 'Too many trade actions. Please slow down.' }); return }
+        toThrottle.count++
+      } else { tradeThrottle.set(socket.id, { count: 1, windowStart: toNow }) }
       const room = auctionRooms.get(code.trim().toUpperCase())
       if (!room || room.status !== 'trading') return
       // Prevent self-trade: offering to yourself would corrupt paidPrices when the
@@ -2616,6 +2623,13 @@ app.prepare().then(async () => {
     // unreachable — users who hit the 3-offer cap are permanently stuck.
     socket.on('auction:trade-cancel', ({ code, offerId }: { code: string; offerId: string }) => {
       if (typeof code !== 'string' || typeof offerId !== 'string') return
+      // Rate limit: shared trade action throttle (10 per 10s) to prevent broadcast flooding.
+      const tcNow = Date.now()
+      const tcThrottle = tradeThrottle.get(socket.id)
+      if (tcThrottle && tcNow - tcThrottle.windowStart < TRADE_THROTTLE_WINDOW_MS) {
+        if (tcThrottle.count >= TRADE_THROTTLE_MAX) { socket.emit('auction:error', { message: 'Too many trade actions. Please slow down.' }); return }
+        tcThrottle.count++
+      } else { tradeThrottle.set(socket.id, { count: 1, windowStart: tcNow }) }
       const room = auctionRooms.get(code.trim().toUpperCase())
       if (!room || room.status !== 'trading') return
       const idx = room.tradeOffers.findIndex(o => o.id === offerId)
@@ -2628,6 +2642,13 @@ app.prepare().then(async () => {
 
     socket.on('auction:trade-respond', ({ code, offerId, accept }: { code: string; offerId: string; accept: boolean }) => {
       if (typeof code !== 'string' || typeof offerId !== 'string') return
+      // Rate limit: shared trade action throttle (10 per 10s) to prevent broadcast flooding.
+      const trNow = Date.now()
+      const trThrottle = tradeThrottle.get(socket.id)
+      if (trThrottle && trNow - trThrottle.windowStart < TRADE_THROTTLE_WINDOW_MS) {
+        if (trThrottle.count >= TRADE_THROTTLE_MAX) { socket.emit('auction:error', { message: 'Too many trade actions. Please slow down.' }); return }
+        trThrottle.count++
+      } else { tradeThrottle.set(socket.id, { count: 1, windowStart: trNow }) }
       const room = auctionRooms.get(code.trim().toUpperCase())
       if (!room || room.status !== 'trading') return
       const offerIdx = room.tradeOffers.findIndex(o => o.id === offerId)
