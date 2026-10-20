@@ -11,14 +11,18 @@ export async function POST() {
 
   // Bump tokenVersion so any copy of the old JWT (e.g. stolen from another device)
   // is immediately rejected by verifyToken even before the 7-day expiry.
-  // We decode rather than verify so we can still invalidate a token whose version
-  // is already stale (e.g. second logout click).
+  //
+  // We use decodeToken (signature-only verify, no DB round-trip) to read the claims,
+  // but we scope the UPDATE with a WHERE tokenVersion = claims.tokenVersion guard.
+  // This means only the owner of the *current* active session can bump the counter —
+  // a replayed or already-invalidated token (stale tokenVersion) matches zero rows
+  // and cannot force-log-out the legitimate user.
   if (token) {
     try {
       const claims = await decodeToken(token)
       if (claims?.userId) {
-        await prisma.user.update({
-          where: { id: claims.userId },
+        await prisma.user.updateMany({
+          where: { id: claims.userId, tokenVersion: claims.tokenVersion },
           data: { tokenVersion: { increment: 1 } },
         })
       }
