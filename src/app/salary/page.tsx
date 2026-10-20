@@ -387,9 +387,9 @@ export default function SalaryPage() {
 
                           {/* Position + team row */}
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-gray-600 text-[10px] uppercase tracking-wide">{p.position}</span>
-                            <span className="text-gray-700 text-[10px]">·</span>
-                            <span className="text-gray-600 text-[10px] truncate">{p.team}</span>
+                            <span className="text-gray-600 text-[11px] uppercase tracking-wide">{p.position}</span>
+                            <span className="text-gray-700 text-[11px]">·</span>
+                            <span className="text-gray-600 text-[11px] truncate">{p.team}</span>
                           </div>
 
                           {/* Earnings bar — 3px track, orange fill, top-3 glow */}
@@ -408,11 +408,11 @@ export default function SalaryPage() {
 
                           {/* Secondary stats — visible inline on mobile too */}
                           <div className="flex gap-2 mt-1.5">
-                            <span className="text-gray-600 text-[10px]">{fmt(p.perGame)}/gm</span>
-                            <span className="text-gray-700 text-[10px]">·</span>
-                            <span className="text-gray-600 text-[10px]">{fmt(p.perSeason)}/yr</span>
-                            <span className="text-gray-700 text-[10px]">·</span>
-                            <span className="text-gray-600 text-[10px]">{p.seasons}y · {p.careerGames}gp</span>
+                            <span className="text-gray-600 text-[11px]">{fmt(p.perGame)}/gm</span>
+                            <span className="text-gray-700 text-[11px]">·</span>
+                            <span className="text-gray-600 text-[11px]">{fmt(p.perSeason)}/yr</span>
+                            <span className="text-gray-700 text-[11px]">·</span>
+                            <span className="text-gray-600 text-[11px]">{p.seasons}y · {p.careerGames}gp</span>
                           </div>
                         </div>
 

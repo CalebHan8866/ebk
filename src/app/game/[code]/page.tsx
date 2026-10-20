@@ -2010,13 +2010,13 @@ function GameContent() {
                             </div>
                             {/* Career stat pills — always visible so users can evaluate without tapping */}
                             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                              <span className={`text-[10px] font-black tabular-nums ${isSelected ? 'text-orange-200' : 'text-white/60'}`}>
+                              <span className={`text-xs font-black tabular-nums ${isSelected ? 'text-orange-200' : 'text-white/60'}`}>
                                 {player.careerPPG.toFixed(1)}<span className={`font-normal ml-0.5 ${isSelected ? 'text-orange-300/60' : 'text-gray-600'}`}>PPG</span>
                               </span>
-                              <span className={`text-[10px] font-black tabular-nums ${isSelected ? 'text-orange-200' : 'text-white/60'}`}>
+                              <span className={`text-xs font-black tabular-nums ${isSelected ? 'text-orange-200' : 'text-white/60'}`}>
                                 {player.careerRPG.toFixed(1)}<span className={`font-normal ml-0.5 ${isSelected ? 'text-orange-300/60' : 'text-gray-600'}`}>RPG</span>
                               </span>
-                              <span className={`text-[10px] font-black tabular-nums ${isSelected ? 'text-orange-200' : 'text-white/60'}`}>
+                              <span className={`text-xs font-black tabular-nums ${isSelected ? 'text-orange-200' : 'text-white/60'}`}>
                                 {player.careerAPG.toFixed(1)}<span className={`font-normal ml-0.5 ${isSelected ? 'text-orange-300/60' : 'text-gray-600'}`}>APG</span>
                               </span>
                             </div>
