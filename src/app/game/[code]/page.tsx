@@ -1762,6 +1762,30 @@ function GameContent() {
 
           {/* Player Pool */}
           <div className="lg:col-span-2">
+            {/* YOUR PICK sticky banner — pulses when it's the user's turn so they can't miss it */}
+            {isMyTurn && !isSpinning && spunTeam && (
+              <div className={`flex items-center justify-between gap-3 rounded-xl px-3 py-2 mb-3 border-2 animate-slide-up ${
+                pickTimeLeft <= 5
+                  ? 'bg-red-950/60 border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.35)]'
+                  : 'bg-orange-950/50 border-orange-500/70 shadow-[0_0_16px_rgba(234,88,12,0.3)]'
+              }`}>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${pickTimeLeft <= 5 ? 'bg-red-400' : 'bg-orange-400'} animate-pulse`} />
+                  <span className={`font-display tracking-widest text-sm leading-none ${pickTimeLeft <= 5 ? 'text-red-300' : 'text-orange-300'}`}>
+                    YOUR PICK
+                  </span>
+                  <span className={`text-[11px] font-black uppercase tracking-wider ${pickTimeLeft <= 5 ? 'text-red-400/70' : 'text-orange-400/60'}`}>
+                    — tap a player below
+                  </span>
+                </div>
+                {currentPickerInTimer && (
+                  <span className={`font-display text-lg leading-none tabular-nums shrink-0 ${pickTimeLeft <= 5 ? 'text-red-400 animate-timer-throb' : pickTimeLeft <= 10 ? 'text-yellow-400' : 'text-orange-300/70'}`}>
+                    {pickTimeLeft}s
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* Team Spinner */}
             <div className={`rounded-xl p-3 mb-3 flex items-center gap-3 border-2 transition-all ${
               isSpinning ? 'border-yellow-500 bg-yellow-900/20' :
@@ -1981,6 +2005,18 @@ function GameContent() {
                               ))}
                               <span className="text-gray-400 text-[11px]">{player.team}</span>
                               <span className="text-gray-700 text-[11px]">{player.yearFrom}–{player.yearTo}</span>
+                            </div>
+                            {/* Career stat pills — always visible so users can evaluate without tapping */}
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              <span className={`text-[10px] font-black tabular-nums ${isSelected ? 'text-orange-200' : 'text-white/60'}`}>
+                                {player.careerPPG.toFixed(1)}<span className={`font-normal ml-0.5 ${isSelected ? 'text-orange-300/60' : 'text-gray-600'}`}>PPG</span>
+                              </span>
+                              <span className={`text-[10px] font-black tabular-nums ${isSelected ? 'text-orange-200' : 'text-white/60'}`}>
+                                {player.careerRPG.toFixed(1)}<span className={`font-normal ml-0.5 ${isSelected ? 'text-orange-300/60' : 'text-gray-600'}`}>RPG</span>
+                              </span>
+                              <span className={`text-[10px] font-black tabular-nums ${isSelected ? 'text-orange-200' : 'text-white/60'}`}>
+                                {player.careerAPG.toFixed(1)}<span className={`font-normal ml-0.5 ${isSelected ? 'text-orange-300/60' : 'text-gray-600'}`}>APG</span>
+                              </span>
                             </div>
                             {/* EBK fill bar — visual tier indicator */}
                             <div className="w-full bg-white/[0.05] rounded-full h-0.5 mt-1.5 overflow-hidden">
