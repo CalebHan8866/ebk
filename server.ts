@@ -2532,6 +2532,16 @@ app.prepare().then(async () => {
       }
       if (amount > bidder.budget) { socket.emit('auction:error', { message: 'Not enough budget' }); return }
       if (bidder.roster.length >= room.teamSize) { socket.emit('auction:error', { message: 'Roster is full' }); return }
+      // $1-per-remaining-slot rule: must keep at least $1 for each roster slot still
+      // to be filled after this one.  Without this guard a participant could exhaust
+      // their entire budget on a single player, leaving $0 for their remaining empty
+      // slots — advanceAuction would then exclude them (budget < 1) and they would
+      // finish the auction short-rostered.
+      const remainingSlots = room.teamSize - bidder.roster.length - 1 // slots still needed after this win
+      const maxBid = bidder.budget - remainingSlots
+      if (amount > maxBid) {
+        socket.emit('auction:error', { message: `Max bid is $${maxBid}M — must keep $1M per remaining roster slot` }); return
+      }
 
       room.currentBid = amount
       room.currentBidderSocketId = socket.id
