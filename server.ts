@@ -2603,7 +2603,10 @@ app.prepare().then(async () => {
       if (!room) {
         let record: { code: string; teamSize: number; totalBudget: number; results: string } | null = null
         try {
-          record = await prisma.auctionRecord.findUnique({ where: { code: normalizedCode } })
+          record = await prisma.auctionRecord.findUnique({
+            where: { code: normalizedCode },
+            select: { code: true, teamSize: true, totalBudget: true, results: true },
+          })
         } catch (err) {
           console.error('[auction] DB lookup failed for code=%s: %o', normalizedCode, err)
         }
