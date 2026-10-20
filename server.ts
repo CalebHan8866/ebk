@@ -337,6 +337,12 @@ interface AuctionParticipant {
   budget: number
   roster: number[]
   paidPrices: Record<number, number>
+  /** Server-issued reconnect token stored client-side in sessionStorage.
+   *  Used to verify anonymous participant identity on auction:get-state when
+   *  the original socket has disconnected and the incoming socket ID changed.
+   *  Authenticated participants (userId present) skip the token check — their
+   *  JWT already provides identity proof.  Token is 16 random hex bytes. */
+  reconnectToken: string
 }
 
 interface TradeOffer {
@@ -2349,10 +2355,11 @@ app.prepare().then(async () => {
       const poolSize = maxPlayers * teamSize * 2
       const pool = shuffled.slice(0, Math.min(poolSize, shuffled.length))
 
+      const hostReconnectToken = crypto.randomBytes(16).toString('hex')
       const room: AuctionRoom = {
         code, hostSocketId: socket.id, maxPlayers, teamSize, totalBudget: budget,
         status: 'waiting',
-        participants: [{ socketId: socket.id, userId, name: userName, budget, roster: [], paidPrices: {} }],
+        participants: [{ socketId: socket.id, userId, name: userName, budget, roster: [], paidPrices: {}, reconnectToken: hostReconnectToken }],
         playerPool: pool, currentPlayerIndex: -1, currentPlayer: null,
         currentBid: 0, currentBidderSocketId: null, currentBidderName: null,
         lastWinnerSocketId: null, lastWinnerName: null, lastWonAmount: 0, lastWonPlayerId: null,
@@ -2366,6 +2373,8 @@ app.prepare().then(async () => {
       console.log('[auction] created code=%s host=%s maxPlayers=%d teamSize=%d auction_rooms=%d',
         code, redactName(socket.data.username ?? 'anon'), room.maxPlayers, room.teamSize, auctionRooms.size)
       socket.emit('auction:created', { code })
+      // Issue the host's reconnect token point-to-point so it is never broadcast.
+      socket.emit('auction:room-token', { code, token: hostReconnectToken })
       broadcastAuctionState(io, room)
     })
 
@@ -2418,6 +2427,9 @@ app.prepare().then(async () => {
         if (room.nominatorSocketId === oldSocketId) room.nominatorSocketId = socket.id
         socket.join(`auction:${room.code}`)
         socket.emit('auction:joined', { code: room.code })
+        // Re-issue reconnect token after a successful reconnect so the client's
+        // sessionStorage stays current with the (now re-seated) participant.
+        socket.emit('auction:room-token', { code: room.code, token: existingByName.reconnectToken })
         broadcastAuctionState(io, room)
         return
       }
@@ -2440,9 +2452,12 @@ app.prepare().then(async () => {
       if (userId && isUserActiveInAnyRoom(userId)) {
         socket.emit('auction:error', { message: 'You are already in an active game' }); return
       }
-      room.participants.push({ socketId: socket.id, userId, name: userName, budget: room.totalBudget, roster: [], paidPrices: {} })
+      const guestReconnectToken = crypto.randomBytes(16).toString('hex')
+      room.participants.push({ socketId: socket.id, userId, name: userName, budget: room.totalBudget, roster: [], paidPrices: {}, reconnectToken: guestReconnectToken })
       socket.join(`auction:${room.code}`)
       socket.emit('auction:joined', { code: room.code })
+      // Issue the new participant's reconnect token point-to-point.
+      socket.emit('auction:room-token', { code: room.code, token: guestReconnectToken })
       broadcastAuctionState(io, room)
     })
 
@@ -2719,7 +2734,7 @@ app.prepare().then(async () => {
       broadcastAuctionState(io, room)
     })
 
-    socket.on('auction:get-state', async ({ code, userName: rawUserName }: { code: string; userName?: string }) => {
+    socket.on('auction:get-state', async ({ code, userName: rawUserName, token }: { code: string; userName?: string; token?: string }) => {
       if (typeof code !== 'string') return
       // Rate limit: max 20 get-state calls per minute per socket to prevent DB flooding.
       // Each call that misses the in-memory room cache hits Prisma; unthrottled spam
@@ -2811,10 +2826,16 @@ app.prepare().then(async () => {
             socket.emit('auction:error', { message: 'Unauthorized' })
             return
           }
-          // For anonymous participants, only allow slot takeover when the original
-          // socket is no longer connected — prevents name-guessing hijacks while the
-          // real player is still live.
-          if (!byName.userId && io.sockets.sockets.has(byName.socketId)) {
+          // For anonymous participants, only allow slot takeover when either:
+          //   (a) the original socket is gone (prevents name-guessing hijacks while
+          //       the real player is still live), OR
+          //   (b) the caller presents the valid reconnect token (covers the window
+          //       where both players simultaneously lose and regain connectivity —
+          //       the old socket may still appear connected briefly while the new
+          //       socket is already trying to re-seat).
+          const origConnected = io.sockets.sockets.has(byName.socketId)
+          const tokenValid = typeof token === 'string' && token === byName.reconnectToken
+          if (!byName.userId && origConnected && !tokenValid) {
             socket.emit('auction:error', { message: 'Unauthorized' })
             return
           }

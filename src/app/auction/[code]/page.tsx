@@ -246,12 +246,19 @@ export default function AuctionRoomPage() {
     // before reconnect.
     stateInitializedRef.current = false
 
+    // Reconnect token — server issues this at join/create so anonymous participants
+    // can prove identity after a socket reconnect without relying on a stable socketId.
+    const tokenKey = `auction-token-${code}`
+    function getAuctionToken(): string | undefined {
+      try { return sessionStorage.getItem(tokenKey) ?? undefined } catch { return undefined }
+    }
+
     // Named handlers so we can pass them to socket.off() precisely — calling
     // socket.off('connect') without a reference removes ALL connect listeners.
     function handleConnect() {
       // Socket reconnected with a new ID — re-seat ourselves in the auction room
       setMySocketId(socket.id || '')
-      socket.emit('auction:get-state', { code, userName: nameAtMount })
+      socket.emit('auction:get-state', { code, userName: nameAtMount, token: getAuctionToken() })
       setSocketStatus(prev => {
         if (prev === 'reconnecting') {
           if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current)
@@ -293,6 +300,15 @@ export default function AuctionRoomPage() {
     function handleAuctionComplete({ results: r }: { results: AuctionResult[] }) {
       setResults(r)
       setPhase('complete')
+      // Auction is permanently over — discard the reconnect token so it cannot
+      // be replayed for a future room that happens to reuse the same code.
+      try { sessionStorage.removeItem(tokenKey) } catch { /* ignore */ }
+    }
+
+    // Store the server-issued reconnect token so it survives socket reconnects
+    // within the same browser tab.  Never broadcast — point-to-point only.
+    function handleAuctionRoomToken({ token: t }: { token: string }) {
+      try { sessionStorage.setItem(tokenKey, t) } catch { /* sessionStorage unavailable */ }
     }
 
     function handleAuctionError({ message }: { message: string }) {
@@ -311,10 +327,13 @@ export default function AuctionRoomPage() {
     socket.on('auction:complete', handleAuctionComplete)
     socket.on('auction:error', handleAuctionError)
     socket.on('session-expired', handleSessionExpired)
+    socket.on('auction:room-token', handleAuctionRoomToken)
 
     // Request state on mount — include userName so server can re-seat
-    // this socket if we reconnected with a new socketId
-    socket.emit('auction:get-state', { code, userName: nameAtMount })
+    // this socket if we reconnected with a new socketId, and token so the
+    // server can verify anonymous identity when both the socket ID and the
+    // original socket are gone.
+    socket.emit('auction:get-state', { code, userName: nameAtMount, token: getAuctionToken() })
 
     // Redirect to lobby if no state received within 6 seconds (not a participant)
     const loadTimeout = setTimeout(() => {
@@ -328,6 +347,7 @@ export default function AuctionRoomPage() {
       socket.off('auction:complete', handleAuctionComplete)
       socket.off('auction:error', handleAuctionError)
       socket.off('session-expired', handleSessionExpired)
+      socket.off('auction:room-token', handleAuctionRoomToken)
       clearTimeout(loadTimeout)
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current)
     }
@@ -883,12 +903,13 @@ export default function AuctionRoomPage() {
     const myOutgoingOffers = auctionState.tradeOffers.filter(o => o.fromSocketId === mySocketId)
     const tradeMinutes = Math.floor(tradeTimeLeft / 60)
     const tradeSecs = tradeTimeLeft % 60
-    const timerUrgent = tradeTimeLeft <= 60
-    const timerWarning = tradeTimeLeft <= 180
+    const timerUrgent = tradeTimeLeft <= 30
+    const timerWarning = tradeTimeLeft <= 90
 
-    // Countdown bar width as percentage of total trade window (assumes 300s default)
+    // Countdown bar — trade phase is 3 min (180s). Use 180s as the denominator so
+    // the bar starts full and depletes to empty over the actual window duration.
     const tradeBarPct = auctionState.tradeDeadline
-      ? Math.min(100, (tradeTimeLeft / 300) * 100)
+      ? Math.min(100, (tradeTimeLeft / 180) * 100)
       : 100
 
     return (

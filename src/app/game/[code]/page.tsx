@@ -161,6 +161,9 @@ function GameContent() {
 
   useEffect(() => {
     const socket = getSocket()
+    // Reconnect token key — defined at the top of the effect so every handler
+    // in this closure can reference it (e.g. handleSeriesComplete for cleanup).
+    const tokenKey = `game-token-${code}`
 
     const handleRoomState = ({ room, players }: { room: Room; players: Player[] }) => {
       playersRef.current = players
@@ -226,6 +229,9 @@ function GameContent() {
       setRoom(room); setSeriesWinner(seriesWinner); setCurrentPickerInTimer(null); refreshUser()
       // Trigger confetti if this player won
       if (seriesWinner === role) { setShowConfetti(true); setTimeout(() => setShowConfetti(false), 4000) }
+      // The room is permanently over — drop the reconnect token so a stale token
+      // from a previous game in the same room code cannot be replayed.
+      try { sessionStorage.removeItem(tokenKey) } catch { /* ignore */ }
     }
     const handlePartnerDisconnected = () => { setDisconnected(true); setDisconnectReason(null) }
     const handleRoomError = ({ message }: { message: string }) => {
@@ -345,11 +351,7 @@ function GameContent() {
       setTimeoutWarning(disqualifiedRole === role ? 'You were disqualified for 2 consecutive timeouts' : 'Opponent disqualified for 2 consecutive timeouts')
     }
 
-    // Reconnect token — issued by the server at room creation/join and stored in
-    // sessionStorage so it survives socket reconnects within the same browser tab.
-    // Included in every get-room call so the server can verify anonymous identity
-    // even when both players have new socket IDs after a simultaneous disconnect.
-    const tokenKey = `game-token-${code}`
+    // Reconnect token helpers — tokenKey is defined at the top of this effect.
     function getRoomToken(): string | undefined {
       try { return sessionStorage.getItem(tokenKey) ?? undefined } catch { return undefined }
     }
