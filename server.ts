@@ -2385,7 +2385,11 @@ app.prepare().then(async () => {
 
       const budget = AUCTION_BUDGETS[teamSize] ?? 175
       const validPlayers = allPlayers.filter(p => p.ebkScore > 5)
-      const shuffled = [...validPlayers].sort(() => Math.random() - 0.5)
+      const shuffled = [...validPlayers]
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+      }
       const poolSize = maxPlayers * teamSize * 2
       const pool = shuffled.slice(0, Math.min(poolSize, shuffled.length))
 
