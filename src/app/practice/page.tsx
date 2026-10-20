@@ -593,24 +593,31 @@ function PracticeContent() {
                 )}
 
                 {/* Position filter — hidden in EBK mode */}
-                <div className="flex gap-1.5 mb-2 flex-wrap">
-                  {difficulty !== 'ebk' && ['ALL', 'PG', 'SG', 'SF', 'PF', 'C'].map(pos => (
-                    <button key={pos} onClick={() => setFilterPos(pos)}
-                      className={`pos-badge transition-all ${
-                        pos === 'ALL'
-                          ? filterPos === pos ? 'bg-orange-600/30 border-orange-500/60 text-orange-300' : 'bg-white/[0.04] border-white/[0.08] text-gray-400 hover:text-white'
-                          : pos === 'PG' ? (filterPos === pos ? 'pos-pg ring-1 ring-blue-400/40' : 'bg-transparent border-blue-500/20 text-blue-500/50 hover:pos-pg')
-                          : pos === 'SG' ? (filterPos === pos ? 'pos-sg ring-1 ring-cyan-400/40' : 'bg-transparent border-cyan-500/20 text-cyan-500/50 hover:pos-sg')
-                          : pos === 'SF' ? (filterPos === pos ? 'pos-sf ring-1 ring-green-400/40' : 'bg-transparent border-green-500/20 text-green-500/50 hover:pos-sf')
-                          : pos === 'PF' ? (filterPos === pos ? 'pos-pf ring-1 ring-yellow-400/40' : 'bg-transparent border-yellow-500/20 text-yellow-500/50 hover:pos-pf')
-                          : (filterPos === pos ? 'pos-c ring-1 ring-red-400/40' : 'bg-transparent border-red-500/20 text-red-500/50 hover:pos-c')
-                      }`}>
-                      {pos}
-                    </button>
-                  ))}
-                  <span className="ml-auto text-xs text-gray-400 self-center">
-                    {difficulty === 'ebk' && searchQuery.length < 3 ? 'type 3+ letters to search' : `${filteredPlayers.length} players`}
-                  </span>
+                <div className="mb-2">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Filter</span>
+                    <span className="text-xs text-gray-400">
+                      {difficulty === 'ebk' && searchQuery.length < 3 ? 'type 3+ letters to search' : `${filteredPlayers.length} players`}
+                    </span>
+                  </div>
+                  {difficulty !== 'ebk' && (
+                    <div className="flex gap-1.5 flex-wrap">
+                      {['ALL', 'PG', 'SG', 'SF', 'PF', 'C'].map(pos => (
+                        <button key={pos} onClick={() => setFilterPos(pos)}
+                          className={`pos-badge transition-all ${
+                            pos === 'ALL'
+                              ? filterPos === pos ? 'bg-orange-600/30 border-orange-500/60 text-orange-300' : 'bg-white/[0.04] border-white/[0.08] text-gray-400 hover:text-white'
+                              : pos === 'PG' ? (filterPos === pos ? 'pos-pg ring-1 ring-blue-400/40' : 'bg-transparent border-blue-500/20 text-blue-500/50 hover:pos-pg')
+                              : pos === 'SG' ? (filterPos === pos ? 'pos-sg ring-1 ring-cyan-400/40' : 'bg-transparent border-cyan-500/20 text-cyan-500/50 hover:pos-sg')
+                              : pos === 'SF' ? (filterPos === pos ? 'pos-sf ring-1 ring-green-400/40' : 'bg-transparent border-green-500/20 text-green-500/50 hover:pos-sf')
+                              : pos === 'PF' ? (filterPos === pos ? 'pos-pf ring-1 ring-yellow-400/40' : 'bg-transparent border-yellow-500/20 text-yellow-500/50 hover:pos-pf')
+                              : (filterPos === pos ? 'pos-c ring-1 ring-red-400/40' : 'bg-transparent border-red-500/20 text-red-500/50 hover:pos-c')
+                          }`}>
+                          {pos}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Stat mode selector (casual only) */}
@@ -712,7 +719,7 @@ function PracticeContent() {
   const { grade, label: gradeLabel, color: gradeColor } = getGrade(pct)
 
   return (
-    <div className="min-h-screen py-8 px-4">
+    <div className="min-h-screen py-8 px-4 animate-fade-in">
       <div className="max-w-2xl mx-auto">
 
         {/* EBK Score + Grade */}
@@ -756,7 +763,7 @@ function PracticeContent() {
         </div>
 
         {/* Roster */}
-        <div className="card-surface rounded-2xl p-4 mb-5 animate-fade-up-1">
+        <div className="card-surface rounded-2xl p-4 mb-5 animate-fade-up-2">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-label uppercase tracking-widest">Your Roster</h2>
             <span className={`font-display text-lg leading-none tabular-nums ${gradeColor}`}>{totalEBK.toFixed(1)}</span>
@@ -783,7 +790,7 @@ function PracticeContent() {
         </div>
 
         {/* Team Totals */}
-        <div className="card-surface rounded-2xl p-4 mb-5 animate-fade-up-1">
+        <div className="card-surface rounded-2xl p-4 mb-5 animate-fade-up-3">
           <h2 className="text-label mb-3 uppercase tracking-widest">Team Totals</h2>
           <div className="grid grid-cols-2 gap-2">
             {(Object.entries(STAT_LABELS) as [string, string][]).map(([key, label]) => (
@@ -797,7 +804,7 @@ function PracticeContent() {
           </div>
         </div>
 
-        <div className="flex gap-3 animate-fade-up-2 pb-8">
+        <div className="flex gap-3 animate-fade-up-4 pb-8">
           <button onClick={() => { const newPicks = Array(TEAM_SIZES[teamMode]).fill(null); setPicks(newPicks); setSpunTeamsHistory([]); setFilterPos('ALL'); setSearchQuery(''); setScreen('draft'); triggerSpin(players, newPicks) }}
             className="btn-secondary flex-1">
             Draft Again
@@ -808,7 +815,7 @@ function PracticeContent() {
         </div>
 
         {/* Explore More */}
-        <div className="pb-16 sm:pb-8 animate-fade-up-2">
+        <div className="pb-16 sm:pb-8 animate-fade-up-5">
           <div className="flex items-center gap-3 mb-4">
             <div className="h-px flex-1 bg-white/[0.05]" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600">Explore More</span>

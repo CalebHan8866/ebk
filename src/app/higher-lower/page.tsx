@@ -464,6 +464,7 @@ export default function HigherLowerPage() {
                 className={`font-display leading-none tabular-nums transition-colors duration-200 ${
                   streak >= 10 ? 'text-5xl text-orange-400 animate-streak-bump' :
                   streak >= 3  ? 'text-4xl text-orange-300 animate-streak-bump' :
+                  streak >= 1  ? 'text-4xl text-orange-200 animate-streak-bump' :
                   'text-4xl text-white'
                 }`}
               >
