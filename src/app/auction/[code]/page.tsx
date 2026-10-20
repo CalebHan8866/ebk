@@ -1506,15 +1506,25 @@ export default function AuctionRoomPage() {
                         {p.rosterCount}/{auctionState.teamSize}
                       </span>
                     </div>
-                    {/* Budget bar */}
+                    {/* Budget bar — color shifts orange < 20%, red < 10% */}
                     <div className="budget-bar mb-1.5">
                       <div
-                        className="budget-bar-fill transition-all"
-                        style={{ width: `${Math.max(0, budgetPct)}%` }}
+                        className="transition-all"
+                        style={{
+                          width: `${Math.max(0, budgetPct)}%`,
+                          height: '100%',
+                          borderRadius: '99px',
+                          background: budgetPct <= 10
+                            ? 'linear-gradient(90deg, #b91c1c, #ef4444)'
+                            : budgetPct <= 20
+                            ? 'linear-gradient(90deg, #c2410c, #f97316)'
+                            : 'linear-gradient(90deg, #ea580c, #f97316)',
+                          transition: 'width 0.5s ease, background 0.5s ease',
+                        }}
                       />
                     </div>
                     <p className="text-white/30 text-[11px] mb-2.5 flex items-center justify-between">
-                      <span className={`font-black ${p.budget < 10 ? 'text-red-400/80' : 'text-white/50'}`}>${p.budget}M</span>
+                      <span className={`font-black ${budgetPct <= 10 ? 'text-red-400' : budgetPct <= 20 ? 'text-orange-400' : 'text-white/50'}`}>${p.budget}M</span>
                       <span>{p.rosterCount}/{auctionState.teamSize} players</span>
                     </p>
                     <div className="space-y-1">
@@ -1543,12 +1553,16 @@ export default function AuctionRoomPage() {
                           )}
                         </div>
                       ))}
-                      {p.roster.length === 0 && (
-                        <div className="flex items-center gap-1.5 py-2 px-1 opacity-40">
-                          <span className="text-white/30 text-base">🏀</span>
-                          <span className="text-white/25 text-[10px] font-semibold italic">No players yet</span>
+                      {/* Empty slot placeholders — show remaining picks */}
+                      {Array.from({ length: Math.max(0, auctionState.teamSize - p.rosterCount) }).map((_, slotIdx) => (
+                        <div
+                          key={`slot-${slotIdx}`}
+                          className="flex items-center gap-2 rounded-lg px-2 py-1.5 border border-dashed border-white/[0.10] bg-transparent"
+                        >
+                          <span className="w-[22px] h-[18px] rounded-[3px] border border-dashed border-white/[0.12] shrink-0" />
+                          <span className="text-white/15 text-[10px] font-semibold italic">empty slot</span>
                         </div>
-                      )}
+                      ))}
                     </div>
                   </div>
                 )
@@ -1718,12 +1732,22 @@ export default function AuctionRoomPage() {
                 >
                   Pass
                 </button>
-                {me && (
-                  <div className="flex items-center justify-between text-xs px-1">
-                    <span className="text-label">Budget</span>
-                    <span className={`font-black tabular-nums ${me.budget < 10 ? 'text-red-400' : 'text-white/60'}`}>${me.budget}M</span>
-                  </div>
-                )}
+                {me && (() => {
+                  const myBudgetPct = (me.budget / (auctionState?.totalBudget ?? me.budget)) * 100
+                  return (
+                    <div className="flex items-center justify-between text-xs px-1">
+                      <span className="text-label">Budget</span>
+                      <span className={`font-black tabular-nums ${myBudgetPct <= 10 ? 'text-red-400' : myBudgetPct <= 20 ? 'text-orange-400' : 'text-white/60'}`}>
+                        ${me.budget}M
+                        {myBudgetPct <= 20 && (
+                          <span className="ml-1.5 text-[9px] uppercase tracking-widest opacity-70">
+                            {myBudgetPct <= 10 ? 'critical' : 'low'}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  )
+                })()}
               </div>
             )}
 
