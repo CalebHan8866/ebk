@@ -252,6 +252,8 @@ interface Room {
   statCategory: StatCategory
   source: 'online' | 'friends'
   status: 'waiting' | 'drafting' | 'result' | 'complete'
+  /** Set to true once saveGameRecords has been called for this room. Prevents duplicate DB inserts if saveGameRecords is ever called twice for the same game. */
+  gameRecordsSaved: boolean
   draftOrder: ('host' | 'guest')[]
   currentPickIndex: number
   hostPicks: number[]
@@ -508,6 +510,10 @@ function getMatchupCount(userId1: string | null, userId2: string | null): number
 }
 
 async function saveGameRecords(room: Room, seriesWinner: 'host' | 'guest' | 'draw') {
+  // Idempotency guard: if records were already written for this room (e.g. due to a
+  // future code path calling saveGameRecords twice), skip the second write entirely.
+  if (room.gameRecordsSaved) return
+  room.gameRecordsSaved = true
   try {
     const records = []
     if (room.hostUserId) {
@@ -929,6 +935,7 @@ function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
     hostJCGames: 0,
     guestJCGames: 0,
     createdAt: Date.now(),
+    gameRecordsSaved: false,
     hostReconnectToken: crypto.randomBytes(16).toString('hex'),
     guestReconnectToken: crypto.randomBytes(16).toString('hex'),
   }
@@ -1573,6 +1580,7 @@ app.prepare().then(async () => {
         hostJCGames: 0,
         guestJCGames: 0,
         createdAt: Date.now(),
+        gameRecordsSaved: false,
         hostReconnectToken,
         guestReconnectToken: crypto.randomBytes(16).toString('hex'),
       }
