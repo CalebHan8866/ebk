@@ -523,9 +523,16 @@ textarea:focus-visible {
   padding: 4px;
   display: flex;
   gap: 4px;
+  /* Allow horizontal scroll on mobile when too many items to fit */
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
 }
+.tab-pill::-webkit-scrollbar { display: none; }
 .tab-pill-item {
-  flex: 1;
+  flex: 0 0 auto; /* don't shrink — let items scroll */
   border-radius: 12px;
   padding: 10px 16px;
   font-size: 13px;
@@ -537,6 +544,8 @@ textarea:focus-visible {
   background: transparent;
   color: rgba(255,255,255,0.4);
   touch-action: manipulation;
+  white-space: nowrap;
+  scroll-snap-align: start;
 }
 .tab-pill-item:hover { color: rgba(255,255,255,0.7); }
 .tab-pill-item.active {
@@ -1023,10 +1032,10 @@ textarea:focus-visible {
     border-radius: 12px;
   }
 
-  /* Tab pills — smaller text so 3-item tabs don't overflow on 375px */
+  /* Tab pills — tighten padding on narrow screens; items scroll horizontally */
   .tab-pill-item {
-    font-size: 11px;
-    padding: 10px 10px;
+    font-size: 12px;
+    padding: 10px 12px;
     letter-spacing: 0.01em;
   }
 

@@ -692,7 +692,7 @@ export default function ProfilePage() {
                       key={badge.id}
                       onClick={() => equipItem('badge', badge.id)}
                       className={[
-                        'relative group rounded-xl p-2.5 border transition-all cursor-pointer hover:brightness-110 flex flex-col items-center gap-1.5',
+                        'relative group rounded-xl p-2.5 border transition-all cursor-pointer hover:brightness-110 flex flex-col items-center gap-1',
                         isEquipped ? 'badge-equipped-glow ring-2 ring-orange-500 ring-offset-2 ring-offset-black' : '',
                         badge.bgClass,
                         badge.borderClass,
@@ -700,11 +700,13 @@ export default function ProfilePage() {
                       title={badge.name}
                     >
                       <Image src={badge.icon} alt={badge.name} width={32} height={32} className="w-8 h-8" />
+                      {/* Always-visible badge name */}
+                      <span className={`text-[9px] font-black leading-tight text-center line-clamp-1 w-full ${badge.textClass}`}>{badge.label}</span>
                       {isEquipped && (
                         <span className="text-[8px] font-black uppercase tracking-wide text-orange-400 leading-none">Equipped</span>
                       )}
-                      {/* Tooltip */}
-                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] rounded-lg bg-[#111118] border border-white/[0.1] px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                      {/* Hover tooltip with full name + description */}
+                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] rounded-lg bg-[#111118] border border-white/[0.1] px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50 hidden sm:block">
                         <div className="text-white text-xs font-black mb-0.5">{badge.name}</div>
                         <div className="text-gray-400 text-[11px] leading-snug">{badge.description}</div>
                         {isEquipped && <div className="text-orange-400 text-[10px] font-bold mt-1">✓ Equipped</div>}
@@ -717,21 +719,22 @@ export default function ProfilePage() {
                 return (
                   <div
                     key={badge.id}
-                    className="relative group rounded-xl p-2.5 border border-white/[0.06] bg-white/[0.02] cursor-default flex flex-col items-center gap-1.5"
+                    className="relative group rounded-xl p-2.5 border border-white/[0.06] bg-white/[0.02] cursor-default flex flex-col items-center gap-1"
                     title={badge.name}
                   >
                     <Image src={badge.icon} alt={badge.name} width={32} height={32} className="w-8 h-8 grayscale opacity-20" />
                     {/* Lock overlay centered on the icon */}
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="absolute top-2.5 left-1/2 -translate-x-1/2 pointer-events-none">
                       <div className="w-5 h-5 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-sm">
                         <svg className="w-3 h-3 text-white/50" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                         </svg>
                       </div>
                     </div>
-                    <span className="text-[8px] font-black uppercase tracking-wide text-white/20 leading-none">Locked</span>
-                    {/* Tooltip with progress */}
-                    <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] rounded-lg bg-[#111118] border border-white/[0.1] px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                    {/* Always-visible name (muted since locked) */}
+                    <span className="text-[9px] font-black leading-tight text-center line-clamp-1 w-full text-white/20">{badge.label}</span>
+                    {/* Hover tooltip with progress — desktop only */}
+                    <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] rounded-lg bg-[#111118] border border-white/[0.1] px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50 hidden sm:block">
                       <div className="text-white/60 text-xs font-black mb-0.5">{badge.name}</div>
                       <div className="text-gray-500 text-[11px] leading-snug mb-1.5">{badge.description}</div>
                       {progressLabel && (
@@ -746,6 +749,10 @@ export default function ProfilePage() {
                         </>
                       )}
                     </div>
+                    {/* Mobile: inline progress label below name */}
+                    {progressLabel && (
+                      <div className="sm:hidden text-[8px] text-orange-500/40 font-bold tabular-nums text-center leading-tight">{progressLabel}</div>
+                    )}
                   </div>
                 )
               })}
