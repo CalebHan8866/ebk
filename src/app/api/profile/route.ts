@@ -54,6 +54,11 @@ export async function PATCH(request: NextRequest) {
     const payload = await getAuthUser(request)
     if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    // Rate limit: 3 username changes per hour per user to prevent scripts from
+    // rapidly cycling through usernames to claim them ahead of other users.
+    const { success: renameOk } = rateLimit(`username-change:${payload.userId}`, 3, 60 * 60 * 1000)
+    if (!renameOk) return NextResponse.json({ error: 'Too many username changes. Try again in an hour.' }, { status: 429 })
+
     let body: { username?: unknown }
     try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid body' }, { status: 400 }) }
 
