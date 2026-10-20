@@ -1366,8 +1366,12 @@ app.prepare().then(async () => {
         // Cancel any pending cleanup timer so scheduleRoomCleanup doesn't double-fire
         const existing = roomCleanupTimers.get(code)
         if (existing) { clearTimeout(existing); roomCleanupTimers.delete(code) }
+        // Cancel the pick timer if one is running — waiting rooms normally have none,
+        // but clear defensively so the callback never fires on a deleted room object.
+        const pt = pickTimers.get(code)
+        if (pt) { clearTimeout(pt); pickTimers.delete(code) }
+        else pickTimers.delete(code)
         rooms.delete(code)
-        pickTimers.delete(code)
         pickTimerStartedAt.delete(code)
         consecutiveTimeouts.delete(code)
         io.in(code).socketsLeave(code)
