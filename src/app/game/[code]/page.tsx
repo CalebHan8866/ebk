@@ -342,12 +342,21 @@ function GameContent() {
       setTimeoutWarning(disqualifiedRole === role ? 'You were disqualified for 2 consecutive timeouts' : 'Opponent disqualified for 2 consecutive timeouts')
     }
 
+    // Reconnect token — issued by the server at room creation/join and stored in
+    // sessionStorage so it survives socket reconnects within the same browser tab.
+    // Included in every get-room call so the server can verify anonymous identity
+    // even when both players have new socket IDs after a simultaneous disconnect.
+    const tokenKey = `game-token-${code}`
+    function getRoomToken(): string | undefined {
+      try { return sessionStorage.getItem(tokenKey) ?? undefined } catch { return undefined }
+    }
+
     // Named handler so socket.off() removes only this listener and not all 'connect'
     // listeners (e.g. those registered by the socket singleton itself).
     // On reconnect the socket gets a new ID — re-emit get-room so the server
     // re-seats this socket into the room channel and pushes fresh state.
     function handleConnect() {
-      socket.emit('get-room', { code, role })
+      socket.emit('get-room', { code, role, token: getRoomToken() })
       // If we were showing a "reconnecting" banner, flip it to "reconnected" briefly
       setSocketStatus(prev => {
         if (prev === 'reconnecting') {
@@ -372,6 +381,11 @@ function GameContent() {
       router.replace('/login?reason=session_expired')
     }
 
+    // Store the server-issued reconnect token in sessionStorage when received.
+    const handleRoomToken = ({ token: t }: { token: string }) => {
+      try { sessionStorage.setItem(tokenKey, t) } catch { /* sessionStorage unavailable */ }
+    }
+
     socket.on('connect', handleConnect)
     socket.on('disconnect', handleDisconnect)
     socket.on('room-state', handleRoomState)
@@ -388,9 +402,10 @@ function GameContent() {
     socket.on('opponent-emote', handleOpponentEmote)
     socket.on('accessories-unlocked', handleAccessoriesUnlocked)
     socket.on('session-expired', handleSessionExpired)
+    socket.on('room-token', handleRoomToken)
 
     // Request current room state from server
-    socket.emit('get-room', { code, role })
+    socket.emit('get-room', { code, role, token: getRoomToken() })
 
     // If no room-state arrives within 8 seconds the code is invalid or expired.
     // Show the disconnected error screen instead of spinning forever.
@@ -422,6 +437,7 @@ function GameContent() {
       socket.off('opponent-emote', handleOpponentEmote)
       socket.off('accessories-unlocked', handleAccessoriesUnlocked)
       socket.off('session-expired', handleSessionExpired)
+      socket.off('room-token', handleRoomToken)
       if (pickTimerRef.current) clearInterval(pickTimerRef.current)
       if (spinIntervalRef.current) clearInterval(spinIntervalRef.current)
       if (emoteTimerRef.current) clearTimeout(emoteTimerRef.current)

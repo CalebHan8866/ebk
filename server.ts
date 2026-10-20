@@ -261,6 +261,16 @@ interface Room {
   guestJCGames: number
   /** Unix ms timestamp when the room was created — used by the stale-room sweep */
   createdAt: number
+  /**
+   * Server-issued one-time tokens that survive socket reconnects.
+   * Used to verify anonymous player identity on get-room when there is no
+   * JWT userId to compare against.  Each token is 16 random hex bytes (32
+   * hex chars), issued once at room-creation / join and stored client-side
+   * in sessionStorage.  Authenticated players (userId present) skip the
+   * token check — their JWT already provides the identity proof.
+   */
+  hostReconnectToken: string
+  guestReconnectToken: string
 }
 
 interface PlayerData {
@@ -901,6 +911,8 @@ function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
     hostJCGames: 0,
     guestJCGames: 0,
     createdAt: Date.now(),
+    hostReconnectToken: crypto.randomBytes(16).toString('hex'),
+    guestReconnectToken: crypto.randomBytes(16).toString('hex'),
   }
   rooms.set(code, room)
   consecutiveTimeouts.set(code, { host: 0, guest: 0 })
@@ -913,6 +925,10 @@ function startGameFromReadyRoom(io: SocketServer, rr: ReadyRoom) {
   guestSocket?.join(code)
 
   io.to(code).emit('draft-started', { room, players: allPlayers })
+  // Issue reconnect tokens point-to-point after the broadcast so both players
+  // receive draft-started before their individual token.
+  hostSocket?.emit('room-token', { code, role: 'host', token: room.hostReconnectToken })
+  guestSocket?.emit('room-token', { code, role: 'guest', token: room.guestReconnectToken })
   startPickTimer(io, room)
 }
 
@@ -1458,6 +1474,7 @@ app.prepare().then(async () => {
       const resolvedStatCategory: StatCategory = (statCategory && VALID_STAT_CATEGORIES.includes(statCategory)) ? statCategory : 'games_played'
 
       const teamSize = TEAM_SIZES[teamMode]
+      const hostReconnectToken = crypto.randomBytes(16).toString('hex')
       const room: Room = {
         code,
         hostSocketId: socket.id,
@@ -1486,12 +1503,17 @@ app.prepare().then(async () => {
         hostJCGames: 0,
         guestJCGames: 0,
         createdAt: Date.now(),
+        hostReconnectToken,
+        guestReconnectToken: crypto.randomBytes(16).toString('hex'),
       }
       rooms.set(code, room)
       socket.join(code)
       console.log('[room] created source=friends code=%s host=%s mode=%s series=%d game_rooms=%d',
         code, redactName(room.hostName), room.teamMode, room.series, rooms.size)
       socket.emit('room-created', { room, players: allPlayers })
+      // Send the host their reconnect token separately so the client can persist it
+      // across socket reconnects.  The token is never broadcast to the room channel.
+      socket.emit('room-token', { code, role: 'host', token: hostReconnectToken })
     })
 
     socket.on('join-room', ({ code, userName }: {
@@ -1539,10 +1561,15 @@ app.prepare().then(async () => {
       room.guestUserId = userId
       room.guestName = userName
       room.status = 'drafting'
+      room.guestReconnectToken = crypto.randomBytes(16).toString('hex')
       consecutiveTimeouts.set(code.toUpperCase(), { host: 0, guest: 0 })
 
       socket.join(code.toUpperCase())
       io.to(code.toUpperCase()).emit('draft-started', { room, players: allPlayers })
+      // Issue the guest their reconnect token.  Must be emitted after joining the
+      // Socket.IO room channel so that the host's draft-started handler fires first
+      // (draft-started is a broadcast; room-token is point-to-point to the guest).
+      socket.emit('room-token', { code: code.toUpperCase(), role: 'guest', token: room.guestReconnectToken })
       startPickTimer(io, room)
     })
 
@@ -1717,7 +1744,7 @@ app.prepare().then(async () => {
       startPickTimer(io, room)
     })
 
-    socket.on('get-room', ({ code, role }: { code: string; role: 'host' | 'guest' }) => {
+    socket.on('get-room', ({ code, role, token }: { code: string; role: 'host' | 'guest'; token?: string }) => {
       // Rate limit: max 10 get-room calls per 10 seconds per socket.
       // Each call emits the full allPlayers list; unthrottled spam saturates the socket.
       const grNow = Date.now()
@@ -1767,10 +1794,15 @@ app.prepare().then(async () => {
         }
         const origConnected = io.sockets.sockets.has(room.hostSocketId)
         // For authenticated hosts: require matching userId.
-        // For anonymous hosts: only allow takeover when the original socket has gone away.
+        // For anonymous hosts: require either the same socket ID (same connection)
+        // OR a valid reconnect token (proves identity across socket reconnects).
+        // The token check closes the simultaneous-disconnect role-swap window: without
+        // it, any anonymous socket that knows the room code can claim the host slot
+        // once the original host socket is gone, because socket IDs change on reconnect.
         const isLegit = room.hostUserId
           ? userId === room.hostUserId
-          : !origConnected || socket.id === room.hostSocketId
+          : socket.id === room.hostSocketId
+            || (!origConnected && typeof token === 'string' && token === room.hostReconnectToken)
         if (!isLegit) {
           console.warn('[room] Unauthorized host takeover attempt code=%s userId=[redacted]', code)
           socket.emit('room-error', { message: 'Unauthorized' })
@@ -1799,10 +1831,11 @@ app.prepare().then(async () => {
           return
         }
         const origConnected = io.sockets.sockets.has(room.guestSocketId)
-        // Same logic for guest slot.
+        // Same token-based logic as the host path above.
         const isLegit = room.guestUserId
           ? userId === room.guestUserId
-          : !origConnected || socket.id === room.guestSocketId
+          : socket.id === room.guestSocketId
+            || (!origConnected && typeof token === 'string' && token === room.guestReconnectToken)
         if (!isLegit) {
           console.warn('[room] Unauthorized guest takeover attempt code=%s userId=[redacted]', code)
           socket.emit('room-error', { message: 'Unauthorized' })
