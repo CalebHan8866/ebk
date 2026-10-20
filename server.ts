@@ -1001,6 +1001,10 @@ function buildAuctionStateForSocket(room: AuctionRoom, recipientSocketId?: strin
 
 function broadcastAuctionState(io: SocketServer, room: AuctionRoom) {
   for (const p of room.participants) {
+    // Skip participants whose socket is no longer connected — io.to().emit() is a
+    // no-op for unknown socket IDs, but buildAuctionStateForSocket still runs
+    // filter/map work over the player pool and roster for every disconnected slot.
+    if (!io.sockets.sockets.has(p.socketId)) continue
     // Build a per-recipient state so trade offers are filtered to only those
     // involving this participant — prevents information leakage in multi-player auctions.
     const state = buildAuctionStateForSocket(room, p.socketId)
