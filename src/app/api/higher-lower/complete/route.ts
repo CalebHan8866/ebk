@@ -51,6 +51,12 @@ export async function POST(request: NextRequest) {
 
     const { milestone, streak, complete, gameToken } = body
 
+    // Validate milestone first — before touching token state — so a bogus milestone
+    // cannot trigger a side-effect (e.g. nonce consumption) on a valid game token.
+    if (!milestone || !HL_BADGE_IDS.includes(milestone)) {
+      return NextResponse.json({ error: 'Invalid milestone' }, { status: 400 })
+    }
+
     // Require a valid server-issued game session token. This prevents callers from
     // directly POSTing badge claims without having started a game session via
     // GET /api/higher-lower/start — the token is HMAC-signed with a server secret
@@ -83,18 +89,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Game session too short' }, { status: 403 })
     }
 
-    if (!milestone || !HL_BADGE_IDS.includes(milestone)) {
-      return NextResponse.json({ error: 'Invalid milestone' }, { status: 400 })
-    }
-
     // Server-side eligibility check: validate the reported streak meets the threshold.
     // This prevents a user from POSTing badge claims without actually achieving the streak.
     const req = HL_BADGE_REQUIREMENTS[milestone]
     if (req) {
       if (req.streakRequired !== undefined) {
-        // Validate type, sign, and impose a sane upper bound (total player pool is ~4 000,
-        // so no legitimate game could produce a streak above that).
-        if (typeof streak !== 'number' || !Number.isFinite(streak) || streak < 0 || !Number.isInteger(streak) || streak > 10_000) {
+        // Validate type, sign, and impose a tight upper bound matching the actual game
+        // sequence length. TOTAL_PLAYERS is 67, so the maximum possible streak is 66
+        // (one comparison per pair). Accepting anything higher is a cheat vector —
+        // a caller with a valid game token could POST streak=100 to claim hl_25.
+        if (typeof streak !== 'number' || !Number.isFinite(streak) || streak < 0 || !Number.isInteger(streak) || streak > 66) {
           return NextResponse.json({ error: 'Invalid streak value' }, { status: 400 })
         }
         if (streak < req.streakRequired) {
