@@ -1,13 +1,32 @@
 export const dynamic = 'force-dynamic'
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { decodeToken } from '@/lib/auth'
+import { rateLimit } from '@/lib/ratelimit'
 import { prisma } from '@/lib/db'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   const cookieStore = await cookies()
   const token = cookieStore.get('ebk-token')?.value
+
+  // Rate limit: 10 logout calls per minute per IP — a legitimate user never needs to
+  // call logout in a tight loop; this prevents a script with a valid session cookie
+  // from rapidly cycling tokenVersion increments (session-invalidation DoS).
+  const ip = (request.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
+  const { success } = rateLimit(`logout:${ip}`, 10, 60 * 1000)
+  if (!success) {
+    // Still clear the cookie even if rate-limited — don't leave the user "logged in"
+    // from their perspective just because the rate limit fired.
+    cookieStore.set('ebk-token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 0,
+      path: '/',
+    })
+    return new NextResponse(null, { status: 204, headers: { 'Cache-Control': 'no-store' } })
+  }
 
   // Bump tokenVersion so any copy of the old JWT (e.g. stolen from another device)
   // is immediately rejected by verifyToken even before the 7-day expiry.

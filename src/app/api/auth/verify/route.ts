@@ -3,11 +3,19 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { createToken } from '@/lib/auth'
+import { rateLimit } from '@/lib/ratelimit'
 import { noStore } from '@/lib/no-store'
 import crypto from 'crypto'
 
 export async function GET(request: NextRequest) {
   try {
+    const ip = (request.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
+    // Rate limit: 20 verify attempts per hour per IP — generous for real users clicking links,
+    // blocks brute-force token enumeration which would otherwise only be stopped by the
+    // 128-char length cap and SHA-256 hash lookup.
+    const { success } = rateLimit(`verify:${ip}`, 20, 60 * 60 * 1000)
+    if (!success) return noStore({ error: 'Too many verification attempts. Try again in an hour.' }, { status: 429 })
+
     const token = request.nextUrl.searchParams.get('token')
     if (!token) return noStore({ error: 'Missing token' }, { status: 400 })
     // Reject implausibly long tokens before hitting the DB (crypto.randomBytes(32).hex = 64 chars)

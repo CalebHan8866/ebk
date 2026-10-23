@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { rateLimit } from '@/lib/ratelimit'
 
 interface CacheEntry { data: unknown; at: number }
 const cache = new Map<string, CacheEntry>()
@@ -21,26 +22,50 @@ const refreshing = new Map<string, boolean>()
 // queries (top-100 users + rank count = 2–3 Postgres round-trips per request).
 const inflight = new Map<string, Promise<unknown>>()
 
+const USER_SELECT = {
+  id: true,
+  username: true,
+  wins: true,
+  losses: true,
+  draws: true,
+  gamesPlayed: true,
+  winStreak: true,
+  maxWinStreak: true,
+  equippedBadges: true,
+} as const
+
 async function fetchLeaderboardData(userId: string | undefined, now: number): Promise<unknown> {
-  const [users, totalPlayers] = await Promise.all([
+  // Fetch separate top-100 pools for each sort dimension so that the correct
+  // players appear regardless of which tab the client is viewing.
+  //
+  // Problem with a single "top 100 by wins" query: a player with 8 wins and
+  // 100% win rate (or a 20-game hot streak) may not be in the top 100 by raw
+  // wins, making them invisible on the Win% and Hot Streak tabs.
+  //
+  // Fix: union top-100-by-wins with top-100-by-winStreak, deduplicate by id,
+  // and return the merged set (≤ 200 rows). For Win%, fetching by wins already
+  // covers most candidates; users outside the top-200-by-wins with an extreme
+  // win rate are rare enough that this sample is representative in practice.
+  const [byWins, byStreak, totalPlayers] = await Promise.all([
     prisma.user.findMany({
       where: { gamesPlayed: { gt: 0 } },
-      select: {
-        id: true,
-        username: true,
-        wins: true,
-        losses: true,
-        draws: true,
-        gamesPlayed: true,
-        winStreak: true,
-        maxWinStreak: true,
-        equippedBadges: true,
-      },
+      select: USER_SELECT,
       orderBy: [{ wins: 'desc' }, { gamesPlayed: 'desc' }],
+      take: 100,
+    }),
+    prisma.user.findMany({
+      where: { gamesPlayed: { gt: 0 } },
+      select: USER_SELECT,
+      orderBy: [{ winStreak: 'desc' }, { wins: 'desc' }],
       take: 100,
     }),
     prisma.user.count({ where: { gamesPlayed: { gt: 0 } } }),
   ])
+
+  // Deduplicate: start with byWins (already ordered), then append any streak
+  // leaders not already in that set.
+  const seen = new Set(byWins.map(u => u.id))
+  const users = [...byWins, ...byStreak.filter(u => !seen.has(u.id))]
 
   let me: {
     id: string; username: string; wins: number; losses: number; draws: number
@@ -89,6 +114,12 @@ async function fetchLeaderboardData(userId: string | undefined, now: number): Pr
 export async function GET(request: NextRequest) {
   try {
   const now = Date.now()
+
+  const ip = (request.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
+  // Rate limit: 60 requests per minute per IP — enough for rapid page refreshes by real users,
+  // prevents automated scraping of username + stats data for account enumeration.
+  const { success } = rateLimit(`leaderboard:${ip}`, 60, 60 * 1000)
+  if (!success) return NextResponse.json({ error: 'Too many requests. Try again in a minute.' }, { status: 429 })
 
   // Check if the request includes a logged-in user
   const cookieStore = await cookies()

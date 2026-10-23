@@ -1,6 +1,7 @@
 import { createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { rateLimit } from '@/lib/ratelimit'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,6 +54,14 @@ function triggerBackgroundRefresh(): void {
 
 export async function GET(req: NextRequest) {
   try {
+    const ip = (req.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
+    // Rate limit: 30 requests per minute per IP — the in-memory cache makes individual
+    // requests cheap after warmup, but a 304-bypass script could still hammer the endpoint
+    // to reconstruct the full ~4 000 player dataset repeatedly. 30/min is generous for
+    // real client usage (game load, refresh) while blocking bulk scrapers.
+    const { success } = rateLimit(`players:${ip}`, 30, 60 * 1000)
+    if (!success) return NextResponse.json({ error: 'Too many requests. Try again in a minute.' }, { status: 429 })
+
     const now = Date.now()
     const age = cache ? now - cache.at : Infinity
 
