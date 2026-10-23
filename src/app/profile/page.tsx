@@ -55,6 +55,21 @@ export default function ProfilePage() {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [showDeleteForm, setShowDeleteForm] = useState(false)
 
+  // Auto-dismiss success messages after 4 seconds
+  useEffect(() => {
+    if (usernameMsg?.ok) {
+      const t = setTimeout(() => setUsernameMsg(null), 4000)
+      return () => clearTimeout(t)
+    }
+  }, [usernameMsg])
+
+  useEffect(() => {
+    if (passwordMsg?.ok) {
+      const t = setTimeout(() => setPasswordMsg(null), 4000)
+      return () => clearTimeout(t)
+    }
+  }, [passwordMsg])
+
   async function handleUsernameChange(e: React.FormEvent) {
     e.preventDefault()
     if (!newUsername.trim()) return
@@ -968,9 +983,14 @@ export default function ProfilePage() {
               <button
                 type="submit"
                 disabled={usernameLoading || !newUsername.trim()}
-                className="btn-primary w-full text-sm uppercase disabled:opacity-50"
+                className="btn-primary w-full text-sm uppercase disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {usernameLoading ? 'Saving…' : 'Update Username'}
+                {usernameLoading ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
+                    Saving…
+                  </>
+                ) : 'Update Username'}
               </button>
             </form>
           </div>
@@ -1044,9 +1064,14 @@ export default function ProfilePage() {
               <button
                 type="submit"
                 disabled={passwordLoading || !currentPassword || !newPassword || !confirmPassword || confirmPassword !== newPassword}
-                className="btn-primary w-full text-sm uppercase disabled:opacity-50"
+                className="btn-primary w-full text-sm uppercase disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {passwordLoading ? 'Saving…' : 'Change Password'}
+                {passwordLoading ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
+                    Saving…
+                  </>
+                ) : 'Change Password'}
               </button>
             </form>
           </div>
