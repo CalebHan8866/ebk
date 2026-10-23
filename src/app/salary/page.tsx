@@ -55,7 +55,7 @@ function rankStyle(rank: number): string {
   if (rank === 1) return 'text-yellow-400'
   if (rank === 2) return 'text-slate-300'
   if (rank === 3) return 'text-amber-600'
-  return 'text-gray-600'
+  return 'text-white/30'
 }
 
 /** Returns an inline style for top-3 glow on the earnings bar */
@@ -176,7 +176,7 @@ export default function SalaryPage() {
           <h1 className="font-display text-4xl sm:text-6xl text-white leading-none mb-3">
             NBA <span className="text-orange-500">Salary</span> Rankings
           </h1>
-          <p className="text-gray-400 text-sm sm:text-base max-w-sm mx-auto">
+          <p className="text-white/60 text-sm sm:text-base max-w-sm mx-auto">
             Career earnings across the NBA&apos;s history
           </p>
         </div>
@@ -203,8 +203,8 @@ export default function SalaryPage() {
               <p className="text-orange-400 font-black text-base sm:text-2xl leading-none mb-1">
                 {fmt(stats.top.earnings)}
               </p>
-              <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase tracking-wider">Highest Earner</p>
-              <p className="text-gray-300 text-[10px] sm:text-xs mt-1 font-bold truncate">
+              <p className="text-white/40 text-[9px] sm:text-[10px] uppercase tracking-wider">Highest Earner</p>
+              <p className="text-white/70 text-[10px] sm:text-xs mt-1 font-bold truncate">
                 {stats.top.firstName[0]}. {stats.top.lastName}
               </p>
             </div>
@@ -212,15 +212,15 @@ export default function SalaryPage() {
               <p className="text-orange-400 font-black text-base sm:text-2xl leading-none mb-1">
                 {fmt(stats.avg)}
               </p>
-              <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase tracking-wider">Avg Career</p>
-              <p className="text-gray-300 text-[10px] sm:text-xs mt-1 font-bold">All players</p>
+              <p className="text-white/40 text-[9px] sm:text-[10px] uppercase tracking-wider">Avg Career</p>
+              <p className="text-white/70 text-[10px] sm:text-xs mt-1 font-bold">All players</p>
             </div>
             <div className="card-accent p-3 sm:p-4 text-center">
               <p className="text-orange-400 font-black text-base sm:text-2xl leading-none mb-1">
                 {fmt(stats.total)}
               </p>
-              <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase tracking-wider">Total Paid Out</p>
-              <p className="text-gray-300 text-[10px] sm:text-xs mt-1 font-bold">NBA history</p>
+              <p className="text-white/40 text-[9px] sm:text-[10px] uppercase tracking-wider">Total Paid Out</p>
+              <p className="text-white/70 text-[10px] sm:text-xs mt-1 font-bold">NBA history</p>
             </div>
           </div>
         </div>
@@ -235,13 +235,13 @@ export default function SalaryPage() {
             placeholder="Search player..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-orange-500/40 transition-colors"
+            className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-orange-500/40 focus-visible:ring-2 focus-visible:ring-orange-500/60 transition-colors"
           />
           {/* Sort */}
           <select
             value={sortMode}
             onChange={e => setSortMode(e.target.value as SortMode)}
-            className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-gray-300 focus:outline-none focus:border-orange-500/40 transition-colors cursor-pointer appearance-none sm:w-44"
+            className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white/70 focus:outline-none focus:border-orange-500/40 focus-visible:ring-2 focus-visible:ring-orange-500/60 transition-colors cursor-pointer appearance-none sm:w-44"
           >
             <option value="highest">Highest Earnings</option>
             <option value="lowest">Lowest Earnings</option>
@@ -252,7 +252,7 @@ export default function SalaryPage() {
           <select
             value={eraFilter}
             onChange={e => setEraFilter(e.target.value as EraFilter)}
-            className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-gray-300 focus:outline-none focus:border-orange-500/40 transition-colors cursor-pointer appearance-none sm:w-36"
+            className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white/70 focus:outline-none focus:border-orange-500/40 focus-visible:ring-2 focus-visible:ring-orange-500/60 transition-colors cursor-pointer appearance-none sm:w-36"
           >
             {ERA_OPTIONS.map(o => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -272,7 +272,7 @@ export default function SalaryPage() {
                 'flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all',
                 tab === t
                   ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                  : 'text-gray-500 hover:text-gray-300',
+                  : 'text-white/40 hover:text-white/70',
               ].join(' ')}
             >
               {t === 'earnings' ? 'Earnings' : 'Value Rankings'}
@@ -319,7 +319,7 @@ export default function SalaryPage() {
             <p className="font-display text-2xl text-orange-400 tracking-wide mb-2">
               Season Data Processing
             </p>
-            <p className="text-gray-500 text-sm max-w-sm mx-auto leading-relaxed">
+            <p className="text-white/40 text-sm max-w-sm mx-auto leading-relaxed">
               Value Rankings require per-season Win Shares and VORP data. Run{' '}
               <span className="font-mono text-white/40 text-xs">scrape-season-data.ts</span>{' '}
               with <span className="font-mono text-white/40 text-xs">FORCE=1</span> to populate the pipeline,
@@ -380,16 +380,16 @@ export default function SalaryPage() {
                             <span className="font-black text-white text-sm truncate">
                               {p.firstName} {p.lastName}
                             </span>
-                            <span className="text-gray-600 text-xs shrink-0">
+                            <span className="text-white/30 text-xs shrink-0">
                               {p.yearFrom}–{p.yearTo}
                             </span>
                           </div>
 
                           {/* Position + team row */}
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-gray-600 text-[11px] uppercase tracking-wide">{p.position}</span>
-                            <span className="text-gray-700 text-[11px]">·</span>
-                            <span className="text-gray-600 text-[11px] truncate">{p.team}</span>
+                            <span className="text-white/30 text-[11px] uppercase tracking-wide">{p.position}</span>
+                            <span className="text-white/20 text-[11px]">·</span>
+                            <span className="text-white/30 text-[11px] truncate">{p.team}</span>
                           </div>
 
                           {/* Earnings bar — 3px track, orange fill, top-3 glow */}
@@ -408,11 +408,11 @@ export default function SalaryPage() {
 
                           {/* Secondary stats — visible inline on mobile too */}
                           <div className="flex gap-2 mt-1.5">
-                            <span className="text-gray-600 text-[11px]">{fmt(p.perGame)}/gm</span>
-                            <span className="text-gray-700 text-[11px]">·</span>
-                            <span className="text-gray-600 text-[11px]">{fmt(p.perSeason)}/yr</span>
-                            <span className="text-gray-700 text-[11px]">·</span>
-                            <span className="text-gray-600 text-[11px]">{p.seasons}y · {p.careerGames}gp</span>
+                            <span className="text-white/30 text-[11px]">{fmt(p.perGame)}/gm</span>
+                            <span className="text-white/20 text-[11px]">·</span>
+                            <span className="text-white/30 text-[11px]">{fmt(p.perSeason)}/yr</span>
+                            <span className="text-white/20 text-[11px]">·</span>
+                            <span className="text-white/30 text-[11px]">{p.seasons}y · {p.careerGames}gp</span>
                           </div>
                         </div>
 

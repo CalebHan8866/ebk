@@ -247,7 +247,7 @@ export default function HigherLowerPage() {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
-          <p className="text-gray-400 mb-4">Couldn&apos;t load players. Check your connection and try again.</p>
+          <p className="text-white/60 mb-4">Couldn&apos;t load players. Check your connection and try again.</p>
           <button onClick={() => window.location.reload()} className="btn-primary">Retry</button>
         </div>
       </div>
@@ -280,12 +280,12 @@ export default function HigherLowerPage() {
             <div className="font-display text-6xl sm:text-7xl text-red-500/70 leading-none select-none">RIP</div>
           </div>
           <h1 className="font-display text-4xl sm:text-5xl text-white leading-none mb-1 animate-fade-up-1">Game Over</h1>
-          <p className="text-gray-500 text-sm mb-4 animate-fade-up-1">{encouragement}</p>
+          <p className="text-white/40 text-sm mb-4 animate-fade-up-1">{encouragement}</p>
 
           {/* ── What went wrong ── */}
           {current && challenger && (
             <div className="card-surface rounded-2xl px-4 py-3 mb-5 text-sm text-left animate-fade-up-2">
-              <p className="text-gray-400 leading-relaxed">
+              <p className="text-white/60 leading-relaxed">
                 <span className="text-white/90 font-bold">{challenger.firstName} {challenger.lastName}</span>
                 {' '}had{' '}
                 <span className="text-orange-400 font-bold">{correctDir} EBK</span>
@@ -333,12 +333,12 @@ export default function HigherLowerPage() {
                 )}
               </div>
               <div className="text-center border-l border-white/[0.06]">
-                <div className={`font-display text-6xl leading-none tabular-nums ${isNewRecord ? 'win-shimmer-text' : bestStreak > 0 ? 'text-yellow-400' : 'text-gray-600'}`}>
+                <div className={`font-display text-6xl leading-none tabular-nums ${isNewRecord ? 'win-shimmer-text' : bestStreak > 0 ? 'text-yellow-400' : 'text-white/30'}`}>
                   {bestStreak}
                 </div>
                 <div className="text-label mt-2">Personal Best</div>
                 {!user && bestStreak === 0 && (
-                  <div className="text-gray-700 text-[10px] mt-1">log in to save</div>
+                  <div className="text-white/25 text-[10px] mt-1">log in to save</div>
                 )}
               </div>
             </div>
@@ -371,13 +371,13 @@ export default function HigherLowerPage() {
 
           <div className="font-display text-6xl sm:text-7xl text-orange-500 leading-none mb-2 select-none animate-win-pop">⚡</div>
           <h1 className="font-display text-4xl sm:text-5xl text-orange-500 leading-none mb-2 animate-fade-up-1">The Gauntlet</h1>
-          <p className="text-gray-400 text-sm mb-1 animate-fade-up-2">You ran the full {totalComparisons}-question gauntlet.</p>
+          <p className="text-white/60 text-sm mb-1 animate-fade-up-2">You ran the full {totalComparisons}-question gauntlet.</p>
 
-          {!user && <p className="text-gray-400 text-sm mb-6">Log in to claim the one-of-a-kind badge.</p>}
-          {user && claimStatus === 'pending' && <p className="text-gray-400 text-sm mb-6">Claiming your badge...</p>}
-          {user && claimStatus === 'already' && <p className="text-gray-400 text-sm mb-6">You&apos;ve already earned this badge.</p>}
+          {!user && <p className="text-white/60 text-sm mb-6">Log in to claim the one-of-a-kind badge.</p>}
+          {user && claimStatus === 'pending' && <p className="text-white/60 text-sm mb-6">Claiming your badge...</p>}
+          {user && claimStatus === 'already' && <p className="text-white/60 text-sm mb-6">You&apos;ve already earned this badge.</p>}
           {user && claimStatus === 'failed' && <p className="text-red-700 text-sm mb-6">Couldn&apos;t claim badge — try refreshing.</p>}
-          {user && claimStatus === null && <p className="text-gray-400 text-sm mb-6">Claiming your badge...</p>}
+          {user && claimStatus === null && <p className="text-white/60 text-sm mb-6">Claiming your badge...</p>}
 
           <div className="card-accent p-6 mb-6">
             <div className="font-display text-6xl text-orange-400 leading-none">{streak}</div>
@@ -400,7 +400,7 @@ export default function HigherLowerPage() {
   if (!current || !challenger) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-400">No players available</div>
+        <div className="text-white/60">No players available</div>
       </div>
     )
   }
@@ -439,12 +439,12 @@ export default function HigherLowerPage() {
 
         {/* ── Header ────────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between mb-5 animate-fade-up">
-          <Link href="/lobby" className="text-gray-500 hover:text-white text-sm transition-colors flex items-center gap-1">
-            <span className="text-gray-600">←</span> Lobby
+          <Link href="/lobby" className="text-white/40 hover:text-white text-sm transition-colors flex items-center gap-1">
+            <span className="text-white/30">←</span> Lobby
           </Link>
           <h1 className="font-display text-xl sm:text-2xl text-orange-500 leading-none tracking-wide">Higher or Lower</h1>
-          <div className="text-gray-600 text-xs tabular-nums font-bold bg-white/[0.04] px-2 py-1 rounded-lg border border-white/[0.06]">
-            {idx + 1}<span className="text-gray-700"> / {totalComparisons}</span>
+          <div className="text-white/30 text-xs tabular-nums font-bold bg-white/[0.04] px-2 py-1 rounded-lg border border-white/[0.06]">
+            {idx + 1}<span className="text-white/20"> / {totalComparisons}</span>
           </div>
         </div>
 
@@ -488,10 +488,10 @@ export default function HigherLowerPage() {
             {/* Personal best */}
             <div className="text-right">
               <div className="text-label mb-0.5">Personal Best</div>
-              <div className={`font-display text-2xl leading-none tabular-nums ${bestStreak > 0 ? 'text-yellow-400' : 'text-gray-600'}`}>
+              <div className={`font-display text-2xl leading-none tabular-nums ${bestStreak > 0 ? 'text-yellow-400' : 'text-white/30'}`}>
                 {bestStreak}
               </div>
-              {!user && <div className="text-gray-700 text-[10px] mt-0.5">log in to save</div>}
+              {!user && <div className="text-white/25 text-[10px] mt-0.5">log in to save</div>}
             </div>
           </div>
 
@@ -518,9 +518,9 @@ export default function HigherLowerPage() {
           </div>
 
           <div className="flex justify-between mt-2.5 text-[9px] font-bold uppercase tracking-wide">
-            <span className={`transition-colors duration-300 ${streak >= 10 ? 'text-cyan-600' : 'text-gray-700'}`}>Stat Nerd</span>
-            <span className={`transition-colors duration-300 ${streak >= 25 ? 'text-indigo-500' : 'text-gray-700'}`}>EBK Savant</span>
-            <span className={`transition-colors duration-300 ${streak >= totalComparisons ? 'text-yellow-600' : 'text-gray-700'}`}>Gauntlet ⚡</span>
+            <span className={`transition-colors duration-300 ${streak >= 10 ? 'text-cyan-600' : 'text-white/20'}`}>Stat Nerd</span>
+            <span className={`transition-colors duration-300 ${streak >= 25 ? 'text-indigo-500' : 'text-white/20'}`}>EBK Savant</span>
+            <span className={`transition-colors duration-300 ${streak >= totalComparisons ? 'text-yellow-600' : 'text-white/20'}`}>Gauntlet ⚡</span>
           </div>
         </div>
 
@@ -533,7 +533,7 @@ export default function HigherLowerPage() {
                 ? lastCorrect
                   ? 'text-green-400 border-green-500/40 bg-green-950/60'
                   : 'text-red-400 border-red-500/40 bg-red-950/60'
-                : 'text-gray-600 border-white/[0.07] bg-[#0d0d14]'
+                : 'text-white/30 border-white/[0.07] bg-[#0d0d14]'
             }`}>VS</div>
           </div>
 
@@ -545,14 +545,14 @@ export default function HigherLowerPage() {
             </div>
             <div className="flex items-center gap-1.5 mb-3">
               <span className={`pos-badge pos-${current.position.toLowerCase()}`}>{current.position}</span>
-              <span className="text-gray-500 text-xs truncate">{current.team}</span>
+              <span className="text-white/40 text-xs truncate">{current.team}</span>
             </div>
-            <div className="text-gray-400 text-[11px] space-y-0.5 mb-3 flex-1">
-              <div className="text-gray-300">{current.careerGames} <span className="text-gray-500">GP</span></div>
+            <div className="text-white/60 text-[11px] space-y-0.5 mb-3 flex-1">
+              <div className="text-white/70">{current.careerGames} <span className="text-white/40">GP</span></div>
               <div>
-                <span className="text-gray-300">{current.careerPPG.toFixed(1)}</span> <span className="text-gray-500">PPG</span>
-                {' · '}<span className="text-gray-300">{current.careerRPG.toFixed(1)}</span> <span className="text-gray-500">RPG</span>
-                {' · '}<span className="text-gray-300">{current.careerAPG.toFixed(1)}</span> <span className="text-gray-500">APG</span>
+                <span className="text-white/70">{current.careerPPG.toFixed(1)}</span> <span className="text-white/40">PPG</span>
+                {' · '}<span className="text-white/70">{current.careerRPG.toFixed(1)}</span> <span className="text-white/40">RPG</span>
+                {' · '}<span className="text-white/70">{current.careerAPG.toFixed(1)}</span> <span className="text-white/40">APG</span>
               </div>
             </div>
             {/* EBK score highlight */}
@@ -567,7 +567,7 @@ export default function HigherLowerPage() {
             <div className={`text-label mb-2.5 ${
               isRevealing && lastCorrect  ? 'text-green-500/70' :
               isRevealing && !lastCorrect ? 'text-red-500/70' :
-              'text-gray-600'
+              'text-white/30'
             }`}>
               Challenger
             </div>
@@ -576,18 +576,18 @@ export default function HigherLowerPage() {
             </div>
             <div className="flex items-center gap-1.5 mb-3">
               <span className={`pos-badge pos-${challenger.position.toLowerCase()}`}>{challenger.position}</span>
-              <span className="text-gray-500 text-xs truncate">{challenger.team}</span>
+              <span className="text-white/40 text-xs truncate">{challenger.team}</span>
             </div>
 
             {isRevealing ? (
               /* Revealed state — animate in */
               <div className="flex flex-col flex-1 animate-card-reveal">
-                <div className="text-gray-400 text-[11px] space-y-0.5 mb-3 flex-1">
-                  <div className="text-gray-300">{challenger.careerGames} <span className="text-gray-500">GP</span></div>
+                <div className="text-white/60 text-[11px] space-y-0.5 mb-3 flex-1">
+                  <div className="text-white/70">{challenger.careerGames} <span className="text-white/40">GP</span></div>
                   <div>
-                    <span className="text-gray-300">{challenger.careerPPG.toFixed(1)}</span> <span className="text-gray-500">PPG</span>
-                    {' · '}<span className="text-gray-300">{challenger.careerRPG.toFixed(1)}</span> <span className="text-gray-500">RPG</span>
-                    {' · '}<span className="text-gray-300">{challenger.careerAPG.toFixed(1)}</span> <span className="text-gray-500">APG</span>
+                    <span className="text-white/70">{challenger.careerPPG.toFixed(1)}</span> <span className="text-white/40">PPG</span>
+                    {' · '}<span className="text-white/70">{challenger.careerRPG.toFixed(1)}</span> <span className="text-white/40">RPG</span>
+                    {' · '}<span className="text-white/70">{challenger.careerAPG.toFixed(1)}</span> <span className="text-white/40">APG</span>
                   </div>
                 </div>
                 <div className={`rounded-xl px-3 py-2.5 text-center ${
@@ -690,15 +690,15 @@ export default function HigherLowerPage() {
 
       {/* Explore More */}
       <div className="max-w-2xl mx-auto px-4 pb-16 sm:pb-8 mt-6">
-        <p className="text-center text-xs font-bold text-gray-600 tracking-[0.2em] uppercase mb-3">Explore More</p>
+        <p className="text-center text-xs font-bold text-white/30 tracking-[0.2em] uppercase mb-3">Explore More</p>
         <div className="grid grid-cols-2 gap-3">
           <Link href="/fun-facts" className="card-surface explore-card p-4 hover:border-orange-700/40 hover:bg-orange-950/10 group rounded-xl">
             <p className="font-black text-white/80 text-sm mb-1 group-hover:text-orange-300 transition-colors">Fun Facts</p>
-            <p className="text-gray-600 text-xs leading-relaxed">NBA earnings in wild perspective</p>
+            <p className="text-white/40 text-xs leading-relaxed">NBA earnings in wild perspective</p>
           </Link>
           <Link href="/salary" className="card-surface explore-card p-4 hover:border-orange-700/40 hover:bg-orange-950/10 group rounded-xl">
             <p className="font-black text-white/80 text-sm mb-1 group-hover:text-orange-300 transition-colors">Salary Rankings</p>
-            <p className="text-gray-600 text-xs leading-relaxed">Who got paid most in NBA history</p>
+            <p className="text-white/40 text-xs leading-relaxed">Who got paid most in NBA history</p>
           </Link>
         </div>
       </div>

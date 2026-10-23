@@ -2476,7 +2476,7 @@ app.prepare().then(async () => {
       broadcastAuctionState(io, room)
     })
 
-    socket.on('auction:join', ({ code, userName }: { code: string; userName: string }) => {
+    socket.on('auction:join', ({ code, userName, token }: { code: string; userName: string; token?: string }) => {
       if (typeof code !== 'string') return
       // Rate limit: max 10 auction:join attempts per minute per socket to prevent room-code brute-force.
       // This mirrors the identical guard on join-room (game rooms).
@@ -2509,9 +2509,15 @@ app.prepare().then(async () => {
           return
         }
         // For anonymous participants, only allow slot takeover when the original
-        // socket is no longer connected — prevents name-guessing hijacks while the
-        // real player is still live.
-        if (!existingByName.userId && io.sockets.sockets.has(existingByName.socketId)) {
+        // socket is no longer connected AND a valid reconnect token is presented.
+        // Checking socket liveness alone is insufficient: if the original socket
+        // has disconnected (network drop), any attacker who knows the participant's
+        // display name can call auction:join and steal their in-progress slot.
+        // The reconnect token (16 random bytes, issued at join/create, stored in
+        // the client's sessionStorage) provides the cryptographic proof needed to
+        // distinguish the real participant from a name-guessing hijacker.
+        const tokenValid = typeof token === 'string' && token === existingByName.reconnectToken
+        if (!existingByName.userId && (io.sockets.sockets.has(existingByName.socketId) || !tokenValid)) {
           socket.emit('auction:error', { message: 'Unauthorized' })
           return
         }

@@ -286,7 +286,7 @@ function PracticeContent() {
         {/* Training room ambient glow */}
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 40% at 50% 30%, rgba(234,88,12,0.04) 0%, transparent 70%)' }} />
         <div className="w-full max-w-md relative animate-scale-in">
-          <button onClick={() => router.push('/lobby')} className="text-gray-400 hover:text-white text-sm mb-6 flex items-center gap-1.5 transition-colors">
+          <button onClick={() => router.push('/lobby')} className="text-white/60 hover:text-white text-sm mb-6 flex items-center gap-1.5 transition-colors">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
             Back to Lobby
           </button>
@@ -297,7 +297,7 @@ function PracticeContent() {
               <span className="w-1.5 h-1.5 rounded-full bg-orange-400/60" />
             </div>
             <h1 className="font-display text-6xl text-white leading-none tracking-wide">PRACTICE</h1>
-            <p className="text-gray-400 text-sm mt-2">Draft solo — no opponent, no timer, just reps</p>
+            <p className="text-white/60 text-sm mt-2">Draft solo — no opponent, no timer, just reps</p>
           </div>
 
           {/* What is practice mode */}
@@ -382,7 +382,7 @@ function PracticeContent() {
                 )}
               </div>
               <div className="flex items-center gap-3">
-                <div className="text-gray-400 text-xs">Solo draft · No timer</div>
+                <div className="text-white/60 text-xs">Solo draft · No timer</div>
                 {/* Pick progress bar */}
                 <div className="flex items-center gap-1.5">
                   <div className="w-16 h-1 rounded-full bg-white/[0.06] overflow-hidden">
@@ -391,11 +391,11 @@ function PracticeContent() {
                       style={{ width: teamSize > 0 ? `${(filledCount / teamSize) * 100}%` : '0%' }}
                     />
                   </div>
-                  <span className="text-gray-400 text-[10px] font-mono tabular-nums">{filledCount}/{teamSize}</span>
+                  <span className="text-white/60 text-[10px] font-mono tabular-nums">{filledCount}/{teamSize}</span>
                 </div>
               </div>
             </div>
-            <button onClick={reset} className="text-gray-400 hover:text-white text-sm transition-colors flex items-center gap-1 shrink-0">
+            <button onClick={reset} className="text-white/60 hover:text-white text-sm transition-colors flex items-center gap-1 shrink-0">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
               Exit
             </button>
@@ -405,7 +405,7 @@ function PracticeContent() {
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <div className="w-7 h-7 rounded-full border-2 border-orange-500 border-t-transparent animate-spin mx-auto mb-3"></div>
-                <p className="text-gray-400 text-sm">Loading players...</p>
+                <p className="text-white/60 text-sm">Loading players...</p>
               </div>
             </div>
           ) : playerLoadError ? (
@@ -452,14 +452,14 @@ function PracticeContent() {
                           : 'bg-white/[0.015] border border-dashed border-white/[0.10]'
                       }`}
                     >
-                      <span className={`font-bold w-6 shrink-0 text-[10px] ${isBench ? 'text-gray-500' : 'text-orange-400'}`}>
+                      <span className={`font-bold w-6 shrink-0 text-[10px] ${isBench ? 'text-white/40' : 'text-orange-400'}`}>
                         {isBench ? 'BN' : slotPos}
                       </span>
-                      <span className={`truncate flex-1 text-[11px] ${pickedPlayer ? 'text-white font-semibold' : isValidTarget ? 'text-orange-300' : 'text-gray-500'}`}>
+                      <span className={`truncate flex-1 text-[11px] ${pickedPlayer ? 'text-white font-semibold' : isValidTarget ? 'text-orange-300' : 'text-white/40'}`}>
                         {pickedPlayer ? pickedPlayer.lastName : isValidTarget ? 'tap to place' : '—'}
                       </span>
                       {pickedPlayer && (
-                        <button onClick={e => { e.stopPropagation(); unpick(i) }} aria-label="Remove player from slot" className="text-gray-500 hover:text-red-400 text-[10px] shrink-0 w-4 h-4 flex items-center justify-center">
+                        <button onClick={e => { e.stopPropagation(); unpick(i) }} aria-label="Remove player from slot" className="text-white/40 hover:text-red-400 text-[10px] shrink-0 w-4 h-4 flex items-center justify-center">
                           <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
                       )}
@@ -479,7 +479,7 @@ function PracticeContent() {
             {/* My Team (desktop only) */}
             <div className="hidden lg:block card-surface rounded-2xl p-4">
               <h3 className="text-white font-black text-sm mb-3">
-                Your Team <span className="text-gray-400 font-normal">({filledCount}/{teamSize})</span>
+                Your Team <span className="text-white/60 font-normal">({filledCount}/{teamSize})</span>
               </h3>
               <div className="space-y-1.5">
                 {requiredSlots.map((slotPos, i) => {
@@ -504,18 +504,18 @@ function PracticeContent() {
                           : 'bg-white/[0.015] border border-dashed border-white/[0.12]'
                       }`}
                     >
-                      <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-400' : 'text-orange-400'}`}>{displayLabel}</span>
+                      <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-white/60' : 'text-orange-400'}`}>{displayLabel}</span>
                       {pickedPlayer ? (
                         <span className="text-white truncate flex-1" title={`${pickedPlayer.firstName} ${pickedPlayer.lastName}`}>
-                          {pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-gray-400">({pickedPlayer.team})</span>
+                          {pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-white/60">({pickedPlayer.team})</span>
                         </span>
                       ) : (
-                        <span className={isValidTarget ? 'text-orange-300' : 'text-gray-400'}>
+                        <span className={isValidTarget ? 'text-orange-300' : 'text-white/60'}>
                           {isValidTarget ? 'tap to place' : 'empty'}
                         </span>
                       )}
                       {pickedPlayer && (
-                        <button onClick={e => { e.stopPropagation(); unpick(i) }} className="text-gray-400 hover:text-red-400 text-xs shrink-0">✕</button>
+                        <button onClick={e => { e.stopPropagation(); unpick(i) }} className="text-white/60 hover:text-red-400 text-xs shrink-0">✕</button>
                       )}
                     </div>
                   )
@@ -535,7 +535,7 @@ function PracticeContent() {
                   isSpinning ? 'border-yellow-500/60 bg-yellow-900/15 shadow-[0_0_16px_rgba(234,179,8,0.12)]' :
                   spunTeam   ? 'border-orange-500/60 bg-orange-900/15 shadow-[0_0_16px_rgba(249,115,22,0.1)]' : 'border-white/[0.08] bg-white/[0.02]'
                 }`}>
-                  <div className={`font-display text-4xl w-16 text-center shrink-0 leading-none transition-all ${isSpinning ? 'text-yellow-400 animate-pulse' : spunTeam ? 'text-orange-400' : 'text-gray-600'}`}>
+                  <div className={`font-display text-4xl w-16 text-center shrink-0 leading-none transition-all ${isSpinning ? 'text-yellow-400 animate-pulse' : spunTeam ? 'text-orange-400' : 'text-white/30'}`}>
                     {spinDisplay}
                   </div>
                   <div className="flex-1">
@@ -550,7 +550,7 @@ function PracticeContent() {
                         <div className="text-label mt-0.5">{filteredPlayers.length} available · Pick from this team only</div>
                       </div>
                     ) : (
-                      <div className="text-gray-500 text-sm">Loading teams...</div>
+                      <div className="text-white/40 text-sm">Loading teams...</div>
                     )}
                   </div>
                   {spunTeam && !isSpinning && (
@@ -563,7 +563,7 @@ function PracticeContent() {
 
                 {/* Search */}
                 <div className="relative mb-2">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-sm">🔍</span>
                   <input
                     type="text"
                     value={searchQuery}
@@ -572,7 +572,7 @@ function PracticeContent() {
                     className="input-field pl-8 pr-8 py-2 text-sm rounded-lg"
                   />
                   {searchQuery && (
-                    <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-xs">✕</button>
+                    <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white text-xs">✕</button>
                   )}
                 </div>
 
@@ -581,13 +581,13 @@ function PracticeContent() {
                   <div className="flex items-center gap-2 mb-2 card-surface rounded-lg px-3 py-2 flex-wrap">
                     {isStarterSlot ? (
                       <>
-                        <span className="text-gray-400 text-xs shrink-0">Still need:</span>
+                        <span className="text-white/60 text-xs shrink-0">Still need:</span>
                         {remainingStarterPositions.map(pos => (
                           <span key={pos} className="text-xs font-black px-2 py-0.5 rounded bg-orange-600 text-white">{pos}</span>
                         ))}
                       </>
                     ) : (
-                      <span className="text-gray-400 text-xs">Bench slot — any player</span>
+                      <span className="text-white/60 text-xs">Bench slot — any player</span>
                     )}
                   </div>
                 )}
@@ -595,8 +595,8 @@ function PracticeContent() {
                 {/* Position filter — hidden in EBK mode */}
                 <div className="mb-2">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Filter</span>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Filter</span>
+                    <span className="text-xs text-white/60">
                       {difficulty === 'ebk' && searchQuery.length < 3 ? 'type 3+ letters to search' : `${filteredPlayers.length} players`}
                     </span>
                   </div>
@@ -672,14 +672,14 @@ function PracticeContent() {
                       >
                         <div className="flex-1 min-w-0">
                           <div className="text-white font-bold text-sm truncate" title={`${player.firstName} ${player.lastName}`}>{player.firstName} {player.lastName}</div>
-                          <div className="text-gray-400 text-xs">{player.team} · {player.yearFrom}–{player.yearTo}</div>
+                          <div className="text-white/60 text-xs">{player.team} · {player.yearFrom}–{player.yearTo}</div>
                         </div>
                         {difficulty === 'casual' && (
                           <div className="text-right shrink-0 min-w-[56px]">
                             <div className="text-white font-black text-sm">
                               {statMode === 'games_played' ? getStatValue(player, statMode) : getStatValue(player, statMode).toFixed(1)}
                             </div>
-                            <div className="text-gray-400 text-xs">
+                            <div className="text-white/60 text-xs">
                               {statMode === 'games_played' ? 'GP' : statMode.toUpperCase()}
                             </div>
                           </div>
@@ -745,7 +745,7 @@ function PracticeContent() {
               <div className="text-label mt-1.5 text-[9px] sm:text-[10px]">Optimal</div>
             </div>
             <div className="rounded-xl p-2 sm:p-3 text-center bg-white/[0.04] border border-white/[0.07]">
-              <div className="font-display text-2xl sm:text-3xl leading-none text-gray-400 tabular-nums">{bestEBK.toFixed(1)}</div>
+              <div className="font-display text-2xl sm:text-3xl leading-none text-white/60 tabular-nums">{bestEBK.toFixed(1)}</div>
               <div className="text-label mt-1.5 text-[9px] sm:text-[10px]">Best</div>
             </div>
           </div>
@@ -775,12 +775,12 @@ function PracticeContent() {
               const ebkColor = p.ebkScore >= 80 ? 'text-green-400' : p.ebkScore >= 60 ? 'text-yellow-400' : p.ebkScore >= 40 ? 'text-orange-400' : 'text-red-400'
               return (
                 <div key={i} className="rounded-lg px-3 py-2.5 flex items-center gap-2.5 bg-white/[0.03] border border-white/[0.05]">
-                  <span className={`font-display text-xs w-7 shrink-0 leading-none ${slotPos === 'BENCH' ? 'text-gray-500' : 'text-orange-400'}`}>
+                  <span className={`font-display text-xs w-7 shrink-0 leading-none ${slotPos === 'BENCH' ? 'text-white/40' : 'text-orange-400'}`}>
                     {slotPos === 'BENCH' ? 'BN' : slotPos}
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="text-white text-sm font-bold truncate leading-tight">{p.firstName} {p.lastName}</div>
-                    <div className="text-gray-500 text-[10px] mt-0.5">{p.team} · {p.careerGames}GP · {p.careerPPG.toFixed(1)}P/{p.careerRPG.toFixed(1)}R/{p.careerAPG.toFixed(1)}A</div>
+                    <div className="text-white/40 text-[10px] mt-0.5">{p.team} · {p.careerGames}GP · {p.careerPPG.toFixed(1)}P/{p.careerRPG.toFixed(1)}R/{p.careerAPG.toFixed(1)}A</div>
                   </div>
                   <div className={`font-display text-lg leading-none shrink-0 tabular-nums ${ebkColor}`}>{p.ebkScore.toFixed(1)}</div>
                 </div>
@@ -795,7 +795,7 @@ function PracticeContent() {
           <div className="grid grid-cols-2 gap-2">
             {(Object.entries(STAT_LABELS) as [string, string][]).map(([key, label]) => (
               <div key={key} className="rounded-xl p-3.5 bg-white/[0.03] border border-white/[0.06]">
-                <div className="text-gray-500 text-[10px] uppercase tracking-wider mb-1">{label}</div>
+                <div className="text-white/40 text-[10px] uppercase tracking-wider mb-1">{label}</div>
                 <div className="text-white font-black text-2xl tabular-nums leading-none">
                   {key === 'games_played' ? Math.round(totals[key as keyof typeof totals]) : (totals[key as keyof typeof totals]).toFixed(1)}
                 </div>
@@ -818,19 +818,19 @@ function PracticeContent() {
         <div className="pb-16 sm:pb-8 animate-fade-up-5">
           <div className="flex items-center gap-3 mb-4">
             <div className="h-px flex-1 bg-white/[0.05]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600">Explore More</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Explore More</span>
             <div className="h-px flex-1 bg-white/[0.05]" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Link href="/fun-facts" className="card-surface p-4 hover:border-orange-700/40 hover:bg-orange-950/10 transition-all group rounded-xl">
               <p className="text-xl mb-2 leading-none">💰</p>
               <p className="font-black text-white text-sm mb-1 group-hover:text-orange-300 transition-colors">Fun Facts</p>
-              <p className="text-gray-500 text-xs leading-relaxed">NBA earnings in wild perspective</p>
+              <p className="text-white/40 text-xs leading-relaxed">NBA earnings in wild perspective</p>
             </Link>
             <Link href="/higher-lower" className="card-surface p-4 hover:border-orange-700/40 hover:bg-orange-950/10 transition-all group rounded-xl">
               <p className="text-xl mb-2 leading-none">📊</p>
               <p className="font-black text-white text-sm mb-1 group-hover:text-orange-300 transition-colors">Higher or Lower</p>
-              <p className="text-gray-500 text-xs leading-relaxed">Guess which player had the higher stat</p>
+              <p className="text-white/40 text-xs leading-relaxed">Guess which player had the higher stat</p>
             </Link>
           </div>
         </div>

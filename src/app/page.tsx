@@ -131,7 +131,7 @@ export default function Home() {
             </span>
           </h1>
 
-          <p className="text-[11px] font-bold tracking-[0.55em] text-gray-400/80 uppercase -mt-2 mb-6 sm:mb-8 animate-fade-up-2">
+          <p className="text-[11px] font-bold tracking-[0.55em] text-white/50 uppercase -mt-2 mb-6 sm:mb-8 animate-fade-up-2">
             Elite Ball Knowledge
           </p>
 
@@ -154,7 +154,7 @@ export default function Home() {
             </Link>
           </div>
 
-          <p className="text-gray-500 text-xs mt-5 animate-fade-up-5">
+          <p className="text-white/40 text-xs mt-5 animate-fade-up-5">
             No account needed &mdash;{' '}
             <Link href="/register" className="text-orange-500/70 hover:text-orange-400 font-semibold transition-colors">
               sign up free
@@ -170,7 +170,7 @@ export default function Home() {
           {TICKER.map((item, i) => (
             <div key={i} className="flex items-center gap-2.5 shrink-0">
               <span className="font-display text-orange-400 text-xl leading-none">{item.value}</span>
-              <span className="text-gray-500 text-xs tracking-widest uppercase">{item.label}</span>
+              <span className="text-white/40 text-xs tracking-widest uppercase">{item.label}</span>
               <span className="text-orange-800/60 text-xs">·</span>
             </div>
           ))}
@@ -214,7 +214,7 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="font-black text-white text-base mb-1.5 tracking-wide">{title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{body}</p>
+                <p className="text-white/60 text-sm leading-relaxed">{body}</p>
               </div>
             </div>
           ))}
@@ -237,7 +237,7 @@ export default function Home() {
                 </div>
                 <h3 className="font-black text-white text-sm tracking-wide group-hover:text-orange-300 transition-colors">{title}</h3>
               </div>
-              <p className="text-gray-400 text-xs leading-relaxed">{desc}</p>
+              <p className="text-white/60 text-xs leading-relaxed">{desc}</p>
               <div className="mt-3 flex items-center gap-1 text-orange-500/60 group-hover:text-orange-400 transition-colors">
                 <span className="text-[10px] font-bold tracking-wider uppercase">{cta}</span>
                 <svg className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -260,7 +260,7 @@ export default function Home() {
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
           }}>Your EBK?</p>
-          <p className="text-gray-400 text-sm mb-8 max-w-xs mx-auto leading-relaxed">
+          <p className="text-white/60 text-sm mb-8 max-w-xs mx-auto leading-relaxed">
             No download. No credit card. Jump into a live game in 30 seconds.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">

@@ -369,7 +369,7 @@ export default function LobbyPage() {
           {matchInfo.grudgeMatch && (
             <div className="mb-4 rounded-xl py-2.5 px-4 text-center border border-red-500/40 bg-red-900/20 shadow-[0_0_20px_rgba(239,68,68,0.1)] animate-scale-in">
               <span className="text-red-400 font-black text-sm tracking-widest uppercase">Grudge Match</span>
-              <span className="text-gray-400 text-xs ml-2">You&apos;ve played before</span>
+              <span className="text-white/60 text-xs ml-2">You&apos;ve played before</span>
             </div>
           )}
 
@@ -427,9 +427,9 @@ export default function LobbyPage() {
                   </div>
                 )}
                 {user && (
-                  <div className="text-gray-500 text-[11px]">
+                  <div className="text-white/40 text-[11px]">
                     {user.wins}W–{user.losses}L
-                    <span className="text-gray-600 ml-1">{winPct(user.wins, user.losses)}</span>
+                    <span className="text-white/30 ml-1">{winPct(user.wins, user.losses)}</span>
                   </div>
                 )}
                 {matchInfo.myStreak >= 3 && (
@@ -468,9 +468,9 @@ export default function LobbyPage() {
                 <div className="flex items-center justify-center gap-1.5 mb-1 flex-wrap">
                   <BadgeChip badgeId={matchInfo.opponentBadge} />
                 </div>
-                <div className="text-gray-500 text-[11px]">
+                <div className="text-white/40 text-[11px]">
                   {matchInfo.opponentRecord.wins}W–{matchInfo.opponentRecord.losses}L
-                  <span className="text-gray-600 ml-1">{winPct(matchInfo.opponentRecord.wins, matchInfo.opponentRecord.losses)}</span>
+                  <span className="text-white/30 ml-1">{winPct(matchInfo.opponentRecord.wins, matchInfo.opponentRecord.losses)}</span>
                 </div>
                 {matchInfo.opponentStreak >= 3 && (
                   <div className="text-orange-400 text-[11px] font-black mt-1">🔥 {matchInfo.opponentStreak}</div>
@@ -493,7 +493,7 @@ export default function LobbyPage() {
                 <span className="text-white font-black text-xs">{MODE_LABEL[matchInfo.proposedTeamMode]}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-400 text-xs">{seriesLabel(matchInfo.proposedSeries)}</span>
+                <span className="text-white/60 text-xs">{seriesLabel(matchInfo.proposedSeries)}</span>
                 {matchInfo.proposedStatCategory ? (
                   <span className="text-orange-400 font-black text-xs">{STAT_CATEGORY_LABELS[matchInfo.proposedStatCategory]}</span>
                 ) : (
@@ -527,7 +527,7 @@ export default function LobbyPage() {
             </div>
 
             {(myReady || oppReady) && !(myReady && oppReady) && (
-              <p className="text-center text-gray-500 text-xs pb-5">
+              <p className="text-center text-white/40 text-xs pb-5">
                 Waiting for <span className="text-white/70 font-bold">{myReady ? matchInfo.opponentName : displayName}</span> to accept…
               </p>
             )}
@@ -558,7 +558,7 @@ export default function LobbyPage() {
               <h2 className="font-display text-4xl text-white tracking-wider leading-none mb-2">
                 MATCH <span className="text-red-400">{isDeclined ? 'DECLINED' : 'EXPIRED'}</span>
               </h2>
-              <p className="text-gray-400 text-sm leading-relaxed mb-8">
+              <p className="text-white/60 text-sm leading-relaxed mb-8">
                 {isDeclined ? error : 'The 60-second accept window closed before both players confirmed. Head back to find a new opponent.'}
               </p>
 
@@ -807,7 +807,7 @@ export default function LobbyPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-black text-sm mb-0.5">Welcome to the Lobby</p>
-                  <p className="text-gray-400 text-xs leading-relaxed">
+                  <p className="text-white/60 text-xs leading-relaxed">
                     Post a game to get matched with an opponent, or join an open game from the browser on the right.
                     Draft obscure NBA players — lower EBK score wins.
                   </p>
@@ -819,7 +819,7 @@ export default function LobbyPage() {
             {!authLoading && !user && (
               <div className="mb-5 card-surface rounded-2xl px-5 py-4 border border-orange-900/30">
                 <p className="font-display text-2xl text-white leading-none mb-1">One rule.</p>
-                <p className="text-gray-400 text-sm mb-4">Online Play requires an account — it's free, takes 30 seconds, and you'll never lose your record.</p>
+                <p className="text-white/60 text-sm mb-4">Online Play requires an account — it's free, takes 30 seconds, and you'll never lose your record.</p>
                 <div className="flex gap-2">
                   <Link href="/register" className="btn-primary py-2 px-5 text-xs">Create Free Account</Link>
                   <Link href="/login" className="btn-secondary py-2 px-5 text-xs">Sign In</Link>
@@ -854,7 +854,7 @@ export default function LobbyPage() {
                               <div className={`font-black text-sm ${createTeamMode === val ? 'text-orange-400' : 'text-white'}`}>
                                 {MODE_LABEL[val]}
                               </div>
-                              <div className="text-gray-400 text-xs">{MODE_DESC[val]}</div>
+                              <div className="text-white/60 text-xs">{MODE_DESC[val]}</div>
                             </div>
                             <div className={`w-4 h-4 rounded-full border-2 transition-all shrink-0 ${
                               createTeamMode === val ? 'border-orange-500 bg-orange-500' : 'border-white/[0.2]'
@@ -901,7 +901,7 @@ export default function LobbyPage() {
                             <div className={`font-black text-sm ${createStatCategory === cat ? 'text-orange-400' : 'text-white'}`}>
                               {STAT_CATEGORY_LABELS[cat]}
                             </div>
-                            <div className="text-gray-400 text-[10px] mt-0.5 leading-tight">{STAT_CATEGORY_DESC[cat]}</div>
+                            <div className="text-white/60 text-[10px] mt-0.5 leading-tight">{STAT_CATEGORY_DESC[cat]}</div>
                           </button>
                         ))}
                       </div>
@@ -941,7 +941,7 @@ export default function LobbyPage() {
                       <Avatar name={user.username} />
                       <div className="flex-1 min-w-0">
                         <div className="text-white font-black text-sm truncate">{user.username}</div>
-                        <div className="text-gray-500 text-xs">{user.wins}W {user.losses}L · {winPct(user.wins, user.losses)}</div>
+                        <div className="text-white/40 text-xs">{user.wins}W {user.losses}L · {winPct(user.wins, user.losses)}</div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <span className="live-dot" />
@@ -952,15 +952,15 @@ export default function LobbyPage() {
                     {/* Game details */}
                     <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl divide-y divide-white/[0.04]">
                       <div className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-gray-400 text-xs">Format</span>
+                        <span className="text-white/60 text-xs">Format</span>
                         <span className="text-white font-black text-sm">{MODE_LABEL[createTeamMode]}</span>
                       </div>
                       <div className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-gray-400 text-xs">Series</span>
-                        <span className="text-gray-300 text-sm">{seriesLabel(createSeries)}</span>
+                        <span className="text-white/60 text-xs">Series</span>
+                        <span className="text-white/80 text-sm">{seriesLabel(createSeries)}</span>
                       </div>
                       <div className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-gray-400 text-xs">Stat</span>
+                        <span className="text-white/60 text-xs">Stat</span>
                         <span className="text-orange-400 font-black text-sm">{STAT_CATEGORY_LABELS[createStatCategory]}</span>
                       </div>
                     </div>
@@ -994,7 +994,7 @@ export default function LobbyPage() {
                   <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.05] shrink-0">
                     <div>
                       <div className="text-white font-black text-sm">Open Games</div>
-                      <div className="text-gray-400 text-xs mt-0.5">
+                      <div className="text-white/60 text-xs mt-0.5">
                         {listings.length > 0
                           ? `${listings.length} game${listings.length !== 1 ? 's' : ''} waiting`
                           : 'No open games right now'}
@@ -1002,7 +1002,7 @@ export default function LobbyPage() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <div className="live-dot" />
-                      <span className="text-gray-400 text-xs">Live</span>
+                      <span className="text-white/60 text-xs">Live</span>
                     </div>
                   </div>
 
@@ -1078,14 +1078,14 @@ export default function LobbyPage() {
                                   </span>
                                 )}
                               </div>
-                              <div className="text-gray-500 text-[11px]">
+                              <div className="text-white/40 text-[11px]">
                                 {l.hostRecord.wins}W {l.hostRecord.losses}L
-                                <span className="text-gray-700 mx-1">·</span>
-                                <span className="text-gray-500">{winPct(l.hostRecord.wins, l.hostRecord.losses)}</span>
+                                <span className="text-white/20 mx-1">·</span>
+                                <span className="text-white/40">{winPct(l.hostRecord.wins, l.hostRecord.losses)}</span>
                               </div>
                               {/* Format info visible on mobile */}
                               <div className="flex items-center gap-1.5 mt-1 sm:hidden">
-                                <span className="text-[10px] font-black text-gray-400 bg-white/[0.04] border border-white/[0.07] rounded px-1.5 py-0.5">{MODE_LABEL[l.teamMode]}</span>
+                                <span className="text-[10px] font-black text-white/60 bg-white/[0.04] border border-white/[0.07] rounded px-1.5 py-0.5">{MODE_LABEL[l.teamMode]}</span>
                                 <span className="text-orange-400 text-[10px] font-black">{STAT_CATEGORY_LABELS[l.statCategory] ?? 'Games Played'}</span>
                               </div>
                             </div>
@@ -1094,7 +1094,7 @@ export default function LobbyPage() {
                               <span className="text-xs font-black text-gray-200 bg-white/[0.05] border border-white/[0.08] rounded-lg px-2.5 py-1 leading-none">
                                 {MODE_LABEL[l.teamMode]}
                               </span>
-                              <span className="text-gray-400 text-[11px]">{seriesLabel(l.series)}</span>
+                              <span className="text-white/60 text-[11px]">{seriesLabel(l.series)}</span>
                               <span className="text-orange-400 text-[10px] font-black">{STAT_CATEGORY_LABELS[l.statCategory] ?? 'Games Played'}</span>
                             </div>
                             <button
@@ -1112,8 +1112,8 @@ export default function LobbyPage() {
 
                   {/* Footer row */}
                   <div className="px-5 py-3 border-t border-white/[0.05] flex items-center justify-between shrink-0">
-                    <span className="text-gray-400 text-xs">
-                      Playing as <span className="text-gray-400 font-bold">{user.username}</span>
+                    <span className="text-white/60 text-xs">
+                      Playing as <span className="text-white/60 font-bold">{user.username}</span>
                     </span>
                     <Link href="/history" className="text-orange-500 hover:text-orange-400 text-xs font-bold transition-colors">
                       My History →
@@ -1178,7 +1178,7 @@ export default function LobbyPage() {
                             <div className={`font-black text-sm ${teamMode === val ? 'text-orange-400' : 'text-white'}`}>
                               {MODE_LABEL[val]}
                             </div>
-                            <div className="text-gray-400 text-xs">{MODE_DESC[val]}</div>
+                            <div className="text-white/60 text-xs">{MODE_DESC[val]}</div>
                           </div>
                           <div className={`w-4 h-4 rounded-full border-2 transition-all shrink-0 ${
                             teamMode === val ? 'border-orange-500 bg-orange-500' : 'border-white/[0.2]'
@@ -1199,7 +1199,7 @@ export default function LobbyPage() {
                           className={`rounded-xl py-2.5 text-center font-black text-sm border transition-all ${
                             series === s
                               ? 'border-orange-500/60 bg-orange-600/10 text-orange-400'
-                              : 'border-white/[0.05] text-gray-400 hover:border-white/[0.12]'
+                              : 'border-white/[0.05] text-white/60 hover:border-white/[0.12]'
                           }`}
                         >
                           {seriesLabel(s)}
@@ -1223,7 +1223,7 @@ export default function LobbyPage() {
                         <div className={`font-black text-sm ${difficulty === 'casual' ? 'text-orange-400' : 'text-white'}`}>
                           Casual
                         </div>
-                        <div className="text-gray-400 text-xs mt-0.5">Stats shown</div>
+                        <div className="text-white/60 text-xs mt-0.5">Stats shown</div>
                       </button>
                       <button
                         onClick={() => setDifficulty('ebk')}
@@ -1236,7 +1236,7 @@ export default function LobbyPage() {
                         <div className={`font-black text-sm ${difficulty === 'ebk' ? 'text-yellow-400' : 'text-white'}`}>
                           EBK Mode
                         </div>
-                        <div className="text-gray-400 text-xs mt-0.5">Blind picks</div>
+                        <div className="text-white/60 text-xs mt-0.5">Blind picks</div>
                       </button>
                     </div>
                   </div>
@@ -1258,7 +1258,7 @@ export default function LobbyPage() {
                           <div className={`font-black text-sm ${statCategory === cat ? 'text-orange-400' : 'text-white'}`}>
                             {STAT_CATEGORY_LABELS[cat]}
                           </div>
-                          <div className="text-gray-400 text-[10px] mt-0.5 leading-tight">{STAT_CATEGORY_DESC[cat]}</div>
+                          <div className="text-white/60 text-[10px] mt-0.5 leading-tight">{STAT_CATEGORY_DESC[cat]}</div>
                         </button>
                       ))}
                     </div>

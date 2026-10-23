@@ -82,7 +82,7 @@ function BadgeIcons({ equippedBadges }: { equippedBadges: string }) {
           <Image src={b.icon} alt={b.name} width={14} height={14} className="w-3.5 h-3.5" />
           <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-max max-w-[140px] rounded-lg bg-[#111118] border border-white/[0.1] px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-50">
             <div className="text-white text-[11px] font-black">{b.name}</div>
-            <div className="text-gray-400 text-[10px] leading-snug">{b.description}</div>
+            <div className="text-white/60 text-[10px] leading-snug">{b.description}</div>
           </div>
         </div>
       ))}
@@ -104,7 +104,7 @@ function RankNumber({ rank }: { rank: number }) {
   if (rank <= 10) return (
     <span className="font-display text-base tabular-nums text-white/60 tracking-wide">#{rank}</span>
   )
-  return <span className="font-display text-sm tabular-nums text-gray-600 tracking-wide">#{rank}</span>
+  return <span className="font-display text-sm tabular-nums text-white/30 tracking-wide">#{rank}</span>
 }
 
 // ── Rank badge chips ──────────────────────────────────────────────────────────
@@ -214,7 +214,7 @@ function PodiumCard({ user, rank, isMe, totalPlayers }: { user: LeaderboardUser;
           <span className={`font-black truncate max-w-[76px] ${cfg.nameSize} ${cfg.rankLabel}`}>{user.username}</span>
           {isMe && <span className="text-[7px] font-black text-orange-500 bg-orange-950 border border-orange-700/60 rounded px-1 leading-[14px]">YOU</span>}
         </div>
-        <div className="text-[10px] text-gray-500 tabular-nums mt-0.5">
+        <div className="text-[10px] text-white/40 tabular-nums mt-0.5">
           <span className="text-green-400/80">{user.wins}W</span>
           <span className="text-white/20 mx-0.5">·</span>
           <span className="text-red-400/70">{user.losses}L</span>
@@ -236,7 +236,7 @@ function PodiumCard({ user, rank, isMe, totalPlayers }: { user: LeaderboardUser;
 function WinPctBadge({ pct, gamesPlayed }: { pct: string; gamesPlayed: number }) {
   const n = parseFloat(pct)
   const color = gamesPlayed < 5
-    ? 'text-gray-400'
+    ? 'text-white/60'
     : n >= 60
       ? 'text-green-400'
       : n >= 45
@@ -247,7 +247,7 @@ function WinPctBadge({ pct, gamesPlayed }: { pct: string; gamesPlayed: number })
 
 // ── Column header row ─────────────────────────────────────────────────────────
 function ColumnHeaders({ sort }: { sort: SortKey }) {
-  const base = 'text-[10px] font-black uppercase tracking-[0.14em] text-gray-600 transition-colors'
+  const base = 'text-[10px] font-black uppercase tracking-[0.14em] text-white/30 transition-colors'
   const active = 'text-orange-500'
   return (
     <div className="flex items-center gap-2 sm:gap-3 px-4 pb-2 pt-1">
@@ -320,14 +320,14 @@ function LeaderboardRow({ user: u, rank, isMe, sort, totalPlayers, rowRef }: Row
 
       {/* W */}
       <div className="w-9 sm:w-10 text-right shrink-0">
-        <span className={`tabular-nums font-black text-sm ${sort === 'wins' ? 'text-white' : 'text-gray-300'}`}>
+        <span className={`tabular-nums font-black text-sm ${sort === 'wins' ? 'text-white' : 'text-white/70'}`}>
           {u.wins}
         </span>
       </div>
 
       {/* L — hidden on mobile */}
       <div className="hidden sm:block w-10 text-right shrink-0">
-        <span className="tabular-nums font-bold text-sm text-gray-500">{u.losses}</span>
+        <span className="tabular-nums font-bold text-sm text-white/40">{u.losses}</span>
       </div>
 
       {/* WIN% */}
@@ -342,7 +342,7 @@ function LeaderboardRow({ user: u, rank, isMe, sort, totalPlayers, rowRef }: Row
             🔥{u.winStreak}
           </span>
         ) : (
-          <span className={`tabular-nums font-bold text-xs ${sort === 'winStreak' ? 'text-white' : 'text-gray-500'}`}>
+          <span className={`tabular-nums font-bold text-xs ${sort === 'winStreak' ? 'text-white' : 'text-white/40'}`}>
             {u.winStreak}
           </span>
         )}
@@ -362,7 +362,7 @@ function MyRankBanner({ me, totalPlayers }: { me: MeRow; totalPlayers: number })
         <div className="text-label text-orange-500 mb-1">Your Standing</div>
         <div className="font-display text-4xl text-white leading-none tabular-nums">
           #{me.rank}
-          <span className="text-gray-400 text-lg font-normal ml-1.5">/ {totalPlayers}</span>
+          <span className="text-white/60 text-lg font-normal ml-1.5">/ {totalPlayers}</span>
         </div>
       </div>
 
@@ -372,9 +372,9 @@ function MyRankBanner({ me, totalPlayers }: { me: MeRow; totalPlayers: number })
         <div className="text-label mb-1">Record</div>
         <div className="flex items-baseline gap-1 tabular-nums">
           <span className="font-display text-xl sm:text-2xl text-green-400 leading-none">{me.wins}</span>
-          <span className="text-gray-400 text-xs font-bold">W</span>
+          <span className="text-white/60 text-xs font-bold">W</span>
           <span className="font-display text-xl sm:text-2xl text-red-400 leading-none">{me.losses}</span>
-          <span className="text-gray-400 text-xs font-bold">L</span>
+          <span className="text-white/60 text-xs font-bold">L</span>
         </div>
       </div>
 
@@ -383,7 +383,7 @@ function MyRankBanner({ me, totalPlayers }: { me: MeRow; totalPlayers: number })
       <div className="text-center shrink-0">
         <div className="text-label mb-1">Win%</div>
         <div className={`font-display text-xl sm:text-2xl leading-none tabular-nums ${
-          me.gamesPlayed < 5 ? 'text-gray-400' : pctNum >= 60 ? 'text-green-400' : pctNum >= 45 ? 'text-white' : 'text-red-400'
+          me.gamesPlayed < 5 ? 'text-white/60' : pctNum >= 60 ? 'text-green-400' : pctNum >= 45 ? 'text-white' : 'text-red-400'
         }`}>
           {me.gamesPlayed >= 5 ? `${winPct}%` : '—'}
         </div>
@@ -393,7 +393,7 @@ function MyRankBanner({ me, totalPlayers }: { me: MeRow; totalPlayers: number })
 
       <div className="text-center shrink-0 hidden sm:block">
         <div className="text-label mb-1">Streak</div>
-        <div className={`font-display text-2xl leading-none tabular-nums ${me.winStreak >= 3 ? 'text-orange-400' : 'text-gray-400'}`}>
+        <div className={`font-display text-2xl leading-none tabular-nums ${me.winStreak >= 3 ? 'text-orange-400' : 'text-white/60'}`}>
           {me.winStreak >= 3 ? `🔥${me.winStreak}` : me.winStreak}
         </div>
       </div>
@@ -413,7 +413,7 @@ function EmptyState() {
       </div>
       <div>
         <p className="font-display text-2xl text-white tracking-wider leading-none">No players ranked yet</p>
-        <p className="text-gray-500 text-sm mt-2">Be the first on the board</p>
+        <p className="text-white/40 text-sm mt-2">Be the first on the board</p>
       </div>
       <Link href="/lobby" className="btn-primary mt-1 text-sm px-8 py-3">Play Now</Link>
     </div>
@@ -485,14 +485,14 @@ export default function LeaderboardPage() {
             </h1>
             <p className="mt-2 flex items-baseline gap-1.5">
               <span className="font-display text-2xl text-orange-400 leading-none tabular-nums">{totalPlayers}</span>
-              <span className="text-gray-500 text-xs font-bold uppercase tracking-[0.1em]">players ranked</span>
+              <span className="text-white/40 text-xs font-bold uppercase tracking-[0.1em]">players ranked</span>
             </p>
           </div>
           <div className="flex flex-col items-end gap-2 shrink-0 pt-1">
             <Link href="/lobby" className="btn-secondary py-2 px-4 text-xs">← Lobby</Link>
             <div className="flex items-center gap-1.5">
               <span className="live-dot" />
-              <span className="tabular-nums text-[10px] font-bold text-gray-500">
+              <span className="tabular-nums text-[10px] font-bold text-white/40">
                 {lastUpdated ? lastUpdated.toLocaleTimeString() : 'Live'}
               </span>
             </div>
@@ -547,7 +547,7 @@ export default function LeaderboardPage() {
             {rest.length > 0 && (
               <div className="card-surface rounded-2xl overflow-hidden animate-fade-up-1">
                 <div className="flex items-center justify-between px-4 pt-3.5 pb-0">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600">Rankings</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Rankings</span>
                   {me && meInList >= 3 && (
                     <button
                       onClick={() => meRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
@@ -606,7 +606,7 @@ export default function LeaderboardPage() {
                 <RankChip user={me} rank={me.rank} totalPlayers={totalPlayers} />
               </div>
               <div className="text-right shrink-0 space-y-0.5">
-                <div className="text-xs font-black text-green-400 tabular-nums">{me.wins}W <span className="text-gray-400">·</span> <span className="text-red-400">{me.losses}L</span></div>
+                <div className="text-xs font-black text-green-400 tabular-nums">{me.wins}W <span className="text-white/40">·</span> <span className="text-red-400">{me.losses}L</span></div>
                 <WinPctBadge pct={me.gamesPlayed > 0 ? ((me.wins / me.gamesPlayed) * 100).toFixed(1) : '0.0'} gamesPlayed={me.gamesPlayed} />
               </div>
             </div>

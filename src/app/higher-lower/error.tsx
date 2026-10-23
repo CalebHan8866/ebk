@@ -23,7 +23,7 @@ export default function HigherLowerError({
           <span className="text-red-400 text-xl font-black">!</span>
         </div>
         <h2 className="font-display text-3xl text-white mb-2">Higher or Lower Error</h2>
-        <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+        <p className="text-white/60 text-sm mb-6 leading-relaxed">
           Something went wrong in Higher or Lower. You can try again or return home.
         </p>
         <div className="flex flex-col gap-3">

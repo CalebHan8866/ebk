@@ -247,7 +247,7 @@ export default function HistoryPage() {
             </h1>
             <p className="mt-2 flex items-baseline gap-1.5">
               <span className="font-display text-2xl text-orange-400 leading-none tabular-nums">{records.length}</span>
-              <span className="text-gray-500 text-xs font-bold uppercase tracking-[0.1em]">game{records.length !== 1 ? 's' : ''}{hasMore ? ' loaded' : ''}</span>
+              <span className="text-white/40 text-xs font-bold uppercase tracking-[0.1em]">game{records.length !== 1 ? 's' : ''}{hasMore ? ' loaded' : ''}</span>
             </p>
           </div>
           <Link
@@ -280,7 +280,7 @@ export default function HistoryPage() {
             {/* ── Game Timeline ─────────────────────────────────────── */}
             <div className="flex items-center gap-2 mb-3">
               <div className="h-px flex-1 bg-white/[0.05]" />
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-600">Recent Games</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/30">Recent Games</span>
               <div className="h-px flex-1 bg-white/[0.05]" />
             </div>
             <div className="space-y-2">
