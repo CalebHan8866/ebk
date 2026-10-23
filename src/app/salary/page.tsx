@@ -364,34 +364,44 @@ export default function SalaryPage() {
               onChange={e => setValueSearch(e.target.value)}
               className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-orange-500/40 focus-visible:ring-2 focus-visible:ring-orange-500/60 transition-colors"
             />
-            <select
-              value={valueSortMode}
-              onChange={e => setValueSortMode(e.target.value as 'best' | 'worst')}
-              className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white/70 focus:outline-none focus:border-orange-500/40 focus-visible:ring-2 focus-visible:ring-orange-500/60 transition-colors cursor-pointer appearance-none sm:w-44"
-            >
-              <option value="best">Best Value</option>
-              <option value="worst">Most Overpaid</option>
-            </select>
-            <select
-              value={valueYear}
-              onChange={e => setValueYear(Number(e.target.value))}
-              className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white/70 focus:outline-none focus:border-orange-500/40 focus-visible:ring-2 focus-visible:ring-orange-500/60 transition-colors cursor-pointer appearance-none sm:w-32"
-            >
-              {seasons.map(s => (
-                <option key={s.year} value={s.year}>{s.label}</option>
-              ))}
-            </select>
+            <div className="relative sm:w-44">
+              <select
+                value={valueSortMode}
+                onChange={e => setValueSortMode(e.target.value as 'best' | 'worst')}
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-4 pr-9 py-2.5 text-sm text-white/70 focus:outline-none focus:border-orange-500/40 focus-visible:ring-2 focus-visible:ring-orange-500/60 transition-colors cursor-pointer appearance-none"
+              >
+                <option value="best">Best Value</option>
+                <option value="worst">Most Overpaid</option>
+              </select>
+              <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+            <div className="relative sm:w-36">
+              <select
+                value={valueYear}
+                onChange={e => setValueYear(Number(e.target.value))}
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-4 pr-9 py-2.5 text-sm text-white/80 font-medium focus:outline-none focus:border-orange-500/40 focus-visible:ring-2 focus-visible:ring-orange-500/60 transition-colors cursor-pointer appearance-none"
+              >
+                {seasons.map(s => (
+                  <option key={s.year} value={s.year}>{s.label}</option>
+                ))}
+              </select>
+              <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
 
           {valueLoading && (
-            <div className="space-y-2 animate-pulse">
+            <div className="space-y-2">
               {[...Array(8)].map((_, i) => (
-                <div key={i} className="card-surface h-16 rounded-xl" />
+                <div key={i} className="skeleton h-16 rounded-xl" />
               ))}
             </div>
           )}
 
-          {!valueLoading && valuePlayers.length === 0 && (
+          {!valueLoading && valueYear !== 0 && valuePlayers.length === 0 && (
             <div className="empty-state py-16">
               <div className="empty-state-icon">📊</div>
               <p className="empty-state-title">No value data for this season</p>
@@ -421,15 +431,15 @@ export default function SalaryPage() {
                     >
                       {/* surplus bar */}
                       <div
-                        className="absolute left-0 top-0 bottom-0 transition-all"
+                        className="absolute left-0 top-0 bottom-0 transition-all duration-500"
                         style={{
                           width: `${barPct}%`,
                           background: isPositive
-                            ? 'rgba(34,197,94,0.08)'
-                            : 'rgba(239,68,68,0.08)',
+                            ? 'rgba(34,197,94,0.13)'
+                            : 'rgba(239,68,68,0.13)',
                         }}
                       />
-                      <span className="relative w-6 text-[11px] font-bold text-white/30 text-right shrink-0">{i + 1}</span>
+                      <span className="relative w-6 text-[11px] font-bold text-white/50 text-right shrink-0">{i + 1}</span>
                       <div className="relative flex-1 min-w-0">
                         <p className="text-sm font-bold text-white truncate">{p.name}</p>
                         <p className="text-[11px] text-white/40">{p.team} · {fmt(p.salary)}</p>
@@ -438,7 +448,7 @@ export default function SalaryPage() {
                         <p className={`text-sm font-black ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
                           {surplusLabel}
                         </p>
-                        <p className="text-[10px] text-white/30">surplus</p>
+                        <p className="text-[10px] text-white/40">surplus</p>
                       </div>
                     </div>
                   )
