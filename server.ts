@@ -1055,7 +1055,17 @@ function advanceAuction(io: SocketServer, room: AuctionRoom) {
   while (room.currentPlayerIndex < room.playerPool.length) {
     const candidate = room.playerPool[room.currentPlayerIndex]
     if (!wonIds.has(candidate.id)) {
-      const needsMore = room.participants.some(p => p.roster.length < room.teamSize && p.budget >= 1)
+      // A participant "needs more" players only if they have empty roster slots AND
+      // can legally bid on the next player under the $1/slot rule.  The minimum
+      // legal bid is $1, and after winning this player they must still have $1 for
+      // each remaining slot.  So the minimum budget needed to participate in this
+      // round is: 1 (bid) + (teamSize - roster.length - 1) (future slots) =
+      // teamSize - roster.length.  Using `budget >= 1` alone would include
+      // participants who can never legally bid (e.g. budget=$1 with 2 empty slots
+      // → maxBid=0), stalling each round until the 25-second timer expires.
+      const needsMore = room.participants.some(
+        p => p.roster.length < room.teamSize && p.budget >= room.teamSize - p.roster.length
+      )
       if (!needsMore) break
       room.currentPlayer = candidate
       room.currentBid = 0
@@ -2684,6 +2694,18 @@ app.prepare().then(async () => {
       const stealPrice = Math.ceil(originalPrice * STEAL_MULTIPLIER)
       if (stealer.budget < stealPrice) { socket.emit('auction:error', { message: `Need $${stealPrice}M to steal` }); return }
       if (stealer.roster.length >= room.teamSize) { socket.emit('auction:error', { message: 'Roster is full' }); return }
+      // $1-per-remaining-slot rule (mirrors the auction:bid check): after paying the
+      // steal price the stealer must have at least $1 for each roster slot still
+      // to be filled beyond this steal.  stealer.roster.length + 1 is the roster
+      // size after this steal is added; remainingSlots is the number of empty slots
+      // still to be filled.  Without this check a participant could spend their
+      // entire budget on a steal, leaving $0 for future slots and becoming excluded
+      // from advanceAuction's needsMore check — finishing the auction short-rostered.
+      const stealRemainingSlots = room.teamSize - stealer.roster.length - 1 // slots still needed after this steal
+      const stealMaxBid = stealer.budget - stealRemainingSlots
+      if (stealPrice > stealMaxBid) {
+        socket.emit('auction:error', { message: `Max steal is $${stealMaxBid}M — must keep $1M per remaining roster slot` }); return
+      }
 
       stealer.budget -= stealPrice
       stealer.roster.push(playerIdToSteal)
