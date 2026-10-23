@@ -86,6 +86,18 @@ function rankWrapperStyle(rank: number): React.CSSProperties {
   return {}
 }
 
+interface ValuePlayer {
+  name: string
+  team: string
+  salary: number
+  surplusNow: number
+  surplusPct: number
+  production: number
+  rank: number
+}
+
+interface SeasonMeta { year: number; label: string; cap: number }
+
 export default function SalaryPage() {
   const [players, setPlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState(true)
@@ -94,6 +106,14 @@ export default function SalaryPage() {
   const [eraFilter, setEraFilter] = useState<EraFilter>('all')
   const [tab, setTab] = useState<TabMode>('earnings')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+
+  // Value tab state
+  const [seasons, setSeasons] = useState<SeasonMeta[]>([])
+  const [valueYear, setValueYear] = useState<number>(0)
+  const [valuePlayers, setValuePlayers] = useState<ValuePlayer[]>([])
+  const [valueLoading, setValueLoading] = useState(false)
+  const [valueSortMode, setValueSortMode] = useState<'best' | 'worst'>('best')
+  const [valueSearch, setValueSearch] = useState('')
 
   useEffect(() => {
     fetch('/api/players')
@@ -107,6 +127,32 @@ export default function SalaryPage() {
       })
       .catch(() => setLoading(false))
   }, [])
+
+  // Load season list from meta.json
+  useEffect(() => {
+    fetch('/data/salary/meta.json')
+      .then(r => r.ok ? r.json() : null)
+      .then((meta: { seasons?: SeasonMeta[] } | null) => {
+        if (!meta?.seasons?.length) return
+        const available = [...meta.seasons].reverse() // newest first
+        setSeasons(available)
+        setValueYear(available[0].year)
+      })
+      .catch(() => {})
+  }, [])
+
+  // Load value data for selected season
+  useEffect(() => {
+    if (!valueYear) return
+    setValueLoading(true)
+    fetch(`/data/salary/${valueYear}.json`)
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { players?: ValuePlayer[] } | null) => {
+        setValuePlayers(data?.players ?? [])
+        setValueLoading(false)
+      })
+      .catch(() => setValueLoading(false))
+  }, [valueYear])
 
   const enriched = useMemo(() => {
     return players.map(p => {
@@ -226,8 +272,8 @@ export default function SalaryPage() {
         </div>
       )}
 
-      {/* ── CONTROLS ───────────────────────────────────────────────── */}
-      <div className="max-w-3xl mx-auto px-4 mb-4">
+      {/* ── CONTROLS (earnings tab only) ───────────────────────────── */}
+      <div className={`max-w-3xl mx-auto px-4 mb-4 ${tab === 'value' ? 'hidden' : ''}`}>
         <div className="flex flex-col sm:flex-row gap-3">
           {/* Search */}
           <input
@@ -306,26 +352,100 @@ export default function SalaryPage() {
         </div>
       )}
 
-      {/* ── VALUE TAB (coming soon) ─────────────────────────────────── */}
+      {/* ── VALUE TAB ──────────────────────────────────────────────── */}
       {!loading && tab === 'value' && (
         <div className="max-w-3xl mx-auto px-4">
-          <div className="rounded-2xl p-10 text-center"
-            style={{
-              background: 'rgba(234,88,12,0.04)',
-              border: '1px solid rgba(234,88,12,0.25)',
-            }}
-          >
-            <div className="text-5xl mb-4 select-none">⚙️</div>
-            <p className="font-display text-2xl text-orange-400 tracking-wide mb-2">
-              Season Data Processing
-            </p>
-            <p className="text-white/40 text-sm max-w-sm mx-auto leading-relaxed">
-              Value Rankings require per-season Win Shares and VORP data. Run{' '}
-              <span className="font-mono text-white/40 text-xs">scrape-season-data.ts</span>{' '}
-              with <span className="font-mono text-white/40 text-xs">FORCE=1</span> to populate the pipeline,
-              then value rankings — who earned their contract vs. who was overpaid — will appear here.
-            </p>
+          {/* Season selector + sort */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-5">
+            <input
+              type="text"
+              placeholder="Search player..."
+              value={valueSearch}
+              onChange={e => setValueSearch(e.target.value)}
+              className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-orange-500/40 focus-visible:ring-2 focus-visible:ring-orange-500/60 transition-colors"
+            />
+            <select
+              value={valueSortMode}
+              onChange={e => setValueSortMode(e.target.value as 'best' | 'worst')}
+              className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white/70 focus:outline-none focus:border-orange-500/40 focus-visible:ring-2 focus-visible:ring-orange-500/60 transition-colors cursor-pointer appearance-none sm:w-44"
+            >
+              <option value="best">Best Value</option>
+              <option value="worst">Most Overpaid</option>
+            </select>
+            <select
+              value={valueYear}
+              onChange={e => setValueYear(Number(e.target.value))}
+              className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-sm text-white/70 focus:outline-none focus:border-orange-500/40 focus-visible:ring-2 focus-visible:ring-orange-500/60 transition-colors cursor-pointer appearance-none sm:w-32"
+            >
+              {seasons.map(s => (
+                <option key={s.year} value={s.year}>{s.label}</option>
+              ))}
+            </select>
           </div>
+
+          {valueLoading && (
+            <div className="space-y-2 animate-pulse">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="card-surface h-16 rounded-xl" />
+              ))}
+            </div>
+          )}
+
+          {!valueLoading && valuePlayers.length === 0 && (
+            <div className="empty-state py-16">
+              <div className="empty-state-icon">📊</div>
+              <p className="empty-state-title">No value data for this season</p>
+              <p className="empty-state-body">Season data may not be available yet</p>
+            </div>
+          )}
+
+          {!valueLoading && valuePlayers.length > 0 && (() => {
+            const sorted = valueSortMode === 'best'
+              ? [...valuePlayers].sort((a, b) => b.surplusNow - a.surplusNow)
+              : [...valuePlayers].sort((a, b) => a.surplusNow - b.surplusNow)
+            const searched = valueSearch
+              ? sorted.filter(p => p.name.toLowerCase().includes(valueSearch.toLowerCase()))
+              : sorted
+            const maxSurplus = Math.max(...valuePlayers.map(p => Math.abs(p.surplusNow)), 1)
+            return (
+              <div className="space-y-1.5">
+                {searched.slice(0, 100).map((p, i) => {
+                  const isPositive = p.surplusNow >= 0
+                  const barPct = Math.min(100, Math.abs(p.surplusNow) / maxSurplus * 100)
+                  const surplusLabel = isPositive
+                    ? `+${fmt(p.surplusNow)}`
+                    : `-${fmt(Math.abs(p.surplusNow))}`
+                  return (
+                    <div key={`${p.name}-${i}`}
+                      className="relative overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 flex items-center gap-3"
+                    >
+                      {/* surplus bar */}
+                      <div
+                        className="absolute left-0 top-0 bottom-0 transition-all"
+                        style={{
+                          width: `${barPct}%`,
+                          background: isPositive
+                            ? 'rgba(34,197,94,0.08)'
+                            : 'rgba(239,68,68,0.08)',
+                        }}
+                      />
+                      <span className="relative w-6 text-[11px] font-bold text-white/30 text-right shrink-0">{i + 1}</span>
+                      <div className="relative flex-1 min-w-0">
+                        <p className="text-sm font-bold text-white truncate">{p.name}</p>
+                        <p className="text-[11px] text-white/40">{p.team} · {fmt(p.salary)}</p>
+                      </div>
+                      <div className="relative text-right shrink-0">
+                        <p className={`text-sm font-black ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                          {surplusLabel}
+                        </p>
+                        <p className="text-[10px] text-white/30">surplus</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })()}
         </div>
       )}
 
