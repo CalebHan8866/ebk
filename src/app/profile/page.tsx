@@ -552,7 +552,9 @@ export default function ProfilePage() {
             <div className="mb-5">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-label tracking-[0.14em]">Win Rate</span>
-                <span className="text-white text-sm font-black">{winPct}%</span>
+                <span className={`text-sm font-black tabular-nums ${total < 5 ? 'text-white/40' : winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-white' : 'text-red-400'}`}>
+                  {total >= 5 ? `${winPct}%` : total > 0 ? `${winPct}% (need 5+ games)` : '—'}
+                </span>
               </div>
               <div className="budget-bar">
                 <div className="budget-bar-fill" style={{ width: `${winPctNum}%` }} />
@@ -680,6 +682,18 @@ export default function ProfilePage() {
               })}
             </div>
 
+            {unlockedBadgeIds.length === 0 && (
+              <div className="flex flex-col items-center gap-3 py-8 mb-5 rounded-2xl border border-white/[0.05] bg-white/[0.015]">
+                <div className="w-12 h-12 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+                  <span className="text-2xl leading-none select-none">🏅</span>
+                </div>
+                <div className="text-center">
+                  <p className="text-white/60 text-sm font-bold">No badges unlocked yet</p>
+                  <p className="text-white/25 text-xs mt-1">Play more games to discover hidden badges</p>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
               {BADGES.map(badge => {
                 const isUnlocked = unlockedBadgeIds.includes(badge.id)
@@ -773,11 +787,6 @@ export default function ProfilePage() {
               })}
             </div>
 
-            {unlockedBadgeIds.length === 0 && (
-              <div className="mt-4 text-center">
-                <Link href="/lobby" className="btn-primary py-2.5 px-6 text-xs">Play to Unlock</Link>
-              </div>
-            )}
           </div>
 
           {/* Emotes — still in badges tab */}
