@@ -1613,7 +1613,7 @@ app.prepare().then(async () => {
       userName = ((socket.data.username as string | null) || (typeof userName === 'string' ? userName : '').trim()).slice(0, 20) || 'Player'
       let code = generateCode()
       let codeAttempts = 0
-      while (rooms.has(code) || readyRooms.has(code) || gameListings.has(code)) {
+      while (rooms.has(code) || readyRooms.has(code) || gameListings.has(code) || auctionRooms.has(code)) {
         if (++codeAttempts >= 10) {
           socket.emit('room-error', { message: 'Unable to create room. Please try again.' })
           return
@@ -2157,7 +2157,7 @@ app.prepare().then(async () => {
 
       let code = generateCode()
       let codeAttempts = 0
-      while (rooms.has(code) || readyRooms.has(code) || gameListings.has(code)) {
+      while (rooms.has(code) || readyRooms.has(code) || gameListings.has(code) || auctionRooms.has(code)) {
         if (++codeAttempts >= 10) {
           pendingListingCreate.delete(socket.id)
           socket.emit('listing-error', { message: 'Unable to create listing. Please try again.' })
@@ -2465,7 +2465,7 @@ app.prepare().then(async () => {
 
       let code = generateCode()
       let codeAttempts = 0
-      while (auctionRooms.has(code)) {
+      while (auctionRooms.has(code) || rooms.has(code) || readyRooms.has(code) || gameListings.has(code)) {
         if (++codeAttempts >= 10) {
           socket.emit('auction:error', { message: 'Unable to create room. Please try again.' })
           return
