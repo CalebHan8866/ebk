@@ -1,0 +1,19 @@
+{
+  "name": "EBK - Elite Ball Knowledge",
+  "short_name": "EBK",
+  "description": "Live head-to-head NBA draft game. Draft the worst career stats to win.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0a0a0f",
+  "background_color": "#0a0a0f",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/ebk-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

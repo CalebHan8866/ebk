@@ -23,10 +23,13 @@ const inter = Inter({
 // Prevent iOS from zooming in when the user taps an input field (which happens
 // when the input font-size is smaller than 16 px). maximumScale=1 suppresses
 // that auto-zoom without disabling pinch-to-zoom (user-scalable is not set).
+// viewportFit=cover ensures env(safe-area-inset-*) works on notched/dynamic-island devices.
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#0a0a0f',
 }
 
 export const metadata: Metadata = {
@@ -41,6 +44,12 @@ export const metadata: Metadata = {
   icons: {
     icon: '/ebk-favicon.svg',
     apple: '/ebk-logo.svg',
+  },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    title: 'EBK',
+    statusBarStyle: 'black-translucent',
   },
   openGraph: {
     title: 'EBK - Elite Ball Knowledge',
