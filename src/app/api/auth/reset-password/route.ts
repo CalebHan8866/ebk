@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       path: '/',
     })
 
-    return noStore({ message: 'Password reset successfully.' })
+    return noStore({ success: true })
   } catch (e) {
     // Log only the error message/code — never the full error object, which may contain
     // Prisma query strings with embedded email addresses or other PII.

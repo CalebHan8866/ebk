@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       path: '/',
     })
 
-    return noStore({ message: 'Password changed successfully.' })
+    return noStore({ success: true })
   } catch {
     return noStore({ error: 'Server error' }, { status: 500 })
   }

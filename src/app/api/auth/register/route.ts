@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     // Fire and forget — don't block the response waiting for email
     sendVerificationEmail(email, username, verificationToken).catch(err => console.error('Email error:', err))
 
-    return noStore({ message: 'Account created! Check your email to verify your account.' }, { status: 201 })
+    return noStore({ success: true }, { status: 201 })
   } catch (e) {
     // Log only the error message/code — never the full error object, which may contain
     // Prisma query strings with embedded email addresses or other PII.
