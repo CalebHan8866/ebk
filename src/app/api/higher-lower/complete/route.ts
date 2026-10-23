@@ -77,6 +77,12 @@ export async function POST(request: NextRequest) {
     if (!gameToken || typeof gameToken !== 'string') {
       return NextResponse.json({ error: 'Invalid or expired game session' }, { status: 403 })
     }
+    // Reject implausibly long tokens before handing them to the HMAC verifier.
+    // A legitimate signed token is ~150 chars; anything longer is either garbage or a
+    // deliberate attempt to waste CPU on the HMAC computation.
+    if (gameToken.length > 512) {
+      return NextResponse.json({ error: 'Invalid or expired game session' }, { status: 403 })
+    }
     const isGauntlet = milestone === 'hl_gauntlet'
     const issuedAt = isGauntlet
       ? verifyAndConsumeGameTokenIssuedAt(gameToken, payload.userId)

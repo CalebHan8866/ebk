@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
     if (!email || typeof email !== 'string') {
       return noStore({ error: 'Email required' }, { status: 400 })
     }
+    if (email.length > 254) return noStore({ error: 'Invalid email' }, { status: 400 })
     const result = await prisma.user.updateMany({ where: { email }, data: { emailVerified: true } })
     if (result.count === 0) return noStore({ error: 'User not found' }, { status: 404 })
     return noStore({ ok: true })

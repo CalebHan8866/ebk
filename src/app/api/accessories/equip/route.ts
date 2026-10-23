@@ -40,6 +40,11 @@ export async function POST(req: NextRequest) {
     if (!type || !id || (type !== 'badge' && type !== 'emote')) {
       return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
     }
+    // Guard non-string id (e.g. a number is truthy so `!id` wouldn't catch it) and
+    // cap length to prevent an oversized string from reaching the Set lookup and DB.
+    if (typeof id !== 'string' || id.length > 64) {
+      return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
+    }
 
     // Validate that the ID is a real canonical badge/emote — not a phantom value
     // injected via a tampered DB row or future data drift.

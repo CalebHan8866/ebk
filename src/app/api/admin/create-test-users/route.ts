@@ -17,7 +17,23 @@ export async function POST(request: NextRequest) {
     if (!process.env.DEV_SECRET || secret !== process.env.DEV_SECRET) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
-    if (count > 600) return NextResponse.json({ error: 'Max 600 per batch' }, { status: 400 })
+    // Validate count: must be a safe positive integer — NaN/Infinity/-1/0.5 would cause
+    // Array.from({ length: <bad> }) to throw a RangeError (→ 500) or silently produce
+    // zero records.
+    if (
+      typeof count !== 'number' ||
+      !Number.isFinite(count) ||
+      !Number.isInteger(count) ||
+      count < 1 ||
+      count > 600
+    ) {
+      return NextResponse.json({ error: 'count must be an integer between 1 and 600' }, { status: 400 })
+    }
+    // Validate prefix: must be a non-empty string within a reasonable length so that the
+    // generated username (`${prefix}0001`) stays under the DB's 20-char limit.
+    if (typeof prefix !== 'string' || prefix.length === 0 || prefix.length > 15) {
+      return NextResponse.json({ error: 'prefix must be a string of 1–15 characters' }, { status: 400 })
+    }
 
     const hashed = await bcrypt.hash('TestPass123!', 10)
 
