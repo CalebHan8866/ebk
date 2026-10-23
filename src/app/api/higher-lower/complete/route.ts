@@ -15,10 +15,10 @@ const HL_BADGE_IDS = ['hl_10', 'hl_25', 'hl_gauntlet']
 // hl_gauntlet requires BOTH complete=true AND streak >= 25 — without a streakRequired
 // guard the server only checks `complete: true` from the request body, which any
 // authenticated user can trivially fabricate with a valid game token.
-const HL_BADGE_REQUIREMENTS: Record<string, { streakRequired?: number; requiresComplete?: boolean }> = {
+const HL_BADGE_REQUIREMENTS: Record<string, { streakRequired?: number; requiresComplete?: boolean; prerequisiteBadges?: string[] }> = {
   hl_10:      { streakRequired: 10 },
-  hl_25:      { streakRequired: 25 },
-  hl_gauntlet: { requiresComplete: true, streakRequired: 25 },
+  hl_25:      { streakRequired: 25, prerequisiteBadges: ['hl_10'] },
+  hl_gauntlet: { requiresComplete: true, streakRequired: 25, prerequisiteBadges: ['hl_10', 'hl_25'] },
 }
 
 // Minimum milliseconds that must have elapsed between /start and /complete for
@@ -142,6 +142,19 @@ export async function POST(request: NextRequest) {
         return { alreadyUnlocked: true } as const
       }
 
+      // Prerequisite guard: higher-tier badges require lower-tier badges to already
+      // be unlocked in the DB. This closes the gap where a user with a valid game
+      // token could skip hl_10 and directly POST hl_25 (or skip both and claim
+      // hl_gauntlet) because intermediate milestone nonces are not consumed.
+      // Checking against the DB (inside the transaction) makes this tamper-proof.
+      const prereqs = req?.prerequisiteBadges
+      if (prereqs && prereqs.length > 0) {
+        const missingPrereq = prereqs.find(p => !unlocked.includes(p))
+        if (missingPrereq) {
+          return { missingPrerequisite: missingPrereq } as const
+        }
+      }
+
       // Atomic guard: the WHERE clause requires the badge is still absent.
       // If a concurrent transaction already appended it, this update matches
       // zero rows and we treat it as alreadyUnlocked.
@@ -163,6 +176,7 @@ export async function POST(request: NextRequest) {
     })
 
     if ('notFound' in result) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if ('missingPrerequisite' in result) return NextResponse.json({ error: 'Prerequisite badge not yet unlocked' }, { status: 403 })
     if (result.alreadyUnlocked) return NextResponse.json({ alreadyUnlocked: true })
 
     return NextResponse.json({ unlocked: true, badge: { id: badge.id, name: badge.name } })
