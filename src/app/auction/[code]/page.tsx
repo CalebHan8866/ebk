@@ -1028,7 +1028,7 @@ export default function AuctionRoomPage() {
                         </div>
                         <div>
                           <p className="text-white font-black text-sm leading-tight">{offer.fromName}</p>
-                          <p className="text-white/30 text-[10px] tracking-widest uppercase font-black">Sent a trade offer</p>
+                          <p className="text-orange-400/50 text-[10px] tracking-widest uppercase font-black">Incoming trade offer</p>
                         </div>
                       </div>
                       {/* EBK net indicator */}
@@ -1098,11 +1098,11 @@ export default function AuctionRoomPage() {
                       </div>
                     </div>
 
-                    {/* Accept / Decline — full width, prominent */}
+                    {/* Accept / Decline — full width, prominent, 44px+ touch targets */}
                     <div className="grid grid-cols-2 gap-2 sm:gap-3 px-3 sm:px-4 pb-3 sm:pb-4">
                       <button
                         onClick={() => handleTradeRespond(offer.id, false)}
-                        className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-sm uppercase tracking-wider transition-all border bg-red-950/30 border-red-500/40 text-red-400 hover:bg-red-950/50 hover:border-red-500/60 hover:text-red-300 active:bg-red-950/60"
+                        className="flex items-center justify-center gap-2 py-4 rounded-xl font-black text-sm uppercase tracking-wider transition-all border bg-red-950/30 border-red-500/40 text-red-400 hover:bg-red-950/50 hover:border-red-500/60 hover:text-red-300 active:bg-red-950/60"
                       >
                         <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
@@ -1111,7 +1111,7 @@ export default function AuctionRoomPage() {
                       </button>
                       <button
                         onClick={() => handleTradeRespond(offer.id, true)}
-                        className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-sm uppercase tracking-wider transition-all border bg-green-600/25 border-green-500/50 text-green-400 hover:bg-green-600/35 hover:border-green-500/70 hover:text-green-300 active:bg-green-600/45 shadow-[0_0_16px_rgba(34,197,94,0.12)]"
+                        className="flex items-center justify-center gap-2 py-4 rounded-xl font-black text-sm uppercase tracking-wider transition-all border bg-green-600/30 border-green-500/55 text-green-400 hover:bg-green-600/40 hover:border-green-500/75 hover:text-green-300 active:bg-green-600/50 shadow-[0_0_20px_rgba(34,197,94,0.15)]"
                       >
                         <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
@@ -1163,7 +1163,7 @@ export default function AuctionRoomPage() {
                     </div>
                     <div className="grid grid-cols-[1fr_32px_1fr] gap-0 px-4 py-3 items-start">
                       <div>
-                        <p className="text-orange-400/70 text-[9px] font-black uppercase tracking-widest mb-1.5">You Give</p>
+                        <p className="text-red-400/60 text-[9px] font-black uppercase tracking-widest mb-1.5">You Give</p>
                         <div className="space-y-1">
                           {offeredPlayers.map(p => p && (
                             <div key={p.id} className="flex items-center gap-1.5">
@@ -1182,7 +1182,7 @@ export default function AuctionRoomPage() {
                         </div>
                       </div>
                       <div>
-                        <p className="text-blue-400/70 text-[9px] font-black uppercase tracking-widest mb-1.5">You Receive</p>
+                        <p className="text-green-400/60 text-[9px] font-black uppercase tracking-widest mb-1.5">You Receive</p>
                         <div className="space-y-1">
                           {requestedPlayers.map(p => p && (
                             <div key={p.id} className="flex items-center gap-1.5">
@@ -1244,8 +1244,8 @@ export default function AuctionRoomPage() {
                 <span className="text-orange-400 text-sm font-bold">${me?.budget ?? 0}M</span>
               </div>
             </div>
-            <p className="text-white/25 text-[10px] mb-3 font-semibold uppercase tracking-wider">
-              {selectedToOffer.length === 0 ? 'Step 1 — tap to offer' : 'Pick a GM and their players below'}
+            <p className="text-white/40 text-[10px] mb-3 font-semibold uppercase tracking-wider">
+              {selectedToOffer.length === 0 ? 'Step 1 — tap to offer' : 'Step 2 — pick a GM and their players below'}
             </p>
             <div className="space-y-1.5 sm:space-y-2">
               {me?.roster.map(p => p && (
@@ -1282,7 +1282,8 @@ export default function AuctionRoomPage() {
           <div className="space-y-4">
             {auctionState.participants.filter(p => p.socketId !== mySocketId).length === 0 && (
               <div className="card-surface p-8 rounded-2xl text-center">
-                <p className="text-white/25 text-sm font-semibold">No other GMs in this room</p>
+                <p className="text-white/50 text-sm font-bold">No other GMs to trade with</p>
+                <p className="text-white/25 text-xs mt-1">You&apos;re the only one here — enjoy that roster</p>
               </div>
             )}
             {auctionState.participants.filter(p => p.socketId !== mySocketId).map(gm => (
@@ -1327,7 +1328,7 @@ export default function AuctionRoomPage() {
                     </button>
                   ))}
                   {gm.roster.length === 0 && (
-                    <span className="text-white/20 text-xs italic">No players drafted</span>
+                    <span className="text-white/30 text-xs font-semibold">No players on roster yet</span>
                   )}
                 </div>
 
@@ -1337,7 +1338,7 @@ export default function AuctionRoomPage() {
                     <div className="flex items-center gap-2 mb-3">
                       <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
-                        <p className="text-white/50 text-[10px] font-black uppercase tracking-widest">Step 2 — Trade Proposal</p>
+                        <p className="text-white/60 text-[10px] font-black uppercase tracking-widest">Trade Proposal</p>
                       </div>
                       <div className="flex-1 h-px bg-white/[0.05]" />
                       {/* Live EBK net preview */}

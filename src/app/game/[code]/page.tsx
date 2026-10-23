@@ -758,16 +758,16 @@ function GameContent() {
               </div>
             )}
             {!iWon && !isDraw && (
-              <div className="mb-4 inline-flex items-center gap-2 bg-white/[0.03] border border-white/[0.07] rounded-full px-4 py-1.5">
-                <span className="text-white/30 text-[11px] font-black tracking-[0.25em] uppercase">Series Over</span>
+              <div className="mb-4 inline-flex items-center gap-2 bg-red-950/30 border border-red-500/25 rounded-full px-4 py-1.5">
+                <span className="text-red-400/60 text-[11px] font-black tracking-[0.25em] uppercase">Series Over</span>
               </div>
             )}
             <div
-              className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-white/40 animate-score-reveal'}`}
+              className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-red-400/50 animate-score-reveal'}`}
               style={iWon ? { fontSize: 'clamp(5.5rem, 26vw, 13rem)' } : { fontSize: 'clamp(3.5rem, 15vw, 8rem)' }}>
               {iWon ? 'W' : isDraw ? 'DRAW' : 'L'}
             </div>
-            <div className={`font-display tracking-[0.15em] text-lg sm:text-3xl mb-4 sm:mb-5 ${iWon ? 'text-white' : isDraw ? 'text-yellow-400' : 'text-white/30'}`}>
+            <div className={`font-display tracking-[0.15em] text-lg sm:text-3xl mb-4 sm:mb-5 ${iWon ? 'text-white' : isDraw ? 'text-yellow-400' : 'text-red-400/50'}`}>
               {iWon ? 'SERIES WIN' : isDraw ? 'SERIES DRAW' : 'SERIES LOSS'}
             </div>
 
@@ -1077,7 +1077,7 @@ function GameContent() {
             </div>
           ) : (
             <div className="flex flex-col gap-2.5">
-              <button onClick={() => router.push('/lobby')} className="btn-primary w-full py-4 text-base font-display tracking-widest">
+              <button onClick={() => router.push('/lobby')} className="w-full py-4 text-base font-display tracking-widest rounded-xl border border-white/20 bg-white/[0.07] text-white/80 hover:bg-white/10 hover:border-white/30 transition-all uppercase">
                 Rematch
               </button>
               <div className="grid grid-cols-2 gap-2.5">
@@ -1143,11 +1143,11 @@ function GameContent() {
               </span>
             </div>
             <div
-              className={`font-display leading-none mb-1.5 sm:mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-white/40 animate-score-reveal'}`}
+              className={`font-display leading-none mb-1.5 sm:mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-red-400/55 animate-score-reveal'}`}
               style={iWon ? { fontSize: 'clamp(5rem, 22vw, 9rem)' } : { fontSize: 'clamp(3.5rem, 18vw, 7rem)' }}>
               {iWon ? 'W' : isDraw ? 'D' : 'L'}
             </div>
-            <div className={`font-display tracking-widest text-lg sm:text-2xl ${iWon ? 'text-white' : isDraw ? 'text-yellow-400/70' : 'text-white/30'}`}>
+            <div className={`font-display tracking-widest text-lg sm:text-2xl ${iWon ? 'text-white' : isDraw ? 'text-yellow-400/70' : 'text-red-400/50'}`}>
               {iWon ? 'YOU WIN' : isDraw ? 'DRAW' : 'YOU LOSE'}
             </div>
           </div>
@@ -1314,9 +1314,9 @@ function GameContent() {
                 Start Game {room.currentGame + 1}{room.series > 1 ? ` of ${room.series}` : ''}
               </button>
             ) : (
-              <div className="card-surface rounded-2xl py-4 px-6 text-center flex items-center justify-center gap-3">
+              <div className="rounded-2xl border border-orange-500/20 bg-orange-950/10 py-4 px-6 text-center flex items-center justify-center gap-3">
                 <span className="w-4 h-4 rounded-full border-2 border-orange-500/50 border-t-orange-400 animate-spin shrink-0" />
-                <span className="text-white/40 text-sm">Waiting for <span className="text-white font-bold">{room.hostName}</span> to start Game {room.currentGame + 1}{room.series > 1 ? ` of ${room.series}` : ''}…</span>
+                <span className="text-white/60 text-sm">Waiting for <span className="text-orange-300 font-bold">{room.hostName}</span> to start Game {room.currentGame + 1}{room.series > 1 ? ` of ${room.series}` : ''}…</span>
               </div>
             )}
             <button onClick={() => router.push('/')} className="btn-secondary w-full py-3 text-sm font-black uppercase tracking-widest">
