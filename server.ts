@@ -3154,6 +3154,21 @@ app.prepare().then(async () => {
           }
         } else if (room.status !== 'complete') {
           // Active room: mark the participant as disconnected but keep their slot.
+          // If the disconnecting socket was the current round's nominator and no bid
+          // has been placed yet, hand the nomination to the next connected participant
+          // so they can pass without waiting the full 25-second BID_TIMER.  Without
+          // this, an adversarial (or crashed) nominator would freeze pass-ability for
+          // the remaining connected players for the entire bid window each round.
+          if (
+            room.status === 'bidding' &&
+            room.nominatorSocketId === socket.id &&
+            room.currentBid === 0
+          ) {
+            const connected = room.participants.filter(
+              p => p.socketId !== socket.id && io.sockets.sockets.has(p.socketId)
+            )
+            room.nominatorSocketId = connected.length > 0 ? connected[0].socketId : null
+          }
           // Broadcast state so remaining players see accurate participant list.
           broadcastAuctionState(io, room)
           // If ALL participants are now disconnected, tear down timers and delete the
