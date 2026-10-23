@@ -1839,26 +1839,27 @@ app.prepare().then(async () => {
 
       const roomCode = room.code
 
+      // If the guest disconnected during the result screen and their 8-second grace
+      // period is still running, the host is clicking next-game while the guest may be
+      // mid-reconnect.  Do NOT advance yet — honour the full grace window.
+      // Emit a wait-hint so the host knows why next-game is deferred rather than being
+      // silently stuck on the result screen with no feedback.
+      // IMPORTANT: do NOT cancel the cleanup timer here — if the guest then reconnects
+      // (cancelling the grace timer) the room must still have a safety-net cleanup timer
+      // so it doesn't leak if both players abandon the result screen without disconnecting.
+      if (partnerDisconnectTimers.has(roomCode)) {
+        socket.emit('next-game-pending', { reason: 'Waiting for opponent to reconnect…' })
+        return
+      }
+
       // Cancel the inter-game cleanup timer scheduled when the previous game-result
-      // was emitted.  Without this the timer would fire mid-draft and delete the room.
+      // was emitted.  Only cancel it now that we know we're actually proceeding to a
+      // new draft — if we returned early above (grace timer pending), the cleanup timer
+      // must stay alive as the room's safety net against silent abandonment.
       const cleanupTimer = roomCleanupTimers.get(roomCode)
       if (cleanupTimer) {
         clearTimeout(cleanupTimer)
         roomCleanupTimers.delete(roomCode)
-      }
-
-      // If the guest disconnected during the result screen and their 8-second grace
-      // period is still running, the host is clicking next-game while the guest may be
-      // mid-reconnect.  Do NOT cancel the grace timer yet — honour the full grace window.
-      // When the timer fires it will either forfeit (guest gone) or the guest's get-room
-      // will cancel it first and re-seat them.  Cancelling the cleanup timer above is safe:
-      // if the grace timer fires it calls scheduleRoomCleanup itself; if the guest reconnects
-      // the room continues normally without a cleanup timer until the next game ends.
-      // Emit a wait-hint so the host knows why next-game is deferred rather than being
-      // silently stuck on the result screen with no feedback.
-      if (partnerDisconnectTimers.has(roomCode)) {
-        socket.emit('next-game-pending', { reason: 'Waiting for opponent to reconnect…' })
-        return
       }
 
       // Guard: if the guest socket is no longer live (disconnected without a grace timer —
