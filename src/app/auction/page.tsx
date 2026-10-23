@@ -156,7 +156,7 @@ function AuctionPageInner() {
 
   if (loading) {
     return (
-      <div className="min-h-screen px-4 py-8 md:py-14 max-w-2xl mx-auto space-y-6">
+      <div className="min-h-screen px-4 py-8 md:py-14 pb-24 sm:pb-8 max-w-2xl mx-auto space-y-6">
         {/* Header skeleton */}
         <div className="space-y-3 mb-8">
           <div className="skeleton h-3 w-20 rounded-full" />
@@ -187,7 +187,7 @@ function AuctionPageInner() {
   const slotsNeeded = maxPlayers - participants.length
 
   return (
-    <div className="min-h-screen px-4 py-8 md:py-14 max-w-2xl mx-auto">
+    <div className="min-h-screen px-4 py-8 md:py-14 pb-24 sm:pb-8 max-w-2xl mx-auto">
 
       {/* ── BACK ───────────────────────────────────────────────────── */}
       <Link
@@ -203,7 +203,7 @@ function AuctionPageInner() {
       {/* ── HEADER ─────────────────────────────────────────────────── */}
       <div className="text-center mb-10 animate-fade-up">
         <div className="flex items-center justify-center gap-3 mb-2">
-          <h1 className="font-display text-6xl md:text-7xl text-orange-500 tracking-wider leading-none">WAR ROOM</h1>
+          <h1 className="font-display text-5xl sm:text-6xl md:text-7xl text-orange-500 tracking-wider leading-none">WAR ROOM</h1>
           <span className="live-banner shrink-0">
             <span className="live-dot" />
             LIVE
@@ -408,7 +408,7 @@ function AuctionPageInner() {
           <div className="card-accent p-8 text-center">
             <p className="text-label mb-3">Room Code — Share This</p>
             <div
-              className="font-mono text-5xl md:text-6xl font-black text-white tracking-[0.25em] mb-5 select-all"
+              className="font-mono text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-[0.2em] sm:tracking-[0.25em] mb-5 select-all"
               style={{ textShadow: '0 0 40px rgba(249,115,22,0.35)' }}
             >
               {code}

@@ -232,7 +232,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen py-10 px-4 animate-fade-in">
+      <div className="min-h-screen py-10 px-4 pb-24 sm:pb-10 animate-fade-in">
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="flex items-center justify-between mb-8">
             <div className="space-y-2">
@@ -288,14 +288,14 @@ export default function ProfilePage() {
   try { unlockedMilestoneIds = JSON.parse(user.unlockedMilestones) } catch { unlockedMilestoneIds = [] }
 
   return (
-    <div className="min-h-screen py-10 px-4 animate-fade-in">
+    <div className="min-h-screen py-10 px-4 pb-24 sm:pb-10 animate-fade-in">
       <div className="max-w-3xl mx-auto">
 
         {/* Page header */}
         <div className="flex items-start justify-between mb-6 gap-4 animate-fade-up">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-orange-500/70 mb-2">Player Card</p>
-            <h1 className="font-display text-6xl sm:text-7xl text-white leading-none tracking-wide">
+            <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl text-white leading-none tracking-wide">
               PRO<span className="text-orange-500">FILE</span>
             </h1>
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/30 mt-2">

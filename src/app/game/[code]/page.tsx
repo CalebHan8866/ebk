@@ -1411,7 +1411,7 @@ function GameContent() {
     })
 
   return (
-    <div className="min-h-screen py-4 px-4 relative animate-fade-in">
+    <div className="min-h-screen py-4 px-4 pb-24 sm:pb-4 relative animate-fade-in">
       {/* ── Reconnect banner ──────────────────────────────────────────────────── */}
       {socketStatus && (
         <div className={`reconnect-banner ${socketStatus === 'reconnected' ? 'reconnect-banner-success' : 'reconnect-banner-warning'}`}>
@@ -1490,14 +1490,14 @@ function GameContent() {
               )}
             </div>
             {room.series > 1 ? (
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-white/40 text-xs font-bold truncate max-w-[70px]">{room.hostName}</span>
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <span className="hidden sm:block text-white/40 text-xs font-bold truncate max-w-[80px]">{room.hostName}</span>
                 <div className="flex items-center gap-1.5 bg-[#0d0d14] rounded-lg px-3 py-1 border border-white/[0.06]">
                   <span className="font-display text-orange-400 text-xl leading-none">{room.hostSeriesScore}</span>
                   <span className="text-white/40 text-xs">–</span>
                   <span className="font-display text-orange-400 text-xl leading-none">{room.guestSeriesScore}</span>
                 </div>
-                <span className="text-white/40 text-xs font-bold truncate max-w-[70px]">{room.guestName}</span>
+                <span className="hidden sm:block text-white/40 text-xs font-bold truncate max-w-[80px]">{room.guestName}</span>
               </div>
             ) : (
               <span className="text-white/40 text-xs font-mono">{room.code}</span>
@@ -1654,7 +1654,7 @@ function GameContent() {
                     key={i}
                     onClick={isValidTarget ? () => pickIntoSlot(i) : undefined}
                     aria-label={isValidTarget ? slotLabel : undefined}
-                    className={`rounded px-2 py-1 text-xs flex items-center gap-1.5 transition-all ${isValidTarget ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60' : ''} ${
+                    className={`rounded px-2 py-1.5 min-h-[32px] text-xs flex items-center gap-1.5 transition-all ${isValidTarget ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60' : ''} ${
                       isNewMyPick
                         ? 'bg-orange-500/20 border border-orange-400/60 animate-slide-up'
                         : isValidTarget

@@ -594,7 +594,7 @@ export default function LobbyPage() {
 
   // ── MAIN LOBBY ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen py-8 px-4 animate-fade-in">
+    <div className="min-h-screen py-8 px-4 pb-24 sm:pb-8 animate-fade-in">
       <div className="max-w-5xl mx-auto">
 
         {/* ── Back button (own row, only when inside a mode) ──────────────── */}

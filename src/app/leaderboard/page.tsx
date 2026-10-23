@@ -43,7 +43,7 @@ function SkeletonRow({ wide }: { wide?: boolean }) {
 
 function SkeletonScreen() {
   return (
-    <div className="min-h-screen py-10 px-4">
+    <div className="min-h-screen py-10 px-4 pb-24 sm:pb-10">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="space-y-2">
@@ -366,9 +366,9 @@ function MyRankBanner({ me, totalPlayers }: { me: MeRow; totalPlayers: number })
         </div>
       </div>
 
-      <div className="w-px self-stretch bg-white/[0.07] shrink-0 hidden xs:block" />
+      <div className="w-px self-stretch bg-white/[0.07] shrink-0" />
 
-      <div className="text-center shrink-0 hidden xs:block">
+      <div className="text-center shrink-0">
         <div className="text-label mb-1">Record</div>
         <div className="flex items-baseline gap-1 tabular-nums">
           <span className="font-display text-xl sm:text-2xl text-green-400 leading-none">{me.wins}</span>
@@ -473,14 +473,14 @@ export default function LeaderboardPage() {
   if (loading) return <SkeletonScreen />
 
   return (
-    <div className="min-h-screen py-10 px-4 animate-fade-in">
+    <div className="min-h-screen py-10 px-4 pb-24 sm:pb-10 animate-fade-in">
       <div className="max-w-2xl mx-auto">
 
         {/* ── Page header ── */}
         <div className="flex items-start justify-between mb-5 gap-4">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-orange-500/70 mb-2">EBK Rankings</p>
-            <h1 className="font-display text-6xl sm:text-7xl text-white leading-none tracking-wide">
+            <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl text-white leading-none tracking-wide">
               LEADER<span className="text-orange-500">BOARD</span>
             </h1>
             <p className="mt-2 flex items-baseline gap-1.5">
