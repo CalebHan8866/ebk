@@ -37,7 +37,7 @@ describe('verifyToken', () => {
   })
 
   it('accepts a freshly-minted valid token and returns claims', async () => {
-    mockFindUnique.mockResolvedValue({ tokenVersion: 1 })
+    mockFindUnique.mockResolvedValue({ tokenVersion: 1, emailVerified: true })
 
     const token = await mintToken()
     const result = await verifyToken(token)
@@ -60,9 +60,20 @@ describe('verifyToken', () => {
 
   it('rejects when tokenVersion in DB does not match token claims', async () => {
     // DB has version 2 (e.g. password was changed), but token carries version 1
-    mockFindUnique.mockResolvedValue({ tokenVersion: 2 })
+    mockFindUnique.mockResolvedValue({ tokenVersion: 2, emailVerified: true })
 
     const token = await mintToken({ tokenVersion: 1 })
+    const result = await verifyToken(token)
+
+    expect(result).toBeNull()
+  })
+
+  it('rejects when emailVerified is false in DB', async () => {
+    // Guard: a user whose email has been un-verified (e.g. manual DB update) should
+    // not be able to use any authenticated endpoint, even with a valid tokenVersion.
+    mockFindUnique.mockResolvedValue({ tokenVersion: 1, emailVerified: false })
+
+    const token = await mintToken()
     const result = await verifyToken(token)
 
     expect(result).toBeNull()
@@ -79,7 +90,7 @@ describe('verifyToken', () => {
 
   it('returns claims matching the minted payload on success', async () => {
     const payload = { userId: 'abc-123', username: 'testuser', tokenVersion: 7 }
-    mockFindUnique.mockResolvedValue({ tokenVersion: 7 })
+    mockFindUnique.mockResolvedValue({ tokenVersion: 7, emailVerified: true })
 
     const token = await createToken(payload)
     const result = await verifyToken(token)

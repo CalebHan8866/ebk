@@ -27,12 +27,14 @@ export async function verifyToken(token: string) {
     const claims = payload as { userId: string; username: string; tokenVersion: number }
 
     // Validate tokenVersion against DB to support immediate session invalidation
-    // after password changes. This is a cheap indexed lookup by primary key.
+    // after password changes. Also enforce emailVerified so that any future code
+    // path that issues a JWT before verification (or a manual DB flip to false)
+    // cannot bypass the email-verification gate on authenticated endpoints.
     const user = await prisma.user.findUnique({
       where: { id: claims.userId },
-      select: { tokenVersion: true },
+      select: { tokenVersion: true, emailVerified: true },
     })
-    if (!user || user.tokenVersion !== claims.tokenVersion) return null
+    if (!user || user.tokenVersion !== claims.tokenVersion || !user.emailVerified) return null
 
     return claims
   } catch {
