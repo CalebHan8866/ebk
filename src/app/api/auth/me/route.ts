@@ -1,12 +1,21 @@
 export const dynamic = 'force-dynamic'
 
+import { type NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 import { decodeToken } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { noStore } from '@/lib/no-store'
+import { rateLimit } from '@/lib/ratelimit'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    // Rate limit: 120 requests per minute per IP — well above any legitimate browser
+    // polling cadence while blocking scripts that hammer this endpoint to scrape user
+    // state or force repeated DB reads.
+    const ip = (req.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
+    const { success } = rateLimit(`me:${ip}`, 120, 60 * 1000)
+    if (!success) return noStore({ user: null })
+
     const cookieStore = await cookies()
     const token = cookieStore.get('ebk-token')?.value
     if (!token) return noStore({ user: null })
