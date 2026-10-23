@@ -773,7 +773,7 @@ function autoPickPlayer(room: Room): { playerId: number; slotPos: string } | nul
     if (teamAvail.length > 0) available = teamAvail
   }
   const statMode = getStatModeForGame(room.currentGame, room.statCategory)
-  available.sort((a, b) => getStatForMode(a, statMode) - getStatForMode(b, statMode))
+  available.sort((a, b) => getStatForMode(b, statMode) - getStatForMode(a, statMode))
   const chosenPlayer = available[0]
   // Determine slot using greedy algo (reuse already-computed usedPositions/remainingBenchSlots)
   const starterOpen = usedPositions.size < 5
