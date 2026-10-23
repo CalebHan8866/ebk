@@ -54,6 +54,24 @@ function redactName(name: string): string {
   return `u:${hash}`
 }
 
+// ─── Payload validation helpers ─────────────────────────────────────────────
+
+/**
+ * Assert that every listed field exists (is not undefined/null) on the given
+ * object.  Throws a TypeError with a clear message on the first missing field.
+ * Intended for use at the top of socket.on handlers before any business logic.
+ *
+ * Usage:
+ *   requireFields(payload, 'code', 'amount')
+ */
+function requireFields<T extends object>(obj: T, ...fields: (keyof T)[]): void {
+  for (const f of fields) {
+    if (obj[f] === undefined || obj[f] === null) {
+      throw new TypeError(`Missing required field: ${String(f)}`)
+    }
+  }
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type TeamMode = 'starter5' | 'bench8' | 'full12'
@@ -1586,9 +1604,9 @@ app.prepare().then(async () => {
         crThrottle0.count++
       } else { createRoomThrottle.set(socket.id, { count: 1, windowStart: crNow0 }) }
 
-      if (!['starter5', 'bench8', 'full12'].includes(teamMode)) return
-      if (![1, 3, 5].includes(series)) return
-      if (!['casual', 'ebk'].includes(difficulty)) return
+      if (!['starter5', 'bench8', 'full12'].includes(teamMode)) { socket.emit('room-error', { message: 'Invalid team mode' }); return }
+      if (![1, 3, 5].includes(series)) { socket.emit('room-error', { message: 'Invalid series length' }); return }
+      if (!['casual', 'ebk'].includes(difficulty)) { socket.emit('room-error', { message: 'Invalid difficulty' }); return }
       if (allPlayers.length === 0) { socket.emit('room-error', { message: 'Server is still loading player data. Please try again in a minute.' }); return }
       // Prefer the server-verified JWT username; fall back to sanitized client name for anonymous players.
       const userId = socket.data.userId as string | null
@@ -2315,6 +2333,7 @@ app.prepare().then(async () => {
 
     socket.on('use-emote', async ({ code, emoteText }: { code: string; emoteText: string }) => {
       try {
+      if (typeof emoteText !== 'string') return
       const room = rooms.get(typeof code === 'string' ? code.trim().toUpperCase() : '')
       if (!room || room.status !== 'drafting') return
       const isHost = socket.id === room.hostSocketId
@@ -2425,7 +2444,7 @@ app.prepare().then(async () => {
         acThrottle0.count++
       } else { createRoomThrottle.set(socket.id, { count: 1, windowStart: acNow0 }) }
 
-      if (![5, 8, 12].includes(teamSize) || maxPlayers < 2 || maxPlayers > 6) {
+      if (!Number.isInteger(teamSize) || !Number.isInteger(maxPlayers) || ![5, 8, 12].includes(teamSize) || maxPlayers < 2 || maxPlayers > 6) {
         socket.emit('auction:error', { message: 'Invalid settings' }); return
       }
       // Prefer the server-verified JWT username; fall back to sanitized client name for anonymous players.
@@ -2826,6 +2845,7 @@ app.prepare().then(async () => {
 
     socket.on('auction:trade-respond', ({ code, offerId, accept }: { code: string; offerId: string; accept: boolean }) => {
       if (typeof code !== 'string' || typeof offerId !== 'string') return
+      if (typeof accept !== 'boolean') { socket.emit('auction:error', { message: 'Invalid trade response' }); return }
       // Rate limit: shared trade action throttle (10 per 10s) to prevent broadcast flooding.
       const trNow = Date.now()
       const trThrottle = tradeThrottle.get(socket.id)
@@ -2916,8 +2936,14 @@ app.prepare().then(async () => {
           return
         }
         // Parse stored results and emit a synthetic complete state.
+        // Guard: if the stored JSON is malformed or not an array (corrupt DB row), fall
+        // back to an empty array so the client receives a valid auction:state payload
+        // instead of crashing on results.map() / results.forEach() calls.
         let finalResults: unknown = []
-        try { finalResults = JSON.parse(record.results) } catch { /* leave as [] */ }
+        try {
+          const parsed = JSON.parse(record.results)
+          if (Array.isArray(parsed)) finalResults = parsed
+        } catch { /* leave as [] */ }
         socket.emit('auction:state', {
           code: record.code,
           status: 'complete',

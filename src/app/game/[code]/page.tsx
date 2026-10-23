@@ -631,7 +631,7 @@ function GameContent() {
           {/* Room code card */}
           <div className="card-accent p-8 mb-3">
             <p className="text-label tracking-[0.2em] mb-4">Room Code</p>
-            <div className="font-display text-7xl text-orange-400 tracking-[0.35em] leading-none mb-4">{room.code}</div>
+            <div className="font-display text-5xl sm:text-7xl text-orange-400 tracking-[0.2em] sm:tracking-[0.35em] leading-none mb-4">{room.code}</div>
             {opponentPresent ? (
               <div className="flex items-center justify-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
@@ -1859,7 +1859,7 @@ function GameContent() {
               <div className="flex items-center gap-1 mb-3 flex-wrap">
                 {['ALL', 'PG', 'SG', 'SF', 'PF', 'C'].map(pos => (
                   <button key={pos} onClick={() => setFilterPos(pos)}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-black tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50 touch-manipulation ${
+                    className={`px-2.5 py-2 min-h-[36px] rounded-lg text-xs font-black tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50 touch-manipulation ${
                       filterPos === pos
                         ? 'bg-orange-600 text-white shadow-[0_2px_8px_rgba(234,88,12,0.35)]'
                         : 'bg-white/[0.04] border border-white/[0.07] text-white/50 hover:text-white hover:border-white/20 hover:bg-white/[0.07]'
@@ -1929,7 +1929,7 @@ function GameContent() {
                             const socket = getSocket()
                             socket.emit('use-emote', { code, emoteText: emote.text })
                           }}
-                          className="bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.12] border border-white/[0.09] hover:border-orange-500/50 text-white text-sm px-3 py-1.5 rounded-xl transition-all font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50 touch-manipulation"
+                          className="bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.12] border border-white/[0.09] hover:border-orange-500/50 text-white text-sm px-3 py-2.5 min-h-[44px] rounded-xl transition-all font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50 touch-manipulation"
                           title={emote.label}
                           aria-label={`Send emote: ${emote.label}`}
                         >
