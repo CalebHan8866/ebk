@@ -838,9 +838,44 @@ function startPickTimer(io: SocketServer, room: Room) {
     // advancing the index and restarting the timer — returning without action here
     // would leave the room status='drafting' with no timer running and no pick made,
     // permanently deadlocking the draft.
+    // IMPORTANT: check draft completion BEFORE restarting the timer.  If the duplicate
+    // fires at the very last pick slot (currentPickIndex === teamSize * 2 - 1), the
+    // increment would push currentPickIndex to teamSize * 2 and startPickTimer would
+    // read draftOrder[teamSize * 2] === undefined, causing picker to be undefined for
+    // the rest of the timer lifetime — corrupting the pick assignment branch and
+    // preventing the draft from ever ending.
     if (currentRoom.hostPicks.includes(pickedId) || currentRoom.guestPicks.includes(pickedId)) {
       currentRoom.currentPickIndex++
       pickTimers.delete(code)
+      const teamSizeForDup = TEAM_SIZES[currentRoom.teamMode]
+      if (currentRoom.currentPickIndex >= teamSizeForDup * 2) {
+        // The draft is effectively complete (we just skipped the last slot).
+        // Fall through to the draft-complete path rather than starting another timer.
+        const result = calculateResult(currentRoom)
+        currentRoom.gameResults.push(result)
+        if (result.winner === 'host') currentRoom.hostSeriesScore++
+        else if (result.winner === 'guest') currentRoom.guestSeriesScore++
+        if (currentRoom.hostPicks.includes(JAMESON_CURRY_ID)) currentRoom.hostJCGames++
+        if (currentRoom.guestPicks.includes(JAMESON_CURRY_ID)) currentRoom.guestJCGames++
+        const winsNeededForDup = Math.ceil(currentRoom.series / 2)
+        const seriesDoneForDup = currentRoom.hostSeriesScore >= winsNeededForDup || currentRoom.guestSeriesScore >= winsNeededForDup || currentRoom.currentGame >= currentRoom.series
+        currentRoom.status = seriesDoneForDup ? 'complete' : 'result'
+        if (seriesDoneForDup) {
+          const seriesWinnerForDup = currentRoom.hostSeriesScore > currentRoom.guestSeriesScore ? 'host' : currentRoom.guestSeriesScore > currentRoom.hostSeriesScore ? 'guest' : 'draw'
+          if (currentRoom.source === 'online') {
+            recordMatchup(currentRoom.hostUserId, currentRoom.guestUserId)
+            if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, seriesWinnerForDup === 'host', seriesWinnerForDup === 'draw', currentRoom.hostJCGames, true)
+            if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, seriesWinnerForDup === 'guest', seriesWinnerForDup === 'draw', currentRoom.guestJCGames, false)
+            saveGameRecords(currentRoom, seriesWinnerForDup)
+          }
+          io.to(code).emit('series-complete', { room: currentRoom, seriesWinner: seriesWinnerForDup })
+          scheduleRoomCleanup(code, io)
+        } else {
+          io.to(code).emit('game-result', { room: currentRoom, result })
+          scheduleRoomCleanup(code, io)
+        }
+        return
+      }
       startPickTimer(io, currentRoom)
       return
     }
