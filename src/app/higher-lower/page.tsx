@@ -296,7 +296,7 @@ export default function HigherLowerPage() {
                   <div className="text-white/60 text-[10px] font-bold uppercase tracking-wide truncate">{current.lastName}</div>
                   <div className="font-display text-lg text-white/80 leading-none tabular-nums">{current.ebkScore.toFixed(1)}</div>
                 </div>
-                <div className="text-gray-700 font-display text-sm">VS</div>
+                <div className="text-white/20 font-display text-sm">VS</div>
                 <div className="flex-1 bg-orange-950/30 rounded-lg px-3 py-1.5 text-center border border-orange-700/20">
                   <div className="text-orange-300/60 text-[10px] font-bold uppercase tracking-wide truncate">{challenger.lastName}</div>
                   <div className="font-display text-lg text-orange-400 leading-none tabular-nums">{challenger.ebkScore.toFixed(1)}</div>
@@ -620,12 +620,12 @@ export default function HigherLowerPage() {
             ) : (
               /* Hidden state */
               <div className="flex flex-col flex-1">
-                <div className="text-gray-700 text-[11px] space-y-0.5 mb-3 flex-1 select-none">
+                <div className="text-white/20 text-[11px] space-y-0.5 mb-3 flex-1 select-none">
                   <div>— GP</div>
                   <div>—.— PPG · —.— RPG</div>
                 </div>
                 <div className="rounded-xl px-3 py-2.5 text-center border border-dashed border-orange-900/30 bg-orange-950/10">
-                  <div className="font-display text-4xl text-gray-700 leading-none select-none tracking-widest">???</div>
+                  <div className="font-display text-4xl text-white/20 leading-none select-none tracking-widest">???</div>
                   <div className="text-label mt-1">EBK Score</div>
                 </div>
               </div>
@@ -659,8 +659,8 @@ export default function HigherLowerPage() {
               <div className="text-[10px] text-orange-400/50 mt-0.5 font-semibold">unknown gem</div>
             </button>
           </div>
-          <p className="text-center text-[10px] text-gray-700 mt-2 tracking-wide hidden sm:block">
-            Keyboard: <kbd className="bg-white/[0.06] border border-white/[0.10] rounded px-1.5 py-0.5 text-[10px] font-mono text-gray-500">H</kbd> or <kbd className="bg-white/[0.06] border border-white/[0.10] rounded px-1.5 py-0.5 text-[10px] font-mono text-gray-500">↑</kbd> Higher &nbsp;·&nbsp; <kbd className="bg-white/[0.06] border border-white/[0.10] rounded px-1.5 py-0.5 text-[10px] font-mono text-gray-500">L</kbd> or <kbd className="bg-white/[0.06] border border-white/[0.10] rounded px-1.5 py-0.5 text-[10px] font-mono text-gray-500">↓</kbd> Lower
+          <p className="text-center text-[10px] text-white/20 mt-2 tracking-wide hidden sm:block">
+            Keyboard: <kbd className="bg-white/[0.06] border border-white/[0.10] rounded px-1.5 py-0.5 text-[10px] font-mono text-white/30">H</kbd> or <kbd className="bg-white/[0.06] border border-white/[0.10] rounded px-1.5 py-0.5 text-[10px] font-mono text-white/30">↑</kbd> Higher &nbsp;·&nbsp; <kbd className="bg-white/[0.06] border border-white/[0.10] rounded px-1.5 py-0.5 text-[10px] font-mono text-white/30">L</kbd> or <kbd className="bg-white/[0.06] border border-white/[0.10] rounded px-1.5 py-0.5 text-[10px] font-mono text-white/30">↓</kbd> Lower
           </p>
           </>
         )}

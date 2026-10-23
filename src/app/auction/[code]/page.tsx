@@ -512,7 +512,7 @@ export default function AuctionRoomPage() {
           <h2 className="font-display text-3xl text-white mb-2">
             {isInProgress ? 'AUCTION IN PROGRESS' : 'ROOM NOT FOUND'}
           </h2>
-          <p className="text-gray-400 text-sm mb-6">
+          <p className="text-white/40 text-sm mb-6">
             {isInProgress
               ? 'This War Room has already started. Ask the host to create a new room.'
               : "This War Room doesn't exist or has already ended."}
@@ -582,13 +582,13 @@ export default function AuctionRoomPage() {
 
         {/* ── Header ── */}
         <div className="text-center mb-8 animate-fade-up">
-          <p className="text-[10px] font-black tracking-[0.5em] text-gray-500 uppercase mb-3">
+          <p className="text-[10px] font-black tracking-[0.5em] text-white/30 uppercase mb-3">
             War Room · {code} · Draft Recap
           </p>
           <h1 className="font-display text-5xl sm:text-6xl text-white tracking-wider leading-none mb-2">
             DRAFT <span className="text-orange-500">COMPLETE</span>
           </h1>
-          <p className="text-gray-500 text-sm">{results.length} GM{results.length !== 1 ? 's' : ''} · {results[0]?.rosterCount} players each · ${totalBudget}M budget</p>
+          <p className="text-white/30 text-sm">{results.length} GM{results.length !== 1 ? 's' : ''} · {results[0]?.rosterCount} players each · ${totalBudget}M budget</p>
         </div>
 
         {/* ── Winner spotlight ── */}
@@ -639,7 +639,7 @@ export default function AuctionRoomPage() {
         <div className="space-y-5 mb-10">
           {sortedByScore.map((r, i) => {
             const style = PODIUM_STYLES[i] || {
-              medal: `#${i+1}`, border: 'border-white/[0.07]', bg: '', glow: '', rank: 'text-gray-400', nameSize: 'text-base',
+              medal: `#${i+1}`, border: 'border-white/[0.07]', bg: '', glow: '', rank: 'text-white/40', nameSize: 'text-base',
             }
             const grade = getDraftGrade(r.ebkTotal, i)
             const budgetRemaining = totalBudget - r.budgetSpent
@@ -675,13 +675,13 @@ export default function AuctionRoomPage() {
                       <div className="mt-2.5 mb-1 budget-bar" style={{ height: '4px' }}>
                         <div className="budget-bar-fill" style={{ width: `${Math.min(100, budgetPct)}%` }} />
                       </div>
-                      <div className="flex items-center gap-3 text-[11px] text-gray-500 flex-wrap">
+                      <div className="flex items-center gap-3 text-[11px] text-white/30 flex-wrap">
                         <span className="text-white/60 font-bold">${r.budgetSpent}M spent</span>
-                        <span className="text-gray-700">·</span>
+                        <span className="text-white/15">·</span>
                         <span className={budgetRemaining <= 5 ? 'text-red-400 font-bold' : 'text-green-400/70'}>${budgetRemaining}M left</span>
-                        <span className="text-gray-700">·</span>
+                        <span className="text-white/15">·</span>
                         <span>{r.rosterCount} players</span>
-                        <span className="text-gray-700">·</span>
+                        <span className="text-white/15">·</span>
                         <span className="text-white/30" title="EBK points per million dollars spent">{avgEbkPerDollar} EBK/$M</span>
                       </div>
                     </div>

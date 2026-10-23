@@ -215,7 +215,7 @@ function PlayGame() {
                         </h3>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className={POS_CLASS[player.position] || 'pos-badge pos-pg'}>{player.position}</span>
-                          <span className="text-gray-400 text-xs">{player.team}</span>
+                          <span className="text-white/40 text-xs">{player.team}</span>
                         </div>
                       </div>
                       {gameResult && (
@@ -232,7 +232,7 @@ function PlayGame() {
                             ? resultPlayer.stat.toLocaleString()
                             : resultPlayer.stat.toFixed(1)}
                         </p>
-                        <div className="grid grid-cols-3 gap-2 mt-3 text-xs text-gray-400">
+                        <div className="grid grid-cols-3 gap-2 mt-3 text-xs text-white/40">
                           <div className="text-center"><div className="text-white/70 font-bold">{player.careerGames}</div><div>GP</div></div>
                           <div className="text-center"><div className="text-white/70 font-bold">{player.careerPPG}</div><div>PPG</div></div>
                           <div className="text-center"><div className="text-white/70 font-bold">{player.careerRPG}</div><div>RPG</div></div>

@@ -255,7 +255,7 @@ export default function RegisterPage() {
                       />
                     ))}
                   </div>
-                  <p className="text-[10px] text-gray-400">Password strength: {strengthLabel}</p>
+                  <p className="text-[10px] text-white/40">Password strength: {strengthLabel}</p>
                 </div>
               )}
             </div>

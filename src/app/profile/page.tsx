@@ -476,9 +476,9 @@ export default function ProfilePage() {
                 />
               </div>
               <div className="flex justify-between mt-1.5">
-                <span className="text-[9px] text-gray-700 font-bold tabular-nums">0%</span>
-                <span className="text-[9px] text-gray-700 font-bold tabular-nums">50%</span>
-                <span className="text-[9px] text-gray-700 font-bold tabular-nums">100%</span>
+                <span className="text-[9px] text-white/20 font-bold tabular-nums">0%</span>
+                <span className="text-[9px] text-white/20 font-bold tabular-nums">50%</span>
+                <span className="text-[9px] text-white/20 font-bold tabular-nums">100%</span>
               </div>
             </div>
 
@@ -708,7 +708,7 @@ export default function ProfilePage() {
                       {/* Hover tooltip with full name + description */}
                       <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] rounded-lg card-surface px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50 hidden sm:block">
                         <div className="text-white text-xs font-black mb-0.5">{badge.name}</div>
-                        <div className="text-gray-400 text-[11px] leading-snug">{badge.description}</div>
+                        <div className="text-white/40 text-[11px] leading-snug">{badge.description}</div>
                         {isEquipped && <div className="text-orange-400 text-[10px] font-bold mt-1">✓ Equipped</div>}
                       </div>
                     </button>
@@ -736,7 +736,7 @@ export default function ProfilePage() {
                     {/* Hover tooltip with progress — desktop only */}
                     <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] rounded-lg card-surface px-3 py-2 text-left opacity-0 group-hover:opacity-100 transition-opacity z-50 hidden sm:block">
                       <div className="text-white/60 text-xs font-black mb-0.5">{badge.name}</div>
-                      <div className="text-gray-500 text-[11px] leading-snug mb-1.5">{badge.description}</div>
+                      <div className="text-white/30 text-[11px] leading-snug mb-1.5">{badge.description}</div>
                       {progressLabel && (
                         <>
                           <div className="h-1 rounded-full bg-white/[0.08] overflow-hidden mb-1">

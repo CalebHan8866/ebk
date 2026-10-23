@@ -572,7 +572,7 @@ function GameContent() {
           <h2 className="font-display text-3xl text-white mb-2">
             {disconnectReason ? 'ROOM ERROR' : 'DISCONNECTED'}
           </h2>
-          <p className="text-gray-400 text-sm mb-6 leading-relaxed">{disconnectReason ?? 'Your opponent disconnected.'}</p>
+          <p className="text-white/40 text-sm mb-6 leading-relaxed">{disconnectReason ?? 'Your opponent disconnected.'}</p>
           <button onClick={() => router.push('/lobby')} className="btn-primary w-full">Back to Lobby</button>
         </div>
       </div>
@@ -668,7 +668,7 @@ function GameContent() {
           {/* Waiting indicator */}
           <div className="flex items-center justify-center gap-2.5 mb-5">
             <span className="w-3.5 h-3.5 rounded-full border-2 border-orange-500/40 border-t-orange-400 animate-spin shrink-0" />
-            <span className="text-gray-400 text-sm">
+            <span className="text-white/40 text-sm">
               {role === 'host'
                 ? (opponentPresent ? 'Tap "Start Game" when ready' : 'Waiting for opponent to join')
                 : 'Waiting for host to start'}
@@ -677,13 +677,13 @@ function GameContent() {
           </div>
 
           {/* Game format chips */}
-          <div className="flex items-center justify-center gap-2 text-gray-400 text-sm flex-wrap">
-            <span className="bg-white/[0.04] border border-white/[0.07] rounded-lg px-3 py-1.5 text-xs font-black text-gray-300">
+          <div className="flex items-center justify-center gap-2 text-white/40 text-sm flex-wrap">
+            <span className="bg-white/[0.04] border border-white/[0.07] rounded-lg px-3 py-1.5 text-xs font-black text-white/60">
               {room.teamMode === 'starter5' ? 'Starter 5' : room.teamMode === 'bench8' ? 'Bench 8' : 'Full Roster'}
             </span>
-            <span className="text-gray-700">·</span>
-            <span className="text-xs text-gray-400">{room.series === 1 ? '1 Game' : `Best of ${room.series}`}</span>
-            <span className="text-gray-700">·</span>
+            <span className="text-white/15">·</span>
+            <span className="text-xs text-white/40">{room.series === 1 ? '1 Game' : `Best of ${room.series}`}</span>
+            <span className="text-white/15">·</span>
             <span className="text-orange-400 text-xs font-black">
               {STAT_CATEGORY_LABELS[room.statCategory] ?? 'Games Played'}
             </span>
@@ -759,15 +759,15 @@ function GameContent() {
             )}
             {!iWon && !isDraw && (
               <div className="mb-4 inline-flex items-center gap-2 bg-white/[0.03] border border-white/[0.07] rounded-full px-4 py-1.5">
-                <span className="text-gray-500 text-[11px] font-black tracking-[0.25em] uppercase">Series Over</span>
+                <span className="text-white/30 text-[11px] font-black tracking-[0.25em] uppercase">Series Over</span>
               </div>
             )}
             <div
-              className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-gray-400/90 animate-score-reveal'}`}
+              className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-white/40 animate-score-reveal'}`}
               style={iWon ? { fontSize: 'clamp(5.5rem, 26vw, 13rem)' } : { fontSize: 'clamp(3.5rem, 15vw, 8rem)' }}>
               {iWon ? 'W' : isDraw ? 'DRAW' : 'L'}
             </div>
-            <div className={`font-display tracking-[0.15em] text-lg sm:text-3xl mb-4 sm:mb-5 ${iWon ? 'text-white' : isDraw ? 'text-yellow-400' : 'text-gray-500'}`}>
+            <div className={`font-display tracking-[0.15em] text-lg sm:text-3xl mb-4 sm:mb-5 ${iWon ? 'text-white' : isDraw ? 'text-yellow-400' : 'text-white/30'}`}>
               {iWon ? 'SERIES WIN' : isDraw ? 'SERIES DRAW' : 'SERIES LOSS'}
             </div>
 
@@ -892,7 +892,7 @@ function GameContent() {
                         gameWon ? 'bg-green-950/20 border-green-800/35' : gameDraw ? 'bg-yellow-950/15 border-yellow-800/20' : 'bg-white/[0.02] border-white/[0.05]'
                       }`}>
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-display text-sm leading-none ${
-                          gameWon ? 'bg-green-500/15 text-green-400 border border-green-500/20' : gameDraw ? 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/20' : 'bg-white/[0.04] text-gray-500 border border-white/[0.06]'
+                          gameWon ? 'bg-green-500/15 text-green-400 border border-green-500/20' : gameDraw ? 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/20' : 'bg-white/[0.04] text-white/30 border border-white/[0.06]'
                         }`}>G{r.game}</div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2">
@@ -1014,7 +1014,7 @@ function GameContent() {
                     <div key={i} className="grid grid-cols-[1fr_auto_1fr] gap-1 mb-1.5">
                       <div className={`rounded-lg px-2 py-2 flex flex-col gap-0.5 min-w-0 ${lastIWon ? 'bg-green-950/15' : 'bg-white/[0.03]'}`}>
                         <div className="flex items-center gap-1.5">
-                          <span className={`text-[9px] font-black shrink-0 ${isBench ? 'text-gray-500' : 'text-orange-400/70'}`}>{isBench ? 'BN' : slotPos}</span>
+                          <span className={`text-[9px] font-black shrink-0 ${isBench ? 'text-white/30' : 'text-orange-400/70'}`}>{isBench ? 'BN' : slotPos}</span>
                           <span className="text-white/85 text-xs font-bold truncate flex-1" title={myP ? `${myP.firstName} ${myP.lastName}` : ''}>{myP ? `${myP.firstName[0]}. ${myP.lastName}` : '—'}</span>
                         </div>
                         {myVal !== null && <span className={`text-sm font-display leading-none tabular-nums ${lastIWon ? 'text-green-400' : 'text-white/50'}`}>{formatStat(myVal, lastGame.statMode)}</span>}
@@ -1024,7 +1024,7 @@ function GameContent() {
                       </div>
                       <div className={`rounded-lg px-2 py-2 flex flex-col gap-0.5 min-w-0 ${!lastIWon && !lastDraw ? 'bg-green-950/15' : 'bg-white/[0.03]'}`}>
                         <div className="flex items-center gap-1.5">
-                          <span className={`text-[9px] font-black shrink-0 ${isBench ? 'text-gray-500' : 'text-blue-400/60'}`}>{isBench ? 'BN' : slotPos}</span>
+                          <span className={`text-[9px] font-black shrink-0 ${isBench ? 'text-white/30' : 'text-blue-400/60'}`}>{isBench ? 'BN' : slotPos}</span>
                           <span className="text-white/85 text-xs font-bold truncate flex-1" title={oppP ? `${oppP.firstName} ${oppP.lastName}` : ''}>{oppP ? `${oppP.firstName[0]}. ${oppP.lastName}` : '—'}</span>
                         </div>
                         {oppVal !== null && <span className={`text-sm font-display leading-none tabular-nums ${!lastIWon && !lastDraw ? 'text-green-400' : 'text-white/50'}`}>{formatStat(oppVal, lastGame.statMode)}</span>}
@@ -1143,11 +1143,11 @@ function GameContent() {
               </span>
             </div>
             <div
-              className={`font-display leading-none mb-1.5 sm:mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-gray-400 animate-score-reveal'}`}
+              className={`font-display leading-none mb-1.5 sm:mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-white/40 animate-score-reveal'}`}
               style={iWon ? { fontSize: 'clamp(5rem, 22vw, 9rem)' } : { fontSize: 'clamp(3.5rem, 18vw, 7rem)' }}>
               {iWon ? 'W' : isDraw ? 'D' : 'L'}
             </div>
-            <div className={`font-display tracking-widest text-lg sm:text-2xl ${iWon ? 'text-white' : isDraw ? 'text-yellow-400/70' : 'text-gray-500'}`}>
+            <div className={`font-display tracking-widest text-lg sm:text-2xl ${iWon ? 'text-white' : isDraw ? 'text-yellow-400/70' : 'text-white/30'}`}>
               {iWon ? 'YOU WIN' : isDraw ? 'DRAW' : 'YOU LOSE'}
             </div>
           </div>
@@ -1209,8 +1209,8 @@ function GameContent() {
 
           {/* Stat explanation */}
           <div className="card-surface rounded-xl px-4 py-3 mb-4 text-center">
-            <div className="text-gray-300 text-sm leading-snug">Lower total <span className="text-orange-400 font-black">{STAT_LABELS[effectiveLastResult.statMode]}</span> wins</div>
-            <div className="text-gray-500 text-[11px] mt-1 leading-relaxed">Lowest team total takes the game</div>
+            <div className="text-white/60 text-sm leading-snug">Lower total <span className="text-orange-400 font-black">{STAT_LABELS[effectiveLastResult.statMode]}</span> wins</div>
+            <div className="text-white/30 text-[11px] mt-1 leading-relaxed">Lowest team total takes the game</div>
           </div>
 
           {/* Score cards */}
@@ -1274,7 +1274,7 @@ function GameContent() {
                 <div key={i} className="grid grid-cols-[1fr_auto_1fr] gap-1 mb-1.5">
                   <div className={`rounded-lg px-2 py-2 flex flex-col gap-0.5 min-w-0 ${iWon ? 'bg-green-950/15' : 'bg-white/[0.03]'}`}>
                     <div className="flex items-center gap-1.5">
-                      <span className={`text-[9px] font-black shrink-0 ${isBench ? 'text-gray-500' : 'text-orange-400/70'}`}>{isBench ? 'BN' : slotPos}</span>
+                      <span className={`text-[9px] font-black shrink-0 ${isBench ? 'text-white/30' : 'text-orange-400/70'}`}>{isBench ? 'BN' : slotPos}</span>
                       <span className="text-white/85 text-xs font-bold truncate flex-1" title={myP ? `${myP.firstName} ${myP.lastName}` : ''}>{myP ? `${myP.firstName[0]}. ${myP.lastName}` : '—'}</span>
                     </div>
                     {myVal !== null && <span className={`text-sm font-display leading-none tabular-nums ${iWon ? 'text-green-400' : 'text-white/50'}`}>{formatStat(myVal, effectiveLastResult.statMode)}</span>}
@@ -1284,7 +1284,7 @@ function GameContent() {
                   </div>
                   <div className={`rounded-lg px-2 py-2 flex flex-col gap-0.5 min-w-0 ${!iWon && !isDraw ? 'bg-green-950/15' : 'bg-white/[0.03]'}`}>
                     <div className="flex items-center gap-1.5">
-                      <span className={`text-[9px] font-black shrink-0 ${isBench ? 'text-gray-500' : 'text-blue-400/60'}`}>{isBench ? 'BN' : slotPos}</span>
+                      <span className={`text-[9px] font-black shrink-0 ${isBench ? 'text-white/30' : 'text-blue-400/60'}`}>{isBench ? 'BN' : slotPos}</span>
                       <span className="text-white/85 text-xs font-bold truncate flex-1" title={oppP ? `${oppP.firstName} ${oppP.lastName}` : ''}>{oppP ? `${oppP.firstName[0]}. ${oppP.lastName}` : '—'}</span>
                     </div>
                     {oppVal !== null && <span className={`text-sm font-display leading-none tabular-nums ${!iWon && !isDraw ? 'text-green-400' : 'text-white/50'}`}>{formatStat(oppVal, effectiveLastResult.statMode)}</span>}
@@ -1316,7 +1316,7 @@ function GameContent() {
             ) : (
               <div className="card-surface rounded-2xl py-4 px-6 text-center flex items-center justify-center gap-3">
                 <span className="w-4 h-4 rounded-full border-2 border-orange-500/50 border-t-orange-400 animate-spin shrink-0" />
-                <span className="text-gray-400 text-sm">Waiting for <span className="text-white font-bold">{room.hostName}</span> to start Game {room.currentGame + 1}{room.series > 1 ? ` of ${room.series}` : ''}…</span>
+                <span className="text-white/40 text-sm">Waiting for <span className="text-white font-bold">{room.hostName}</span> to start Game {room.currentGame + 1}{room.series > 1 ? ` of ${room.series}` : ''}…</span>
               </div>
             )}
             <button onClick={() => router.push('/')} className="btn-secondary w-full py-3 text-sm font-black uppercase tracking-widest">
@@ -1478,11 +1478,11 @@ function GameContent() {
               <span className="font-display text-orange-500 text-base leading-none tracking-wider shrink-0">
                 GAME {room.currentGame}{room.series > 1 ? ` / ${room.series}` : ''}
               </span>
-              <span className="text-gray-700 text-xs font-bold">|</span>
+              <span className="text-white/15 text-xs font-bold">|</span>
               <span className="text-orange-400 text-[10px] font-black tracking-widest bg-orange-950/40 border border-orange-900/50 rounded px-2 py-0.5 shrink-0 uppercase">
                 {STAT_CATEGORY_SHORT[statMode as keyof typeof STAT_CATEGORY_SHORT] ?? statMode.toUpperCase()}
               </span>
-              <span className="text-gray-400 text-xs truncate hidden sm:inline">
+              <span className="text-white/40 text-xs truncate hidden sm:inline">
                 {STAT_LABELS[statMode]} · lower wins
               </span>
               {room.difficulty === 'ebk' && (
@@ -1491,16 +1491,16 @@ function GameContent() {
             </div>
             {room.series > 1 ? (
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-gray-400 text-xs font-bold truncate max-w-[70px]">{room.hostName}</span>
+                <span className="text-white/40 text-xs font-bold truncate max-w-[70px]">{room.hostName}</span>
                 <div className="flex items-center gap-1.5 bg-[#0d0d14] rounded-lg px-3 py-1 border border-white/[0.06]">
                   <span className="font-display text-orange-400 text-xl leading-none">{room.hostSeriesScore}</span>
-                  <span className="text-gray-400 text-xs">–</span>
+                  <span className="text-white/40 text-xs">–</span>
                   <span className="font-display text-orange-400 text-xl leading-none">{room.guestSeriesScore}</span>
                 </div>
-                <span className="text-gray-400 text-xs font-bold truncate max-w-[70px]">{room.guestName}</span>
+                <span className="text-white/40 text-xs font-bold truncate max-w-[70px]">{room.guestName}</span>
               </div>
             ) : (
-              <span className="text-gray-400 text-xs font-mono">{room.code}</span>
+              <span className="text-white/40 text-xs font-mono">{room.code}</span>
             )}
           </div>
 
@@ -1538,10 +1538,10 @@ function GameContent() {
                     ))}
                   </div>
                   <div>
-                    <div className="text-gray-300 font-black text-base">
+                    <div className="text-white/60 font-black text-base">
                       {currentPicker === 'host' ? room.hostName : room.guestName}
                     </div>
-                    <div className="text-gray-400 text-[11px] tracking-wider uppercase">Thinking…</div>
+                    <div className="text-white/40 text-[11px] tracking-wider uppercase">Thinking…</div>
                   </div>
                 </div>
               )}
@@ -1568,7 +1568,7 @@ function GameContent() {
                         />
                       </svg>
                       <span className={`font-display text-base leading-none tabular-nums relative z-10 ${
-                        pickTimeLeft <= 5 ? 'text-red-400 animate-timer-throb' : pickTimeLeft <= 10 ? 'text-yellow-400' : 'text-gray-200'
+                        pickTimeLeft <= 5 ? 'text-red-400 animate-timer-throb' : pickTimeLeft <= 10 ? 'text-yellow-400' : 'text-white/80'
                       }`}>
                         {pickTimeLeft}
                       </span>
@@ -1600,7 +1600,7 @@ function GameContent() {
                       ? 'bg-white/[0.04] text-white/20'
                       : isMe
                       ? 'bg-orange-950/40 border border-orange-800/40 text-orange-400/60'
-                      : 'bg-white/[0.03] border border-white/[0.06] text-gray-500'
+                      : 'bg-white/[0.03] border border-white/[0.06] text-white/30'
                   }`}
                   title={`Pick ${idx + 1}: ${picker === 'host' ? room.hostName : room.guestName}`}
                 >
@@ -1617,7 +1617,7 @@ function GameContent() {
               if (!curr || !next) return null
               const goingRight = (prev === undefined) || (prev !== curr)
               return (
-                <span className="text-gray-600 text-xs ml-1 shrink-0 font-black">
+                <span className="text-white/20 text-xs ml-1 shrink-0 font-black">
                   {goingRight ? '→' : '←'}
                 </span>
               )
@@ -1632,7 +1632,7 @@ function GameContent() {
           {/* My Team (mobile) */}
           <div className="bg-orange-950/20 border border-orange-900/30 rounded-2xl p-3">
             <div className="text-orange-400 font-black text-xs mb-2 truncate">
-              {myName2} <span className="text-gray-400 font-normal">({myPicks.length}/{teamSize})</span>
+              {myName2} <span className="text-white/40 font-normal">({myPicks.length}/{teamSize})</span>
             </div>
             <div className="space-y-1">
               {requiredSlots.map((slotPos, i) => {
@@ -1666,8 +1666,8 @@ function GameContent() {
                         : 'bg-white/[0.015] border border-dashed border-white/[0.12]'
                     }`}
                   >
-                    <span className={`font-bold w-6 shrink-0 text-[10px] ${isBench ? 'text-gray-400' : 'text-orange-400'}`}>{displayLabel}</span>
-                    <span className={`truncate ${pickedPlayer ? (isNewMyPick ? 'text-orange-300' : 'text-white') : isValidTarget ? 'text-orange-300' : 'text-gray-400'}`} title={pickedPlayer ? `${pickedPlayer.firstName} ${pickedPlayer.lastName}` : undefined}>
+                    <span className={`font-bold w-6 shrink-0 text-[10px] ${isBench ? 'text-white/30' : 'text-orange-400'}`}>{displayLabel}</span>
+                    <span className={`truncate ${pickedPlayer ? (isNewMyPick ? 'text-orange-300' : 'text-white') : isValidTarget ? 'text-orange-300' : 'text-white/30'}`} title={pickedPlayer ? `${pickedPlayer.firstName} ${pickedPlayer.lastName}` : undefined}>
                       {pickedPlayer ? pickedPlayer.lastName : isValidTarget ? 'tap' : '—'}
                     </span>
                   </Elem>
@@ -1679,7 +1679,7 @@ function GameContent() {
           {/* Opponent Team (mobile) */}
           <div className="bg-blue-950/10 border border-blue-900/20 rounded-2xl p-3">
             <div className="text-blue-400 font-black text-xs mb-2 truncate">
-              {oppName} <span className="text-gray-400 font-normal">({oppPicks.length}/{teamSize})</span>
+              {oppName} <span className="text-white/40 font-normal">({oppPicks.length}/{teamSize})</span>
             </div>
             <div className="space-y-1">
               {requiredSlots.map((slotPos, i) => {
@@ -1695,8 +1695,8 @@ function GameContent() {
                       ? 'bg-white/[0.03]'
                       : 'bg-white/[0.015] border border-dashed border-white/[0.12]'
                   }`}>
-                    <span className={`font-bold w-6 shrink-0 text-[10px] ${isBench ? 'text-gray-400' : 'text-blue-400'}`}>{displayLabel}</span>
-                    <span className={`truncate ${pickedPlayer ? (isNewPick ? 'text-blue-300' : 'text-white') : 'text-gray-400'}`} title={pickedPlayer ? `${pickedPlayer.firstName} ${pickedPlayer.lastName}` : undefined}>
+                    <span className={`font-bold w-6 shrink-0 text-[10px] ${isBench ? 'text-white/30' : 'text-blue-400'}`}>{displayLabel}</span>
+                    <span className={`truncate ${pickedPlayer ? (isNewPick ? 'text-blue-300' : 'text-white') : 'text-white/30'}`} title={pickedPlayer ? `${pickedPlayer.firstName} ${pickedPlayer.lastName}` : undefined}>
                       {pickedPlayer ? pickedPlayer.lastName : '—'}
                     </span>
                     {isNewPick && <span className="text-blue-400 text-[9px] font-black ml-auto shrink-0">NEW</span>}
@@ -1712,7 +1712,7 @@ function GameContent() {
           {/* My Team (desktop only) */}
           <div className="hidden lg:block bg-orange-950/20 border border-orange-900/30 rounded-2xl p-4">
             <h3 className="text-white font-black text-sm mb-3">
-              {myName2} <span className="text-gray-400 font-normal">({myPicks.length}/{teamSize})</span>
+              {myName2} <span className="text-white/40 font-normal">({myPicks.length}/{teamSize})</span>
             </h3>
             <div className="space-y-1.5">
               {requiredSlots.map((slotPos, i) => {
@@ -1746,13 +1746,13 @@ function GameContent() {
                         : 'bg-white/[0.015] border border-dashed border-white/[0.12]'
                     }`}
                   >
-                    <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-400' : 'text-orange-400'}`}>{displayLabel}</span>
+                    <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-white/30' : 'text-orange-400'}`}>{displayLabel}</span>
                     {pickedPlayer ? (
                       <span className={`truncate ${isNewMyPickDesk ? 'text-orange-300' : 'text-white'}`} title={`${pickedPlayer.firstName} ${pickedPlayer.lastName}`}>
-                        {pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-gray-400">({pickedPlayer.team})</span>
+                        {pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-white/40">({pickedPlayer.team})</span>
                       </span>
                     ) : (
-                      <span className={isValidTarget ? 'text-orange-300' : 'text-gray-400'}>
+                      <span className={isValidTarget ? 'text-orange-300' : 'text-white/30'}>
                         {isValidTarget ? 'tap to place' : 'empty'}
                       </span>
                     )}
@@ -1802,15 +1802,15 @@ function GameContent() {
                 {isSpinning ? (
                   <div>
                     <div className="text-yellow-400 font-black text-sm">Spinning...</div>
-                    <div className="text-gray-400 text-xs">Wait for your team assignment</div>
+                    <div className="text-white/40 text-xs">Wait for your team assignment</div>
                   </div>
                 ) : spunTeam && spunTeamInfo ? (
                   <div>
                     <div className="text-white font-black text-sm truncate">{spunTeamInfo.city} {spunTeamInfo.name}</div>
-                    <div className="text-gray-400 text-xs">{filteredPlayers.length} available</div>
+                    <div className="text-white/40 text-xs">{filteredPlayers.length} available</div>
                   </div>
                 ) : (
-                  <div className="text-gray-400 text-sm">Waiting for spin...</div>
+                  <div className="text-white/40 text-sm">Waiting for spin...</div>
                 )}
               </div>
             </div>
@@ -1827,7 +1827,7 @@ function GameContent() {
 
             {/* Search */}
             <div className="relative mb-2">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">🔍</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-sm pointer-events-none">🔍</span>
               <input
                 type="text"
                 value={searchQuery}
@@ -1898,8 +1898,8 @@ function GameContent() {
                   </div>
                 </div>
                 <div className="text-white font-black text-base tracking-wide">{oppName}</div>
-                <div className="text-gray-400 text-xs mt-1 tracking-widest uppercase">Making their pick</div>
-                <div className="text-gray-700 text-xs mt-3">Your team is locked in above</div>
+                <div className="text-white/40 text-xs mt-1 tracking-widest uppercase">Making their pick</div>
+                <div className="text-white/15 text-xs mt-3">Your team is locked in above</div>
               </div>
             ) : (
               <>
@@ -1993,7 +1993,7 @@ function GameContent() {
                         >
                           {/* Rank number */}
                           <div className="w-6 text-center shrink-0">
-                            <span className="font-display text-gray-700 text-sm leading-none tabular-nums">{idx + 1}</span>
+                            <span className="font-display text-white/15 text-sm leading-none tabular-nums">{idx + 1}</span>
                           </div>
 
                           {/* Name + meta */}
@@ -2005,19 +2005,19 @@ function GameContent() {
                               {playerPositions.map((pos: string) => (
                                 <span key={pos} className={posBadgeClass(pos)}>{pos}</span>
                               ))}
-                              <span className="text-gray-400 text-[11px]">{player.team}</span>
-                              <span className="text-gray-700 text-[11px]">{player.yearFrom}–{player.yearTo}</span>
+                              <span className="text-white/40 text-[11px]">{player.team}</span>
+                              <span className="text-white/15 text-[11px]">{player.yearFrom}–{player.yearTo}</span>
                             </div>
                             {/* Career stat pills — always visible so users can evaluate without tapping */}
                             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                               <span className={`text-xs font-black tabular-nums ${isSelected ? 'text-orange-200' : 'text-white/60'}`}>
-                                {player.careerPPG.toFixed(1)}<span className={`font-normal ml-0.5 ${isSelected ? 'text-orange-300/60' : 'text-gray-600'}`}>PPG</span>
+                                {player.careerPPG.toFixed(1)}<span className={`font-normal ml-0.5 ${isSelected ? 'text-orange-300/60' : 'text-white/20'}`}>PPG</span>
                               </span>
                               <span className={`text-xs font-black tabular-nums ${isSelected ? 'text-orange-200' : 'text-white/60'}`}>
-                                {player.careerRPG.toFixed(1)}<span className={`font-normal ml-0.5 ${isSelected ? 'text-orange-300/60' : 'text-gray-600'}`}>RPG</span>
+                                {player.careerRPG.toFixed(1)}<span className={`font-normal ml-0.5 ${isSelected ? 'text-orange-300/60' : 'text-white/20'}`}>RPG</span>
                               </span>
                               <span className={`text-xs font-black tabular-nums ${isSelected ? 'text-orange-200' : 'text-white/60'}`}>
-                                {player.careerAPG.toFixed(1)}<span className={`font-normal ml-0.5 ${isSelected ? 'text-orange-300/60' : 'text-gray-600'}`}>APG</span>
+                                {player.careerAPG.toFixed(1)}<span className={`font-normal ml-0.5 ${isSelected ? 'text-orange-300/60' : 'text-white/20'}`}>APG</span>
                               </span>
                             </div>
                             {/* EBK fill bar — visual tier indicator */}
@@ -2039,7 +2039,7 @@ function GameContent() {
                                 }`}>
                                   {formatStat(statVal, statMode)}
                                 </div>
-                                <div className="text-gray-500 text-[9px] tracking-wider uppercase mt-0.5">
+                                <div className="text-white/30 text-[9px] tracking-wider uppercase mt-0.5">
                                   {STAT_CATEGORY_SHORT[statMode as keyof typeof STAT_CATEGORY_SHORT] ?? statMode.toUpperCase()}
                                 </div>
                               </div>
@@ -2052,7 +2052,7 @@ function GameContent() {
                               }`}>
                                 {player.ebkScore.toFixed(1)}
                               </div>
-                              <div className="text-gray-600 text-[9px] tracking-wider uppercase mt-0.5">EBK</div>
+                              <div className="text-white/20 text-[9px] tracking-wider uppercase mt-0.5">EBK</div>
                             </div>
                           </div>
 
@@ -2092,7 +2092,7 @@ function GameContent() {
           {/* Opponent Team (desktop only) */}
           <div className="hidden lg:block bg-blue-950/10 border border-blue-900/20 rounded-2xl p-4">
             <h3 className="text-white font-black text-sm mb-3">
-              {oppName} <span className="text-gray-400 font-normal">({oppPicks.length}/{teamSize})</span>
+              {oppName} <span className="text-white/40 font-normal">({oppPicks.length}/{teamSize})</span>
             </h3>
             <div className="space-y-1.5">
               {requiredSlots.map((slotPos, i) => {
@@ -2108,14 +2108,14 @@ function GameContent() {
                       ? 'bg-white/[0.03]'
                       : 'bg-white/[0.015] border border-dashed border-white/[0.12]'
                   }`}>
-                    <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-gray-400' : 'text-blue-400'}`}>{displayLabel}</span>
+                    <span className={`font-bold w-8 shrink-0 ${isBench ? 'text-white/30' : 'text-blue-400'}`}>{displayLabel}</span>
                     {pickedPlayer ? (
                       <span className={`truncate ${isNewPick ? 'text-blue-200' : 'text-white'}`} title={`${pickedPlayer.firstName} ${pickedPlayer.lastName}`}>
-                        {pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-gray-400">({pickedPlayer.team})</span>
+                        {pickedPlayer.firstName} {pickedPlayer.lastName} <span className="text-white/40">({pickedPlayer.team})</span>
                         {isNewPick && <span className="ml-2 text-blue-400 font-black text-[9px]">NEW</span>}
                       </span>
                     ) : (
-                      <span className="text-gray-400">empty</span>
+                      <span className="text-white/30">empty</span>
                     )}
                   </div>
                 )
@@ -2134,7 +2134,7 @@ export default function GamePage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading...</p>
+          <p className="text-white/40">Loading...</p>
         </div>
       </div>
     }>

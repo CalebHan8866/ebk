@@ -566,7 +566,7 @@ export default function FunFactsPage() {
             </svg>
           </div>
           <p className="text-white font-black text-sm mb-1">Couldn&apos;t load player data</p>
-          <p className="text-gray-400 text-xs mb-5">Check your connection and try again.</p>
+          <p className="text-white/40 text-xs mb-5">Check your connection and try again.</p>
           <button onClick={() => window.location.reload()} className="btn-primary text-sm py-3 px-6">Retry</button>
         </div>
       </div>

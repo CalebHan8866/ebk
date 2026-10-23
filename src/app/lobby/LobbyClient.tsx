@@ -633,7 +633,7 @@ export default function LobbyPage() {
                 )}
               </div>
               <div className="hidden sm:block text-left">
-                <div className="text-xs font-black text-gray-200 group-hover:text-white transition-colors leading-tight tracking-wide">
+                <div className="text-xs font-black text-white/80 group-hover:text-white transition-colors leading-tight tracking-wide">
                   {user.username}
                 </div>
                 <div className="text-label tabular-nums" style={{ fontSize: '9px' }}>
@@ -875,7 +875,7 @@ export default function LobbyPage() {
                             className={`rounded-xl py-2.5 text-center font-black text-sm border transition-all ${
                               createSeries === s
                                 ? 'border-orange-500/60 bg-orange-600/10 text-orange-400'
-                                : 'border-white/[0.05] text-gray-400 hover:border-white/[0.12]'
+                                : 'border-white/[0.05] text-white/40 hover:border-white/[0.12]'
                             }`}
                           >
                             {seriesLabel(s)}
@@ -1091,7 +1091,7 @@ export default function LobbyPage() {
                             </div>
                             {/* Format chip — desktop only */}
                             <div className="hidden sm:flex flex-col items-end gap-0.5 shrink-0">
-                              <span className="text-xs font-black text-gray-200 bg-white/[0.05] border border-white/[0.08] rounded-lg px-2.5 py-1 leading-none">
+                              <span className="text-xs font-black text-white/80 bg-white/[0.05] border border-white/[0.08] rounded-lg px-2.5 py-1 leading-none">
                                 {MODE_LABEL[l.teamMode]}
                               </span>
                               <span className="text-white/60 text-[11px]">{seriesLabel(l.series)}</span>

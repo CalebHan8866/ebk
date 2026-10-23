@@ -321,7 +321,7 @@ function PracticeContent() {
                   ['full12',   'Full 12',   '12 players','🏆'],
                 ] as const).map(([val, label, sub, icon]) => (
                   <button key={val} onClick={() => setTeamMode(val)}
-                    className={`rounded-xl p-3 text-center border transition-all ${teamMode === val ? 'border-orange-500 bg-orange-600/20 text-orange-400 shadow-[0_0_12px_rgba(234,88,12,0.15)]' : 'border-white/[0.07] bg-white/[0.02] text-gray-400 hover:border-white/[0.15] hover:text-white'}`}>
+                    className={`rounded-xl p-3 text-center border transition-all ${teamMode === val ? 'border-orange-500 bg-orange-600/20 text-orange-400 shadow-[0_0_12px_rgba(234,88,12,0.15)]' : 'border-white/[0.07] bg-white/[0.02] text-white/40 hover:border-white/[0.15] hover:text-white'}`}>
                     <div className="text-lg mb-1 leading-none">{icon}</div>
                     <div className={`font-black text-sm ${teamMode === val ? 'text-orange-400' : 'text-white'}`}>{label}</div>
                     <div className="text-[11px] mt-0.5 opacity-60">{sub}</div>
@@ -334,13 +334,13 @@ function PracticeContent() {
               <label className="text-label block mb-3">Mode</label>
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={() => setDifficulty('casual')}
-                  className={`rounded-xl p-3.5 text-center border transition-all ${difficulty === 'casual' ? 'border-orange-500 bg-orange-600/20 shadow-[0_0_12px_rgba(234,88,12,0.15)]' : 'border-white/[0.07] bg-white/[0.02] text-gray-400 hover:border-white/[0.15] hover:text-white'}`}>
+                  className={`rounded-xl p-3.5 text-center border transition-all ${difficulty === 'casual' ? 'border-orange-500 bg-orange-600/20 shadow-[0_0_12px_rgba(234,88,12,0.15)]' : 'border-white/[0.07] bg-white/[0.02] text-white/40 hover:border-white/[0.15] hover:text-white'}`}>
                   <div className="text-lg mb-1 leading-none">👁️</div>
                   <div className={`font-black text-sm ${difficulty === 'casual' ? 'text-orange-400' : 'text-white'}`}>Casual</div>
                   <div className="text-[11px] opacity-60 mt-0.5">EBK scores shown</div>
                 </button>
                 <button onClick={() => setDifficulty('ebk')}
-                  className={`rounded-xl p-3.5 text-center border transition-all ${difficulty === 'ebk' ? 'border-yellow-500 bg-yellow-600/10 shadow-[0_0_12px_rgba(234,179,8,0.12)]' : 'border-white/[0.07] bg-white/[0.02] text-gray-400 hover:border-white/[0.15] hover:text-white'}`}>
+                  className={`rounded-xl p-3.5 text-center border transition-all ${difficulty === 'ebk' ? 'border-yellow-500 bg-yellow-600/10 shadow-[0_0_12px_rgba(234,179,8,0.12)]' : 'border-white/[0.07] bg-white/[0.02] text-white/40 hover:border-white/[0.15] hover:text-white'}`}>
                   <div className="text-lg mb-1 leading-none">🙈</div>
                   <div className={`font-black text-sm ${difficulty === 'ebk' ? 'text-yellow-400' : 'text-white'}`}>EBK Mode</div>
                   <div className="text-[11px] opacity-60 mt-0.5">Blind picks — no scores</div>
@@ -606,7 +606,7 @@ function PracticeContent() {
                         <button key={pos} onClick={() => setFilterPos(pos)}
                           className={`pos-badge transition-all ${
                             pos === 'ALL'
-                              ? filterPos === pos ? 'bg-orange-600/30 border-orange-500/60 text-orange-300' : 'bg-white/[0.04] border-white/[0.08] text-gray-400 hover:text-white'
+                              ? filterPos === pos ? 'bg-orange-600/30 border-orange-500/60 text-orange-300' : 'bg-white/[0.04] border-white/[0.08] text-white/40 hover:text-white'
                               : pos === 'PG' ? (filterPos === pos ? 'pos-pg ring-1 ring-blue-400/40' : 'bg-transparent border-blue-500/20 text-blue-500/50 hover:pos-pg')
                               : pos === 'SG' ? (filterPos === pos ? 'pos-sg ring-1 ring-cyan-400/40' : 'bg-transparent border-cyan-500/20 text-cyan-500/50 hover:pos-sg')
                               : pos === 'SF' ? (filterPos === pos ? 'pos-sf ring-1 ring-green-400/40' : 'bg-transparent border-green-500/20 text-green-500/50 hover:pos-sf')
