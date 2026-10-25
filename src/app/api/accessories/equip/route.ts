@@ -29,14 +29,17 @@ export async function POST(req: NextRequest) {
     const { success: userOk } = rateLimit(`equip:user:${payload.userId}`, 10, 60 * 1000)
     if (!userOk) return NextResponse.json({ error: 'Too many requests. Try again in a minute.' }, { status: 429 })
 
-    let body: { type: 'badge' | 'emote'; id: string }
+    let body: unknown
     try {
       body = await req.json()
     } catch {
       return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
     }
 
-    const { type, id } = body
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
+    }
+    const { type, id } = body as Record<string, unknown>
     if (!type || !id || (type !== 'badge' && type !== 'emote')) {
       return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
     }

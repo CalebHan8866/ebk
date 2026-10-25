@@ -46,9 +46,17 @@ export async function POST(request: NextRequest) {
 
     // skipDuplicates is not supported by the SQLite adapter; rely on the unique
     // constraints raising P2002 and catch at the outer level, or use upsert.
-    // For a bulk load-test helper, simply attempt createMany and let Prisma
-    // throw on collisions — the caller retries with a different prefix anyway.
-    const result = await prisma.user.createMany({ data: records })
+    // For a bulk load-test helper, simply attempt createMany and return a clear
+    // 409 on collision so the caller knows to retry with a different prefix.
+    let result: { count: number }
+    try {
+      result = await prisma.user.createMany({ data: records })
+    } catch (e: unknown) {
+      if (typeof e === 'object' && e !== null && 'code' in e && (e as { code: unknown }).code === 'P2002') {
+        return NextResponse.json({ error: 'Username or email already taken — retry with a different prefix' }, { status: 409 })
+      }
+      throw e
+    }
 
     return NextResponse.json({ created: result.count, skipped: count - result.count, prefix })
   } catch {

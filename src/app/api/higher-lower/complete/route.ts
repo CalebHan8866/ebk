@@ -46,14 +46,17 @@ export async function POST(request: NextRequest) {
     const payload = await verifyToken(token)
     if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    let body: { milestone: string; streak?: number; complete?: boolean; gameToken?: string }
-    try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid body' }, { status: 400 }) }
+    let rawBody: unknown
+    try { rawBody = await request.json() } catch { return NextResponse.json({ error: 'Invalid body' }, { status: 400 }) }
 
-    const { milestone, streak, complete, gameToken } = body
+    if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+      return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
+    }
+    const { milestone, streak, complete, gameToken } = rawBody as Record<string, unknown>
 
     // Validate milestone first — before touching token state — so a bogus milestone
     // cannot trigger a side-effect (e.g. nonce consumption) on a valid game token.
-    if (!milestone || !HL_BADGE_IDS.includes(milestone)) {
+    if (!milestone || typeof milestone !== 'string' || !HL_BADGE_IDS.includes(milestone)) {
       return NextResponse.json({ error: 'Invalid milestone' }, { status: 400 })
     }
 
