@@ -631,17 +631,29 @@ function GameContent() {
           {/* Room code card */}
           <div className="card-accent p-8 mb-3">
             <p className="text-label tracking-[0.2em] mb-4">Room Code</p>
-            <div className="font-display text-5xl sm:text-7xl text-orange-400 tracking-[0.2em] sm:tracking-[0.35em] leading-none mb-4">{room.code}</div>
-            {opponentPresent ? (
-              <div className="flex items-center justify-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                <p className="text-green-400 text-xs font-black">{opponentName} joined</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <CopyCodeButton code={room.code} />
-              </div>
-            )}
+            {/* Per-character blocks — makes the code feel tangible and easy to read aloud */}
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-5 select-all" aria-label={`Room code: ${room.code}`}>
+              {room.code.split('').map((char, i) => (
+                <div
+                  key={i}
+                  className="w-10 h-12 sm:w-14 sm:h-16 flex items-center justify-center rounded-xl bg-orange-950/40 border border-orange-500/30 font-display text-2xl sm:text-4xl text-orange-400 leading-none"
+                  style={{ boxShadow: '0 0 12px rgba(249,115,22,0.08)' }}
+                >
+                  {char}
+                </div>
+              ))}
+            </div>
+
+            {/* Always show copy button — useful even after opponent joins (share with spectators, etc.) */}
+            <div className="space-y-3">
+              <CopyCodeButton code={room.code} />
+              {opponentPresent && (
+                <div className="flex items-center justify-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse shrink-0" />
+                  <p className="text-green-400 text-xs font-black">{opponentName} joined — ready to start</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Series score — shown between games in a multi-game series */}
@@ -665,19 +677,32 @@ function GameContent() {
             </div>
           )}
 
-          {/* Waiting indicator */}
-          <div className="flex items-center justify-center gap-2.5 mb-5">
-            <span className="w-3.5 h-3.5 rounded-full border-2 border-orange-500/40 border-t-orange-400 animate-spin shrink-0" />
-            <span className="text-white/40 text-sm">
-              {role === 'host'
-                ? (opponentPresent ? 'Tap "Start Game" when ready' : 'Waiting for opponent to join')
-                : 'Waiting for host to start'}
-              <span className="animate-ellipsis" />
-            </span>
-          </div>
+          {/* Waiting indicator — pulsing dots when no opponent, spinner when opponent present */}
+          {opponentPresent ? (
+            <div className="flex items-center justify-center gap-2.5 mb-5">
+              <span className="w-3.5 h-3.5 rounded-full border-2 border-green-500/40 border-t-green-400 animate-spin shrink-0" />
+              <span className="text-white/50 text-sm">
+                {role === 'host' ? 'Start the game when you\'re both ready' : 'Waiting for host to start the game'}
+                <span className="animate-ellipsis" />
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3 mb-5">
+              <div className="flex items-center gap-1.5">
+                {[0, 1, 2].map(d => (
+                  <span
+                    key={d}
+                    className="w-2 h-2 rounded-full bg-orange-500/60 animate-pulse"
+                    style={{ animationDelay: `${d * 250}ms`, animationDuration: '1.2s' }}
+                  />
+                ))}
+              </div>
+              <span className="text-white/40 text-sm">Waiting for opponent to join</span>
+            </div>
+          )}
 
           {/* Game format chips */}
-          <div className="flex items-center justify-center gap-2 text-white/40 text-sm flex-wrap">
+          <div className="flex items-center justify-center gap-2 text-white/40 text-sm flex-wrap mb-5">
             <span className="bg-white/[0.04] border border-white/[0.07] rounded-lg px-3 py-1.5 text-xs font-black text-white/60">
               {room.teamMode === 'starter5' ? 'Starter 5' : room.teamMode === 'bench8' ? 'Bench 8' : 'Full Roster'}
             </span>
@@ -688,6 +713,16 @@ function GameContent() {
               {STAT_CATEGORY_LABELS[room.statCategory] ?? 'Games Played'}
             </span>
           </div>
+
+          {/* Both players present — show a "launching" indicator */}
+          {opponentPresent && (
+            <div className="flex items-center justify-center gap-2 text-orange-400/70 animate-pulse">
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span className="text-xs font-black uppercase tracking-widest">Launching draft…</span>
+            </div>
+          )}
         </div>
       </div>
     )

@@ -145,11 +145,11 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-up-4">
             <Link href="/lobby"
-              className="btn-primary text-sm uppercase tracking-widest px-10 py-4 w-full sm:w-auto max-w-xs">
+              className="btn-primary text-sm uppercase tracking-widest px-10 py-4 w-full sm:w-auto max-w-xs min-h-[52px]">
               Play Now — Free
             </Link>
             <Link href="/practice"
-              className="btn-secondary text-sm uppercase tracking-widest px-8 py-4 w-full sm:w-auto max-w-xs">
+              className="btn-secondary text-sm uppercase tracking-widest px-8 py-4 w-full sm:w-auto max-w-xs min-h-[52px]">
               Practice First
             </Link>
           </div>

@@ -143,7 +143,7 @@ function BottomNav({ pathname }: { pathname: string }) {
     },
     {
       href: '/leaderboard',
-      label: 'Leaderboard',
+      label: 'Ranks',
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
           <rect x="18" y="3" width="4" height="18" rx="1"/>
@@ -174,7 +174,7 @@ function BottomNav({ pathname }: { pathname: string }) {
         boxShadow: '0 -4px 24px rgba(0,0,0,0.5)',
       }}>
       {/* Safe-area padding for notched phones — min-h so the bar expands on notched iPhones */}
-      <div className="flex items-center justify-around min-h-14">
+      <div className="flex items-center justify-around min-h-14 pb-[env(safe-area-inset-bottom,0px)]">
         {items.map(({ href, label, icon }) => {
           const active = pathname === href || (href !== '/' && pathname?.startsWith(href))
           return (
@@ -183,16 +183,19 @@ function BottomNav({ pathname }: { pathname: string }) {
               href={href}
               aria-label={label}
               className={[
-                'bottom-nav-item flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-all',
-                active ? 'text-orange-400' : 'text-white/55 hover:text-white/80',
+                'bottom-nav-item relative flex flex-col items-center justify-center flex-1 py-2 gap-1 transition-all',
+                active ? 'text-orange-400' : 'text-white/45 hover:text-white/70',
               ].join(' ')}>
-              <span className={['transition-transform', active ? 'scale-105' : ''].join(' ')}>
+              {/* Active indicator bar at top edge */}
+              {active && (
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-orange-500" />
+              )}
+              <span className={['transition-transform', active ? 'scale-110' : ''].join(' ')}>
                 {icon}
               </span>
-              {/* Active indicator dot */}
-              {active && (
-                <span className="w-1 h-1 rounded-full bg-orange-500" />
-              )}
+              <span className={`text-[10px] font-bold tracking-wide leading-none ${active ? 'text-orange-400' : 'text-white/40'}`}>
+                {label}
+              </span>
             </Link>
           )
         })}

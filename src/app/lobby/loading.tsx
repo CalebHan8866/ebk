@@ -1,39 +1,34 @@
 export default function LobbyLoading() {
   return (
-    <div className="min-h-screen px-4 py-8 max-w-2xl mx-auto w-full animate-pulse">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="skeleton h-3 w-12 rounded-full mb-2" />
-        <div className="skeleton h-8 w-32 rounded-xl mb-1" />
-        <div className="skeleton h-3 w-52 rounded-full" />
-      </div>
-      {/* Mode tabs */}
-      <div className="flex gap-2 mb-6">
-        <div className="skeleton h-9 w-24 rounded-full" />
-        <div className="skeleton h-9 w-28 rounded-full" />
-      </div>
-      {/* Config card */}
-      <div className="border border-white/[0.07] rounded-2xl p-6 bg-white/[0.02] mb-4">
-        <div className="skeleton h-4 w-24 rounded mb-4" />
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="skeleton h-16 rounded-xl" />
-          <div className="skeleton h-16 rounded-xl" />
-          <div className="skeleton h-16 rounded-xl" />
-        </div>
-        <div className="skeleton h-10 w-full rounded-xl" />
-      </div>
-      {/* Open games */}
-      <div className="space-y-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 px-4 py-3 border border-white/[0.06] rounded-xl bg-white/[0.02]">
-            <div className="skeleton h-8 w-8 rounded-full shrink-0" />
-            <div className="flex-1 space-y-1.5">
-              <div className="skeleton h-4 w-28 rounded" />
-              <div className="skeleton h-3 w-20 rounded" />
-            </div>
-            <div className="skeleton h-8 w-16 rounded-lg" />
+    <div className="min-h-screen py-8 px-4 pb-24 sm:pb-8 animate-fade-in">
+      <div className="max-w-5xl mx-auto">
+
+        {/* Page header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <div className="skeleton h-2.5 w-28 rounded-full mb-2" />
+            <div className="skeleton h-10 w-40 rounded-xl" />
           </div>
-        ))}
+          <div className="hidden sm:block skeleton h-10 w-32 rounded-xl" />
+        </div>
+
+        {/* Mode selector cards */}
+        <div className="space-y-3">
+          {/* Hero card */}
+          <div className="skeleton h-28 w-full rounded-2xl" />
+          {/* Two sub-cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="skeleton h-24 rounded-2xl" />
+            <div className="skeleton h-24 rounded-2xl" />
+          </div>
+          {/* 2x2 grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="skeleton h-28 rounded-2xl" />
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   )

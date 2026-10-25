@@ -655,8 +655,8 @@ export default function LobbyPage() {
           </div>
         )}
 
-        {/* Global error banner */}
-        {error && (
+        {/* Global error banner — hidden when inline error is shown on the join tab */}
+        {error && !(mainTab === 'friends' && friendsTab === 'join') && (
           <div className="bg-red-900/30 border border-red-500/40 text-red-300 rounded-xl px-4 py-3 mb-5 text-sm flex items-center justify-between animate-slide-up">
             <span>{error}</span>
             <button onClick={() => setError('')} aria-label="Dismiss error" className="text-red-500 hover:text-red-300 ml-3 shrink-0">✕</button>
@@ -965,13 +965,13 @@ export default function LobbyPage() {
                       </div>
                     </div>
 
-                    {/* Animated waiting dots */}
+                    {/* Animated waiting dots — staggered for wave effect */}
                     <div className="flex items-center justify-center gap-1.5 py-1">
                       {[0, 1, 2].map(d => (
                         <span
                           key={d}
-                          className="w-1.5 h-1.5 rounded-full bg-orange-500/50 animate-pulse"
-                          style={{ animationDelay: `${d * 300}ms` }}
+                          className="w-1.5 h-1.5 rounded-full bg-orange-500/60 animate-bounce"
+                          style={{ animationDelay: `${d * 150}ms`, animationDuration: '0.9s' }}
                         />
                       ))}
                     </div>
@@ -1084,8 +1084,9 @@ export default function LobbyPage() {
                                 <span className="text-white/40">{winPct(l.hostRecord.wins, l.hostRecord.losses)}</span>
                               </div>
                               {/* Format info visible on mobile */}
-                              <div className="flex items-center gap-1.5 mt-1 sm:hidden">
+                              <div className="flex items-center gap-1.5 mt-1 sm:hidden flex-wrap">
                                 <span className="text-[10px] font-black text-white/60 bg-white/[0.04] border border-white/[0.07] rounded px-1.5 py-0.5">{MODE_LABEL[l.teamMode]}</span>
+                                <span className="text-white/35 text-[10px]">{seriesLabel(l.series)}</span>
                                 <span className="text-orange-400 text-[10px] font-black">{STAT_CATEGORY_LABELS[l.statCategory] ?? 'Games Played'}</span>
                               </div>
                             </div>
@@ -1131,13 +1132,13 @@ export default function LobbyPage() {
             {/* Sub-tab toggle */}
             <div className="tab-pill mb-5">
               <button
-                onClick={() => setFriendsTab('create')}
+                onClick={() => { setFriendsTab('create'); setError('') }}
                 className={`tab-pill-item${friendsTab === 'create' ? ' active' : ''}`}
               >
                 Create Room
               </button>
               <button
-                onClick={() => setFriendsTab('join')}
+                onClick={() => { setFriendsTab('join'); setError('') }}
                 className={`tab-pill-item${friendsTab === 'join' ? ' active' : ''}`}
               >
                 Join Room
@@ -1264,8 +1265,13 @@ export default function LobbyPage() {
                     </div>
                   </div>
 
-                  <button onClick={handleCreate} disabled={loading} className="btn-primary w-full">
-                    {loading ? 'Creating...' : 'Create Room'}
+                  <button onClick={handleCreate} disabled={loading} className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed">
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin shrink-0" />
+                        Creating…
+                      </span>
+                    ) : 'Create Room'}
                   </button>
                 </div>
               )}
@@ -1276,14 +1282,39 @@ export default function LobbyPage() {
                     <div className="text-label mb-2">Room Code</div>
                     <input
                       value={joinCode}
-                      onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                      onChange={e => { setJoinCode(e.target.value.toUpperCase()); if (error) setError('') }}
                       placeholder="XXXXXX"
                       maxLength={6}
-                      className="input-field font-mono text-center text-xl tracking-[0.4em] uppercase"
+                      autoCapitalize="characters"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      aria-invalid={!!error}
+                      aria-describedby={error ? 'join-code-error' : undefined}
+                      className={`input-field font-mono text-center text-2xl tracking-[0.5em] uppercase transition-all py-4 min-h-[60px] ${
+                        error ? 'border-red-500/60 bg-red-950/20 focus:border-red-500/80 ring-1 ring-red-500/20' : ''
+                      }`}
                     />
+                    {error && (
+                      <p id="join-code-error" role="alert" className="mt-2 text-red-400 text-xs font-bold flex items-center gap-1.5 animate-slide-up">
+                        <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                          <circle cx="12" cy="12" r="10" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01" />
+                        </svg>
+                        {error}
+                      </p>
+                    )}
                   </div>
-                  <button onClick={handleJoin} disabled={loading} className="btn-primary w-full">
-                    {loading ? 'Joining...' : 'Join Room'}
+                  <button
+                    onClick={handleJoin}
+                    disabled={loading || !joinCode.trim()}
+                    className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin shrink-0" />
+                        Joining…
+                      </span>
+                    ) : 'Join Room'}
                   </button>
                 </div>
               )}
