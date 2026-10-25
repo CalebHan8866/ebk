@@ -56,6 +56,8 @@ export default function HigherLowerPage() {
   const [claimStatus, setClaimStatus] = useState<ClaimStatus>(null)
   // Bump key — changes each time streak increases, re-triggers the bump animation
   const [streakBumpKey, setStreakBumpKey] = useState(0)
+  // Flip key — unique per round so the card-reveal CSS plays fresh each time
+  const [flipKey, setFlipKey] = useState(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const badgeClearRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isMounted = useRef(true)
@@ -170,6 +172,7 @@ export default function HigherLowerPage() {
 
     setLastCorrect(correct)
     setLastTied(tied)
+    setFlipKey(k => k + 1)
     setScreen('revealing')
 
     if (correct) {
@@ -198,13 +201,13 @@ export default function HigherLowerPage() {
           setLastTied(false)
           setScreen('playing')
         }
-      }, 1300)
+      }, 1400)
     } else {
       timerRef.current = setTimeout(() => {
         if (!isMounted.current) return
         isGuessingRef.current = false
         setScreen('gameover')
-      }, 1600)
+      }, 1700)
     }
   }
 
@@ -215,6 +218,7 @@ export default function HigherLowerPage() {
     setIdx(0)
     setStreak(0)
     setStreakBumpKey(0)
+    setFlipKey(0)
     setLastCorrect(null)
     setLastTied(false)
     setUnlockedBadge(null)
@@ -235,20 +239,54 @@ export default function HigherLowerPage() {
     setScreen('playing')
   }
 
+  /* ── LOADING ────────────────────────────────────────────────────────────── */
   if (screen === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+      <div className="min-h-screen flex flex-col items-center justify-center gap-5 animate-fade-in">
+        {/* Ambient glow */}
+        <div className="absolute inset-x-0 top-0 h-64 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 0%, rgba(234,88,12,0.12) 0%, transparent 70%)' }} />
+        {/* Spinner */}
+        <div className="relative w-16 h-16">
+          <div className="absolute inset-0 rounded-full border-2 border-white/[0.04]" />
+          <div className="absolute inset-0 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+          <div className="absolute inset-3 rounded-full bg-orange-600/10 flex items-center justify-center">
+            <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+          </div>
+        </div>
+        <div className="text-center">
+          <p className="text-label tracking-[0.3em] animate-ellipsis">LOADING PLAYERS</p>
+          <p className="text-white/25 text-xs mt-2">Fetching the roster...</p>
+        </div>
       </div>
     )
   }
 
+  /* ── ERROR ──────────────────────────────────────────────────────────────── */
   if (screen === 'error') {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="text-center">
-          <p className="text-white/60 mb-4">Couldn&apos;t load players. Check your connection and try again.</p>
-          <button onClick={() => window.location.reload()} className="btn-primary">Retry</button>
+      <div className="min-h-screen flex items-center justify-center px-4 animate-fade-in">
+        <div className="max-w-sm w-full text-center">
+          <div className="card-accent p-8 mb-4">
+            <div className="w-14 h-14 rounded-full bg-red-900/30 border border-red-500/30 flex items-center justify-center mx-auto mb-5">
+              <svg className="w-7 h-7 text-red-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+              </svg>
+            </div>
+            <h2 className="font-display text-2xl text-white mb-2">Couldn&apos;t Load Players</h2>
+            <p className="text-white/50 text-sm leading-relaxed mb-6">
+              Something went wrong fetching the roster. Check your connection and try again.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="btn-primary w-full"
+            >
+              Retry
+            </button>
+          </div>
+          <Link href="/lobby" className="text-white/30 hover:text-white/60 text-xs transition-colors">
+            ← Back to Lobby
+          </Link>
         </div>
       </div>
     )
@@ -273,33 +311,33 @@ export default function HigherLowerPage() {
                      "Elite basketball IQ. Truly."
 
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="min-h-screen flex items-center justify-center px-4 py-10">
         <div className="max-w-md w-full text-center">
           {/* ── Outcome header ── */}
           <div className="mb-4 animate-loss-drop">
             <div className="font-display text-6xl sm:text-7xl text-red-500/70 leading-none select-none">RIP</div>
           </div>
           <h1 className="font-display text-4xl sm:text-5xl text-white leading-none mb-1 animate-fade-up-1">Game Over</h1>
-          <p className="text-white/40 text-sm mb-4 animate-fade-up-1">{encouragement}</p>
+          <p className="text-white/40 text-sm mb-5 animate-fade-up-1">{encouragement}</p>
 
           {/* ── What went wrong ── */}
           {current && challenger && (
             <div className="card-surface rounded-2xl px-4 py-3 mb-5 text-sm text-left animate-fade-up-2">
-              <p className="text-white/60 leading-relaxed">
+              <p className="text-white/55 leading-relaxed mb-2">
                 <span className="text-white/90 font-bold">{challenger.firstName} {challenger.lastName}</span>
                 {' '}had{' '}
                 <span className="text-orange-400 font-bold">{correctDir} EBK</span>
                 {' '}than {current.firstName} {current.lastName}
               </p>
-              <div className="flex items-center gap-3 mt-2">
-                <div className="flex-1 bg-white/[0.04] rounded-lg px-3 py-1.5 text-center">
-                  <div className="text-white/60 text-[10px] font-bold uppercase tracking-wide truncate">{current.lastName}</div>
-                  <div className="font-display text-lg text-white/80 leading-none tabular-nums">{current.ebkScore.toFixed(1)}</div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 bg-white/[0.04] rounded-xl px-3 py-2 text-center">
+                  <div className="text-white/50 text-[10px] font-bold uppercase tracking-wide truncate mb-1">{current.lastName}</div>
+                  <div className="font-display text-2xl text-white/80 leading-none tabular-nums">{current.ebkScore.toFixed(1)}</div>
                 </div>
-                <div className="text-white/20 font-display text-sm">VS</div>
-                <div className="flex-1 bg-orange-950/30 rounded-lg px-3 py-1.5 text-center border border-orange-700/20">
-                  <div className="text-orange-300/60 text-[10px] font-bold uppercase tracking-wide truncate">{challenger.lastName}</div>
-                  <div className="font-display text-lg text-orange-400 leading-none tabular-nums">{challenger.ebkScore.toFixed(1)}</div>
+                <div className="text-white/20 font-display text-sm shrink-0">VS</div>
+                <div className="flex-1 bg-orange-950/30 rounded-xl px-3 py-2 text-center border border-orange-700/20">
+                  <div className="text-orange-300/60 text-[10px] font-bold uppercase tracking-wide truncate mb-1">{challenger.lastName}</div>
+                  <div className="font-display text-2xl text-orange-400 leading-none tabular-nums">{challenger.ebkScore.toFixed(1)}</div>
                 </div>
               </div>
             </div>
@@ -316,7 +354,7 @@ export default function HigherLowerPage() {
                 style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(234,179,8,0.07) 0%, transparent 70%)' }} />
             )}
             {isNewRecord && (
-              <div className="relative mb-3 flex items-center justify-center gap-2">
+              <div className="relative mb-4 flex items-center justify-center gap-2">
                 <div className="h-px flex-1 bg-yellow-500/20" />
                 <span className="text-[10px] font-black text-yellow-500/80 uppercase tracking-[0.2em]">New Personal Best!</span>
                 <div className="h-px flex-1 bg-yellow-500/20" />
@@ -324,31 +362,31 @@ export default function HigherLowerPage() {
             )}
             <div className="relative grid grid-cols-2 gap-6">
               <div className="text-center">
-                <div className="font-display text-6xl text-orange-400 leading-none tabular-nums">{streak}</div>
+                <div className="font-display text-7xl text-orange-400 leading-none tabular-nums">{streak}</div>
                 <div className="text-label mt-2">This Run</div>
                 {streak >= 10 && (
-                  <div className="text-[10px] font-black text-orange-400/60 mt-1">
-                    {streak >= 25 ? 'EBK Savant level' : streak >= 10 ? 'Stat Nerd level' : ''}
+                  <div className="text-[10px] font-black text-orange-400/60 mt-1.5">
+                    {streak >= 25 ? 'EBK Savant level' : 'Stat Nerd level'}
                   </div>
                 )}
               </div>
               <div className="text-center border-l border-white/[0.06]">
-                <div className={`font-display text-6xl leading-none tabular-nums ${isNewRecord ? 'win-shimmer-text' : bestStreak > 0 ? 'text-yellow-400' : 'text-white/30'}`}>
+                <div className={`font-display text-7xl leading-none tabular-nums ${isNewRecord ? 'win-shimmer-text' : bestStreak > 0 ? 'text-yellow-400' : 'text-white/30'}`}>
                   {bestStreak}
                 </div>
                 <div className="text-label mt-2">Personal Best</div>
-                {!user && bestStreak === 0 && (
-                  <div className="text-white/25 text-[10px] mt-1">log in to save</div>
+                {!user && (
+                  <div className="text-white/25 text-[10px] mt-1.5">log in to save</div>
                 )}
               </div>
             </div>
           </div>
 
           <div className="flex gap-3 justify-center animate-fade-up-3">
-            <button onClick={restart} className="btn-primary">
+            <button onClick={restart} className="btn-primary min-w-[120px]">
               Try Again
             </button>
-            <Link href="/lobby" className="btn-secondary">
+            <Link href="/lobby" className="btn-secondary min-w-[100px]">
               Lobby
             </Link>
           </div>
@@ -360,7 +398,7 @@ export default function HigherLowerPage() {
   /* ── COMPLETE / GAUNTLET ────────────────────────────────────────────────── */
   if (screen === 'complete') {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="min-h-screen flex items-center justify-center px-4 py-10">
         <div className="max-w-md w-full text-center">
           {claimStatus === 'unlocked' && unlockedBadge && (
             <div className="mb-6 bg-yellow-900/30 border border-yellow-500/50 rounded-2xl px-6 py-4 animate-slide-up">
@@ -373,22 +411,39 @@ export default function HigherLowerPage() {
           <h1 className="font-display text-4xl sm:text-5xl text-orange-500 leading-none mb-2 animate-fade-up-1">The Gauntlet</h1>
           <p className="text-white/60 text-sm mb-1 animate-fade-up-2">You ran the full {totalComparisons}-question gauntlet.</p>
 
-          {!user && <p className="text-white/60 text-sm mb-6">Log in to claim the one-of-a-kind badge.</p>}
-          {user && claimStatus === 'pending' && <p className="text-white/60 text-sm mb-6">Claiming your badge...</p>}
+          {!user && <p className="text-white/50 text-sm mb-6">Log in to claim the one-of-a-kind badge.</p>}
+          {user && claimStatus === 'pending' && (
+            <p className="text-white/60 text-sm mb-6 flex items-center justify-center gap-2">
+              <span className="w-3 h-3 rounded-full border border-orange-500 border-t-transparent animate-spin inline-block" />
+              Claiming your badge...
+            </p>
+          )}
           {user && claimStatus === 'already' && <p className="text-white/60 text-sm mb-6">You&apos;ve already earned this badge.</p>}
-          {user && claimStatus === 'failed' && <p className="text-red-700 text-sm mb-6">Couldn&apos;t claim badge — try refreshing.</p>}
-          {user && claimStatus === null && <p className="text-white/60 text-sm mb-6">Claiming your badge...</p>}
+          {user && claimStatus === 'failed' && <p className="text-red-400 text-sm mb-6">Couldn&apos;t claim badge — try refreshing.</p>}
+          {user && claimStatus === null && (
+            <p className="text-white/60 text-sm mb-6 flex items-center justify-center gap-2">
+              <span className="w-3 h-3 rounded-full border border-orange-500 border-t-transparent animate-spin inline-block" />
+              Claiming your badge...
+            </p>
+          )}
 
-          <div className="card-accent p-6 mb-6">
-            <div className="font-display text-6xl text-orange-400 leading-none">{streak}</div>
+          <div className="card-accent p-6 mb-6 animate-fade-up-2">
+            <div className="font-display text-7xl text-orange-400 leading-none tabular-nums">{streak}</div>
             <div className="text-label mt-2">Final Streak</div>
+            {bestStreak > 0 && streak >= bestStreak && (
+              <div className="mt-3 flex items-center justify-center gap-2">
+                <div className="h-px flex-1 bg-yellow-500/20" />
+                <span className="text-[10px] font-black text-yellow-500/70 uppercase tracking-widest">Personal Best</span>
+                <div className="h-px flex-1 bg-yellow-500/20" />
+              </div>
+            )}
           </div>
 
-          <div className="flex gap-3 justify-center">
-            <button onClick={restart} className="btn-primary">
+          <div className="flex gap-3 justify-center animate-fade-up-3">
+            <button onClick={restart} className="btn-primary min-w-[120px]">
               Play Again
             </button>
-            <Link href="/lobby" className="btn-secondary">
+            <Link href="/lobby" className="btn-secondary min-w-[100px]">
               Lobby
             </Link>
           </div>
@@ -397,10 +452,22 @@ export default function HigherLowerPage() {
     )
   }
 
+  /* ── EMPTY STATE ────────────────────────────────────────────────────────── */
   if (!current || !challenger) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white/60">No players available</div>
+      <div className="min-h-screen flex items-center justify-center px-4 animate-fade-in">
+        <div className="max-w-sm w-full text-center">
+          <div className="card-accent p-8">
+            <div className="empty-state-icon">🏀</div>
+            <div className="empty-state-title mb-2">No Players Found</div>
+            <div className="empty-state-body mb-6">
+              The player pool couldn&apos;t be assembled right now. Try again.
+            </div>
+            <button onClick={() => window.location.reload()} className="btn-primary w-full">
+              Reload Game
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
@@ -417,12 +484,12 @@ export default function HigherLowerPage() {
   // Challenger card border/glow state
   const challengerCardClass = isRevealing
     ? lastCorrect
-      ? 'bg-green-900/15 border-green-500/70 shadow-[0_0_24px_rgba(34,197,94,0.14)]'
-      : 'bg-red-900/15 border-red-500/60 shadow-[0_0_24px_rgba(239,68,68,0.14)]'
+      ? `bg-green-900/15 border-green-500/70 ${lastCorrect ? 'animate-reveal-glow-correct' : ''}`
+      : `bg-red-900/15 border-red-500/60 animate-reveal-glow-wrong`
     : 'bg-[#111118] border-white/[0.07] border-dashed'
 
   return (
-    <div className="min-h-screen px-4 py-8">
+    <div className="min-h-screen px-4 py-6 sm:py-8">
 
       {/* Badge toast */}
       {unlockedBadge && (
@@ -439,12 +506,16 @@ export default function HigherLowerPage() {
 
         {/* ── Header ────────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between mb-5 animate-fade-up">
-          <Link href="/lobby" className="text-white/40 hover:text-white text-sm transition-colors flex items-center gap-1">
-            <span className="text-white/30">←</span> Lobby
+          <Link
+            href="/lobby"
+            className="text-white/40 hover:text-white text-sm transition-colors flex items-center gap-1.5 min-h-[44px] min-w-[44px] -ml-1 px-1 rounded-xl hover:bg-white/[0.04]"
+          >
+            <span className="text-white/30 text-lg leading-none">←</span>
+            <span className="hidden xs:inline">Lobby</span>
           </Link>
           <h1 className="font-display text-xl sm:text-2xl text-orange-500 leading-none tracking-wide">Higher or Lower</h1>
-          <div className="text-white/30 text-xs tabular-nums font-bold bg-white/[0.04] px-2 py-1 rounded-lg border border-white/[0.06]">
-            {idx + 1}<span className="text-white/20"> / {totalComparisons}</span>
+          <div className="text-white/50 text-xs tabular-nums font-bold bg-white/[0.04] px-2.5 py-1.5 rounded-lg border border-white/[0.06]">
+            {idx + 1}<span className="text-white/25"> / {totalComparisons}</span>
           </div>
         </div>
 
@@ -458,14 +529,14 @@ export default function HigherLowerPage() {
         >
           <div className="flex items-center justify-between mb-3">
             {/* Streak counter */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-3">
               <div
                 key={streakBumpKey}
                 className={`font-display leading-none tabular-nums transition-colors duration-200 ${
-                  streak >= 10 ? 'text-5xl text-orange-400 animate-streak-bump' :
-                  streak >= 3  ? 'text-4xl text-orange-300 animate-streak-bump' :
-                  streak >= 1  ? 'text-4xl text-orange-200 animate-streak-bump' :
-                  'text-4xl text-white'
+                  streak >= 10 ? 'text-6xl text-orange-400 animate-streak-bump' :
+                  streak >= 3  ? 'text-5xl text-orange-300 animate-streak-bump' :
+                  streak >= 1  ? 'text-5xl text-orange-200 animate-streak-bump' :
+                  'text-5xl text-white/60'
                 }`}
               >
                 {streak}
@@ -487,40 +558,51 @@ export default function HigherLowerPage() {
 
             {/* Personal best */}
             <div className="text-right">
-              <div className="text-label mb-0.5">Personal Best</div>
-              <div className={`font-display text-2xl leading-none tabular-nums ${bestStreak > 0 ? 'text-yellow-400' : 'text-white/30'}`}>
-                {bestStreak}
+              <div className="text-label mb-1">Personal Best</div>
+              <div className={`font-display text-3xl leading-none tabular-nums ${bestStreak > 0 ? 'text-yellow-400' : 'text-white/25'}`}>
+                {bestStreak > 0 ? bestStreak : '—'}
               </div>
-              {!user && <div className="text-white/25 text-[10px] mt-0.5">log in to save</div>}
+              {!user && <div className="text-white/25 text-[10px] mt-1">log in to save</div>}
             </div>
           </div>
 
           {/* Progress track */}
-          <div className="relative h-2.5 bg-black/50 rounded-full">
+          <div className="relative h-3 bg-black/50 rounded-full mb-1">
             <div
               className="absolute h-full rounded-full bg-gradient-to-r from-orange-700 to-orange-400 transition-all duration-500"
               style={{ width: `${progressPct}%` }}
             />
-            {/* Milestone: 10 */}
-            <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
-                 style={{ left: `${badge10Pct}%` }}>
-              <div className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-300 ${streak >= 10 ? 'bg-cyan-400 border-cyan-300 shadow-[0_0_6px_rgba(34,211,238,0.6)]' : 'bg-white/[0.05] border-white/[0.15]'}`} />
+            {/* Milestone pip: 10 */}
+            <div className="milestone-pip" style={{ left: `${badge10Pct}%` }}>
+              <div className={`milestone-pip-dot ${
+                streak >= 10
+                  ? 'bg-cyan-400 border-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.7)] animate-milestone-pop'
+                  : 'bg-white/[0.05] border-white/[0.15]'
+              }`} />
             </div>
-            {/* Milestone: 25 */}
-            <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
-                 style={{ left: `${badge25Pct}%` }}>
-              <div className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-300 ${streak >= 25 ? 'bg-indigo-400 border-indigo-300 shadow-[0_0_6px_rgba(129,140,248,0.6)]' : 'bg-white/[0.05] border-white/[0.15]'}`} />
+            {/* Milestone pip: 25 */}
+            <div className="milestone-pip" style={{ left: `${badge25Pct}%` }}>
+              <div className={`milestone-pip-dot ${
+                streak >= 25
+                  ? 'bg-indigo-400 border-indigo-300 shadow-[0_0_8px_rgba(129,140,248,0.7)] animate-milestone-pop'
+                  : 'bg-white/[0.05] border-white/[0.15]'
+              }`} />
             </div>
-            {/* Milestone: Gauntlet */}
+            {/* Milestone pip: Gauntlet */}
             <div className="absolute top-1/2 -translate-y-1/2" style={{ right: 0 }}>
-              <div className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-300 ${streak >= totalComparisons ? 'bg-yellow-400 border-yellow-200 shadow-[0_0_6px_rgba(250,204,21,0.6)]' : 'bg-white/[0.05] border-white/[0.15]'}`} />
+              <div className={`milestone-pip-dot ${
+                streak >= totalComparisons
+                  ? 'bg-yellow-400 border-yellow-200 shadow-[0_0_8px_rgba(250,204,21,0.7)] animate-milestone-pop'
+                  : 'bg-white/[0.05] border-white/[0.15]'
+              }`} />
             </div>
           </div>
 
-          <div className="flex justify-between mt-2.5 text-[9px] font-bold uppercase tracking-wide">
-            <span className={`transition-colors duration-300 ${streak >= 10 ? 'text-cyan-600' : 'text-white/20'}`}>Stat Nerd</span>
-            <span className={`transition-colors duration-300 ${streak >= 25 ? 'text-indigo-500' : 'text-white/20'}`}>EBK Savant</span>
-            <span className={`transition-colors duration-300 ${streak >= totalComparisons ? 'text-yellow-600' : 'text-white/20'}`}>Gauntlet ⚡</span>
+          {/* Milestone labels */}
+          <div className="flex justify-between mt-1.5 text-[9px] font-bold uppercase tracking-wide">
+            <span className={`transition-colors duration-300 ${streak >= 10 ? 'text-cyan-500' : 'text-white/20'}`}>Stat Nerd</span>
+            <span className={`transition-colors duration-300 ${streak >= 25 ? 'text-indigo-400' : 'text-white/20'}`}>EBK Savant</span>
+            <span className={`transition-colors duration-300 ${streak >= totalComparisons ? 'text-yellow-500' : 'text-white/20'}`}>Gauntlet ⚡</span>
           </div>
         </div>
 
@@ -531,15 +613,15 @@ export default function HigherLowerPage() {
             <div className={`font-display text-xs leading-none px-2 py-1 rounded-lg border transition-all duration-300 ${
               isRevealing
                 ? lastCorrect
-                  ? 'text-green-400 border-green-500/40 bg-green-950/60'
-                  : 'text-red-400 border-red-500/40 bg-red-950/60'
+                  ? 'text-green-400 border-green-500/40 bg-green-950/70'
+                  : 'text-red-400 border-red-500/40 bg-red-950/70'
                 : 'text-white/30 border-white/[0.07] bg-[#0d0d14]'
             }`}>VS</div>
           </div>
 
           {/* Current player — always revealed */}
-          <div className="card-stat p-4 flex flex-col">
-            <div className="text-label mb-2.5 text-orange-500/70">Current</div>
+          <div className="card-stat p-3 sm:p-4 flex flex-col">
+            <div className="text-label mb-2 text-orange-500/70">Current</div>
             <div className="font-black text-white text-sm leading-tight mb-0.5">
               {current.firstName} {current.lastName}
             </div>
@@ -547,89 +629,96 @@ export default function HigherLowerPage() {
               <span className={`pos-badge pos-${current.position.toLowerCase()}`}>{current.position}</span>
               <span className="text-white/40 text-xs truncate">{current.team}</span>
             </div>
-            <div className="text-white/60 text-[11px] space-y-0.5 mb-3 flex-1">
-              <div className="text-white/70">{current.careerGames} <span className="text-white/40">GP</span></div>
+            <div className="text-white/55 text-[11px] space-y-0.5 mb-3 flex-1">
+              <div className="text-white/70">{current.careerGames} <span className="text-white/35">GP</span></div>
               <div>
-                <span className="text-white/70">{current.careerPPG.toFixed(1)}</span> <span className="text-white/40">PPG</span>
-                {' · '}<span className="text-white/70">{current.careerRPG.toFixed(1)}</span> <span className="text-white/40">RPG</span>
-                {' · '}<span className="text-white/70">{current.careerAPG.toFixed(1)}</span> <span className="text-white/40">APG</span>
+                <span className="text-white/70">{current.careerPPG.toFixed(1)}</span> <span className="text-white/35">PPG</span>
+                {' · '}<span className="text-white/70">{current.careerRPG.toFixed(1)}</span> <span className="text-white/35">RPG</span>
+              </div>
+              <div>
+                <span className="text-white/70">{current.careerAPG.toFixed(1)}</span> <span className="text-white/35">APG</span>
               </div>
             </div>
             {/* EBK score highlight */}
             <div className="stat-highlight rounded-xl px-3 py-2.5 text-center">
-              <div className="font-display text-4xl text-orange-400 leading-none">{current.ebkScore.toFixed(1)}</div>
+              <div className="font-display text-4xl text-orange-400 leading-none tabular-nums">{current.ebkScore.toFixed(1)}</div>
               <div className="text-label mt-1">EBK Score</div>
             </div>
           </div>
 
-          {/* Challenger — hidden until reveal */}
-          <div className={`rounded-2xl p-4 border-2 transition-all duration-300 flex flex-col ${challengerCardClass}`}>
-            <div className={`text-label mb-2.5 ${
-              isRevealing && lastCorrect  ? 'text-green-500/70' :
-              isRevealing && !lastCorrect ? 'text-red-500/70' :
-              'text-white/30'
-            }`}>
-              Challenger
-            </div>
-            <div className="font-black text-white text-sm leading-tight mb-0.5">
-              {challenger.firstName} {challenger.lastName}
-            </div>
-            <div className="flex items-center gap-1.5 mb-3">
-              <span className={`pos-badge pos-${challenger.position.toLowerCase()}`}>{challenger.position}</span>
-              <span className="text-white/40 text-xs truncate">{challenger.team}</span>
-            </div>
+          {/* Challenger — hidden until reveal, uses card-flip-scene for 3D depth */}
+          <div className="card-flip-scene">
+            <div className={`rounded-2xl p-3 sm:p-4 border-2 transition-colors duration-300 flex flex-col h-full ${challengerCardClass}`}>
+              <div className={`text-label mb-2 ${
+                isRevealing && lastCorrect  ? 'text-green-500/70' :
+                isRevealing && !lastCorrect ? 'text-red-500/70' :
+                'text-white/30'
+              }`}>
+                Challenger
+              </div>
+              <div className="font-black text-white text-sm leading-tight mb-0.5">
+                {challenger.firstName} {challenger.lastName}
+              </div>
+              <div className="flex items-center gap-1.5 mb-3">
+                <span className={`pos-badge pos-${challenger.position.toLowerCase()}`}>{challenger.position}</span>
+                <span className="text-white/40 text-xs truncate">{challenger.team}</span>
+              </div>
 
-            {isRevealing ? (
-              /* Revealed state — animate in */
-              <div className="flex flex-col flex-1 animate-card-reveal">
-                <div className="text-white/60 text-[11px] space-y-0.5 mb-3 flex-1">
-                  <div className="text-white/70">{challenger.careerGames} <span className="text-white/40">GP</span></div>
-                  <div>
-                    <span className="text-white/70">{challenger.careerPPG.toFixed(1)}</span> <span className="text-white/40">PPG</span>
-                    {' · '}<span className="text-white/70">{challenger.careerRPG.toFixed(1)}</span> <span className="text-white/40">RPG</span>
-                    {' · '}<span className="text-white/70">{challenger.careerAPG.toFixed(1)}</span> <span className="text-white/40">APG</span>
+              {isRevealing ? (
+                /* Revealed state — 3D flip entrance */
+                <div key={flipKey} className="flex flex-col flex-1 animate-card-reveal">
+                  <div className="text-white/55 text-[11px] space-y-0.5 mb-3 flex-1">
+                    <div className="text-white/70">{challenger.careerGames} <span className="text-white/35">GP</span></div>
+                    <div>
+                      <span className="text-white/70">{challenger.careerPPG.toFixed(1)}</span> <span className="text-white/35">PPG</span>
+                      {' · '}<span className="text-white/70">{challenger.careerRPG.toFixed(1)}</span> <span className="text-white/35">RPG</span>
+                    </div>
+                    <div>
+                      <span className="text-white/70">{challenger.careerAPG.toFixed(1)}</span> <span className="text-white/35">APG</span>
+                    </div>
                   </div>
-                </div>
-                <div className={`rounded-xl px-3 py-2.5 text-center ${
-                  isTie       ? 'bg-yellow-900/40 border border-yellow-700/40' :
-                  lastCorrect ? 'bg-green-900/40  border border-green-700/40' :
-                                'bg-red-900/40    border border-red-700/40'
-                }`}>
-                  <div className={`font-display text-4xl leading-none ${
-                    isTie       ? 'text-yellow-400' :
-                    lastCorrect ? 'text-green-400' :
-                                  'text-red-400'
+                  <div className={`rounded-xl px-3 py-2.5 text-center ${
+                    isTie       ? 'bg-yellow-900/40 border border-yellow-700/40' :
+                    lastCorrect ? 'bg-green-900/40  border border-green-700/40' :
+                                  'bg-red-900/40    border border-red-700/40'
                   }`}>
-                    {challenger.ebkScore.toFixed(1)}
+                    <div className={`font-display text-4xl leading-none tabular-nums ${
+                      isTie       ? 'text-yellow-400' :
+                      lastCorrect ? 'text-green-400' :
+                                    'text-red-400'
+                    }`}>
+                      {challenger.ebkScore.toFixed(1)}
+                    </div>
+                    {/* Arrow showing direction vs current */}
+                    <div className="flex items-center justify-center gap-1 mt-1">
+                      {!isTie && (
+                        <span className={`text-xs font-black ${lastCorrect ? 'text-green-500/80' : 'text-red-500/80'}`}>
+                          {challenger.ebkScore > current.ebkScore ? '▲' : '▼'}
+                          {' '}{Math.abs(challenger.ebkScore - current.ebkScore).toFixed(1)}
+                        </span>
+                      )}
+                      {isTie && (
+                        <span className="text-xs font-black text-yellow-500/80">= Tie</span>
+                      )}
+                    </div>
+                    <div className="text-label mt-0.5">EBK Score</div>
                   </div>
-                  {/* Arrow showing direction vs current */}
-                  <div className="flex items-center justify-center gap-1 mt-1">
-                    {!isTie && (
-                      <span className={`text-xs font-black ${lastCorrect ? 'text-green-500/80' : 'text-red-500/80'}`}>
-                        {challenger.ebkScore > current.ebkScore ? '▲' : '▼'}
-                        {' '}{Math.abs(challenger.ebkScore - current.ebkScore).toFixed(1)}
-                      </span>
-                    )}
-                    {isTie && (
-                      <span className="text-xs font-black text-yellow-500/80">= Tie</span>
-                    )}
+                </div>
+              ) : (
+                /* Hidden state */
+                <div className="flex flex-col flex-1">
+                  <div className="text-white/15 text-[11px] space-y-0.5 mb-3 flex-1 select-none">
+                    <div>— GP</div>
+                    <div>—.— PPG · —.— RPG</div>
+                    <div>—.— APG</div>
                   </div>
-                  <div className="text-label mt-0.5">EBK Score</div>
+                  <div className="rounded-xl px-3 py-2.5 text-center border border-dashed border-orange-900/30 bg-orange-950/10">
+                    <div className="font-display text-4xl text-white/15 leading-none select-none tracking-widest">???</div>
+                    <div className="text-label mt-1">EBK Score</div>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              /* Hidden state */
-              <div className="flex flex-col flex-1">
-                <div className="text-white/20 text-[11px] space-y-0.5 mb-3 flex-1 select-none">
-                  <div>— GP</div>
-                  <div>—.— PPG · —.— RPG</div>
-                </div>
-                <div className="rounded-xl px-3 py-2.5 text-center border border-dashed border-orange-900/30 bg-orange-950/10">
-                  <div className="font-display text-4xl text-white/20 leading-none select-none tracking-widest">???</div>
-                  <div className="text-label mt-1">EBK Score</div>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
@@ -641,22 +730,22 @@ export default function HigherLowerPage() {
             <button
               onClick={() => guess('lower')}
               aria-label="Guess lower EBK score (keyboard: L or Arrow Down)"
-              className="btn-hl-lower py-5 sm:py-6 text-center w-full"
+              className="btn-hl-lower py-5 sm:py-7 text-center w-full min-h-[80px] sm:min-h-[96px]"
             >
-              <div className="hl-arrow font-display text-3xl sm:text-4xl text-blue-400 leading-none mb-1.5">▼</div>
-              <div className="text-xs sm:text-sm font-black tracking-wider uppercase text-blue-200/90">Lower EBK</div>
-              <div className="text-[10px] text-blue-400/50 mt-0.5 font-semibold">bigger career</div>
+              <div className="hl-arrow font-display text-3xl sm:text-5xl text-blue-400 leading-none mb-1.5">▼</div>
+              <div className="text-sm sm:text-base font-black tracking-wider uppercase text-blue-200/90">Lower EBK</div>
+              <div className="text-[10px] text-blue-400/50 mt-0.5 font-semibold hidden sm:block">bigger career</div>
             </button>
 
             {/* HIGHER */}
             <button
               onClick={() => guess('higher')}
               aria-label="Guess higher EBK score (keyboard: H or Arrow Up)"
-              className="btn-hl-higher py-5 sm:py-6 text-center w-full"
+              className="btn-hl-higher py-5 sm:py-7 text-center w-full min-h-[80px] sm:min-h-[96px]"
             >
-              <div className="hl-arrow font-display text-3xl sm:text-4xl text-orange-400 leading-none mb-1.5">▲</div>
-              <div className="text-xs sm:text-sm font-black tracking-wider uppercase text-orange-200/90">Higher EBK</div>
-              <div className="text-[10px] text-orange-400/50 mt-0.5 font-semibold">unknown gem</div>
+              <div className="hl-arrow font-display text-3xl sm:text-5xl text-orange-400 leading-none mb-1.5">▲</div>
+              <div className="text-sm sm:text-base font-black tracking-wider uppercase text-orange-200/90">Higher EBK</div>
+              <div className="text-[10px] text-orange-400/50 mt-0.5 font-semibold hidden sm:block">unknown gem</div>
             </button>
           </div>
           <p className="text-center text-[10px] text-white/20 mt-2 tracking-wide hidden sm:block">
@@ -667,7 +756,7 @@ export default function HigherLowerPage() {
 
         {/* ── Reveal verdict ────────────────────────────────────────────── */}
         {isRevealing && (
-          <div className={`flex items-center justify-center h-[80px] rounded-2xl border transition-all duration-300 ${
+          <div className={`flex items-center justify-center h-[80px] sm:h-[88px] rounded-2xl border transition-all duration-300 ${
             isTie
               ? 'bg-yellow-950/20 border-yellow-700/30'
               : lastCorrect
@@ -675,7 +764,7 @@ export default function HigherLowerPage() {
                 : 'bg-red-950/20 border-red-700/30 animate-wrong-shake'
           }`}>
             <span
-              className={`font-display text-4xl animate-verdict-pop ${
+              className={`font-display text-3xl sm:text-4xl animate-verdict-pop ${
                 isTie       ? 'text-yellow-400' :
                 lastCorrect ? 'text-green-400' :
                               'text-red-400'
@@ -689,16 +778,16 @@ export default function HigherLowerPage() {
       </div>
 
       {/* Explore More */}
-      <div className="max-w-2xl mx-auto px-4 pb-16 sm:pb-8 mt-6">
-        <p className="text-center text-xs font-bold text-white/30 tracking-[0.2em] uppercase mb-3">Explore More</p>
+      <div className="max-w-2xl mx-auto px-0 pb-16 sm:pb-8 mt-6">
+        <p className="text-center text-xs font-bold text-white/25 tracking-[0.2em] uppercase mb-3">Explore More</p>
         <div className="grid grid-cols-2 gap-3">
           <Link href="/fun-facts" className="card-surface explore-card p-4 hover:border-orange-700/40 hover:bg-orange-950/10 group rounded-xl">
-            <p className="font-black text-white/80 text-sm mb-1 group-hover:text-orange-300 transition-colors">Fun Facts</p>
-            <p className="text-white/40 text-xs leading-relaxed">NBA earnings in wild perspective</p>
+            <p className="font-black text-white/75 text-sm mb-1 group-hover:text-orange-300 transition-colors">Fun Facts</p>
+            <p className="text-white/35 text-xs leading-relaxed">NBA earnings in wild perspective</p>
           </Link>
           <Link href="/salary" className="card-surface explore-card p-4 hover:border-orange-700/40 hover:bg-orange-950/10 group rounded-xl">
-            <p className="font-black text-white/80 text-sm mb-1 group-hover:text-orange-300 transition-colors">Salary Rankings</p>
-            <p className="text-white/40 text-xs leading-relaxed">Who got paid most in NBA history</p>
+            <p className="font-black text-white/75 text-sm mb-1 group-hover:text-orange-300 transition-colors">Salary Rankings</p>
+            <p className="text-white/35 text-xs leading-relaxed">Who got paid most in NBA history</p>
           </Link>
         </div>
       </div>

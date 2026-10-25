@@ -807,12 +807,39 @@ textarea:focus-visible {
 .animate-streak-bump { animation: streak-bump 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards; }
 
 /* ── Card flip reveal — challenger card animates in on correct/wrong ──── */
-@keyframes card-reveal {
-  0%   { opacity: 0; transform: rotateY(-20deg) scale(0.96) translateX(4px); }
-  60%  { transform: rotateY(4deg) scale(1.01) translateX(-1px); }
-  100% { opacity: 1; transform: rotateY(0deg) scale(1) translateX(0); }
+/* 3D perspective flip: the card "turns over" on the Y-axis using a real  */
+/* perspective container so the depth is visible at all viewport widths.  */
+.card-flip-scene {
+  perspective: 900px;
+  perspective-origin: 50% 50%;
 }
-.animate-card-reveal { animation: card-reveal 0.4s cubic-bezier(0.22,1,0.36,1) forwards; }
+@keyframes card-reveal {
+  0%   { opacity: 0; transform: rotateY(-60deg) scale(0.94); filter: brightness(0.6); }
+  45%  { opacity: 1; filter: brightness(1.05); }
+  70%  { transform: rotateY(6deg) scale(1.01); }
+  85%  { transform: rotateY(-2deg) scale(1.0); }
+  100% { opacity: 1; transform: rotateY(0deg) scale(1); filter: brightness(1); }
+}
+.animate-card-reveal {
+  animation: card-reveal 0.5s cubic-bezier(0.22,1,0.36,1) forwards;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* ── Reveal glow — soft flash behind the challenger card on reveal ─────── */
+@keyframes reveal-glow-correct {
+  0%   { box-shadow: 0 0 0  rgba(34,197,94,0); }
+  35%  { box-shadow: 0 0 44px rgba(34,197,94,0.35), 0 0 80px rgba(34,197,94,0.12); }
+  100% { box-shadow: 0 0 24px rgba(34,197,94,0.14); }
+}
+@keyframes reveal-glow-wrong {
+  0%   { box-shadow: 0 0 0  rgba(239,68,68,0); }
+  35%  { box-shadow: 0 0 44px rgba(239,68,68,0.32), 0 0 80px rgba(239,68,68,0.10); }
+  100% { box-shadow: 0 0 24px rgba(239,68,68,0.14); }
+}
+.animate-reveal-glow-correct { animation: reveal-glow-correct 0.55s cubic-bezier(0.22,1,0.36,1) forwards; }
+.animate-reveal-glow-wrong   { animation: reveal-glow-wrong   0.55s cubic-bezier(0.22,1,0.36,1) forwards; }
 
 /* ── Verdict pop — big correct/wrong text entrance ─────────────────────── */
 @keyframes verdict-pop {
@@ -871,6 +898,68 @@ textarea:focus-visible {
 .explore-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(249,115,22,0.14);
+}
+
+/* ── Room code input — large spaced letters for join/invite page ─────────── */
+.input-room-code {
+  width: 100%;
+  background: #0d0d14;
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 18px 20px;
+  color: #fff;
+  font-size: 28px;
+  font-family: var(--font-bebas), 'Barlow Condensed', monospace;
+  letter-spacing: 0.35em;
+  text-align: center;
+  text-transform: uppercase;
+  transition: all 0.15s;
+  outline: none;
+  /* Prevent zoom on iOS */
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+.input-room-code::placeholder {
+  color: rgba(255,255,255,0.18);
+  letter-spacing: 0.3em;
+}
+.input-room-code:focus {
+  border-color: rgba(249,115,22,0.65);
+  box-shadow: 0 0 0 4px rgba(249,115,22,0.18), 0 0 32px rgba(249,115,22,0.08);
+}
+.input-room-code.input-error {
+  border-color: rgba(239,68,68,0.55);
+  box-shadow: 0 0 0 4px rgba(239,68,68,0.10);
+}
+.input-room-code.input-valid {
+  border-color: rgba(34,197,94,0.5);
+  box-shadow: 0 0 0 4px rgba(34,197,94,0.08);
+}
+
+/* ── Join page shake — error feedback when invalid code submitted ─────────── */
+@keyframes join-shake {
+  0%, 100% { transform: translateX(0); }
+  16%       { transform: translateX(-8px); }
+  33%       { transform: translateX(8px); }
+  50%       { transform: translateX(-6px); }
+  66%       { transform: translateX(5px); }
+  83%       { transform: translateX(-3px); }
+}
+.animate-join-shake { animation: join-shake 0.45s cubic-bezier(0.36,0.07,0.19,0.97) forwards; }
+
+/* ── Milestone label tooltip ─────────────────────────────────────────────── */
+.milestone-pip {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+.milestone-pip-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid;
+  transition: all 0.35s cubic-bezier(0.22,1,0.36,1);
+  cursor: default;
 }
 
 /* ── Higher / Lower game action buttons ─────────────────────────────────────── */
@@ -1112,7 +1201,10 @@ textarea:focus-visible {
   .animate-wrong-shake,
   .animate-correct-flash,
   .animate-fact-entrance,
-  .animate-streak-milestone {
+  .animate-streak-milestone,
+  .animate-reveal-glow-correct,
+  .animate-reveal-glow-wrong,
+  .animate-join-shake {
     animation: fade-in 0.2s ease forwards !important;
     transform: none !important;
   }

@@ -8,92 +8,93 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-16 animate-fade-in">
-      <div className="w-full max-w-md text-center">
+    <div className="relative min-h-screen flex items-center justify-center px-4 py-16 overflow-hidden animate-fade-in">
 
-        {/* Ambient glow */}
-        <div className="absolute inset-x-0 top-0 h-[480px] pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 80% 90% at 50% 0%, rgba(234,88,12,0.18) 0%, transparent 65%)' }} />
+      {/* Ambient glow — fixed to viewport top, doesn't scroll */}
+      <div className="fixed inset-x-0 top-0 h-[520px] pointer-events-none z-0"
+        style={{ background: 'radial-gradient(ellipse 80% 90% at 50% 0%, rgba(234,88,12,0.20) 0%, transparent 65%)' }} />
 
-        <div className="relative">
-          {/* Big 404 */}
-          <div className="relative mb-4 animate-fade-up">
-            <span
-              className="font-display leading-none select-none block"
-              style={{
-                fontSize: 'clamp(6rem, 30vw, 14rem)',
-                background: 'linear-gradient(180deg, rgba(249,115,22,0.9) 0%, rgba(234,88,12,0.4) 60%, transparent 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                filter: 'drop-shadow(0 0 40px rgba(249,115,22,0.25))',
-              }}
-            >
-              404
-            </span>
-            {/* Reflection / glare line */}
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-32 h-px bg-gradient-to-r from-transparent via-orange-500/40 to-transparent" />
-          </div>
+      <div className="relative z-10 w-full max-w-md text-center">
 
-          {/* EBK wordmark */}
-          <div className="mb-6 animate-fade-up-1">
-            <p className="text-label tracking-[0.4em] mb-1">Elite Ball Knowledge</p>
-            <h1 className="font-display text-3xl sm:text-4xl text-white leading-none tracking-wide">
-              PAGE NOT FOUND
-            </h1>
-          </div>
+        {/* Big 404 */}
+        <div className="relative mb-3 animate-fade-up">
+          <span
+            className="font-display leading-none select-none block"
+            style={{
+              fontSize: 'clamp(6rem, 30vw, 14rem)',
+              background: 'linear-gradient(180deg, rgba(249,115,22,0.95) 0%, rgba(234,88,12,0.45) 55%, transparent 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              filter: 'drop-shadow(0 0 48px rgba(249,115,22,0.30))',
+            }}
+          >
+            404
+          </span>
+          {/* Reflection / glare line */}
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-2 w-40 h-px bg-gradient-to-r from-transparent via-orange-500/50 to-transparent" />
+        </div>
 
-          {/* Card */}
-          <div className="card-accent p-6 sm:p-8 mb-6 animate-fade-up-2">
-            {/* Bouncing basketball */}
-            <div className="flex items-center justify-center mb-5">
-              <div style={{ animation: 'bounce-ball 1.1s cubic-bezier(0.36,0,0.66,0) infinite' }}>
-                <div className="w-14 h-14 rounded-full bg-orange-500/20 border-2 border-orange-500/40 flex items-center justify-center"
-                  style={{ boxShadow: '0 0 24px rgba(249,115,22,0.25), inset 0 1px 0 rgba(255,255,255,0.1)' }}>
-                  <svg className="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="9" />
-                    <path strokeLinecap="round" d="M12 3c0 5 3 8 9 9M12 3C12 8 9 11 3 12M12 21c0-5-3-8-9-9M12 21c0-5 3-8 9-9" />
-                  </svg>
-                </div>
+        {/* EBK wordmark */}
+        <div className="mb-7 animate-fade-up-1">
+          <p className="text-label tracking-[0.4em] mb-1.5">Elite Ball Knowledge</p>
+          <h1 className="font-display text-3xl sm:text-4xl text-white leading-none tracking-wide">
+            PAGE NOT FOUND
+          </h1>
+        </div>
+
+        {/* Card */}
+        <div className="card-accent p-6 sm:p-8 mb-6 animate-fade-up-2">
+          {/* Bouncing basketball */}
+          <div className="flex items-center justify-center mb-5">
+            <div style={{ animation: 'bounce-ball 1.1s cubic-bezier(0.36,0,0.66,0) infinite' }}>
+              <div
+                className="w-16 h-16 rounded-full bg-orange-500/15 border-2 border-orange-500/35 flex items-center justify-center"
+                style={{ boxShadow: '0 0 28px rgba(249,115,22,0.22), inset 0 1px 0 rgba(255,255,255,0.08)' }}
+              >
+                <svg className="w-9 h-9 text-orange-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9" />
+                  <path strokeLinecap="round" d="M12 3c0 5 3 8 9 9M12 3C12 8 9 11 3 12M12 21c0-5-3-8-9-9M12 21c0-5 3-8 9-9" />
+                </svg>
               </div>
             </div>
-
-            <p className="text-white/70 text-sm font-bold leading-relaxed mb-1">
-              This page fouled out of bounds.
-            </p>
-            <p className="text-white/35 text-xs leading-relaxed mb-6">
-              Whatever you were looking for doesn&apos;t exist — or got traded to another URL.
-            </p>
-
-            <div className="flex flex-col gap-3">
-              <Link href="/" className="btn-primary w-full text-sm font-display tracking-widest">
-                Back to Home Court
-              </Link>
-              <Link href="/lobby" className="btn-secondary w-full text-sm">
-                Jump Into a Live Game
-              </Link>
-            </div>
           </div>
 
-          {/* Quick links */}
-          <div className="animate-fade-up-3">
-            <p className="text-label mb-3 tracking-widest">Or explore</p>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {[
-                { href: '/practice', label: 'Practice' },
-                { href: '/higher-lower', label: 'Higher or Lower' },
-                { href: '/fun-facts', label: 'Fun Facts' },
-                { href: '/leaderboard', label: 'Leaderboard' },
-              ].map(({ href, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="text-xs font-bold text-white/60 hover:text-orange-400 transition-colors px-3 py-1.5 rounded-lg border border-white/[0.06] hover:border-orange-500/30 bg-white/[0.02] hover:bg-orange-950/20"
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
+          <p className="text-white/75 text-sm font-bold leading-relaxed mb-1.5">
+            This page fouled out of bounds.
+          </p>
+          <p className="text-white/35 text-xs leading-relaxed mb-7">
+            Whatever you were looking for doesn&apos;t exist — or got traded to another URL.
+          </p>
+
+          <div className="flex flex-col gap-3">
+            <Link href="/" className="btn-primary w-full font-display tracking-widest">
+              Back to Home Court
+            </Link>
+            <Link href="/lobby" className="btn-secondary w-full">
+              Jump Into a Live Game
+            </Link>
+          </div>
+        </div>
+
+        {/* Quick links */}
+        <div className="animate-fade-up-3">
+          <p className="text-label mb-3 tracking-widest">Or explore</p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {[
+              { href: '/practice',     label: 'Practice' },
+              { href: '/higher-lower', label: 'Higher or Lower' },
+              { href: '/fun-facts',    label: 'Fun Facts' },
+              { href: '/leaderboard',  label: 'Leaderboard' },
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="text-xs font-bold text-white/55 hover:text-orange-400 transition-colors px-3 py-1.5 rounded-lg border border-white/[0.06] hover:border-orange-500/30 bg-white/[0.02] hover:bg-orange-950/20 min-h-[36px] flex items-center"
+              >
+                {label}
+              </Link>
+            ))}
           </div>
         </div>
 
