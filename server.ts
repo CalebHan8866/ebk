@@ -980,8 +980,8 @@ function startPickTimer(io: SocketServer, room: Room) {
 
       if (currentRoom.source === 'online') {
         recordMatchup(currentRoom.hostUserId, currentRoom.guestUserId)
-        if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, winner === 'host', false, 0, true)
-        if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId ?? '', winner === 'guest', false, 0, false)
+        if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, winner === 'host', false, currentRoom.hostJCGames, true)
+        if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId ?? '', winner === 'guest', false, currentRoom.guestJCGames, false)
         saveGameRecords(currentRoom, winner)
       }
 
