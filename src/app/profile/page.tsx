@@ -351,23 +351,25 @@ export default function ProfilePage() {
                 {/* Win% + W/L/D — mobile only, right of avatar */}
                 <div className="sm:hidden ml-auto shrink-0 flex flex-col items-center gap-2">
                   <div className="text-center">
-                    <div className={`font-display text-4xl leading-none tabular-nums ${winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-orange-400' : 'text-red-400'}`}>{winPct}%</div>
+                    <div className={`font-display text-4xl leading-none tabular-nums ${total === 0 ? 'text-white/20' : winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-orange-400' : 'text-red-400'}`}>
+                      {total === 0 ? '—' : `${winPct}%`}
+                    </div>
                     <div className="text-label mt-1">Win Rate</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="text-center">
-                      <div className="font-display text-xl text-green-400 leading-none tabular-nums">{user.wins}</div>
-                      <div className="text-[8px] font-black uppercase tracking-[0.1em] text-green-400/50 mt-0.5">W</div>
+                      <div className={`font-display text-xl leading-none tabular-nums ${user.wins > 0 ? 'text-green-400' : 'text-white/25'}`}>{user.wins}</div>
+                      <div className={`text-[8px] font-black uppercase tracking-[0.1em] mt-0.5 ${user.wins > 0 ? 'text-green-400/50' : 'text-white/20'}`}>W</div>
                     </div>
                     <div className="w-px h-5 bg-white/[0.08]" />
                     <div className="text-center">
-                      <div className="font-display text-xl text-red-400 leading-none tabular-nums">{user.losses}</div>
-                      <div className="text-[8px] font-black uppercase tracking-[0.1em] text-red-400/50 mt-0.5">L</div>
+                      <div className={`font-display text-xl leading-none tabular-nums ${user.losses > 0 ? 'text-red-400' : 'text-white/25'}`}>{user.losses}</div>
+                      <div className={`text-[8px] font-black uppercase tracking-[0.1em] mt-0.5 ${user.losses > 0 ? 'text-red-400/50' : 'text-white/20'}`}>L</div>
                     </div>
                     <div className="w-px h-5 bg-white/[0.08]" />
                     <div className="text-center">
-                      <div className="font-display text-xl text-yellow-400 leading-none tabular-nums">{user.draws}</div>
-                      <div className="text-[8px] font-black uppercase tracking-[0.1em] text-yellow-400/50 mt-0.5">D</div>
+                      <div className={`font-display text-xl leading-none tabular-nums ${user.draws > 0 ? 'text-yellow-400' : 'text-white/25'}`}>{user.draws}</div>
+                      <div className={`text-[8px] font-black uppercase tracking-[0.1em] mt-0.5 ${user.draws > 0 ? 'text-yellow-400/50' : 'text-white/20'}`}>D</div>
                     </div>
                   </div>
                 </div>
@@ -415,23 +417,25 @@ export default function ProfilePage() {
               {/* Win% + W-L-D — desktop right column */}
               <div className="hidden sm:flex flex-col items-end gap-3 shrink-0">
                 <div className="text-right">
-                  <div className={`font-display text-5xl leading-none tabular-nums ${winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-orange-400' : 'text-red-400'}`}>{winPct}%</div>
+                  <div className={`font-display text-5xl leading-none tabular-nums ${total === 0 ? 'text-white/20' : winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-orange-400' : 'text-red-400'}`}>
+                    {total === 0 ? '—' : `${winPct}%`}
+                  </div>
                   <div className="text-label mt-1 text-right">Win Rate</div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-center">
-                    <div className="font-display text-2xl text-green-400 leading-none tabular-nums">{user.wins}</div>
-                    <div className="text-[9px] font-black uppercase tracking-[0.1em] text-green-400/50 mt-0.5">W</div>
+                    <div className={`font-display text-2xl leading-none tabular-nums ${user.wins > 0 ? 'text-green-400' : 'text-white/25'}`}>{user.wins}</div>
+                    <div className={`text-[9px] font-black uppercase tracking-[0.1em] mt-0.5 ${user.wins > 0 ? 'text-green-400/50' : 'text-white/20'}`}>W</div>
                   </div>
                   <div className="w-px h-6 bg-white/[0.08]" />
                   <div className="text-center">
-                    <div className="font-display text-2xl text-red-400 leading-none tabular-nums">{user.losses}</div>
-                    <div className="text-[9px] font-black uppercase tracking-[0.1em] text-red-400/50 mt-0.5">L</div>
+                    <div className={`font-display text-2xl leading-none tabular-nums ${user.losses > 0 ? 'text-red-400' : 'text-white/25'}`}>{user.losses}</div>
+                    <div className={`text-[9px] font-black uppercase tracking-[0.1em] mt-0.5 ${user.losses > 0 ? 'text-red-400/50' : 'text-white/20'}`}>L</div>
                   </div>
                   <div className="w-px h-6 bg-white/[0.08]" />
                   <div className="text-center">
-                    <div className="font-display text-2xl text-yellow-400 leading-none tabular-nums">{user.draws}</div>
-                    <div className="text-[9px] font-black uppercase tracking-[0.1em] text-yellow-400/50 mt-0.5">D</div>
+                    <div className={`font-display text-2xl leading-none tabular-nums ${user.draws > 0 ? 'text-yellow-400' : 'text-white/25'}`}>{user.draws}</div>
+                    <div className={`text-[9px] font-black uppercase tracking-[0.1em] mt-0.5 ${user.draws > 0 ? 'text-yellow-400/50' : 'text-white/20'}`}>D</div>
                   </div>
                 </div>
               </div>
@@ -440,21 +444,33 @@ export default function ProfilePage() {
 
           {/* ── Stats tab ── */}
           {activeTab === 'stats' && <>
+          {total === 0 && (
+            <div className="card-surface p-6 flex flex-col items-center gap-3 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-orange-950/40 border border-orange-800/30 flex items-center justify-center">
+                <span className="text-3xl leading-none select-none">🏀</span>
+              </div>
+              <div>
+                <p className="text-white font-bold text-sm">No games played yet</p>
+                <p className="text-white/35 text-xs mt-1">Your stats will appear here once you complete your first draft.</p>
+              </div>
+              <Link href="/lobby" className="btn-primary text-sm px-6 mt-1">Find a Game</Link>
+            </div>
+          )}
           <div className="card-stat p-6">
             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-5">Performance Breakdown</h3>
 
             {/* Win / Loss / Draw trio */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="stat-highlight rounded-xl py-4 text-center">
-                <div className="font-display text-5xl text-green-400 leading-none">{user.wins}</div>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
+              <div className={`rounded-xl py-4 text-center ${user.wins > 0 ? 'stat-highlight' : 'bg-white/[0.03] border border-white/[0.06]'}`}>
+                <div className={`font-display text-4xl sm:text-5xl leading-none tabular-nums ${user.wins > 0 ? 'text-green-400' : 'text-white/30'}`}>{user.wins}</div>
                 <div className="text-label mt-1.5">Wins</div>
               </div>
               <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl py-4 text-center">
-                <div className="font-display text-5xl text-red-400 leading-none">{user.losses}</div>
+                <div className={`font-display text-4xl sm:text-5xl leading-none tabular-nums ${user.losses > 0 ? 'text-red-400' : 'text-white/30'}`}>{user.losses}</div>
                 <div className="text-label mt-1.5">Losses</div>
               </div>
               <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl py-4 text-center">
-                <div className="font-display text-5xl text-yellow-400 leading-none">{user.draws}</div>
+                <div className={`font-display text-4xl sm:text-5xl leading-none tabular-nums ${user.draws > 0 ? 'text-yellow-400' : 'text-white/30'}`}>{user.draws}</div>
                 <div className="text-label mt-1.5">Draws</div>
               </div>
             </div>
@@ -463,50 +479,58 @@ export default function ProfilePage() {
             <div className="mb-5">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-label tracking-[0.14em]">Win Rate</span>
-                <span className={`text-sm font-black tabular-nums ${total < 5 ? 'text-white/40' : winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-white' : 'text-red-400'}`}>
-                  {total >= 5 ? `${winPct}%` : total > 0 ? `${winPct}% (need 5+ games)` : '—'}
+                <span className={`text-sm font-black tabular-nums ${total === 0 ? 'text-white/25' : total < 5 ? 'text-white/40' : winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-white' : 'text-red-400'}`}>
+                  {total >= 5 ? `${winPct}%` : total > 0 ? `${winPct}% (need 5+ games)` : 'No games yet'}
                 </span>
               </div>
               <div className="budget-bar">
-                <div className="budget-bar-fill" style={{ width: `${winPctNum}%` }} />
+                {total === 0
+                  ? <div className="budget-bar-fill opacity-20" style={{ width: '0%' }} />
+                  : <div className="budget-bar-fill" style={{ width: `${winPctNum}%` }} />
+                }
               </div>
+              {total === 0 && (
+                <p className="text-[10px] text-white/20 font-bold mt-1.5 tracking-wide uppercase">Play your first game to see stats</p>
+              )}
             </div>
 
             {/* Advanced grid */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-4 text-center">
-                <div className="font-display text-3xl text-orange-400 leading-none">{user.gamesPlayed}</div>
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4">
+              <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-3 sm:p-4 text-center min-w-0">
+                <div className={`font-display text-2xl sm:text-3xl leading-none tabular-nums ${user.gamesPlayed > 0 ? 'text-orange-400' : 'text-white/25'}`}>{user.gamesPlayed > 0 ? user.gamesPlayed : '—'}</div>
                 <div className="text-label mt-1">Games Played</div>
               </div>
-              <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-4 text-center">
-                <div className="font-display text-3xl text-orange-300 leading-none">{user.maxWinStreak}</div>
+              <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-3 sm:p-4 text-center min-w-0">
+                <div className={`font-display text-2xl sm:text-3xl leading-none tabular-nums ${user.maxWinStreak > 0 ? 'text-orange-300' : 'text-white/25'}`}>{user.maxWinStreak > 0 ? user.maxWinStreak : '—'}</div>
                 <div className="text-label mt-1">Best Streak</div>
               </div>
-              <div className={`bg-white/[0.03] border border-white/[0.05] rounded-xl p-4 text-center ${user.winStreak >= 3 ? 'border-orange-700/30 bg-orange-950/20' : ''}`}>
-                <div className={`font-display text-3xl leading-none ${user.winStreak >= 3 ? 'text-orange-400' : 'text-white/60'}`}>
-                  {user.winStreak >= 3 ? `🔥 ${user.winStreak}` : user.winStreak}
+              <div className={`bg-white/[0.03] border border-white/[0.05] rounded-xl p-3 sm:p-4 text-center min-w-0 ${user.winStreak >= 3 ? 'border-orange-700/30 bg-orange-950/20' : ''}`}>
+                <div className={`font-display text-2xl sm:text-3xl leading-none tabular-nums ${user.winStreak >= 3 ? 'text-orange-400' : user.winStreak > 0 ? 'text-white/60' : 'text-white/25'}`}>
+                  {user.winStreak > 0 ? user.winStreak : '—'}
                 </div>
+                {user.winStreak >= 3 && (
+                  <div className="text-[9px] font-black text-orange-500/70 uppercase tracking-wider mt-0.5">🔥 Hot</div>
+                )}
                 <div className="text-label mt-1">Current Streak</div>
               </div>
-              {user.firstPickGames > 0 ? (
-                <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-4 text-center">
-                  <div className="font-display text-3xl text-blue-400 leading-none">
-                    {((user.firstPickWins / user.firstPickGames) * 100).toFixed(0)}%
-                  </div>
-                  <div className="text-label mt-1">1st Pick Win%</div>
+              <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-3 sm:p-4 text-center min-w-0">
+                <div className={`font-display text-2xl sm:text-3xl leading-none tabular-nums ${user.firstPickGames > 0 ? 'text-blue-400' : 'text-white/25'}`}>
+                  {user.firstPickGames > 0 ? `${((user.firstPickWins / user.firstPickGames) * 100).toFixed(0)}%` : '—'}
                 </div>
-              ) : (
-                <div className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-4 text-center">
-                  <div className="font-display text-3xl text-white/40 leading-none">—</div>
-                  <div className="text-label mt-1">1st Pick Win%</div>
-                </div>
-              )}
+                <div className="text-label mt-1">1st Pick Win%</div>
+              </div>
             </div>
           </div>
 
           {/* Insights + further analytics */}
           <div className="card-surface p-6">
-            <h3 className="font-display text-2xl text-white tracking-wider leading-none mb-4">Insights</h3>
+            <h3 className="font-display text-xl sm:text-2xl text-white tracking-wider leading-none mb-4">Insights</h3>
+            {total === 0 && (
+              <div className="flex items-center gap-3 rounded-xl px-4 py-3 bg-white/[0.025] border border-white/[0.06] mb-4">
+                <span className="text-xl leading-none select-none shrink-0">📊</span>
+                <p className="text-white/40 text-xs font-semibold leading-snug">Insights unlock after your first game. Jump into the lobby to get started.</p>
+              </div>
+            )}
             <div className="space-y-0">
               {/* Win percentage */}
               <div className="flex items-center justify-between py-3 border-b border-white/[0.05]">
@@ -589,12 +613,17 @@ export default function ProfilePage() {
                         <span className={`text-[10px] font-bold tabular-nums opacity-60 ${current.color}`}>{w}W</span>
                       </div>
                       {next && (
-                        <span className="text-[11px] text-white/30 font-bold">{next.min - w} wins to {next.label}</span>
+                        <span className="text-[11px] font-bold" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                          {w === 0 ? `Win ${next.min} to reach ${next.label}` : `${next.min - w} more to ${next.label}`}
+                        </span>
                       )}
                     </div>
                     {next && (
                       <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                        <div className="h-full rounded-full bg-gradient-to-r from-orange-700 to-orange-500 transition-all duration-700" style={{ width: `${pct}%` }} />
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-orange-700 to-orange-500 transition-all duration-700"
+                          style={{ width: pct > 0 ? `${pct}%` : '2px' }}
+                        />
                       </div>
                     )}
                   </div>
@@ -942,9 +971,13 @@ export default function ProfilePage() {
                   ? 'bg-red-950/50 border-red-800/50 text-red-400'
                   : user.usernameChanges === 1
                   ? 'bg-yellow-950/50 border-yellow-800/40 text-yellow-400'
-                  : 'bg-white/[0.04] border-white/10 text-white/40'
+                  : 'bg-green-950/40 border-green-800/30 text-green-400/80'
               }`}>
-                {user.usernameChanges}/2 used
+                {user.usernameChanges >= 2
+                  ? 'No changes left'
+                  : user.usernameChanges === 1
+                  ? '1 change left'
+                  : '2 changes left'}
               </div>
             </div>
             <p className="text-white/40 text-xs mb-4 ml-8">Letters, numbers, and underscores only · 3–20 characters</p>
