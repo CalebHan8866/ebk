@@ -1710,11 +1710,14 @@ app.prepare().then(async () => {
     // Periodically re-validate the session for authenticated sockets.
     // The handshake middleware only runs once at connect time, so a logout or
     // password change that increments tokenVersion would otherwise leave the
-    // socket open indefinitely.  Every 5 minutes we check the DB tokenVersion
+    // socket open indefinitely.  We check the DB tokenVersion every 60 seconds
     // for authenticated connections and disconnect the socket if the session
     // has been invalidated, ensuring the user cannot continue playing after
     // logging out.  Anonymous sockets (userId === null) are skipped.
-    const SESSION_RECHECK_MS = 5 * 60 * 1000
+    // NOTE: reduced from 5 minutes to 60 seconds to close the forced-logout
+    // window — a force-logged-out user should not be able to keep drafting or
+    // bidding for more than ~1 minute after their tokenVersion is bumped.
+    const SESSION_RECHECK_MS = 60 * 1000
     const sessionRecheckInterval = setInterval(async () => {
       const userId = socket.data.userId as string | null
       if (!userId) return
@@ -1897,6 +1900,17 @@ app.prepare().then(async () => {
       const isHost = socket.id === room.hostSocketId
       const isGuest = socket.id === room.guestSocketId
 
+      // Defense-in-depth: for authenticated rooms, also verify that this socket's
+      // userId matches the stored hostUserId / guestUserId.  The primary guard is
+      // the socket.id check above (kept authoritative by get-room), but adding the
+      // userId check prevents any future code-path that mis-routes a socket.id from
+      // being exploited — a mismatch here is always an anomaly and should be rejected.
+      const pickUserId = socket.data.userId as string | null
+      if (pickUserId) {
+        if (isHost && room.hostUserId && pickUserId !== room.hostUserId) return
+        if (isGuest && room.guestUserId && pickUserId !== room.guestUserId) return
+      }
+
       if ((currentPicker === 'host' && !isHost) || (currentPicker === 'guest' && !isGuest)) return
       if (room.hostPicks.includes(playerId) || room.guestPicks.includes(playerId)) return
       const pickedPlayer = playerById.get(playerId)
@@ -2004,6 +2018,11 @@ app.prepare().then(async () => {
       const room = rooms.get(code.trim().toUpperCase())
       if (!room || room.status !== 'result') return
       if (socket.id !== room.hostSocketId) return // only host can start next game
+      // Defense-in-depth: for authenticated hosts, also verify the userId matches
+      // the stored hostUserId — a socket.id match alone could be spoofed if the
+      // room.hostSocketId were ever set incorrectly by a reconnect-path bug.
+      const ngUserId = socket.data.userId as string | null
+      if (ngUserId && room.hostUserId && ngUserId !== room.hostUserId) return
 
       const roomCode = room.code
 
@@ -2394,7 +2413,15 @@ app.prepare().then(async () => {
       } else { cancelListingThrottle.set(socket.id, { count: 1, windowStart: clcNow }) }
       const normCode = code.trim().toUpperCase()
       const listing = gameListings.get(normCode)
-      if (!listing || listing.hostSocketId !== socket.id) return
+      // Allow cancel by socket.id (normal case) OR by matching authenticated userId
+      // (covers the reconnect case where socket.id changed but the user is the same).
+      // Without the userId fallback, an authenticated host who reconnects after a
+      // momentary disconnect cannot cancel their own listing because the stored
+      // hostSocketId no longer matches their new socket.id.
+      const clUserId = socket.data.userId as string | null
+      const isOwner = listing?.hostSocketId === socket.id ||
+        (clUserId !== null && clUserId === listing?.hostUserId)
+      if (!listing || !isOwner) return
       clearTimeout(listingTimers.get(normCode))
       listingTimers.delete(normCode)
       gameListings.delete(normCode)
