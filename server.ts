@@ -1422,13 +1422,14 @@ app.prepare().then(async () => {
   setInterval(async () => {
     try {
       const fresh = await prisma.player.findMany({ select: playerSelect })
-      if (fresh.length !== allPlayers.length) {
-        console.log(`Player data refreshed: ${allPlayers.length} → ${fresh.length}`)
-      }
       recomputeEbkScores(fresh)
       // playerById keeps ALL rows; allPlayers is deduplicated for the draft/auction pool.
+      const freshDeduped = deduplicatePlayers(fresh)
+      if (freshDeduped.length !== allPlayers.length) {
+        console.log(`Player data refreshed: ${allPlayers.length} → ${freshDeduped.length} unique players (${fresh.length} raw rows)`)
+      }
       playerById = new Map(fresh.map(p => [p.id, p]))
-      allPlayers = deduplicatePlayers(fresh)
+      allPlayers = freshDeduped
       refreshJCId()
     } catch (e) {
       console.error('Failed to refresh player data:', e)
