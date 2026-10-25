@@ -79,7 +79,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex flex-col min-h-screen">
         <AuthProvider>
           <Navbar />
-          <main className="flex-1">{children}</main>
+          {/* pb-20 reserves space for the fixed mobile bottom nav (56px bar + ~24px safe-area buffer) */}
+          <main className="flex-1 pb-20 sm:pb-0">{children}</main>
           <Footer />
         </AuthProvider>
       </body>

@@ -3,7 +3,8 @@ import Link from 'next/link'
 export default function Footer() {
   return (
     <footer className="border-t border-white/5 bg-[#0A0A0A] mt-auto">
-      <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+      {/* pb-20 on mobile pushes footer content above the fixed bottom nav bar */}
+      <div className="max-w-6xl mx-auto px-4 py-6 pb-20 sm:pb-6 flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="text-gray-400 text-xs">
           © {new Date().getFullYear()} Elite Ball Knowledge. All rights reserved.
         </div>

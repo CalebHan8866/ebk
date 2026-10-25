@@ -93,7 +93,7 @@ export default function Navbar() {
                   </div>
                 </Link>
                 <button onClick={handleLogout}
-                  className="text-label hover:text-gray-300 transition-colors px-2 py-1 rounded-lg hover:bg-white/[0.04]">
+                  className="text-xs font-bold text-white/40 hover:text-white/80 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-white/[0.06] min-h-[32px]">
                   Sign Out
                 </button>
               </>
@@ -114,24 +114,37 @@ export default function Navbar() {
 
       {/* ── MOBILE BOTTOM NAV ─────────────────────────────────────── */}
       {/* Visible only below sm breakpoint (640 px) */}
-      <BottomNav pathname={pathname} />
+      <BottomNav pathname={pathname} loggedIn={!!user} />
     </>
   )
 }
 
 /* ── Bottom nav sub-component ──────────────────────────────────────────── */
-function BottomNav({ pathname }: { pathname: string }) {
+function BottomNav({ pathname, loggedIn }: { pathname: string | null; loggedIn: boolean }) {
+  // When logged in, swap "Home" for "Profile" so auth-protected pages are reachable on mobile.
+  // The EBK wordmark in the top bar is always a home link so we don't lose that entry point.
   const items: { href: string; label: string; icon: React.ReactNode }[] = [
-    {
-      href: '/',
-      label: 'Home',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-          <path d="M3 9.75L12 3l9 6.75V21a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.75z"/>
-          <path d="M9 22V12h6v10"/>
-        </svg>
-      ),
-    },
+    loggedIn
+      ? {
+          href: '/profile',
+          label: 'Profile',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+            </svg>
+          ),
+        }
+      : {
+          href: '/',
+          label: 'Home',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+              <path d="M3 9.75L12 3l9 6.75V21a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.75z"/>
+              <path d="M9 22V12h6v10"/>
+            </svg>
+          ),
+        },
     {
       href: '/lobby',
       label: 'Play',
@@ -162,6 +175,16 @@ function BottomNav({ pathname }: { pathname: string }) {
         </svg>
       ),
     },
+    {
+      href: '/salary',
+      label: 'Salary',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 6v2m0 8v2M9.5 9.5a2.5 2.5 0 0 1 5 0c0 2.5-5 2.5-5 5a2.5 2.5 0 0 0 5 0"/>
+        </svg>
+      ),
+    },
   ]
 
   return (
@@ -176,7 +199,7 @@ function BottomNav({ pathname }: { pathname: string }) {
       {/* Safe-area padding for notched phones — min-h so the bar expands on notched iPhones */}
       <div className="flex items-center justify-around min-h-14 pb-[env(safe-area-inset-bottom,0px)]">
         {items.map(({ href, label, icon }) => {
-          const active = pathname === href || (href !== '/' && pathname?.startsWith(href))
+          const active = pathname === href || (href !== '/' && href !== '/profile' && pathname?.startsWith(href))
           return (
             <Link
               key={href}
