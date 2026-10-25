@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
         firstPickWins: true, firstPickGames: true,
         unlockedBadges: true, unlockedEmotes: true, unlockedMilestones: true,
         equippedBadge: true, equippedBadges: true, equippedEmote: true,
+        usernameChanges: true,
         createdAt: true,
       },
     })
@@ -54,10 +55,19 @@ export async function PATCH(request: NextRequest) {
     const payload = await getAuthUser(request)
     if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Rate limit: 3 username changes per hour per user to prevent scripts from
-    // rapidly cycling through usernames to claim them ahead of other users.
+    // Rate limit: 3 username changes per hour (prevents rapid cycling).
     const { success: renameOk } = rateLimit(`username-change:${payload.userId}`, 3, 60 * 60 * 1000)
     if (!renameOk) return NextResponse.json({ error: 'Too many username changes. Try again in an hour.' }, { status: 429 })
+
+    // Lifetime cap: 2 username changes maximum.
+    const currentUser = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { usernameChanges: true },
+    })
+    if (!currentUser) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (currentUser.usernameChanges >= 2) {
+      return NextResponse.json({ error: 'Username can only be changed twice in a lifetime. You have used both changes.' }, { status: 403 })
+    }
 
     let body: { username?: unknown }
     try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid body' }, { status: 400 }) }
@@ -94,8 +104,8 @@ export async function PATCH(request: NextRequest) {
     try {
       const user = await prisma.user.update({
         where: { id: payload.userId },
-        data: { username },
-        select: { id: true, username: true, email: true, tokenVersion: true },
+        data: { username, usernameChanges: { increment: 1 } },
+        select: { id: true, username: true, email: true, tokenVersion: true, usernameChanges: true },
       })
 
       // Reissue the JWT so the updated username is reflected in the cookie
@@ -112,7 +122,7 @@ export async function PATCH(request: NextRequest) {
 
       // Strip tokenVersion — it's an internal session counter, not client data
       const { tokenVersion: _tv, ...safeUser } = user
-      return NextResponse.json({ user: safeUser })
+      return NextResponse.json({ user: safeUser, changesRemaining: 2 - safeUser.usernameChanges })
     } catch (e: unknown) {
       if (typeof e === 'object' && e !== null && 'code' in e && (e as { code: unknown }).code === 'P2002') {
         return NextResponse.json({ error: 'Username is already taken' }, { status: 409 })

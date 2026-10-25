@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { BADGES, EMOTES, MILESTONES } from '@/lib/accessories'
 import { useAuth } from '@/context/AuthContext'
 
-type ProfileTab = 'overview' | 'stats' | 'badges' | 'milestones' | 'settings'
+type ProfileTab = 'stats' | 'badges' | 'milestones' | 'settings'
 
 interface UserProfile {
   id: string
@@ -26,6 +26,7 @@ interface UserProfile {
   equippedBadge: string
   equippedBadges: string
   equippedEmote: string
+  usernameChanges: number
   createdAt: string
 }
 
@@ -34,7 +35,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [equippedBadges, setEquippedBadges] = useState<string[]>([])
   const [equippedEmote, setEquippedEmote] = useState('')
-  const [activeTab, setActiveTab] = useState<ProfileTab>('overview')
+  const [activeTab, setActiveTab] = useState<ProfileTab>('stats')
   const router = useRouter()
   const { setUser: setAuthUser, user: authUser } = useAuth()
 
@@ -85,8 +86,9 @@ export default function ProfilePage() {
       if (!res.ok) {
         setUsernameMsg({ ok: false, text: data.error || 'Failed to update username' })
       } else {
-        setUsernameMsg({ ok: true, text: 'Username updated!' })
-        setUser(u => u ? { ...u, username: data.user.username } : u)
+        const remaining = data.changesRemaining ?? 0
+        setUsernameMsg({ ok: true, text: remaining > 0 ? `Username updated! ${remaining} change${remaining === 1 ? '' : 's'} remaining.` : 'Username updated! No more changes allowed.' })
+        setUser(u => u ? { ...u, username: data.user.username, usernameChanges: data.user.usernameChanges ?? (u.usernameChanges + 1) } : u)
         if (authUser) setAuthUser({ ...authUser, username: data.user.username })
         setNewUsername('')
       }
@@ -308,7 +310,6 @@ export default function ProfilePage() {
         {/* Tab nav — uses design-system tab-pill */}
         <div className="tab-pill mb-7">
           {([
-            ['overview',   'Overview'],
             ['stats',      'Stats'],
             ['badges',     'Badges'],
             ['milestones', 'Milestones'],
@@ -437,96 +438,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* ── Overview tab ── */}
-          {activeTab === 'overview' && <>
-
-          {/* Career stats — card-stat for maximum number contrast */}
-          <div className="card-stat p-6">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-5">Career Overview</h3>
-
-            {/* Primary W-L-D trio — big and bold with stronger visual hierarchy */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="rounded-2xl py-5 text-center bg-gradient-to-b from-green-950/70 to-green-950/20 border border-green-700/40 shadow-[0_2px_16px_rgba(34,197,94,0.08)] animate-fade-up">
-                <div className="font-display text-5xl sm:text-6xl text-green-400 leading-none tabular-nums">{user.wins}</div>
-                <div className="text-[10px] font-black uppercase tracking-[0.14em] text-green-400/50 mt-2">Wins</div>
-              </div>
-              <div className="rounded-2xl py-5 text-center bg-gradient-to-b from-red-950/50 to-transparent border border-red-900/30 shadow-[0_2px_12px_rgba(239,68,68,0.06)] animate-fade-up-1">
-                <div className="font-display text-5xl sm:text-6xl text-red-400 leading-none tabular-nums">{user.losses}</div>
-                <div className="text-[10px] font-black uppercase tracking-[0.14em] text-red-400/50 mt-2">Losses</div>
-              </div>
-              <div className="rounded-2xl py-5 text-center bg-gradient-to-b from-yellow-950/50 to-transparent border border-yellow-900/25 shadow-[0_2px_12px_rgba(234,179,8,0.06)] animate-fade-up-2">
-                <div className="font-display text-5xl sm:text-6xl text-yellow-400 leading-none tabular-nums">{user.draws}</div>
-                <div className="text-[10px] font-black uppercase tracking-[0.14em] text-yellow-400/50 mt-2">Draws</div>
-              </div>
-            </div>
-
-            {/* Secondary stats row */}
-            <div className="grid grid-cols-3 gap-2 mb-5">
-              <div className="text-center py-3.5 bg-white/[0.025] rounded-xl border border-white/[0.05]">
-                <div className="font-display text-3xl text-white/70 leading-none tabular-nums">{user.gamesPlayed}</div>
-                <div className="text-[9px] font-black uppercase tracking-[0.12em] text-white/30 mt-1.5">Played</div>
-              </div>
-              <div className={`text-center py-3.5 rounded-xl border transition-colors ${user.winStreak >= 3 ? 'bg-orange-950/40 border-orange-700/40 shadow-[0_0_14px_rgba(249,115,22,0.12)]' : 'bg-white/[0.025] border-white/[0.05]'}`}>
-                <div className={`font-display text-3xl leading-none tabular-nums ${user.winStreak >= 3 ? 'text-orange-400' : 'text-white/40'}`}>
-                  {user.winStreak >= 3 ? `🔥${user.winStreak}` : user.winStreak}
-                </div>
-                <div className={`text-[9px] font-black uppercase tracking-[0.12em] mt-1.5 ${user.winStreak >= 3 ? 'text-orange-500/50' : 'text-white/30'}`}>Streak</div>
-              </div>
-              <div className="text-center py-3.5 bg-white/[0.025] rounded-xl border border-white/[0.05]">
-                <div className="font-display text-3xl text-orange-300 leading-none tabular-nums">{user.maxWinStreak}</div>
-                <div className="text-[9px] font-black uppercase tracking-[0.12em] text-white/30 mt-1.5">Best</div>
-              </div>
-            </div>
-
-            {/* Win rate progress bar */}
-            <div>
-              <div className="flex items-center justify-between mb-2.5">
-                <span className="text-[10px] font-black uppercase tracking-[0.14em] text-white/30">Win Rate</span>
-                <span className={`font-display text-xl leading-none tabular-nums ${winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-white' : 'text-red-400'}`}>{winPct}%</span>
-              </div>
-              <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-700 ${winPctNum >= 60 ? 'bg-gradient-to-r from-green-600 to-green-400' : winPctNum >= 45 ? 'bg-gradient-to-r from-orange-600 to-orange-400' : 'bg-gradient-to-r from-red-700 to-red-500'}`}
-                  style={{ width: `${winPctNum}%` }}
-                />
-              </div>
-              <div className="flex justify-between mt-1.5">
-                <span className="text-[9px] text-white/20 font-bold tabular-nums">0%</span>
-                <span className="text-[9px] text-white/20 font-bold tabular-nums">50%</span>
-                <span className="text-[9px] text-white/20 font-bold tabular-nums">100%</span>
-              </div>
-            </div>
-
-            {/* First pick advantage — only if data exists */}
-            {user.firstPickGames > 0 && (
-              <div className="border-t border-white/[0.06] pt-4 mt-4 flex items-center justify-between">
-                <div>
-                  <span className="text-label">First Pick Win%</span>
-                  <div className="text-white/20 text-[10px] mt-0.5">{user.firstPickWins}W / {user.firstPickGames}G</div>
-                </div>
-                <div className="font-display text-2xl text-blue-400">
-                  {user.firstPickGames > 0 ? ((user.firstPickWins / user.firstPickGames) * 100).toFixed(0) : 0}%
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* History quick-link */}
-          <Link href="/history" className="card-surface p-4 flex items-center justify-between rounded-xl hover:border-orange-600/40 hover:bg-orange-950/10 transition-all group cursor-pointer block">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-orange-950/50 border border-orange-800/30 flex items-center justify-center shrink-0">
-                <span className="text-xl leading-none">🏀</span>
-              </div>
-              <div>
-                <div className="font-display text-xl text-white group-hover:text-orange-300 transition-colors tracking-wide leading-none">Game History</div>
-                <div className="text-[11px] text-white/40 mt-1 font-bold">See every match result</div>
-              </div>
-            </div>
-            <span className="text-orange-500 text-lg font-black group-hover:translate-x-1 transition-transform leading-none">→</span>
-          </Link>
-
-          </>}
-
           {/* ── Stats tab ── */}
           {activeTab === 'stats' && <>
           <div className="card-stat p-6">
@@ -593,54 +504,117 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Performance insights */}
+          {/* Insights + further analytics */}
           <div className="card-surface p-6">
             <h3 className="font-display text-2xl text-white tracking-wider leading-none mb-4">Insights</h3>
-            <div className="space-y-3">
-              {/* Games to win ratio */}
-              <div className="flex items-center justify-between py-2.5 border-b border-white/[0.05]">
-                <span className="text-white/60 text-sm">Win percentage</span>
-                <span className={`font-black text-sm tabular-nums ${winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-white' : 'text-red-400'}`}>
-                  {total >= 5 ? `${winPct}%` : 'Need 5+ games'}
+            <div className="space-y-0">
+              {/* Win percentage */}
+              <div className="flex items-center justify-between py-3 border-b border-white/[0.05]">
+                <span className="text-white/60 text-sm">Win rate</span>
+                <span className={`font-black text-sm tabular-nums ${total < 5 ? 'text-white/40' : winPctNum >= 60 ? 'text-green-400' : winPctNum >= 45 ? 'text-white' : 'text-red-400'}`}>
+                  {total >= 5 ? `${winPct}%` : total > 0 ? `${winPct}% (need 5+)` : '—'}
                 </span>
               </div>
-              <div className="flex items-center justify-between py-2.5 border-b border-white/[0.05]">
+              {/* Net record */}
+              <div className="flex items-center justify-between py-3 border-b border-white/[0.05]">
+                <span className="text-white/60 text-sm">Win/loss delta</span>
+                <span className={`font-black text-sm tabular-nums ${user.wins - user.losses > 0 ? 'text-green-400' : user.wins - user.losses < 0 ? 'text-red-400' : 'text-white/40'}`}>
+                  {total > 0 ? (user.wins - user.losses > 0 ? `+${user.wins - user.losses}` : `${user.wins - user.losses}`) : '—'}
+                </span>
+              </div>
+              {/* Losses per 10 */}
+              <div className="flex items-center justify-between py-3 border-b border-white/[0.05]">
                 <span className="text-white/60 text-sm">Losses per 10 games</span>
                 <span className="font-black text-sm tabular-nums text-white">
                   {total > 0 ? ((user.losses / total) * 10).toFixed(1) : '—'}
                 </span>
               </div>
-              <div className="flex items-center justify-between py-2.5 border-b border-white/[0.05]">
+              {/* Draw rate */}
+              <div className="flex items-center justify-between py-3 border-b border-white/[0.05]">
                 <span className="text-white/60 text-sm">Draw rate</span>
                 <span className="font-black text-sm tabular-nums text-yellow-400">
                   {total > 0 ? `${((user.draws / total) * 100).toFixed(1)}%` : '—'}
                 </span>
               </div>
-              <div className="flex items-center justify-between py-2.5">
-                <span className="text-white/60 text-sm">Best streak ever</span>
+              {/* 1st pick win rate */}
+              <div className="flex items-center justify-between py-3 border-b border-white/[0.05]">
+                <span className="text-white/60 text-sm">First pick win rate</span>
+                <span className="font-black text-sm tabular-nums text-blue-400">
+                  {user.firstPickGames >= 5
+                    ? `${((user.firstPickWins / user.firstPickGames) * 100).toFixed(0)}% (${user.firstPickGames}G)`
+                    : user.firstPickGames > 0
+                    ? `${((user.firstPickWins / user.firstPickGames) * 100).toFixed(0)}% (need 5+)`
+                    : '—'}
+                </span>
+              </div>
+              {/* Games per day */}
+              {(() => {
+                const daysSince = Math.max(1, Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86_400_000))
+                const gpd = (user.gamesPlayed / daysSince).toFixed(2)
+                return (
+                  <div className="flex items-center justify-between py-3 border-b border-white/[0.05]">
+                    <span className="text-white/60 text-sm">Avg games / day</span>
+                    <span className="font-black text-sm tabular-nums text-white/70">{user.gamesPlayed > 0 ? gpd : '—'}</span>
+                  </div>
+                )
+              })()}
+              {/* Best streak */}
+              <div className="flex items-center justify-between py-3">
+                <span className="text-white/60 text-sm">Best win streak</span>
                 <span className="font-black text-sm tabular-nums text-orange-400">
-                  {user.maxWinStreak > 0 ? `${user.maxWinStreak} wins` : '—'}
+                  {user.maxWinStreak > 0 ? `${user.maxWinStreak} in a row` : '—'}
                 </span>
               </div>
             </div>
 
             {/* Tier badge */}
             <div className="mt-5 pt-4 border-t border-white/[0.06]">
-              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-white/30 mb-2.5">Tier</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-white/30 mb-2.5">Tier Progress</div>
               {(() => {
                 const w = user.wins
-                if (w >= 100) return <div className="inline-flex items-center gap-2 bg-yellow-950/70 border border-yellow-700/50 rounded-full px-4 py-2"><span className="text-yellow-400 text-sm font-black tracking-wide">Legend</span><span className="text-yellow-700 text-xs font-bold tabular-nums">{w}W</span></div>
-                if (w >= 50)  return <div className="inline-flex items-center gap-2 bg-purple-950/70 border border-purple-700/50 rounded-full px-4 py-2"><span className="text-purple-400 text-sm font-black tracking-wide">Elite</span><span className="text-purple-700 text-xs font-bold tabular-nums">{w}W</span></div>
-                if (w >= 25)  return <div className="inline-flex items-center gap-2 bg-blue-950/70 border border-blue-700/50 rounded-full px-4 py-2"><span className="text-blue-400 text-sm font-black tracking-wide">Veteran</span><span className="text-blue-700 text-xs font-bold tabular-nums">{w}W</span></div>
-                if (w >= 10)  return <div className="inline-flex items-center gap-2 bg-green-950/70 border border-green-800/50 rounded-full px-4 py-2"><span className="text-green-400 text-sm font-black tracking-wide">Baller</span><span className="text-green-800 text-xs font-bold tabular-nums">{w}W</span></div>
-                return <div className="inline-flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-full px-4 py-2"><span className="text-white/60 text-sm font-black tracking-wide">Rookie</span><span className="text-white/30 text-xs font-bold tabular-nums">{w}W</span></div>
+                const tiers = [
+                  { label: 'Legend', min: 100, color: 'text-yellow-400', bg: 'bg-yellow-950/70', border: 'border-yellow-700/50' },
+                  { label: 'Elite',  min: 50,  color: 'text-purple-400', bg: 'bg-purple-950/70', border: 'border-purple-700/50' },
+                  { label: 'Veteran',min: 25,  color: 'text-blue-400',   bg: 'bg-blue-950/70',   border: 'border-blue-700/50' },
+                  { label: 'Baller', min: 10,  color: 'text-green-400',  bg: 'bg-green-950/70',  border: 'border-green-800/50' },
+                ]
+                const current = tiers.find(t => w >= t.min) ?? { label: 'Rookie', min: 0, color: 'text-white/60', bg: 'bg-white/[0.04]', border: 'border-white/10' }
+                const next = tiers.slice().reverse().find(t => t.min > w)
+                const pct = next ? Math.min(100, (w / next.min) * 100) : 100
+                return (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className={`inline-flex items-center gap-2 ${current.bg} border ${current.border} rounded-full px-3 py-1`}>
+                        <span className={`text-xs font-black tracking-wide ${current.color}`}>{current.label}</span>
+                        <span className={`text-[10px] font-bold tabular-nums opacity-60 ${current.color}`}>{w}W</span>
+                      </div>
+                      {next && (
+                        <span className="text-[11px] text-white/30 font-bold">{next.min - w} wins to {next.label}</span>
+                      )}
+                    </div>
+                    {next && (
+                      <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                        <div className="h-full rounded-full bg-gradient-to-r from-orange-700 to-orange-500 transition-all duration-700" style={{ width: `${pct}%` }} />
+                      </div>
+                    )}
+                  </div>
+                )
               })()}
             </div>
           </div>
 
-          <div className="text-center pb-2">
-            <Link href="/history" className="text-white/60 text-sm hover:text-orange-400 transition-colors">View game history →</Link>
-          </div>
+          <Link href="/history" className="card-surface p-4 flex items-center justify-between rounded-xl hover:border-orange-600/40 hover:bg-orange-950/10 transition-all group cursor-pointer block">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-950/50 border border-orange-800/30 flex items-center justify-center shrink-0">
+                <span className="text-xl leading-none">🏀</span>
+              </div>
+              <div>
+                <div className="font-display text-xl text-white group-hover:text-orange-300 transition-colors tracking-wide leading-none">Game History</div>
+                <div className="text-[11px] text-white/40 mt-1 font-bold">See every match result</div>
+              </div>
+            </div>
+            <span className="text-orange-500 text-lg font-black group-hover:translate-x-1 transition-transform leading-none">→</span>
+          </Link>
           </>}
 
           {/* ── Badges tab ── */}
@@ -957,51 +931,81 @@ export default function ProfilePage() {
 
           {/* Change username */}
           <div className="card-surface p-6">
-            <div className="flex items-baseline gap-3 mb-1">
-              <span className="text-label text-orange-500/60">01</span>
-              <h2 className="font-display text-2xl text-white tracking-wider leading-none">Change Username</h2>
-            </div>
-            <p className="text-white/40 text-xs mb-5 ml-8">Letters, numbers, and underscores only · 3–20 characters</p>
-            <form onSubmit={handleUsernameChange} className="space-y-4">
-              <div>
-                <label htmlFor="new-username" className="block text-white/60 text-xs font-semibold tracking-wide uppercase mb-2">
-                  New Username
-                </label>
-                <input
-                  id="new-username"
-                  type="text"
-                  value={newUsername}
-                  onChange={e => setNewUsername(e.target.value)}
-                  minLength={3}
-                  maxLength={20}
-                  placeholder={user?.username}
-                  className="input-field"
-                  autoComplete="username"
-                />
+            <div className="flex items-baseline justify-between gap-3 mb-1">
+              <div className="flex items-baseline gap-3">
+                <span className="text-label text-orange-500/60">01</span>
+                <h2 className="font-display text-2xl text-white tracking-wider leading-none">Change Username</h2>
               </div>
-              {usernameMsg && (
-                <div role="alert" className={`rounded-xl px-4 py-3 text-sm flex items-center gap-2.5 ${usernameMsg.ok ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
-                  {usernameMsg.ok ? (
-                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                  ) : (
-                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                  )}
-                  {usernameMsg.text}
+              {/* Lifetime changes counter */}
+              <div className={`text-[11px] font-black tabular-nums px-2.5 py-1 rounded-full border ${
+                user.usernameChanges >= 2
+                  ? 'bg-red-950/50 border-red-800/50 text-red-400'
+                  : user.usernameChanges === 1
+                  ? 'bg-yellow-950/50 border-yellow-800/40 text-yellow-400'
+                  : 'bg-white/[0.04] border-white/10 text-white/40'
+              }`}>
+                {user.usernameChanges}/2 used
+              </div>
+            </div>
+            <p className="text-white/40 text-xs mb-4 ml-8">Letters, numbers, and underscores only · 3–20 characters</p>
+
+            {/* Warning when 1 change used */}
+            {user.usernameChanges === 1 && (
+              <div className="flex items-start gap-2.5 mb-4 rounded-xl px-4 py-3 bg-yellow-950/30 border border-yellow-800/40">
+                <svg className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                <p className="text-yellow-400 text-xs font-semibold leading-snug">This is your last username change. Choose carefully — you cannot change it again after this.</p>
+              </div>
+            )}
+
+            {/* Locked state when both changes are used */}
+            {user.usernameChanges >= 2 ? (
+              <div className="flex flex-col items-center gap-3 py-6 rounded-xl border border-red-900/30 bg-red-950/10">
+                <svg className="w-8 h-8 text-red-500/50" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
+                <p className="text-red-400/70 text-sm font-bold">Username changes used up</p>
+                <p className="text-white/30 text-xs text-center px-4">You have used both of your lifetime username changes.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleUsernameChange} className="space-y-4">
+                <div>
+                  <label htmlFor="new-username" className="block text-white/60 text-xs font-semibold tracking-wide uppercase mb-2">
+                    New Username
+                  </label>
+                  <input
+                    id="new-username"
+                    type="text"
+                    value={newUsername}
+                    onChange={e => setNewUsername(e.target.value)}
+                    minLength={3}
+                    maxLength={20}
+                    placeholder={user?.username}
+                    className="input-field"
+                    autoComplete="username"
+                  />
                 </div>
-              )}
-              <button
-                type="submit"
-                disabled={usernameLoading || !newUsername.trim()}
-                className="btn-primary w-full text-sm uppercase disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {usernameLoading ? (
-                  <>
-                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
-                    Saving…
-                  </>
-                ) : 'Update Username'}
-              </button>
-            </form>
+                {usernameMsg && (
+                  <div role="alert" className={`rounded-xl px-4 py-3 text-sm flex items-center gap-2.5 ${usernameMsg.ok ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
+                    {usernameMsg.ok ? (
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    ) : (
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    )}
+                    {usernameMsg.text}
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  disabled={usernameLoading || !newUsername.trim()}
+                  className="btn-primary w-full text-sm uppercase disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {usernameLoading ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
+                      Saving…
+                    </>
+                  ) : 'Update Username'}
+                </button>
+              </form>
+            )}
           </div>
 
           {/* Change password */}

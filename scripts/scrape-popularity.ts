@@ -219,9 +219,17 @@ async function main() {
   // ── Phase 2: Compute popularity percentile and update ebkScore ────────────
   console.log('\nPhase 2: Computing popularity percentiles and updating ebkScore...')
 
-  // Re-load all players with fresh wikiViews
+  // Re-load all players with fresh wikiViews and component scores.
+  // We use the raw component scores (ebkGpScore etc.) rather than the stored
+  // ebkScore as the baseline so this phase is idempotent — running it twice
+  // doesn't double-penalize famous players.
   const players = await prisma.player.findMany({
-    select: { id: true, firstName: true, lastName: true, wikiViews: true, ebkScore: true },
+    select: {
+      id: true, firstName: true, lastName: true, wikiViews: true,
+      ebkScore: true,
+      ebkGpScore: true, ebkPpgScore: true, ebkMpgScore: true,
+      ebkRpgScore: true, ebkApgScore: true,
+    },
   })
 
   // Merge in any in-memory results for players not yet written (DRY_RUN or same run)
@@ -239,7 +247,11 @@ async function main() {
 
   for (const p of viewsForPlayer) {
     const popularityPct = percentileRank(allViews, p.resolvedViews)
-    const newEbkScore   = parseFloat(Math.max(0, Math.min(100, p.ebkScore - popularityPct * 0.20)).toFixed(1))
+    // Recompute the stats-only baseline from raw component scores so this is
+    // idempotent — running the script twice doesn't double-penalize famous players.
+    const statsEbk = p.ebkGpScore * 0.20 + p.ebkPpgScore * 0.25 + p.ebkMpgScore * 0.20
+                   + p.ebkRpgScore * 0.18 + p.ebkApgScore * 0.17
+    const newEbkScore   = parseFloat(Math.max(0, Math.min(100, statsEbk - popularityPct * 0.20)).toFixed(1))
     updates.push({ id: p.id, newEbkScore, popularityPct, oldEbkScore: p.ebkScore })
   }
 
