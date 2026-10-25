@@ -7,6 +7,7 @@ import crypto from 'crypto'
 import { BADGES, EMOTES, MILESTONES } from './src/lib/accessories'
 import { verifyToken } from './src/lib/auth'
 import { validateEnv } from './src/lib/validateEnv'
+import { containsProfanity } from './src/lib/profanity'
 
 // ─── Startup validation ───────────────────────────────────────────────────────
 // Fail fast with a clear message rather than mysterious crashes later.
@@ -70,6 +71,23 @@ function requireFields<T extends object>(obj: T, ...fields: (keyof T)[]): void {
       throw new TypeError(`Missing required field: ${String(f)}`)
     }
   }
+}
+
+/**
+ * Resolve the display name for a socket connection.
+ * Authenticated users get their server-verified JWT username (already profanity-
+ * filtered at registration / profile-update).  Anonymous users supply their name
+ * via the client payload — truncate it and apply the profanity filter before
+ * storing or broadcasting it; fall back to 'Player' on a blank or dirty name.
+ */
+function resolveDisplayName(
+  socketUsername: string | null,
+  clientUserName: unknown,
+): string {
+  if (socketUsername) return socketUsername.slice(0, 20)
+  const raw = (typeof clientUserName === 'string' ? clientUserName : '').trim().slice(0, 20)
+  if (!raw || containsProfanity(raw)) return 'Player'
+  return raw
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -1868,9 +1886,10 @@ app.prepare().then(async () => {
       if (![1, 3, 5].includes(series)) { socket.emit('room-error', { message: 'Invalid series length' }); return }
       if (!['casual', 'ebk'].includes(difficulty)) { socket.emit('room-error', { message: 'Invalid difficulty' }); return }
       if (allPlayers.length === 0) { socket.emit('room-error', { message: 'Server is still loading player data. Please try again in a minute.' }); return }
-      // Prefer the server-verified JWT username; fall back to sanitized client name for anonymous players.
+      // Prefer the server-verified JWT username; fall back to sanitized, profanity-filtered
+      // client name for anonymous players.
       const userId = socket.data.userId as string | null
-      userName = ((socket.data.username as string | null) || (typeof userName === 'string' ? userName : '').trim()).slice(0, 20) || 'Player'
+      userName = resolveDisplayName(socket.data.username as string | null, userName)
       // Per-userId creation throttle: prevents authenticated users from bypassing the
       // per-socket throttle by rapidly disconnecting and reconnecting (each reconnect gets
       // a new socket.id, resetting the per-socket counter).
@@ -1956,9 +1975,10 @@ app.prepare().then(async () => {
         joinRoomThrottle.set(socket.id, { count: 1, windowStart: jrNow })
       }
 
-      // Prefer the server-verified JWT username; fall back to sanitized client name for anonymous players.
+      // Prefer the server-verified JWT username; fall back to sanitized, profanity-filtered
+      // client name for anonymous players.
       const userId = socket.data.userId as string | null
-      userName = ((socket.data.username as string | null) || (typeof userName === 'string' ? userName : '').trim()).slice(0, 20) || 'Player'
+      userName = resolveDisplayName(socket.data.username as string | null, userName)
       const room = rooms.get(code.trim().toUpperCase())
       if (!room) { socket.emit('room-error', { message: 'Room not found' }); return }
       if (room.guestSocketId) { socket.emit('room-error', { message: 'Room is full' }); return }
@@ -2791,8 +2811,9 @@ app.prepare().then(async () => {
       if (!Number.isInteger(teamSize) || !Number.isInteger(maxPlayers) || ![5, 8, 12].includes(teamSize) || maxPlayers < 2 || maxPlayers > 6) {
         socket.emit('auction:error', { message: 'Invalid settings' }); return
       }
-      // Prefer the server-verified JWT username; fall back to sanitized client name for anonymous players.
-      userName = ((socket.data.username as string | null) || (typeof userName === 'string' ? userName : '').trim()).slice(0, 20) || 'Player'
+      // Prefer the server-verified JWT username; fall back to sanitized, profanity-filtered
+      // client name for anonymous players.
+      userName = resolveDisplayName(socket.data.username as string | null, userName)
       if (allPlayers.length === 0) {
         socket.emit('auction:error', { message: 'Server still loading' }); return
       }
@@ -2873,8 +2894,9 @@ app.prepare().then(async () => {
       } else {
         joinRoomThrottle.set(socket.id, { count: 1, windowStart: ajNow })
       }
-      // Prefer the server-verified JWT username; fall back to sanitized client name for anonymous players.
-      userName = ((socket.data.username as string | null) || (typeof userName === 'string' ? userName : '').trim()).slice(0, 20) || 'Player'
+      // Prefer the server-verified JWT username; fall back to sanitized, profanity-filtered
+      // client name for anonymous players.
+      userName = resolveDisplayName(socket.data.username as string | null, userName)
       const room = auctionRooms.get(code.trim().toUpperCase())
       if (!room) { socket.emit('auction:error', { message: 'Room not found' }); return }
 
