@@ -124,28 +124,41 @@ function PosBadge({ pos }: { pos: string }) {
 
 function TimerRing({ timeLeft, maxTime }: { timeLeft: number; maxTime: number }) {
   const pct = maxTime > 0 ? Math.min(1, timeLeft / maxTime) : 0
-  const r = 28
+  const r = 32
   const circ = 2 * Math.PI * r
   const offset = circ * (1 - pct)
-  // Use CSS custom property so Tailwind token colors drive the SVG stroke
-  const ringColorClass = timeLeft <= 5 ? 'text-red-400' : timeLeft <= 10 ? 'text-orange-400' : 'text-green-400'
+  const isCritical = timeLeft > 0 && timeLeft <= 5
+  const isWarning  = timeLeft > 5 && timeLeft <= 10
+  const ringColorClass = isCritical ? 'text-red-400' : isWarning ? 'text-orange-400' : 'text-green-400'
 
   return (
-    <div className="relative w-20 h-20 flex items-center justify-center" role="timer" aria-label={`${timeLeft} seconds remaining`}>
-      <svg className={`absolute inset-0 -rotate-90 ${ringColorClass}`} width="80" height="80" aria-hidden="true">
-        <circle cx="40" cy="40" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
+    <div
+      className={`relative w-24 h-24 flex items-center justify-center rounded-full transition-all duration-300 ${
+        isCritical
+          ? 'bg-red-950/40 shadow-[0_0_32px_rgba(239,68,68,0.4)] ring-2 ring-red-500/60'
+          : isWarning
+          ? 'bg-orange-950/30 shadow-[0_0_16px_rgba(249,115,22,0.25)]'
+          : ''
+      }`}
+      role="timer"
+      aria-label={`${timeLeft} seconds remaining`}
+    >
+      <svg className={`absolute inset-0 -rotate-90 ${ringColorClass}`} width="96" height="96" aria-hidden="true">
+        <circle cx="48" cy="48" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
         <circle
-          cx="40" cy="40" r={r} fill="none"
-          stroke="currentColor" strokeWidth="4"
+          cx="48" cy="48" r={r} fill="none"
+          stroke="currentColor" strokeWidth={isCritical ? 5 : 4}
           strokeDasharray={circ}
           strokeDashoffset={offset}
           strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 0.1s linear, color 0.3s' }}
+          style={{ transition: 'stroke-dashoffset 0.1s linear, color 0.3s, stroke-width 0.2s' }}
         />
       </svg>
       <span
         aria-hidden="true"
-        className={`font-display text-2xl ${timeLeft <= 5 ? 'text-red-400 animate-timer-throb' : timeLeft <= 10 ? 'text-orange-400' : 'text-white'}`}
+        className={`font-display text-3xl relative z-10 tabular-nums ${
+          isCritical ? 'text-red-400 animate-timer-critical' : isWarning ? 'text-orange-400 animate-timer-throb' : 'text-white'
+        }`}
       >
         {timeLeft}
       </span>
@@ -486,15 +499,99 @@ export default function AuctionRoomPage() {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (phase === 'loading') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <div className="relative w-16 h-16">
-          <div className="absolute inset-0 rounded-full border-2 border-white/[0.05]" />
-          <div className="absolute inset-0 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
-          <div className="absolute inset-3 rounded-full bg-orange-600/10 flex items-center justify-center">
-            <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+      <div className="min-h-screen flex flex-col">
+        {/* War room bar skeleton */}
+        <div className="war-room-bar">
+          <div className="flex items-center gap-3">
+            <div className="skeleton h-7 w-32 rounded-lg" />
+            <div className="skeleton h-5 w-16 rounded" />
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="skeleton h-5 w-16 rounded-full" />
+            <div className="skeleton h-5 w-12 rounded-lg" />
           </div>
         </div>
-        <p className="text-label tracking-[0.3em]">CONNECTING TO WAR ROOM...</p>
+
+        {/* Mobile tab bar skeleton */}
+        <div className="lg:hidden flex border-b border-white/[0.07] bg-black/30">
+          {[1,2,3].map(i => <div key={i} className="flex-1 py-2.5 flex items-center justify-center"><div className="skeleton h-3 w-8 rounded" /></div>)}
+        </div>
+
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-0">
+          {/* Left sidebar skeleton */}
+          <aside className="hidden lg:block border-r border-white/[0.07] p-4 space-y-4">
+            <div className="skeleton h-4 w-20 rounded" />
+            {[1,2,3].map(i => (
+              <div key={i} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="skeleton w-7 h-7 rounded-full" />
+                  <div className="skeleton h-3 w-24 rounded" />
+                  <div className="skeleton h-3 w-8 rounded ml-auto" />
+                </div>
+                <div className="skeleton h-1 w-full rounded-full" />
+                <div className="space-y-1.5">
+                  {[1,2,3].map(j => <div key={j} className="skeleton h-7 w-full rounded-lg" />)}
+                </div>
+              </div>
+            ))}
+          </aside>
+
+          {/* Center skeleton — player card + bid controls */}
+          <main className="lg:col-span-2 flex flex-col items-center justify-center p-6 gap-5">
+            {/* Status badge */}
+            <div className="skeleton h-8 w-32 rounded-full" />
+            {/* Player card */}
+            <div className="w-full max-w-sm rounded-2xl border border-white/[0.07] bg-white/[0.03] p-6 text-center space-y-4">
+              <div className="skeleton h-6 w-28 rounded-full mx-auto" />
+              <div className="flex items-center justify-center gap-3">
+                <div className="skeleton h-5 w-10 rounded" />
+                <div className="skeleton h-4 w-16 rounded" />
+                <div className="skeleton h-4 w-16 rounded" />
+              </div>
+              {/* Name */}
+              <div className="space-y-2 mx-auto w-48">
+                <div className="skeleton h-10 w-full rounded" />
+                <div className="skeleton h-10 w-4/5 rounded mx-auto" />
+              </div>
+              {/* EBK */}
+              <div className="space-y-1 mx-auto">
+                <div className="skeleton h-12 w-24 rounded mx-auto" />
+                <div className="skeleton h-3 w-20 rounded mx-auto" />
+              </div>
+              {/* Stat grid */}
+              <div className="grid grid-cols-4 gap-2">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 space-y-1">
+                    <div className="skeleton h-5 w-8 rounded mx-auto" />
+                    <div className="skeleton h-3 w-6 rounded mx-auto" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Bid card */}
+            <div className="w-full max-w-sm rounded-2xl border border-white/[0.07] bg-white/[0.02] px-6 py-5 space-y-3">
+              <div className="skeleton h-3 w-24 rounded mx-auto" />
+              <div className="skeleton h-12 w-20 rounded mx-auto" />
+              <div className="skeleton h-7 w-36 rounded-full mx-auto" />
+            </div>
+            {/* Timer ring */}
+            <div className="skeleton w-24 h-24 rounded-full" />
+            {/* Budget bar */}
+            <div className="w-full max-w-xs rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5 space-y-1.5">
+              <div className="flex justify-between">
+                <div className="skeleton h-3 w-20 rounded" />
+                <div className="skeleton h-3 w-12 rounded" />
+              </div>
+              <div className="skeleton h-1.5 w-full rounded-full" />
+            </div>
+          </main>
+
+          {/* Right sidebar skeleton */}
+          <aside className="hidden lg:flex border-l border-white/[0.07] p-4 flex-col gap-3">
+            <div className="skeleton h-4 w-16 rounded" />
+            {[1,2,3,4,5,6].map(i => <div key={i} className="skeleton h-9 w-full rounded-lg" />)}
+          </aside>
+        </div>
       </div>
     )
   }
@@ -1567,25 +1664,23 @@ export default function AuctionRoomPage() {
                         {p.rosterCount}/{auctionState.teamSize}
                       </span>
                     </div>
-                    {/* Budget bar — color shifts orange < 20%, red < 10% */}
+                    {/* Budget bar — green > 40%, orange 15–40%, red < 15% */}
                     <div className="budget-bar mb-1.5">
                       <div
-                        className="transition-all"
-                        style={{
-                          width: `${Math.max(0, budgetPct)}%`,
-                          height: '100%',
-                          borderRadius: '99px',
-                          background: budgetPct <= 10
-                            ? 'linear-gradient(90deg, #b91c1c, #ef4444)'
-                            : budgetPct <= 20
-                            ? 'linear-gradient(90deg, #c2410c, #f97316)'
-                            : 'linear-gradient(90deg, #ea580c, #f97316)',
-                          transition: 'width 0.5s ease, background 0.5s ease',
-                        }}
+                        className={`budget-bar-fill ${
+                          budgetPct <= 15 ? 'budget-bar-critical' :
+                          budgetPct <= 40 ? 'budget-bar-warning' :
+                          'budget-bar-safe'
+                        }`}
+                        style={{ width: `${Math.max(0, budgetPct)}%` }}
                       />
                     </div>
                     <p className="text-white/30 text-[11px] mb-2.5 flex items-center justify-between">
-                      <span className={`font-black ${budgetPct <= 10 ? 'text-red-400' : budgetPct <= 20 ? 'text-orange-400' : 'text-white/50'}`}>${p.budget}M</span>
+                      <span className={`font-black ${budgetPct <= 15 ? 'text-red-400' : budgetPct <= 40 ? 'text-orange-400' : 'text-green-400/80'}`}>
+                        ${p.budget}M
+                        {budgetPct <= 15 && <span className="ml-1 text-[9px] uppercase tracking-widest opacity-70">critical</span>}
+                        {budgetPct > 15 && budgetPct <= 40 && <span className="ml-1 text-[9px] uppercase tracking-widest opacity-70">low</span>}
+                      </span>
                       <span>{p.rosterCount}/{auctionState.teamSize} players</span>
                     </p>
                     <div className="space-y-1">
@@ -1632,7 +1727,12 @@ export default function AuctionRoomPage() {
           </aside>
 
           {/* Center: Auction */}
-          <main className={`lg:col-span-2 flex flex-col items-center justify-center p-4 sm:p-6 gap-4 sm:gap-6 ${mobilePanel !== 'bid' ? 'hidden lg:flex' : ''}`}>
+          <main className={`lg:col-span-2 flex flex-col items-center justify-center p-4 sm:p-6 gap-4 sm:gap-6 relative ${mobilePanel !== 'bid' ? 'hidden lg:flex' : ''}`}>
+            {/* Alarm overlay — flashes red border when < 5s */}
+            {timeLeft > 0 && timeLeft <= 5 && phase === 'bidding' && (
+              <div className="alarm-overlay rounded-none" aria-hidden="true" />
+            )}
+
             {/* Status badge */}
             <div className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold tracking-widest ${
               phase === 'steal-window'
@@ -1644,52 +1744,70 @@ export default function AuctionRoomPage() {
 
             {/* Player card — keyed to cp.id so each new player remounts with a fresh animation */}
             {cp && (
-              <div key={cp.id} className="card-accent w-full max-w-sm p-6 text-center animate-player-card-enter">
+              <div
+                key={cp.id}
+                className={`card-accent w-full max-w-sm p-6 text-center animate-player-card-enter relative overflow-hidden transition-all duration-500 ${
+                  timeLeft > 0 && timeLeft <= 5
+                    ? 'card-spotlight-urgent border-red-500/50'
+                    : timeLeft > 5 && timeLeft <= 10
+                    ? 'border-orange-500/60 shadow-[0_0_32px_rgba(249,115,22,0.25)]'
+                    : 'card-spotlight'
+                }`}
+              >
+                {/* Radial ambient glow behind player name */}
+                <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 50% at 50% 30%, rgba(249,115,22,0.08) 0%, transparent 70%)' }} aria-hidden="true" />
                 {/* ON THE BLOCK badge */}
-                <div className="inline-flex items-center gap-1.5 bg-orange-950/50 border border-orange-500/40 rounded-full px-3 py-1 mb-4">
+                <div className="relative inline-flex items-center gap-1.5 bg-orange-950/50 border border-orange-500/40 rounded-full px-3 py-1 mb-4">
                   <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse shrink-0" />
                   <span className="text-orange-400 text-[10px] font-black tracking-[0.2em] uppercase">On The Block</span>
                 </div>
-                <div className="flex items-center justify-center gap-3 mb-3">
+                <div className="flex items-center justify-center gap-3 mb-3 relative">
                   <PosBadge pos={cp.position} />
                   <span className="text-white/35 text-xs font-mono tracking-widest">{cp.team}</span>
                   <span className="text-white/20 text-xs">{cp.yearFrom}–{cp.yearTo}</span>
                 </div>
-                <h2 className="font-display text-5xl md:text-6xl text-white tracking-wider leading-none mb-5">
+                <h2 className="relative font-display text-white tracking-wider leading-none mb-2" style={{ fontSize: 'clamp(3.2rem, 14vw, 5rem)' }}>
                   {cp.firstName}<br />{cp.lastName}
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
+                {/* EBK score — hero position directly under name for instant scouting */}
+                <div className="relative mb-4">
+                  <span className="font-display text-orange-400 tabular-nums" style={{ fontSize: 'clamp(2.5rem, 10vw, 3.5rem)' }}>
+                    {cp.ebkScore.toFixed(1)}
+                  </span>
+                  <p className="text-label tracking-[0.18em] text-white/35 mt-0.5">EBK SCORE</p>
+                </div>
+                <div className="grid grid-cols-4 gap-1.5 mb-4">
                   {[
                     { label: 'GP', value: cp.careerGames },
                     { label: 'PPG', value: cp.careerPPG?.toFixed(1) },
                     { label: 'RPG', value: cp.careerRPG?.toFixed(1) },
                     { label: 'APG', value: cp.careerAPG?.toFixed(1) },
                   ].map(s => (
-                    <div key={s.label} className="bg-white/[0.04] border border-white/[0.06] rounded-xl py-3 hover:bg-white/[0.06] transition-colors">
-                      <p className="font-display text-2xl text-white leading-none">{s.value ?? '–'}</p>
-                      <p className="text-label mt-1">{s.label}</p>
+                    <div key={s.label} className="relative bg-white/[0.04] border border-white/[0.06] rounded-xl py-3 hover:bg-white/[0.06] transition-colors">
+                      <p className="font-display text-xl text-white leading-none">{s.value ?? '–'}</p>
+                      <p className="text-label mt-1 text-[9px]">{s.label}</p>
                     </div>
                   ))}
-                </div>
-                <div className="stat-highlight rounded-xl py-4">
-                  <span className="text-label tracking-[0.18em]">EBK Score</span>
-                  <p className="font-display text-5xl text-orange-400 leading-none mt-1">{cp.ebkScore.toFixed(1)}</p>
                 </div>
               </div>
             )}
 
             {/* Current bid */}
-            <div className={`w-full max-w-sm rounded-2xl px-6 py-5 text-center transition-all duration-300 ${
+            <div className={`w-full max-w-sm rounded-2xl px-5 py-4 text-center transition-all duration-300 ${
               justWon
-                ? 'bg-green-950/40 border border-green-500/50 shadow-[0_0_40px_rgba(34,197,94,0.25)]'
+                ? 'bg-green-950/40 border-2 border-green-500/60 shadow-[0_0_50px_rgba(34,197,94,0.3)]'
+                : amLeading && timeLeft > 0 && timeLeft <= 5
+                ? 'bg-red-950/50 border-2 border-red-500/80 shadow-[0_0_40px_rgba(239,68,68,0.35)] animate-picker-glow'
                 : amLeading
-                ? 'bg-orange-950/40 border border-orange-500/50 shadow-[0_0_32px_rgba(234,88,12,0.18)] animate-glow'
+                ? 'bg-orange-950/40 border-2 border-orange-500/60 shadow-[0_0_32px_rgba(234,88,12,0.22)] animate-glow'
+                : timeLeft > 0 && timeLeft <= 5
+                ? 'bg-red-950/30 border border-red-500/40'
                 : auctionState.currentBid > 0
                 ? 'bg-white/[0.03] border border-white/[0.08]'
                 : 'bg-white/[0.015] border border-white/[0.04]'
             }`} aria-live="polite" aria-atomic="true">
               <div className="text-label mb-1 tracking-[0.2em]">
-                {justWon ? 'PLAYER WON!' : 'Current Bid'}
+                {justWon ? 'PLAYER WON!' : amLeading ? 'YOU ARE LEADING' : 'Current Bid'}
               </div>
               <div
                 key={auctionState.currentBid}
@@ -1807,16 +1925,31 @@ export default function AuctionRoomPage() {
                 {me && (() => {
                   const myBudgetPct = (me.budget / (auctionState?.totalBudget ?? me.budget)) * 100
                   return (
-                    <div className="flex items-center justify-between text-xs px-1">
-                      <span className="text-label">Budget</span>
-                      <span className={`font-black tabular-nums ${myBudgetPct <= 10 ? 'text-red-400' : myBudgetPct <= 20 ? 'text-orange-400' : 'text-white/60'}`}>
-                        ${me.budget}M
-                        {myBudgetPct <= 20 && (
-                          <span className="ml-1.5 text-[9px] uppercase tracking-widest opacity-70">
-                            {myBudgetPct <= 10 ? 'critical' : 'low'}
-                          </span>
-                        )}
-                      </span>
+                    <div className={`rounded-xl px-3 py-2.5 border transition-all ${
+                      myBudgetPct <= 15
+                        ? 'bg-red-950/30 border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.15)]'
+                        : myBudgetPct <= 40
+                        ? 'bg-orange-950/20 border-orange-500/20'
+                        : 'bg-white/[0.03] border-white/[0.06]'
+                    }`}>
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <span className="text-label">Your Budget</span>
+                        <span className={`font-black tabular-nums ${myBudgetPct <= 15 ? 'text-red-400' : myBudgetPct <= 40 ? 'text-orange-400' : 'text-green-400'}`}>
+                          ${me.budget}M
+                          {myBudgetPct <= 15 && <span className="ml-1 text-[9px] uppercase tracking-widest opacity-80">critical</span>}
+                          {myBudgetPct > 15 && myBudgetPct <= 40 && <span className="ml-1 text-[9px] uppercase tracking-widest opacity-70">low</span>}
+                        </span>
+                      </div>
+                      <div className="budget-bar" style={{ height: '5px' }}>
+                        <div
+                          className={`budget-bar-fill ${
+                            myBudgetPct <= 15 ? 'budget-bar-critical' :
+                            myBudgetPct <= 40 ? 'budget-bar-warning' :
+                            'budget-bar-safe'
+                          }`}
+                          style={{ width: `${Math.max(0, myBudgetPct)}%` }}
+                        />
+                      </div>
                     </div>
                   )
                 })()}

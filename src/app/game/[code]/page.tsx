@@ -798,13 +798,19 @@ function GameContent() {
               </div>
             )}
             <div
-              className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-red-400/50 animate-score-reveal'}`}
-              style={iWon ? { fontSize: 'clamp(5.5rem, 26vw, 13rem)' } : { fontSize: 'clamp(3.5rem, 15vw, 8rem)' }}>
+              className={`font-display leading-none mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-red-500/70 animate-score-reveal'}`}
+              style={iWon ? { fontSize: 'clamp(5.5rem, 26vw, 13rem)' } : isDraw ? { fontSize: 'clamp(3.5rem, 15vw, 8rem)' } : { fontSize: 'clamp(4.5rem, 20vw, 10rem)' }}>
               {iWon ? 'W' : isDraw ? 'DRAW' : 'L'}
             </div>
-            <div className={`font-display tracking-[0.15em] text-lg sm:text-3xl mb-4 sm:mb-5 ${iWon ? 'text-white' : isDraw ? 'text-yellow-400' : 'text-red-400/50'}`}>
+            <div className={`font-display tracking-[0.15em] text-lg sm:text-3xl mb-2 sm:mb-3 ${iWon ? 'text-white' : isDraw ? 'text-yellow-400' : 'text-red-400/65'}`}>
               {iWon ? 'SERIES WIN' : isDraw ? 'SERIES DRAW' : 'SERIES LOSS'}
             </div>
+            {!iWon && !isDraw && (
+              <p className="text-white/20 text-xs font-bold tracking-widest uppercase mb-4 animate-fade-in">Good game — run it back?</p>
+            )}
+            {isDraw && (
+              <p className="text-yellow-400/35 text-xs font-bold tracking-widest uppercase mb-4 animate-fade-in">Too close to call</p>
+            )}
 
             {/* Championship scoreboard — winner gets orange glow, loser gets muted */}
             <div className={`relative rounded-2xl overflow-hidden mb-3 sm:mb-4 animate-fade-up-1 ${
@@ -1178,13 +1184,20 @@ function GameContent() {
               </span>
             </div>
             <div
-              className={`font-display leading-none mb-1.5 sm:mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-red-400/55 animate-score-reveal'}`}
-              style={iWon ? { fontSize: 'clamp(5rem, 22vw, 9rem)' } : { fontSize: 'clamp(3.5rem, 18vw, 7rem)' }}>
+              className={`font-display leading-none mb-1.5 sm:mb-2 ${iWon ? 'animate-win-pop win-shimmer-text animate-win-glow' : isDraw ? 'text-yellow-400 animate-scale-in' : 'text-red-500/75 animate-score-reveal'}`}
+              style={iWon ? { fontSize: 'clamp(5rem, 22vw, 9rem)' } : isDraw ? { fontSize: 'clamp(4rem, 20vw, 8rem)' } : { fontSize: 'clamp(4.5rem, 20vw, 8.5rem)' }}>
               {iWon ? 'W' : isDraw ? 'D' : 'L'}
             </div>
-            <div className={`font-display tracking-widest text-lg sm:text-2xl ${iWon ? 'text-white' : isDraw ? 'text-yellow-400/70' : 'text-red-400/50'}`}>
+            <div className={`font-display tracking-widest text-lg sm:text-2xl mb-1 ${iWon ? 'text-white' : isDraw ? 'text-yellow-400/80' : 'text-red-400/70'}`}>
               {iWon ? 'YOU WIN' : isDraw ? 'DRAW' : 'YOU LOSE'}
             </div>
+            {/* Motivational sub-line */}
+            {!iWon && !isDraw && (
+              <p className="text-white/20 text-xs font-bold tracking-widest uppercase animate-fade-in">Better luck next game</p>
+            )}
+            {isDraw && (
+              <p className="text-yellow-400/40 text-xs font-bold tracking-widest uppercase animate-fade-in">Evenly matched</p>
+            )}
           </div>
 
           {/* Series scoreboard — hero display when series > 1 */}
@@ -1447,6 +1460,10 @@ function GameContent() {
 
   return (
     <div className="min-h-screen py-4 px-4 pb-24 sm:pb-4 relative animate-fade-in">
+      {/* ── Critical timer alarm overlay ─────────────────────────────────────── */}
+      {isMyTurn && pickTimeLeft > 0 && pickTimeLeft <= 5 && (
+        <div className="alarm-overlay" aria-hidden="true" />
+      )}
       {/* ── Reconnect banner ──────────────────────────────────────────────────── */}
       {socketStatus && (
         <div className={`reconnect-banner ${socketStatus === 'reconnected' ? 'reconnect-banner-success' : 'reconnect-banner-warning'}`}>
@@ -1540,22 +1557,28 @@ function GameContent() {
           </div>
 
           {/* Turn state + integrated timer */}
-          <div className={`relative px-4 py-3 transition-all duration-300 ${
+          <div className={`relative px-4 py-3 transition-all duration-300 overflow-hidden ${
             isMyTurn && pickTimeLeft <= 5
-              ? 'bg-gradient-to-r from-red-950/60 via-red-900/40 to-red-950/60 border-x-2 border-b-2 border-red-500/70 rounded-b-2xl'
+              ? 'bg-gradient-to-r from-red-950/70 via-red-900/50 to-red-950/70 border-x-2 border-b-2 border-red-500/80 rounded-b-2xl shadow-[0_4px_24px_rgba(239,68,68,0.3)]'
+              : isMyTurn && pickTimeLeft <= 10
+              ? 'bg-gradient-to-r from-orange-950/70 via-orange-900/50 to-orange-950/70 border-x-2 border-b-2 border-orange-500/90 rounded-b-2xl shadow-[0_4px_20px_rgba(249,115,22,0.25)]'
               : isMyTurn
-              ? 'bg-gradient-to-r from-orange-950/60 via-orange-900/40 to-orange-950/60 border-x-2 border-b-2 border-orange-500/80 rounded-b-2xl'
+              ? 'bg-gradient-to-r from-orange-950/60 via-orange-900/40 to-orange-950/60 border-x-2 border-b-2 border-orange-500/80 rounded-b-2xl animate-picker-glow'
               : 'bg-[#0d0d14] border-x border-b border-white/[0.05] rounded-b-2xl'
           }`}>
-            <div className="flex items-center justify-between gap-3">
+            {/* Urgency flash overlay */}
+            {isMyTurn && pickTimeLeft > 0 && pickTimeLeft <= 5 && (
+              <div className="absolute inset-0 pointer-events-none alarm-overlay rounded-b-2xl" aria-hidden="true" />
+            )}
+            <div className="flex items-center justify-between gap-3 relative">
               {isMyTurn ? (
                 <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shrink-0" />
+                  <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${pickTimeLeft <= 5 ? 'bg-red-400' : 'bg-orange-500'} animate-pulse`} />
                   <div>
-                    <div className="font-display text-orange-400 leading-none tracking-widest" style={{ fontSize: 'clamp(1.25rem, 5vw, 1.75rem)' }}>
-                      YOUR PICK
+                    <div className={`font-display leading-none tracking-widest ${pickTimeLeft <= 5 ? 'text-red-300 animate-timer-throb' : 'text-orange-400'}`} style={{ fontSize: 'clamp(1.25rem, 5vw, 1.75rem)' }}>
+                      {pickTimeLeft <= 5 && pickTimeLeft > 0 ? 'PICK NOW!' : 'YOUR PICK'}
                     </div>
-                    <div className="text-orange-300/50 text-[11px] tracking-wider uppercase mt-0.5">
+                    <div className={`text-[11px] tracking-wider uppercase mt-0.5 ${pickTimeLeft <= 5 ? 'text-red-400/60' : 'text-orange-300/50'}`}>
                       {isSpinning ? 'Waiting for team spin…' : spunTeam ? `Pick from ${spunTeam}` : 'Select a player'}
                     </div>
                   </div>
@@ -1573,10 +1596,10 @@ function GameContent() {
                     ))}
                   </div>
                   <div>
-                    <div className="text-white/60 font-black text-base">
+                    <div className="text-white/70 font-black text-base tracking-wide">
                       {currentPicker === 'host' ? room.hostName : room.guestName}
                     </div>
-                    <div className="text-white/40 text-[11px] tracking-wider uppercase">Thinking…</div>
+                    <div className="text-white/35 text-[11px] tracking-wider uppercase">Thinking…</div>
                   </div>
                 </div>
               )}
@@ -1584,26 +1607,35 @@ function GameContent() {
               {/* Timer — always in the header, never buried */}
               {room.status === 'drafting' && currentPickerInTimer && (() => {
                 const pct = pickTimerDurationRef.current > 0 ? pickTimeLeft / pickTimerDurationRef.current : 0
-                const r = 18
+                const r = 20
                 const circ = 2 * Math.PI * r
-                const timerColor = pickTimeLeft <= 5 ? '#ef4444' : pickTimeLeft <= 10 ? '#f97316' : '#22c55e'
+                const timerColor = pickTimeLeft <= 5 ? '#f87171' : pickTimeLeft <= 10 ? '#f97316' : '#22c55e'
+                const isCritical = pickTimeLeft <= 5 && pickTimeLeft > 0
                 return (
                   <div className="flex items-center gap-2 shrink-0">
-                    {/* SVG ring timer */}
-                    <div className="relative w-12 h-12 flex items-center justify-center" role="timer" aria-label={`${pickTimeLeft} seconds`}>
-                      <svg className="absolute inset-0 -rotate-90" width="48" height="48" aria-hidden="true">
-                        <circle cx="24" cy="24" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
+                    {/* SVG ring timer — bigger when critical */}
+                    <div
+                      className={`relative flex items-center justify-center rounded-full transition-all duration-200 ${
+                        isCritical
+                          ? 'w-16 h-16 bg-red-950/50 shadow-[0_0_20px_rgba(239,68,68,0.5)] ring-2 ring-red-500/70'
+                          : 'w-12 h-12'
+                      }`}
+                      role="timer"
+                      aria-label={`${pickTimeLeft} seconds`}
+                    >
+                      <svg className="absolute inset-0 -rotate-90" width={isCritical ? 64 : 48} height={isCritical ? 64 : 48} aria-hidden="true">
+                        <circle cx={isCritical ? 32 : 24} cy={isCritical ? 32 : 24} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={isCritical ? 4 : 3} />
                         <circle
-                          cx="24" cy="24" r={r} fill="none"
-                          stroke={timerColor} strokeWidth="3"
+                          cx={isCritical ? 32 : 24} cy={isCritical ? 32 : 24} r={r} fill="none"
+                          stroke={timerColor} strokeWidth={isCritical ? 4 : 3}
                           strokeDasharray={circ}
                           strokeDashoffset={circ * (1 - pct)}
                           strokeLinecap="round"
                           style={{ transition: 'stroke-dashoffset 0.9s linear, stroke 0.3s' }}
                         />
                       </svg>
-                      <span className={`font-display text-base leading-none tabular-nums relative z-10 ${
-                        pickTimeLeft <= 5 ? 'text-red-400 animate-timer-throb' : pickTimeLeft <= 10 ? 'text-yellow-400' : 'text-white/80'
+                      <span className={`font-display leading-none tabular-nums relative z-10 ${
+                        isCritical ? 'text-xl text-red-400 animate-timer-critical' : pickTimeLeft <= 10 ? 'text-base text-yellow-400 animate-timer-throb' : 'text-base text-white/80'
                       }`}>
                         {pickTimeLeft}
                       </span>
@@ -1617,46 +1649,56 @@ function GameContent() {
 
         {/* Snake draft order tracker */}
         {room.status === 'drafting' && (
-          <div className="mb-3 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-            <span className="text-label shrink-0">Draft:</span>
-            {room.draftOrder.map((picker, idx) => {
-              const isPast = idx < room.currentPickIndex
-              const isCurrent = idx === room.currentPickIndex
-              const isMe = picker === role
-              return (
-                <div
-                  key={idx}
-                  className={`shrink-0 w-6 h-6 rounded flex items-center justify-center text-[10px] font-black transition-all ${
-                    isCurrent
-                      ? isMe
-                        ? 'bg-orange-500 text-white shadow-[0_0_8px_rgba(234,88,12,0.6)] scale-110'
-                        : 'bg-white/70 text-black scale-110'
-                      : isPast
-                      ? 'bg-white/[0.04] text-white/20'
-                      : isMe
-                      ? 'bg-orange-950/40 border border-orange-800/40 text-orange-400/60'
-                      : 'bg-white/[0.03] border border-white/[0.06] text-white/30'
-                  }`}
-                  title={`Pick ${idx + 1}: ${picker === 'host' ? room.hostName : room.guestName}`}
-                >
-                  {isPast ? '✓' : isMe ? 'Y' : 'O'}
-                </div>
-              )
-            })}
-            {/* Snake direction arrow */}
-            {(() => {
-              const pickIdx = room.currentPickIndex
-              const prev = room.draftOrder[pickIdx - 1]
-              const curr = room.draftOrder[pickIdx]
-              const next = room.draftOrder[pickIdx + 1]
-              if (!curr || !next) return null
-              const goingRight = (prev === undefined) || (prev !== curr)
-              return (
-                <span className="text-white/20 text-xs ml-1 shrink-0 font-black">
-                  {goingRight ? '→' : '←'}
-                </span>
-              )
-            })()}
+          <div className="mb-3">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              <span className="text-label shrink-0">Draft:</span>
+              {room.draftOrder.map((picker, idx) => {
+                const isPast = idx < room.currentPickIndex
+                const isCurrent = idx === room.currentPickIndex
+                const isMe = picker === role
+                return (
+                  <div
+                    key={idx}
+                    className={`shrink-0 w-6 h-6 rounded flex items-center justify-center text-[10px] font-black transition-all duration-200 ${
+                      isCurrent
+                        ? isMe
+                          ? 'bg-orange-500 text-white shadow-[0_0_10px_rgba(234,88,12,0.8)] scale-125 ring-2 ring-orange-400/50'
+                          : 'bg-white/80 text-black scale-125 ring-2 ring-white/30'
+                        : isPast
+                        ? 'bg-white/[0.04] text-white/20'
+                        : isMe
+                        ? 'bg-orange-950/40 border border-orange-800/40 text-orange-400/60'
+                        : 'bg-white/[0.03] border border-white/[0.06] text-white/30'
+                    }`}
+                    title={`Pick ${idx + 1}: ${picker === 'host' ? room.hostName : room.guestName}`}
+                  >
+                    {isPast ? '✓' : isMe ? 'Y' : 'O'}
+                  </div>
+                )
+              })}
+              {/* Snake direction arrow */}
+              {(() => {
+                const pickIdx = room.currentPickIndex
+                const prev = room.draftOrder[pickIdx - 1]
+                const curr = room.draftOrder[pickIdx]
+                const next = room.draftOrder[pickIdx + 1]
+                if (!curr || !next) return null
+                const goingRight = (prev === undefined) || (prev !== curr)
+                return (
+                  <span className="text-white/20 text-xs ml-1 shrink-0 font-black">
+                    {goingRight ? '→' : '←'}
+                  </span>
+                )
+              })()}
+            </div>
+            {/* Current picker label — makes it unambiguous who has the pick */}
+            {currentPickerInTimer && (
+              <div className={`mt-1.5 text-center text-[11px] font-black uppercase tracking-widest ${isMyTurn ? 'text-orange-400' : 'text-white/30'}`}>
+                {isMyTurn
+                  ? `Your pick (${room.currentPickIndex + 1} of ${room.draftOrder.length})`
+                  : `${currentPicker === 'host' ? room.hostName : room.guestName} picking (${room.currentPickIndex + 1} of ${room.draftOrder.length})`}
+              </div>
+            )}
           </div>
         )}
 
@@ -1665,9 +1707,12 @@ function GameContent() {
         {/* Teams row — always visible, compact on mobile */}
         <div className="grid grid-cols-2 gap-2 mb-4 lg:hidden">
           {/* My Team (mobile) */}
-          <div className="bg-orange-950/20 border border-orange-900/30 rounded-2xl p-3">
-            <div className="text-orange-400 font-black text-xs mb-2 truncate">
-              {myName2} <span className="text-white/40 font-normal">({myPicks.length}/{teamSize})</span>
+          <div className={`rounded-2xl p-3 transition-all ${isMyTurn ? 'bg-orange-950/30 border-2 border-orange-500/60 shadow-[0_0_16px_rgba(234,88,12,0.2)]' : 'bg-orange-950/20 border border-orange-900/30'}`}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-orange-400 font-black text-xs truncate">
+                {myName2} <span className="text-white/40 font-normal">({myPicks.length}/{teamSize})</span>
+              </div>
+              {isMyTurn && <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse shrink-0" />}
             </div>
             <div className="space-y-1">
               {requiredSlots.map((slotPos, i) => {
@@ -1712,9 +1757,12 @@ function GameContent() {
           </div>
 
           {/* Opponent Team (mobile) */}
-          <div className="bg-blue-950/10 border border-blue-900/20 rounded-2xl p-3">
-            <div className="text-blue-400 font-black text-xs mb-2 truncate">
-              {oppName} <span className="text-white/40 font-normal">({oppPicks.length}/{teamSize})</span>
+          <div className={`rounded-2xl p-3 transition-all ${!isMyTurn && currentPickerInTimer ? 'bg-blue-950/20 border-2 border-blue-500/40 shadow-[0_0_12px_rgba(59,130,246,0.15)]' : 'bg-blue-950/10 border border-blue-900/20'}`}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-blue-400 font-black text-xs truncate">
+                {oppName} <span className="text-white/40 font-normal">({oppPicks.length}/{teamSize})</span>
+              </div>
+              {!isMyTurn && currentPickerInTimer && <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shrink-0" />}
             </div>
             <div className="space-y-1">
               {requiredSlots.map((slotPos, i) => {
@@ -1801,22 +1849,24 @@ function GameContent() {
           <div className="lg:col-span-2">
             {/* YOUR PICK sticky banner — pulses when it's the user's turn so they can't miss it */}
             {isMyTurn && !isSpinning && spunTeam && (
-              <div className={`flex items-center justify-between gap-3 rounded-xl px-3 py-2 mb-3 border-2 animate-slide-up ${
-                pickTimeLeft <= 5
-                  ? 'bg-red-950/60 border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.35)]'
+              <div className={`flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 mb-3 border-2 animate-slide-up transition-all ${
+                pickTimeLeft <= 5 && pickTimeLeft > 0
+                  ? 'bg-red-950/70 border-red-500/90 shadow-[0_0_28px_rgba(239,68,68,0.45)] animate-picker-glow'
+                  : pickTimeLeft <= 10
+                  ? 'bg-orange-950/70 border-orange-500/80 shadow-[0_0_20px_rgba(249,115,22,0.35)]'
                   : 'bg-orange-950/50 border-orange-500/70 shadow-[0_0_16px_rgba(234,88,12,0.3)]'
               }`}>
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${pickTimeLeft <= 5 ? 'bg-red-400' : 'bg-orange-400'} animate-pulse`} />
-                  <span className={`font-display tracking-widest text-sm leading-none ${pickTimeLeft <= 5 ? 'text-red-300' : 'text-orange-300'}`}>
-                    YOUR PICK
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${pickTimeLeft <= 5 && pickTimeLeft > 0 ? 'bg-red-400' : 'bg-orange-400'} animate-pulse`} />
+                  <span className={`font-display tracking-widest text-sm leading-none ${pickTimeLeft <= 5 && pickTimeLeft > 0 ? 'text-red-200 animate-timer-throb' : 'text-orange-300'}`}>
+                    {pickTimeLeft <= 5 && pickTimeLeft > 0 ? 'PICK NOW!' : 'YOUR PICK'}
                   </span>
-                  <span className={`text-[11px] font-black uppercase tracking-wider ${pickTimeLeft <= 5 ? 'text-red-400/70' : 'text-orange-400/60'}`}>
+                  <span className={`text-[11px] font-black uppercase tracking-wider ${pickTimeLeft <= 5 && pickTimeLeft > 0 ? 'text-red-400/70' : 'text-orange-400/60'}`}>
                     — tap a player below
                   </span>
                 </div>
                 {currentPickerInTimer && (
-                  <span className={`font-display text-lg leading-none tabular-nums shrink-0 ${pickTimeLeft <= 5 ? 'text-red-400 animate-timer-throb' : pickTimeLeft <= 10 ? 'text-yellow-400' : 'text-orange-300/70'}`}>
+                  <span className={`font-display text-lg leading-none tabular-nums shrink-0 ${pickTimeLeft <= 5 && pickTimeLeft > 0 ? 'text-red-400 animate-timer-critical' : pickTimeLeft <= 10 ? 'text-yellow-400 animate-timer-throb' : 'text-orange-300/70'}`}>
                     {pickTimeLeft}s
                   </span>
                 )}

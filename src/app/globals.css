@@ -176,6 +176,11 @@ body {
 /* ── Budget meter ────────────────────────────────────────────────────────────── */
 .budget-bar { height: 4px; border-radius: 99px; background: rgba(255,255,255,0.06); overflow: hidden; }
 .budget-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #ea580c, #f97316); transition: width 0.5s ease; }
+/* Thresholds: safe = green, warning = orange, critical = red */
+.budget-bar-safe     { background: linear-gradient(90deg, #16a34a, #4ade80) !important; }
+.budget-bar-warning  { background: linear-gradient(90deg, #c2410c, #f97316) !important; }
+.budget-bar-critical { background: linear-gradient(90deg, #b91c1c, #ef4444) !important; animation: budget-critical-pulse 1s ease-in-out infinite; }
+@keyframes budget-critical-pulse { 0%,100% { opacity:1; } 50% { opacity:0.7; } }
 
 /* ── Dividers ────────────────────────────────────────────────────────────────── */
 .section-divider { display: flex; align-items: center; gap: 12px; }
@@ -242,6 +247,50 @@ body {
   50%       { transform: scale(1.18); opacity: 0.85; }
 }
 .animate-timer-throb { animation: timer-throb 0.55s cubic-bezier(0.22,1,0.36,1) infinite; }
+
+/* ── Timer shake — violent shake when ≤5s (combined with throb) ─────────────── */
+@keyframes timer-shake {
+  0%,100% { transform: scale(1.18) translateX(0);    }
+  20%      { transform: scale(1.18) translateX(-3px); }
+  40%      { transform: scale(1.18) translateX(3px);  }
+  60%      { transform: scale(1.18) translateX(-2px); }
+  80%      { transform: scale(1.18) translateX(2px);  }
+}
+@keyframes timer-throb-shake {
+  0%,100% { transform: scale(1);    opacity: 1; }
+  50%      { transform: scale(1.22); opacity: 0.9; animation-name: timer-shake; }
+}
+.animate-timer-critical {
+  animation: timer-throb 0.4s cubic-bezier(0.22,1,0.36,1) infinite,
+             timer-shake 0.4s linear infinite;
+  color: #f87171 !important;
+}
+
+/* ── Full-screen alarm overlay when < 5s on your pick ───────────────────────── */
+@keyframes alarm-flash {
+  0%,100% { opacity: 0; }
+  50%      { opacity: 1; }
+}
+.alarm-overlay {
+  position: fixed; inset: 0; pointer-events: none; z-index: 5;
+  background: radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.18) 0%, transparent 65%);
+  animation: alarm-flash 0.5s ease-in-out infinite;
+}
+
+/* ── Spotlight glow — auction "on the block" player card ─────────────────────── */
+@keyframes spotlight-pulse {
+  0%,100% { box-shadow: 0 0 40px rgba(249,115,22,0.25), 0 0 80px rgba(249,115,22,0.10); }
+  50%      { box-shadow: 0 0 60px rgba(249,115,22,0.40), 0 0 120px rgba(249,115,22,0.18); }
+}
+.card-spotlight { animation: spotlight-pulse 2.5s ease-in-out infinite; }
+.card-spotlight-urgent { animation: spotlight-pulse 0.8s ease-in-out infinite; }
+
+/* ── Picking indicator bar (game page) ───────────────────────────────────────── */
+@keyframes picker-glow {
+  0%,100% { box-shadow: 0 0 20px rgba(234,88,12,0.3); }
+  50%      { box-shadow: 0 0 40px rgba(234,88,12,0.6); }
+}
+.animate-picker-glow { animation: picker-glow 1.4s ease-in-out infinite; }
 
 /* ── Touch utility — prevents 300ms tap delay on mobile ─────────────────────── */
 .touch-manipulation { touch-action: manipulation; }
