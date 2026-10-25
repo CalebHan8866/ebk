@@ -42,8 +42,12 @@ export const metadata: Metadata = {
   keywords: ['NBA', 'draft game', 'basketball', 'EBK', 'Elite Ball Knowledge', 'head-to-head'],
   authors: [{ name: 'EBK' }],
   icons: {
-    icon: '/ebk-favicon.svg',
-    apple: '/ebk-logo.svg',
+    icon: [
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/ebk-favicon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/icons/icon-192.png',
   },
   manifest: '/manifest.json',
   appleWebApp: {
