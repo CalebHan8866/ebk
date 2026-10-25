@@ -2,11 +2,18 @@
 import { useState } from 'react'
 import Link from 'next/link'
 
+function Spinner() {
+  return <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
+}
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
+  const [touched, setTouched] = useState(false)
+
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -19,18 +26,24 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Something went wrong'); return }
+      if (!res.ok) { setError(data.error || 'Something went wrong. Please try again.'); return }
       setSent(true)
     } catch {
-      setError('Something went wrong')
+      setError('Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-16">
-      <div className="w-full max-w-sm">
+    <div className="relative min-h-screen flex items-center justify-center px-4 py-16 animate-fade-in">
+      {/* Ambient glow */}
+      <div
+        className="absolute inset-x-0 top-0 h-[480px] pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse 80% 90% at 50% 0%, rgba(234,88,12,0.15) 0%, transparent 65%)' }}
+      />
+
+      <div className="w-full max-w-sm relative">
 
         {/* EBK wordmark */}
         <div className="text-center mb-10 animate-fade-up">
@@ -45,20 +58,28 @@ export default function ForgotPasswordPage() {
 
         <div className="card-accent p-8 animate-fade-up-1">
           {sent ? (
-            /* ── SENT STATE ────────────────────────────────────── */
+            /* ── SENT STATE ────────────────────────────────────────────────── */
             <div className="text-center">
-              {/* Email sent icon */}
-              <div className="w-16 h-16 rounded-2xl bg-green-500/10 border border-green-500/25 flex items-center justify-center mx-auto mb-6">
-                <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                </svg>
+              {/* Animated envelope */}
+              <div className="relative flex items-center justify-center mb-6">
+                <div className="absolute w-20 h-20 rounded-full bg-green-500/10 animate-ping opacity-30" style={{ animationDuration: '2.5s' }} />
+                <div
+                  className="w-16 h-16 rounded-2xl bg-green-500/10 border border-green-500/25 flex items-center justify-center relative"
+                  style={{ boxShadow: '0 0 24px rgba(34,197,94,0.12)' }}
+                >
+                  <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                  </svg>
+                </div>
               </div>
 
               <h2 className="font-display text-4xl text-white leading-none mb-2 tracking-wide">CHECK YOUR INBOX</h2>
+              <p className="text-white/45 text-sm leading-relaxed mb-1">
+                If an account exists for
+              </p>
+              <p className="text-orange-400 font-semibold text-sm mb-1">{email}</p>
               <p className="text-white/45 text-sm leading-relaxed mb-2">
-                If an account exists for{' '}
-                <span className="text-orange-400 font-bold">{email}</span>,
-                we sent a reset link.
+                we&apos;ve sent a reset link.
               </p>
               <p className="text-white/25 text-xs leading-relaxed mb-8">
                 Check your spam folder if you don&apos;t see it within a minute.
@@ -68,8 +89,9 @@ export default function ForgotPasswordPage() {
                 Back to Login
               </Link>
             </div>
+
           ) : (
-            /* ── FORM STATE ────────────────────────────────────── */
+            /* ── FORM STATE ────────────────────────────────────────────────── */
             <>
               {/* Lock icon header */}
               <div className="flex items-center gap-3 mb-6">
@@ -84,25 +106,51 @@ export default function ForgotPasswordPage() {
                 </div>
               </div>
 
-              {/* Error */}
+              {/* Error banner */}
               {error && (
-                <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 mb-5 text-sm animate-slide-up">
+                <div
+                  role="alert"
+                  className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-3 mb-5 text-sm animate-slide-up flex items-start gap-2"
+                >
+                  <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                  </svg>
                   {error}
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label className="text-label block mb-2">Email Address</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    required
-                    placeholder="you@example.com"
-                    className="input-field"
-                    autoComplete="email"
-                  />
+                  <label htmlFor="forgot-email" className="text-label block mb-2">Email Address</label>
+                  <div className="relative flex items-center">
+                    <input
+                      id="forgot-email"
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      onBlur={() => setTouched(true)}
+                      required
+                      placeholder="you@example.com"
+                      className={`input-field pr-9 ${touched ? (validEmail ? 'valid' : 'invalid') : ''}`}
+                      autoComplete="email"
+                    />
+                    {touched && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2" aria-hidden="true">
+                        {validEmail ? (
+                          <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  {touched && !validEmail && (
+                    <p role="alert" className="text-red-400 text-[10px] mt-1 ml-1">Enter a valid email address</p>
+                  )}
                 </div>
 
                 <button
@@ -111,8 +159,8 @@ export default function ForgotPasswordPage() {
                   className="btn-primary w-full text-sm font-display tracking-widest"
                 >
                   {loading ? (
-                    <span className="flex items-center gap-2">
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span className="flex items-center justify-center gap-2">
+                      <Spinner />
                       Sending…
                     </span>
                   ) : 'Send Reset Link'}
