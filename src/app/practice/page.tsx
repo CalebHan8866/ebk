@@ -98,7 +98,19 @@ function PracticeContent() {
   const [filterPos, setFilterPos] = useState('ALL')
   const [searchQuery, setSearchQuery] = useState('')
   const [statMode, setStatMode] = useState('games_played')
-  const [spunTeamsHistory, setSpunTeamsHistory] = useState<string[]>([])
+  // Slot-indexed spin history: spunTeamBySlot[slotIndex] = team abbr that was active
+  // when the player in that slot was picked.  Keyed by slot so that unpicking a player
+  // removes only its own spin entry rather than corrupting the entire history.
+  const [spunTeamBySlot, setSpunTeamBySlot] = useState<Record<number, string>>({})
+  // Derived ordered list used by getBestPossibleFromSpins: teams in pick-turn order.
+  // Re-derived from spunTeamBySlot whenever picks change so the order stays in sync.
+  const spunTeamsHistory = useMemo(() => {
+    const entries: string[] = []
+    for (let i = 0; i < picks.length; i++) {
+      if (picks[i] !== null && spunTeamBySlot[i] !== undefined) entries.push(spunTeamBySlot[i])
+    }
+    return entries
+  }, [picks, spunTeamBySlot])
 
   // Spinner
   const [spunTeam, setSpunTeam] = useState<string | null>(null)
@@ -191,7 +203,6 @@ function PracticeContent() {
           setSpunTeam(target)
           setIsSpinning(false)
           setSpinDisplay(target)
-          setSpunTeamsHistory(prev => [...prev, target])
           // Shuffle team's players once — stable for this pick turn
           const pool = afterPlayers.filter(p => getCurrentTeam(p.team) === target)
           setShuffledIds([...pool].sort(() => Math.random() - 0.5).map(p => p.id))
@@ -256,6 +267,13 @@ function PracticeContent() {
     setPicks(newPicks)
     setSelectedPlayerId(null)
 
+    // Record which team was active when this slot was filled.
+    // We capture spunTeam at pick-commit time — not inside the async spin callback —
+    // so each slot maps to exactly one spin, and unpicking can remove just that entry.
+    if (spunTeam) {
+      setSpunTeamBySlot(prev => ({ ...prev, [slotIndex]: spunTeam }))
+    }
+
     const newFilled = newPicks.filter(id => id !== null).length
     if (newFilled < teamSize) triggerSpin(players, newPicks)
   }
@@ -265,6 +283,9 @@ function PracticeContent() {
     newPicks[fromSlot] = null
     setPicks(newPicks)
     setSelectedPlayerId(null)
+    // Remove this slot's spin record so the bestEBK denominator doesn't include
+    // a phantom spin that no longer corresponds to a committed pick.
+    setSpunTeamBySlot(prev => { const next = { ...prev }; delete next[fromSlot]; return next })
     triggerSpin(players, newPicks)
   }
 
@@ -272,7 +293,7 @@ function PracticeContent() {
     spinRefs.current.forEach(id => { clearTimeout(id); clearInterval(id) }); spinRefs.current = []
     setIsSpinning(false); setSpunTeam(null); setSpinDisplay('?')
     setPicks([])
-    setSpunTeamsHistory([])
+    setSpunTeamBySlot({})
     setShuffledIds([])
     setSelectedPlayerId(null)
     setStatMode('games_played')
@@ -352,7 +373,7 @@ function PracticeContent() {
             </div>
 
             <button
-              onClick={() => { setPicks(Array(TEAM_SIZES[teamMode]).fill(null)); setSpunTeamsHistory([]); setScreen('draft') }}
+              onClick={() => { setPicks(Array(TEAM_SIZES[teamMode]).fill(null)); setSpunTeamBySlot({}); setScreen('draft') }}
               className="btn-primary w-full py-4 text-base tracking-wider gap-2">
               <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               Start Practice Draft
@@ -808,7 +829,7 @@ function PracticeContent() {
         </div>
 
         <div className="flex gap-3 animate-fade-up-4 pb-8">
-          <button onClick={() => { const newPicks = Array(TEAM_SIZES[teamMode]).fill(null); setPicks(newPicks); setSpunTeamsHistory([]); setSelectedPlayerId(null); setStatMode('games_played'); setFilterPos('ALL'); setSearchQuery(''); setScreen('draft'); triggerSpin(players, newPicks) }}
+          <button onClick={() => { const newPicks = Array(TEAM_SIZES[teamMode]).fill(null); setPicks(newPicks); setSpunTeamBySlot({}); setSelectedPlayerId(null); setStatMode('games_played'); setFilterPos('ALL'); setSearchQuery(''); setScreen('draft'); triggerSpin(players, newPicks) }}
             className="btn-secondary flex-1">
             Draft Again
           </button>
