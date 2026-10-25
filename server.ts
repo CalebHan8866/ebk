@@ -1177,6 +1177,23 @@ function advanceAuction(io: SocketServer, room: AuctionRoom) {
   // after the host manually ended the auction (or after finishAuction ran) must not
   // push new bidding state to a completed/trading room.
   if (room.status === 'complete' || room.status === 'trading') return
+  // Guard: if all participants have disconnected by the time this callback fires
+  // (e.g. the steal-window timer fires after the disconnect handler already ran
+  // clearTimeout — which is a no-op if the timer had already queued), bail out and
+  // clean up.  Without this check a post-steal advanceAuction would call
+  // startAuctionTradePhase → finishAuction, writing DB results for a dead room and
+  // leaving a 30-min cleanupTimer referencing an orphaned room object that was
+  // already removed from auctionRooms by the disconnect handler.
+  const allGone = room.participants.every(p => !io.sockets.sockets.has(p.socketId))
+  if (allGone) {
+    if (room.bidTimer) clearTimeout(room.bidTimer)
+    if (room.tradeTimer) clearTimeout(room.tradeTimer)
+    if (auctionRooms.get(room.code) === room) {
+      auctionRooms.delete(room.code)
+      auctionRoundCounter.delete(room.code)
+    }
+    return
+  }
   const wonIds = new Set(room.participants.flatMap(p => p.roster))
   room.currentPlayerIndex++
   while (room.currentPlayerIndex < room.playerPool.length) {
@@ -1244,10 +1261,15 @@ function handleAuctionBidExpiry(io: SocketServer, room: AuctionRoom) {
   // for a game that nobody is watching.
   const allGone = room.participants.every(p => !io.sockets.sockets.has(p.socketId))
   if (allGone) {
-    if (room.bidTimer) clearTimeout(room.bidTimer)
+    // room.bidTimer is already null (set above); tradeTimer may still be live.
     if (room.tradeTimer) clearTimeout(room.tradeTimer)
-    auctionRooms.delete(room.code)
-    auctionRoundCounter.delete(room.code)
+    // Identity guard: only delete if this exact room object is still registered —
+    // a very fast code reuse within BID_TIMER_MS could register a new room at the
+    // same code before this callback fires.
+    if (auctionRooms.get(room.code) === room) {
+      auctionRooms.delete(room.code)
+      auctionRoundCounter.delete(room.code)
+    }
     return
   }
 
