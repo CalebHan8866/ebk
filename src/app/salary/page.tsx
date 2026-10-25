@@ -29,6 +29,34 @@ function getEarnings(p: Player): { value: number; estimated: boolean } {
   return { value: estimateCareerEarnings(p), estimated: true }
 }
 
+// Deduplicate players by full name, keeping the row with the highest careerEarnings
+// (ties broken by most recent yearTo). Collects all teams into a teamHistory string.
+function deduplicatePlayers(raw: Player[]): (Player & { teamHistory: string })[] {
+  const map = new Map<string, Player[]>()
+  for (const p of raw) {
+    const key = `${p.firstName.toLowerCase()} ${p.lastName.toLowerCase()}`
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(p)
+  }
+  return Array.from(map.values()).map((rows: Player[]) => {
+    // Pick canonical row: highest careerEarnings, then most recent yearTo
+    const canonical = rows.reduce((best: Player, cur: Player) => {
+      if (cur.careerEarnings > best.careerEarnings) return cur
+      if (cur.careerEarnings === best.careerEarnings && cur.yearTo > best.yearTo) return cur
+      return best
+    })
+    // Build ordered team history (unique teams, sorted by yearFrom)
+    const teamsSeen = new Set<string>()
+    const teamHistory = rows
+      .slice()
+      .sort((a: Player, b: Player) => a.yearFrom - b.yearFrom)
+      .map((r: Player) => r.team)
+      .filter((t: string) => { if (teamsSeen.has(t)) return false; teamsSeen.add(t); return true })
+      .join(' → ')
+    return { ...canonical, teamHistory }
+  })
+}
+
 const ERA_OPTIONS: { value: EraFilter; label: string }[] = [
   { value: 'all',    label: 'All Eras' },
   { value: '2010s',  label: '2010+' },
@@ -160,7 +188,7 @@ export default function SalaryPage() {
   }, [valueYear])
 
   const enriched = useMemo(() => {
-    return players.map(p => {
+    return deduplicatePlayers(players).map(p => {
       const { value, estimated } = getEarnings(p)
       const seasons = Math.max(1, p.yearTo - p.yearFrom)
       return {
@@ -524,7 +552,7 @@ export default function SalaryPage() {
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-white/30 text-[11px] uppercase tracking-wide">{p.position}</span>
                             <span className="text-white/20 text-[11px]">·</span>
-                            <span className="text-white/30 text-[11px] truncate">{p.team}</span>
+                            <span className="text-white/30 text-[11px] truncate">{p.teamHistory}</span>
                           </div>
 
                           {/* Earnings bar — 3px track, orange fill, top-3 glow */}

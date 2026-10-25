@@ -19,7 +19,7 @@ function computeETag(data: unknown): string {
 async function fetchAndCache(): Promise<void> {
   console.log('[players] cache miss, querying DB...')
   const dbStart = Date.now()
-  const players = await prisma.player.findMany({
+  const raw = await prisma.player.findMany({
     select: {
       id: true,
       firstName: true,
@@ -33,10 +33,31 @@ async function fetchAndCache(): Promise<void> {
       careerAPG: true,
       careerMPG: true,
       ebkScore: true,
+      ebkGpScore: true,
+      ebkPpgScore: true,
+      ebkRpgScore: true,
+      ebkApgScore: true,
+      ebkMpgScore: true,
       yearFrom: true,
       yearTo: true,
       careerEarnings: true,
     },
+  })
+
+  // Recompute ebkScore from component scores for any player whose stored value is 0
+  // but whose components are non-zero (indicates double-penalty corruption from
+  // scrape-popularity.ts running multiple times with the old non-idempotent logic).
+  const players = raw.map(p => {
+    if (p.ebkScore === 0 && (p.ebkGpScore > 0 || p.ebkPpgScore > 0 || p.ebkMpgScore > 0)) {
+      return {
+        ...p,
+        ebkScore: parseFloat(
+          (p.ebkGpScore * 0.20 + p.ebkPpgScore * 0.25 + p.ebkMpgScore * 0.20
+           + p.ebkRpgScore * 0.18 + p.ebkApgScore * 0.17).toFixed(1)
+        ),
+      }
+    }
+    return p
   })
   cache = { data: players, etag: computeETag(players), at: Date.now() }
   console.log(`[players] served ${players.length} players in ${Date.now() - dbStart}ms`)

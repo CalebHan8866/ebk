@@ -15,9 +15,27 @@ interface Player {
   careerAPG: number
   careerMPG: number
   ebkScore: number
+  ebkGpScore?: number
+  ebkPpgScore?: number
+  ebkRpgScore?: number
+  ebkApgScore?: number
+  ebkMpgScore?: number
   yearFrom: number
   yearTo: number
   careerEarnings: number   // real scraped value; 0 = use formula estimate
+}
+
+/** Recomputes ebkScore from raw component scores if the stored value is 0
+ *  but the components are non-zero (double-penalty corruption fix). */
+function getEbkScore(p: Player): number {
+  if (p.ebkScore > 0) return p.ebkScore
+  const gp  = p.ebkGpScore  ?? 0
+  const ppg = p.ebkPpgScore ?? 0
+  const mpg = p.ebkMpgScore ?? 0
+  const rpg = p.ebkRpgScore ?? 0
+  const apg = p.ebkApgScore ?? 0
+  if (gp === 0 && ppg === 0 && mpg === 0) return 0
+  return parseFloat((gp * 0.20 + ppg * 0.25 + mpg * 0.20 + rpg * 0.18 + apg * 0.17).toFixed(1))
 }
 
 interface SeasonEntry {
@@ -377,8 +395,36 @@ function generateFacts(p: Player, seasonEntries?: SeasonEntry[]): Fact[] {
   return facts
 }
 
+// Deduplicate players by full name, keeping the row with the highest careerEarnings
+// (ties broken by most recent yearTo). Collects all teams into a teamHistory string.
+function deduplicatePlayers(raw: Player[]): (Player & { teamHistory: string })[] {
+  const map = new Map<string, Player[]>()
+  for (const p of raw) {
+    const key = `${p.firstName.toLowerCase()} ${p.lastName.toLowerCase()}`
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(p)
+  }
+  return Array.from(map.values()).map((rows: Player[]) => {
+    // Pick the canonical row: highest careerEarnings, then most recent yearTo
+    const canonical = rows.reduce((best: Player, cur: Player) => {
+      if (cur.careerEarnings > best.careerEarnings) return cur
+      if (cur.careerEarnings === best.careerEarnings && cur.yearTo > best.yearTo) return cur
+      return best
+    })
+    // Build ordered team history (unique teams, sorted by the row's yearFrom)
+    const teamsSeen = new Set<string>()
+    const teamHistory = rows
+      .slice()
+      .sort((a: Player, b: Player) => a.yearFrom - b.yearFrom)
+      .map((r: Player) => r.team)
+      .filter((t: string) => { if (teamsSeen.has(t)) return false; teamsSeen.add(t); return true })
+      .join(' → ')
+    return { ...canonical, teamHistory }
+  })
+}
+
 export default function FunFactsPage() {
-  const [players, setPlayers] = useState<Player[]>([])
+  const [players, setPlayers] = useState<(Player & { teamHistory: string })[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [search, setSearch] = useState('')
@@ -439,9 +485,11 @@ export default function FunFactsPage() {
         return r.json()
       })
       .then((data: Player[]) => {
+        // Deduplicate players (multiple rows per player due to team history)
+        const deduped = deduplicatePlayers(data as Player[])
         // Keep only players whose earnings produce a $100K–$1M/yr comparison
         // Use real scraped earnings when available, fall back to estimate (mirrors generateFacts)
-        const eligible = (data as Player[]).filter(p => {
+        const eligible = deduped.filter(p => {
           const e = p.careerEarnings > 0 ? p.careerEarnings : estimateCareerEarnings(p)
           return eligibleEvents(e).length > 0
         })
@@ -463,7 +511,7 @@ export default function FunFactsPage() {
     const q = norm(search)
     return players.filter(p =>
       norm(`${p.firstName} ${p.lastName}`).includes(q) ||
-      norm(p.team).includes(q)
+      norm(p.teamHistory).includes(q)
     )
   }, [players, search])
 
@@ -685,7 +733,7 @@ export default function FunFactsPage() {
               <div className="flex-1 card-surface rounded-xl px-4 py-2.5 flex items-center justify-between">
                 <div className="min-w-0">
                   <span className="text-white font-black text-sm truncate block">{current.firstName} {current.lastName}</span>
-                  <span className="text-label">{current.team}</span>
+                  <span className="text-label truncate block">{current.teamHistory}</span>
                 </div>
                 <span className="text-white/25 text-xs font-black tabular-nums shrink-0 ml-3">
                   {cardIndex + 1}<span className="text-white/15"> / </span>{filtered.length}
@@ -731,7 +779,7 @@ export default function FunFactsPage() {
                   {/* Top row: EBK score + position/team */}
                   <div className="flex items-start justify-between mb-5">
                     <div className="card-stat rounded-xl px-4 py-3 text-center">
-                      <div className="font-display text-orange-400 text-4xl leading-none">{current.ebkScore.toFixed(1)}</div>
+                      <div className="font-display text-orange-400 text-4xl leading-none">{getEbkScore(current).toFixed(1)}</div>
                       <div className="text-label mt-1">EBK Score</div>
                     </div>
                     <div className="text-right">
@@ -744,7 +792,7 @@ export default function FunFactsPage() {
                       }`}>
                         {current.position}
                       </span>
-                      <div className="text-white/50 text-xs font-bold">{current.team}</div>
+                      <div className="text-white/50 text-xs font-bold leading-snug">{current.teamHistory}</div>
                       <div className="text-white/25 text-[10px] mt-0.5 font-bold">{current.yearFrom}–{current.yearTo}</div>
                     </div>
                   </div>

@@ -338,6 +338,11 @@ interface PlayerData {
   careerAPG: number
   careerMPG: number
   ebkScore: number
+  ebkGpScore: number
+  ebkPpgScore: number
+  ebkRpgScore: number
+  ebkApgScore: number
+  ebkMpgScore: number
   yearFrom: number
   yearTo: number
   careerEarnings: number
@@ -516,7 +521,36 @@ const recentMatchups = new Map<string, Map<string, number>>()
 // grudge: userId → Map(opponentId → total games played together)
 const matchupCount = new Map<string, Map<string, number>>()
 let allPlayers: PlayerData[] = []
-let playerById = new Map<number, PlayerData>() // fast O(1) lookup by id
+let playerById = new Map<number, PlayerData>() // fast O(1) lookup by id — contains ALL rows (including multi-team dupes) for safe stat lookups
+
+/**
+ * Deduplicate a raw player list so the draft/auction pool shows each real-world
+ * player exactly once.  The DB stores one row per (player, team) stint — e.g.
+ * Jimmy Butler has rows for CHI, MIN, PHI, and MIA.  Since all rows now carry
+ * identical career-total stats, allowing multiples in the pool means the same
+ * player could be drafted (or auctioned) multiple times.
+ *
+ * Strategy: keep the row whose yearTo is highest (most recent team stint).
+ * Ties are broken by yearFrom descending, then id ascending for stability.
+ */
+function deduplicatePlayers(players: PlayerData[]): PlayerData[] {
+  const best = new Map<string, PlayerData>()
+  for (const p of players) {
+    const key = `${p.firstName}|||${p.lastName}`
+    const existing = best.get(key)
+    if (!existing) { best.set(key, p); continue }
+    // Prefer higher yearTo (more recent career end), then higher yearFrom, then lower id
+    if (
+      p.yearTo > existing.yearTo ||
+      (p.yearTo === existing.yearTo && p.yearFrom > existing.yearFrom) ||
+      (p.yearTo === existing.yearTo && p.yearFrom === existing.yearFrom && p.id < existing.id)
+    ) {
+      best.set(key, p)
+    }
+  }
+  return Array.from(best.values())
+}
+
 const auctionRooms = new Map<string, AuctionRoom>()
 // Seed DB uses id=71; after scrape-bbref runs it gets a hash-based ID — resolve dynamically.
 let JAMESON_CURRY_ID = 71
@@ -1328,7 +1362,10 @@ app.prepare().then(async () => {
     id: true, firstName: true, lastName: true, team: true,
     position: true, positions: true, careerGames: true,
     careerPPG: true, careerRPG: true, careerAPG: true, careerMPG: true,
-    ebkScore: true, yearFrom: true, yearTo: true, careerEarnings: true,
+    ebkScore: true,
+    ebkGpScore: true, ebkPpgScore: true, ebkRpgScore: true,
+    ebkApgScore: true, ebkMpgScore: true,
+    yearFrom: true, yearTo: true, careerEarnings: true,
   } as const
 
   const DB_CONNECT_ATTEMPTS = 3
@@ -1353,9 +1390,32 @@ app.prepare().then(async () => {
     process.exit(1)
   }
 
+  // Recompute ebkScore from raw component scores to fix any double-penalty corruption
+  // (scrape-popularity.ts running multiple times could floor scores to 0 by reading
+  // the already-penalized ebkScore as the baseline on each subsequent run).
+  function recomputeEbkScores(players: PlayerData[]): void {
+    let fixed = 0
+    for (const p of players) {
+      const hasComponents = p.ebkGpScore > 0 || p.ebkPpgScore > 0 || p.ebkMpgScore > 0
+      if (p.ebkScore === 0 && hasComponents) {
+        p.ebkScore = parseFloat(
+          (p.ebkGpScore * 0.20 + p.ebkPpgScore * 0.25 + p.ebkMpgScore * 0.20
+           + p.ebkRpgScore * 0.18 + p.ebkApgScore * 0.17).toFixed(1)
+        )
+        fixed++
+      }
+    }
+    if (fixed > 0) console.log(`[server] Recomputed ebkScore for ${fixed} players with corrupted 0 scores.`)
+  }
+
+  recomputeEbkScores(allPlayers)
+  // playerById keeps ALL rows (multi-team stints) so any id the client sends resolves.
   playerById = new Map(allPlayers.map(p => [p.id, p]))
+  // allPlayers is the draft/auction pool — deduplicated to one row per real player so
+  // no player (e.g. Jimmy Butler CHI/MIN/PHI/MIA) can appear or be drafted multiple times.
+  allPlayers = deduplicatePlayers(allPlayers)
   refreshJCId()
-  console.log(`Loaded ${allPlayers.length} players from DB`)
+  console.log(`Loaded ${playerById.size} player rows from DB (${allPlayers.length} unique players after dedup)`)
 
   // Refresh player data periodically (scrape-bbref runs in background after startup)
   // Use 5-min interval — scrape takes ~10 min, so this picks up new players quickly
@@ -1365,8 +1425,10 @@ app.prepare().then(async () => {
       if (fresh.length !== allPlayers.length) {
         console.log(`Player data refreshed: ${allPlayers.length} → ${fresh.length}`)
       }
-      allPlayers = fresh
+      recomputeEbkScores(fresh)
+      // playerById keeps ALL rows; allPlayers is deduplicated for the draft/auction pool.
       playerById = new Map(fresh.map(p => [p.id, p]))
+      allPlayers = deduplicatePlayers(fresh)
       refreshJCId()
     } catch (e) {
       console.error('Failed to refresh player data:', e)
