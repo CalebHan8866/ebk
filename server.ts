@@ -761,6 +761,13 @@ function scheduleRoomCleanup(code: string, ioRef?: SocketServer) {
     rooms.delete(code)
     pickTimerStartedAt.delete(code)
     consecutiveTimeouts.delete(code)
+    // Belt-and-suspenders: cancel any still-pending forfeit grace timer.  Under normal
+    // operation scheduleRoomCleanup() already cancels it at call-time (lines above),
+    // but if the timer somehow fires after the grace period was restarted (e.g. via a
+    // rapid scheduleRoomCleanup → rescheduled cleanup path), this prevents the stale
+    // callback from referencing an already-deleted room object.
+    const stale = partnerDisconnectTimers.get(code)
+    if (stale) { clearTimeout(stale); partnerDisconnectTimers.delete(code) }
     // Evict all remaining Socket.IO room members so the code can be safely reused
     if (ioRef) ioRef.in(code).socketsLeave(code)
     console.log('[room] destroyed code=%s game_rooms=%d', code, rooms.size)
@@ -1577,6 +1584,11 @@ app.prepare().then(async () => {
   // cleans up rooms when the host disconnects, but that never fires for a live-but-idle
   // socket.  This sweep deletes any room that has been in a pre-game state for longer
   // than STALE_WAITING_ROOM_MS (30 min) regardless of socket liveness.
+  //
+  // Additionally, 'drafting' and 'result' rooms where BOTH player sockets are gone and
+  // no cleanup timer is pending are force-evicted.  Under normal operation
+  // scheduleRoomCleanup handles these, but this sweep is a safety net for any edge case
+  // (timer lost, state machine bug) where the cleanup timer was never armed.
   setInterval(() => {
     const now = Date.now()
     const cutoff = now - STALE_WAITING_ROOM_MS
@@ -1591,23 +1603,75 @@ app.prepare().then(async () => {
         const pt = pickTimers.get(code)
         if (pt) { clearTimeout(pt); pickTimers.delete(code) }
         else pickTimers.delete(code)
+        // Cancel any stale forfeit grace timer (shouldn't exist for waiting rooms, but defensive).
+        const pdt = partnerDisconnectTimers.get(code)
+        if (pdt) { clearTimeout(pdt); partnerDisconnectTimers.delete(code) }
         rooms.delete(code)
         pickTimerStartedAt.delete(code)
         consecutiveTimeouts.delete(code)
         io.in(code).socketsLeave(code)
         console.log('[room] stale-sweep evicted waiting room code=%s age_min=%d game_rooms=%d',
           code, Math.round((now - room.createdAt) / 60_000), rooms.size)
+        continue
+      }
+
+      // Safety-net: evict 'drafting' or 'result' rooms that are older than the stale
+      // threshold, have no connected players, and have no pending cleanup timer.
+      // This catches the rare edge case where scheduleRoomCleanup was never called
+      // (e.g. a state-machine bug or timer loss) and the room would otherwise live
+      // in memory indefinitely.
+      if (
+        (room.status === 'drafting' || room.status === 'result') &&
+        room.createdAt < cutoff &&
+        !roomCleanupTimers.has(code)
+      ) {
+        const hostConnected  = io.sockets.sockets.has(room.hostSocketId)
+        const guestConnected = room.guestSocketId ? io.sockets.sockets.has(room.guestSocketId) : false
+        if (!hostConnected && !guestConnected) {
+          const pt = pickTimers.get(code)
+          if (pt) { clearTimeout(pt); pickTimers.delete(code) }
+          else pickTimers.delete(code)
+          const pdt = partnerDisconnectTimers.get(code)
+          if (pdt) { clearTimeout(pdt); partnerDisconnectTimers.delete(code) }
+          rooms.delete(code)
+          pickTimerStartedAt.delete(code)
+          consecutiveTimeouts.delete(code)
+          io.in(code).socketsLeave(code)
+          console.log('[room] stale-sweep evicted abandoned %s room code=%s age_min=%d game_rooms=%d',
+            room.status, code, Math.round((now - room.createdAt) / 60_000), rooms.size)
+        }
       }
     }
 
     for (const [code, room] of auctionRooms.entries()) {
       if (room.status === 'waiting' && room.createdAt < cutoff) {
         if (room.bidTimer) clearTimeout(room.bidTimer)
+        if (room.cleanupTimer) { clearTimeout(room.cleanupTimer); room.cleanupTimer = null }
         auctionRooms.delete(code)
         auctionRoundCounter.delete(code)
         io.in(`auction:${code}`).socketsLeave(`auction:${code}`)
         console.log('[auction] stale-sweep evicted waiting room code=%s age_min=%d auction_rooms=%d',
           code, Math.round((now - room.createdAt) / 60_000), auctionRooms.size)
+        continue
+      }
+
+      // Safety-net: evict active auction rooms (bidding/trading/steal-window) older than the
+      // stale threshold where ALL participants have disconnected and no cleanup timer is pending.
+      if (
+        room.status !== 'complete' &&
+        room.createdAt < cutoff &&
+        room.cleanupTimer === null
+      ) {
+        const allGone = room.participants.every(p => !io.sockets.sockets.has(p.socketId))
+        if (allGone) {
+          if (room.bidTimer) { clearTimeout(room.bidTimer); room.bidTimer = null }
+          if (room.tradeTimer) { clearTimeout(room.tradeTimer); room.tradeTimer = null }
+          auctionRooms.delete(code)
+          auctionRoundCounter.delete(code)
+          io.in(`auction:${code}`).socketsLeave(`auction:${code}`)
+          console.log('[auction] stale-sweep evicted abandoned %s room code=%s age_min=%d auction_rooms=%d',
+            room.status, code, Math.round((now - room.createdAt) / 60_000), auctionRooms.size)
+        }
       }
     }
   }, STALE_ROOM_SWEEP_MS)
