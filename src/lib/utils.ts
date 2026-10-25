@@ -54,9 +54,11 @@ export function estimateCareerEarnings(p: EarningsPlayer): number {
  * so this version is the superset of both original local copies.
  */
 export function fmt(n: number): string {
+  if (!isFinite(n) || isNaN(n)) return '$—'
   if (n < 0) return `-${fmt(-n)}`
+  if (n >= 1_000_000_000_000) return `$${(n / 1_000_000_000_000).toFixed(2)}T`
   if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(2)}B`
   if (n >= 1_000_000)     return `$${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000)         return `$${Math.round(n / 1_000)}K`
-  return `$${n}`
+  return `$${Math.round(n)}`
 }

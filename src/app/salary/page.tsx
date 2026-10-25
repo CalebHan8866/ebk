@@ -141,17 +141,22 @@ export default function SalaryPage() {
       .catch(() => {})
   }, [])
 
-  // Load value data for selected season
+  // Load value data for selected season — AbortController prevents a stale
+  // fetch (slower request for year N-1) from overwriting a newer one (year N).
   useEffect(() => {
     if (!valueYear) return
+    const controller = new AbortController()
     setValueLoading(true)
-    fetch(`/data/salary/${valueYear}.json`)
+    fetch(`/data/salary/${valueYear}.json`, { signal: controller.signal })
       .then(r => r.ok ? r.json() : null)
       .then((data: { players?: ValuePlayer[] } | null) => {
         setValuePlayers(data?.players ?? [])
         setValueLoading(false)
       })
-      .catch(() => setValueLoading(false))
+      .catch(err => {
+        if (err.name !== 'AbortError') setValueLoading(false)
+      })
+    return () => controller.abort()
   }, [valueYear])
 
   const enriched = useMemo(() => {
