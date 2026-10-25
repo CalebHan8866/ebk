@@ -21,6 +21,12 @@ async function getAuthUser(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    const ip = (request.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
+    // Rate limit: 60 profile fetches per minute per IP — ample for normal usage,
+    // blocks scripts that would hammer verifyToken (a DB call) to cause DB load.
+    const { success } = rateLimit(`profile-get:${ip}`, 60, 60 * 1000)
+    if (!success) return NextResponse.json({ error: 'Too many requests. Try again in a minute.' }, { status: 429 })
+
     const payload = await getAuthUser(request)
     if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -52,10 +58,16 @@ export async function GET(request: NextRequest) {
 // in the token for up to 7 days.
 export async function PATCH(request: NextRequest) {
   try {
+    // IP-level rate limit applied before verifyToken (which hits the DB) to prevent
+    // unauthenticated callers from causing DB load by repeatedly sending bogus tokens.
+    const ip = (request.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
+    const { success: ipOk } = rateLimit(`profile-patch:${ip}`, 20, 60 * 1000)
+    if (!ipOk) return NextResponse.json({ error: 'Too many requests. Try again in a minute.' }, { status: 429 })
+
     const payload = await getAuthUser(request)
     if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Rate limit: 3 username changes per hour (prevents rapid cycling).
+    // Per-user rate limit: 3 username changes per hour (prevents rapid cycling).
     const { success: renameOk } = rateLimit(`username-change:${payload.userId}`, 3, 60 * 60 * 1000)
     if (!renameOk) return NextResponse.json({ error: 'Too many username changes. Try again in an hour.' }, { status: 429 })
 
