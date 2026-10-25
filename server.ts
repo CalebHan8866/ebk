@@ -443,6 +443,11 @@ interface AuctionRoom {
   finalResults: AuctionResult[] | null
   /** Unix ms timestamp when the room was created — used by the stale-room sweep */
   createdAt: number
+  /** Handle for the post-finishAuction room-deletion timer (AUCTION_CLEANUP_MS).
+   *  Stored so it can be cancelled if all participants disconnect while the room
+   *  is in 'complete' status, freeing the room object from memory immediately
+   *  rather than holding it for the full 30-minute review window. */
+  cleanupTimer: ReturnType<typeof setTimeout> | null
 }
 
 interface AuctionResult {
@@ -1342,7 +1347,12 @@ function finishAuction(io: SocketServer, room: AuctionRoom) {
     },
   }).catch(err => console.error('[auction] Failed to persist results for room=%s: %o', room.code, err))
 
-  setTimeout(() => {
+  // Store the handle so it can be cancelled if all participants disconnect while
+  // the room is still in the 'complete' / review-window state, preventing the
+  // room object from staying in memory for the full 30-minute cleanup window
+  // after nobody remains to view the results.
+  room.cleanupTimer = setTimeout(() => {
+    room.cleanupTimer = null
     // Guard: only delete if this exact room object is still registered under this
     // code.  A new room could theoretically reuse the same code within the
     // AUCTION_CLEANUP_MS window; deleting it here would silently destroy an active game.
@@ -2732,7 +2742,7 @@ app.prepare().then(async () => {
         nominatorSocketId: null,
         stealInitiated: false, bidTimer: null, bidDeadline: 0,
         tradeOffers: [], tradeDeadline: null, tradeTimer: null, bidLog: [], finalResults: null,
-        createdAt: Date.now(),
+        createdAt: Date.now(), cleanupTimer: null,
       }
       auctionRooms.set(code, room)
       socket.join(`auction:${code}`)
@@ -3327,9 +3337,18 @@ app.prepare().then(async () => {
       cancelListingThrottle.delete(socket.id)
       // userCreateThrottle is intentionally NOT deleted on disconnect — it is keyed by
       // userId precisely so that reconnects don't reset the creation rate limit.
-      // Remove any open listing by this socket
+      // Remove any open listing by this socket OR by the same authenticated userId.
+      // Without the userId fallback, a host who reconnects after a brief disconnect
+      // gets a new socket.id — the stale listing.hostSocketId no longer matches, so
+      // when the reconnected socket disconnects the listing is NOT cleaned up.  It
+      // remains visible in the lobby as a ghost (join-listing rejects it because the
+      // original socket is gone) until the 10-minute expiry timer fires.
+      // This mirrors the userId-based ownership check already present in cancel-listing.
+      const disconnectingUserId = socket.data.userId as string | null
       for (const [code, listing] of gameListings.entries()) {
-        if (listing.hostSocketId === socket.id) {
+        const isOwner = listing.hostSocketId === socket.id ||
+          (disconnectingUserId !== null && disconnectingUserId === listing.hostUserId)
+        if (isOwner) {
           clearTimeout(listingTimers.get(code))
           listingTimers.delete(code)
           gameListings.delete(code)
@@ -3461,7 +3480,19 @@ app.prepare().then(async () => {
             if (room.hostSocketId === socket.id) room.hostSocketId = room.participants[0].socketId
             broadcastAuctionState(io, room)
           }
-        } else if (room.status !== 'complete') {
+        } else if (room.status === 'complete') {
+          // Completed room: participants may still be viewing results.  Only free
+          // the room if ALL remaining participants have now disconnected — there is
+          // no reason to keep 30 minutes of results in memory for an empty room.
+          const allGoneComplete = room.participants.every(p => !io.sockets.sockets.has(p.socketId))
+          if (allGoneComplete) {
+            if (room.cleanupTimer) { clearTimeout(room.cleanupTimer); room.cleanupTimer = null }
+            if (auctionRooms.get(room.code) === room) {
+              auctionRooms.delete(room.code)
+              auctionRoundCounter.delete(room.code)
+            }
+          }
+        } else {
           // Active room: mark the participant as disconnected but keep their slot.
           // If the disconnecting socket was the current round's nominator and no bid
           // has been placed yet, hand the nomination to the next connected participant
