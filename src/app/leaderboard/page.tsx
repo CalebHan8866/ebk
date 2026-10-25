@@ -269,7 +269,7 @@ interface RowProps {
   isMe: boolean
   sort: SortKey
   totalPlayers: number
-  rowRef?: React.RefObject<HTMLDivElement>
+  rowRef?: React.RefObject<HTMLDivElement> | undefined
 }
 
 function LeaderboardRow({ user: u, rank, isMe, sort, totalPlayers, rowRef }: RowProps) {

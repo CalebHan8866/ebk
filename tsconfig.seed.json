@@ -4,6 +4,7 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": false,
+    "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
     "module": "commonjs",
     "moduleResolution": "node",
