@@ -120,6 +120,8 @@ function GameContent() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [disconnected, setDisconnected] = useState(false)
   const [disconnectReason, setDisconnectReason] = useState<string | null>(null)
+  // Set when server replies 'next-game-pending' — guest is mid-reconnect, show reason to host
+  const [nextGamePendingReason, setNextGamePendingReason] = useState<string | null>(null)
   // Network reconnect banner — 'reconnecting' shows the amber bar, 'reconnected' shows
   // a brief green flash then hides. null = no banner.
   const [socketStatus, setSocketStatus] = useState<'reconnecting' | 'reconnected' | null>(null)
@@ -188,6 +190,7 @@ function GameContent() {
       setCurrentPickerInTimer(null)
       setRecentOppPickId(null)
       setRecentMyPickId(null)
+      setNextGamePendingReason(null)
       if (pickTimerRef.current) { clearInterval(pickTimerRef.current); pickTimerRef.current = null }
       spinRefs.current.forEach(id => { clearInterval(id); clearTimeout(id) })
       spinRefs.current = []
@@ -234,6 +237,7 @@ function GameContent() {
       try { sessionStorage.removeItem(tokenKey) } catch { /* ignore */ }
     }
     const handlePartnerDisconnected = () => { setDisconnected(true); setDisconnectReason(null) }
+    const handleNextGamePending = ({ reason }: { reason: string }) => { setNextGamePendingReason(reason) }
     const handleRoomError = ({ message }: { message: string }) => {
       setDisconnected(true)
       setDisconnectReason(message)
@@ -399,6 +403,7 @@ function GameContent() {
     socket.on('game-result', handleGameResult)
     socket.on('series-complete', handleSeriesComplete)
     socket.on('partner-disconnected', handlePartnerDisconnected)
+    socket.on('next-game-pending', handleNextGamePending)
     socket.on('room-error', handleRoomError)
     socket.on('pick-timer-start', handlePickTimerStart)
     socket.on('pick-timeout', handlePickTimeout)
@@ -434,6 +439,7 @@ function GameContent() {
       socket.off('game-result', handleGameResult)
       socket.off('series-complete', handleSeriesComplete)
       socket.off('partner-disconnected', handlePartnerDisconnected)
+      socket.off('next-game-pending', handleNextGamePending)
       socket.off('room-error', handleRoomError)
       socket.off('pick-timer-start', handlePickTimerStart)
       socket.off('pick-timeout', handlePickTimeout)
@@ -1358,9 +1364,16 @@ function GameContent() {
           {/* Sticky on mobile so the Start/Waiting button is always in reach */}
           <div className="flex flex-col gap-2.5 mt-2 sticky bottom-0 lg:static bg-[#0a0a0f]/90 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none border-t border-white/[0.05] lg:border-0 -mx-3 sm:-mx-4 lg:mx-0 px-3 sm:px-4 lg:px-0 pt-3 sticky-bar-safe lg:pb-0 lg:pt-0 z-10">
             {role === 'host' ? (
-              <button onClick={startNextGame} className="btn-primary w-full py-4 text-base font-display tracking-widest animate-glow">
-                Start Game {room.currentGame + 1}{room.series > 1 ? ` of ${room.series}` : ''}
-              </button>
+              nextGamePendingReason ? (
+                <div className="rounded-2xl border border-orange-500/20 bg-orange-950/10 py-4 px-6 text-center flex items-center justify-center gap-3">
+                  <span className="w-4 h-4 rounded-full border-2 border-orange-500/50 border-t-orange-400 animate-spin shrink-0" />
+                  <span className="text-white/60 text-sm">{nextGamePendingReason}</span>
+                </div>
+              ) : (
+                <button onClick={startNextGame} className="btn-primary w-full py-4 text-base font-display tracking-widest animate-glow">
+                  Start Game {room.currentGame + 1}{room.series > 1 ? ` of ${room.series}` : ''}
+                </button>
+              )
             ) : (
               <div className="rounded-2xl border border-orange-500/20 bg-orange-950/10 py-4 px-6 text-center flex items-center justify-center gap-3">
                 <span className="w-4 h-4 rounded-full border-2 border-orange-500/50 border-t-orange-400 animate-spin shrink-0" />
