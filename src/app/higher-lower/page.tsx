@@ -347,24 +347,31 @@ export default function HigherLowerPage() {
 
           {/* ── What went wrong ── */}
           {current && challenger && (
-            <div className="card-surface rounded-2xl px-4 py-3 mb-5 text-sm text-left animate-fade-up-2">
-              <p className="text-white/55 leading-relaxed mb-2">
+            <div className="card-surface rounded-2xl px-4 py-4 mb-5 text-sm text-left animate-fade-up-2">
+              <p className="text-white/55 leading-relaxed mb-3">
                 <span className="text-white/90 font-bold">{challenger.firstName} {challenger.lastName}</span>
                 {' '}had{' '}
-                <span className="text-orange-400 font-bold">{correctDir} EBK</span>
+                <span className={`font-black ${correctDir === 'HIGHER' ? 'text-orange-400' : correctDir === 'LOWER' ? 'text-blue-400' : 'text-yellow-400'}`}>{correctDir} EBK</span>
                 {' '}than {current.firstName} {current.lastName}
               </p>
               <div className="flex items-center gap-3">
-                <div className="flex-1 bg-white/[0.04] rounded-xl px-3 py-2 text-center">
-                  <div className="text-white/50 text-[10px] font-bold uppercase tracking-wide truncate mb-1">{current.lastName}</div>
-                  <div className="font-display text-2xl text-white/80 leading-none tabular-nums">{current.ebkScore.toFixed(1)}</div>
+                <div className="flex-1 bg-white/[0.04] rounded-xl px-3 py-2.5 text-center">
+                  <div className="text-white/40 text-[10px] font-black uppercase tracking-wide truncate mb-1">{current.lastName}</div>
+                  <div className="font-display text-3xl text-white/80 leading-none tabular-nums">{current.ebkScore.toFixed(1)}</div>
+                  <div className="text-white/25 text-[9px] mt-1 font-bold">EBK</div>
                 </div>
-                <div className="text-white/20 font-display text-sm shrink-0">VS</div>
-                <div className="flex-1 bg-orange-950/30 rounded-xl px-3 py-2 text-center border border-orange-700/20">
-                  <div className="text-orange-300/60 text-[10px] font-bold uppercase tracking-wide truncate mb-1">{challenger.lastName}</div>
-                  <div className="font-display text-2xl text-orange-400 leading-none tabular-nums">{challenger.ebkScore.toFixed(1)}</div>
+                <div className="shrink-0 text-center">
+                  <div className={`font-display text-xl leading-none ${correctDir === 'HIGHER' ? 'text-orange-500' : correctDir === 'LOWER' ? 'text-blue-500' : 'text-yellow-400'}`}>
+                    {correctDir === 'HIGHER' ? '▲' : correctDir === 'LOWER' ? '▼' : '='}
+                  </div>
+                </div>
+                <div className="flex-1 bg-red-950/25 rounded-xl px-3 py-2.5 text-center border border-red-700/25">
+                  <div className="text-red-300/50 text-[10px] font-black uppercase tracking-wide truncate mb-1">{challenger.lastName}</div>
+                  <div className="font-display text-3xl text-red-400 leading-none tabular-nums">{challenger.ebkScore.toFixed(1)}</div>
+                  <div className="text-red-300/30 text-[9px] mt-1 font-bold">EBK</div>
                 </div>
               </div>
+              <p className="text-white/25 text-[10px] mt-2.5 font-bold text-center tracking-wide">Higher EBK = more obscure · Lower EBK = bigger career</p>
             </div>
           )}
 
@@ -561,7 +568,7 @@ export default function HigherLowerPage() {
                   streak >= 10 ? 'text-6xl text-orange-400 animate-streak-bump' :
                   streak >= 3  ? 'text-5xl text-orange-300 animate-streak-bump' :
                   streak >= 1  ? 'text-5xl text-orange-200 animate-streak-bump' :
-                  'text-5xl text-white/60'
+                  'text-5xl text-white/40'
                 }`}
               >
                 {streak}
@@ -631,6 +638,13 @@ export default function HigherLowerPage() {
           </div>
         </div>
 
+        {/* ── EBK hint ──────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-center gap-1.5 mb-3 animate-fade-up-2">
+          <span className="text-blue-400/70 text-[10px] font-black uppercase tracking-widest">Lower EBK = bigger career</span>
+          <span className="text-white/20 text-[10px]">·</span>
+          <span className="text-orange-400/70 text-[10px] font-black uppercase tracking-widest">Higher EBK = hidden gem</span>
+        </div>
+
         {/* ── Player cards ──────────────────────────────────────────────── */}
         <div className="relative grid grid-cols-2 gap-3 mb-4 animate-fade-up-2">
           {/* VS divider */}
@@ -645,13 +659,13 @@ export default function HigherLowerPage() {
           </div>
 
           {/* Current player — always revealed */}
-          <div className="card-stat p-3 sm:p-4 flex flex-col">
+          <div className="card-stat p-3 sm:p-4 flex flex-col min-w-0">
             <div className="text-label mb-2 text-orange-500/70">Current</div>
-            <div className="font-black text-white text-sm leading-tight mb-0.5">
+            <div className="font-black text-white text-sm leading-tight mb-0.5 truncate">
               {current.firstName} {current.lastName}
             </div>
-            <div className="flex items-center gap-1.5 mb-3">
-              <span className={`pos-badge pos-${current.position.toLowerCase()}`}>{current.position}</span>
+            <div className="flex items-center gap-1.5 mb-3 min-w-0">
+              <span className={`pos-badge pos-${current.position.toLowerCase()} shrink-0`}>{current.position}</span>
               <span className="text-white/40 text-xs truncate">{current.team}</span>
             </div>
             <div className="text-white/55 text-[11px] space-y-0.5 mb-3 flex-1">
@@ -672,8 +686,8 @@ export default function HigherLowerPage() {
           </div>
 
           {/* Challenger — hidden until reveal, uses card-flip-scene for 3D depth */}
-          <div className="card-flip-scene">
-            <div className={`rounded-2xl p-3 sm:p-4 border-2 transition-colors duration-300 flex flex-col h-full ${challengerCardClass}`}>
+          <div className="card-flip-scene min-w-0">
+            <div className={`rounded-2xl p-3 sm:p-4 border-2 transition-colors duration-300 flex flex-col h-full min-w-0 ${challengerCardClass}`}>
               <div className={`text-label mb-2 ${
                 isRevealing && lastCorrect  ? 'text-green-500/70' :
                 isRevealing && !lastCorrect ? 'text-red-500/70' :
@@ -681,11 +695,11 @@ export default function HigherLowerPage() {
               }`}>
                 Challenger
               </div>
-              <div className="font-black text-white text-sm leading-tight mb-0.5">
+              <div className="font-black text-white text-sm leading-tight mb-0.5 truncate">
                 {challenger.firstName} {challenger.lastName}
               </div>
-              <div className="flex items-center gap-1.5 mb-3">
-                <span className={`pos-badge pos-${challenger.position.toLowerCase()}`}>{challenger.position}</span>
+              <div className="flex items-center gap-1.5 mb-3 min-w-0">
+                <span className={`pos-badge pos-${challenger.position.toLowerCase()} shrink-0`}>{challenger.position}</span>
                 <span className="text-white/40 text-xs truncate">{challenger.team}</span>
               </div>
 
@@ -781,7 +795,7 @@ export default function HigherLowerPage() {
 
         {/* ── Reveal verdict ────────────────────────────────────────────── */}
         {isRevealing && (
-          <div className={`flex items-center justify-center h-[80px] sm:h-[88px] rounded-2xl border transition-all duration-300 ${
+          <div className={`flex flex-col items-center justify-center min-h-[80px] sm:min-h-[88px] py-4 rounded-2xl border transition-all duration-300 ${
             isTie
               ? 'bg-yellow-950/20 border-yellow-700/30'
               : lastCorrect
@@ -797,6 +811,11 @@ export default function HigherLowerPage() {
             >
               {isTie ? '~ Tie — Free Pass!' : lastCorrect ? '✓  Correct!' : '✗  Wrong!'}
             </span>
+            {!lastCorrect && !isTie && (
+              <p className="text-red-300/50 text-xs font-bold mt-1.5 tracking-wide">
+                Next up after reveal…
+              </p>
+            )}
           </div>
         )}
 

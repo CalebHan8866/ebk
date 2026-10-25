@@ -719,21 +719,24 @@ export default function FunFactsPage() {
         ) : (
           <>
             {/* ── Player nav bar ───────────────────────────────────── */}
-            <div className="flex items-center gap-3 mb-3 sm:mb-4 animate-fade-up-2">
+            <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 animate-fade-up-2">
               <button
                 onClick={prevPlayer}
-                className="w-10 h-10 rounded-xl card-surface border border-white/[0.07] text-white/60 hover:text-white hover:border-white/20 flex items-center justify-center transition-all shrink-0"
+                className="w-12 h-12 rounded-xl card-surface border border-white/[0.07] text-white/60 hover:text-orange-400 hover:border-orange-700/40 hover:bg-orange-950/10 active:scale-95 flex items-center justify-center transition-all shrink-0"
                 aria-label="Previous player"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
 
-              <div className="flex-1 card-surface rounded-xl px-4 py-2.5 flex items-center justify-between">
+              <div className="flex-1 card-surface rounded-xl px-4 py-2.5 flex items-center justify-between min-w-0">
                 <div className="min-w-0">
                   <span className="text-white font-black text-sm truncate block">{current.firstName} {current.lastName}</span>
-                  <span className="text-label truncate block">{current.teamHistory}</span>
+                  <span
+                    className="text-label truncate block"
+                    title={current.teamHistory}
+                  >{current.teamHistory}</span>
                 </div>
                 <span className="text-white/25 text-xs font-black tabular-nums shrink-0 ml-3">
                   {cardIndex + 1}<span className="text-white/15"> / </span>{filtered.length}
@@ -742,10 +745,10 @@ export default function FunFactsPage() {
 
               <button
                 onClick={nextPlayer}
-                className="w-10 h-10 rounded-xl card-surface border border-white/[0.07] text-white/60 hover:text-white hover:border-white/20 flex items-center justify-center transition-all shrink-0"
+                className="w-12 h-12 rounded-xl card-surface border border-white/[0.07] text-white/60 hover:text-orange-400 hover:border-orange-700/40 hover:bg-orange-950/10 active:scale-95 flex items-center justify-center transition-all shrink-0"
                 aria-label="Next player"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
               </button>
@@ -781,6 +784,7 @@ export default function FunFactsPage() {
                     <div className="card-stat rounded-xl px-4 py-3 text-center">
                       <div className="font-display text-orange-400 text-4xl leading-none">{getEbkScore(current).toFixed(1)}</div>
                       <div className="text-label mt-1">EBK Score</div>
+                      <div className="text-white/20 text-[9px] mt-0.5 font-bold tracking-wide">higher = more obscure</div>
                     </div>
                     <div className="text-right">
                       {/* Position badge */}
@@ -792,7 +796,10 @@ export default function FunFactsPage() {
                       }`}>
                         {current.position}
                       </span>
-                      <div className="text-white/50 text-xs font-bold leading-snug">{current.teamHistory}</div>
+                      <div
+                        className="text-white/50 text-xs font-bold leading-snug max-w-[140px] break-words text-right"
+                        title={current.teamHistory}
+                      >{current.teamHistory}</div>
                       <div className="text-white/25 text-[10px] mt-0.5 font-bold">{current.yearFrom}–{current.yearTo}</div>
                     </div>
                   </div>
@@ -815,16 +822,16 @@ export default function FunFactsPage() {
                     </div>
 
                     {/* Career stats grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="grid grid-cols-4 gap-1.5">
                       {[
                         { l: 'GP',  v: current.careerGames.toLocaleString() },
                         { l: 'PPG', v: current.careerPPG.toFixed(1) },
                         { l: 'RPG', v: current.careerRPG.toFixed(1) },
                         { l: 'APG', v: current.careerAPG.toFixed(1) },
                       ].map(s => (
-                        <div key={s.l} className="card-stat rounded-xl px-2 py-3 text-center">
-                          <div className="font-display text-white text-2xl leading-none">{s.v}</div>
-                          <div className="text-label mt-1">{s.l}</div>
+                        <div key={s.l} className="card-stat rounded-xl px-1.5 py-2.5 text-center">
+                          <div className="font-display text-white text-xl leading-none tabular-nums">{s.v}</div>
+                          <div className="text-label mt-1 text-[9px]">{s.l}</div>
                         </div>
                       ))}
                     </div>
@@ -913,18 +920,18 @@ export default function FunFactsPage() {
               </div>
             </div>
 
-            {/* ── Bottom nav — hidden on mobile (top arrows serve the same purpose) */}
-            <div className="hidden sm:flex items-center gap-3 mt-5">
+            {/* ── Bottom nav — visible on all screen sizes */}
+            <div className="flex items-center gap-3 mt-4 sm:mt-5">
               <button onClick={prevPlayer} className="btn-secondary flex-1 py-3 text-sm">
-                ← Prev Player
+                ← Prev
               </button>
               <button onClick={nextPlayer} className="btn-primary flex-1 py-3 text-sm">
-                Next Player →
+                Next →
               </button>
             </div>
 
             {/* Disclaimer */}
-            <p className="hidden sm:block text-center text-white/20 text-[11px] mt-4 leading-relaxed px-2">
+            <p className="text-center text-white/20 text-[11px] mt-3 leading-relaxed px-2">
               {current?.careerEarnings > 0
                 ? 'Career earnings sourced from real NBA salary records.'
                 : 'Earnings are estimates based on era and performance — not official salary data.'}
