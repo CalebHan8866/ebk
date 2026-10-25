@@ -581,11 +581,31 @@ export default function LeaderboardPage() {
   }, [])
 
   const sorted = [...users].sort((a, b) => {
-    if (sort === 'wins') return b.wins - a.wins
-    if (sort === 'winStreak') return b.winStreak - a.winStreak
+    if (sort === 'wins') {
+      // Primary: raw wins desc. Secondary: fewer losses (better record) desc.
+      // Tertiary: more games played (larger sample) desc. This matches the
+      // server-side DB orderBy and prevents unstable shuffling on tied rows.
+      const diff = b.wins - a.wins
+      if (diff !== 0) return diff
+      const lossDiff = a.losses - b.losses
+      if (lossDiff !== 0) return lossDiff
+      return b.gamesPlayed - a.gamesPlayed
+    }
+    if (sort === 'winStreak') {
+      // Primary: current streak desc. Secondary: raw wins desc for stable ties.
+      const diff = b.winStreak - a.winStreak
+      if (diff !== 0) return diff
+      return b.wins - a.wins
+    }
+    // winPct — only count players with >= 5 games; park the rest at the bottom
     const pctA = a.gamesPlayed >= 5 ? a.wins / a.gamesPlayed : -1
     const pctB = b.gamesPlayed >= 5 ? b.wins / b.gamesPlayed : -1
-    return pctB - pctA
+    const diff = pctB - pctA
+    if (diff !== 0) return diff
+    // Tie-break equal percentages by larger sample size, then raw wins
+    const gamesDiff = b.gamesPlayed - a.gamesPlayed
+    if (gamesDiff !== 0) return gamesDiff
+    return b.wins - a.wins
   })
 
   const meInList = me ? sorted.findIndex(u => u.id === me.id) : -1
