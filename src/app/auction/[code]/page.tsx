@@ -86,6 +86,9 @@ interface AuctionResult {
   roster: RosterPlayer[]
 }
 
+// How long the results page is considered "live" after an auction finishes
+const REVIEW_WINDOW_MS = 30 * 60 * 1000
+
 const POSITION_COLORS: Record<string, string> = {
   PG: 'bg-blue-500/20 text-blue-400 border-blue-500/40',
   SG: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40',
@@ -181,6 +184,9 @@ export default function AuctionRoomPage() {
   const [tradeTimeLeft, setTradeTimeLeft] = useState(0)
   const [results, setResults] = useState<AuctionResult[]>([])
   const [phase, setPhase] = useState<AuctionPhase>('loading')
+  const [completedAt, setCompletedAt] = useState<number | null>(null)
+  const [reviewTimeLeft, setReviewTimeLeft] = useState<number>(0)
+  const [resultsCopied, setResultsCopied] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [tradeTarget, setTradeTarget] = useState<string | null>(null)
   const [selectedToOffer, setSelectedToOffer] = useState<number[]>([])
@@ -224,6 +230,19 @@ export default function AuctionRoomPage() {
     }, 100)
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [auctionState?.bidDeadline, auctionState?.tradeDeadline])
+
+  // Review-window countdown — results page stays "live" for 30 minutes after completion.
+  // Shows a small timer so GMs know how long they have to review / share.
+  useEffect(() => {
+    if (!completedAt) return
+    const tick = () => {
+      const elapsed = Date.now() - completedAt
+      setReviewTimeLeft(Math.max(0, Math.ceil((REVIEW_WINDOW_MS - elapsed) / 1000)))
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [completedAt])
 
   // Reset bid amount whenever a new player comes up OR the current bid changes.
   // currentPlayer?.id changes on every new player, even if currentBid stays 0.
@@ -337,6 +356,7 @@ export default function AuctionRoomPage() {
     function handleAuctionComplete({ results: r }: { results: AuctionResult[] }) {
       setResults(r)
       setPhase('complete')
+      setCompletedAt(prev => prev ?? Date.now())
       // Auction is permanently over — discard the reconnect token so it cannot
       // be replayed for a future room that happens to reuse the same code.
       try { sessionStorage.removeItem(tokenKey) } catch { /* ignore */ }
@@ -645,6 +665,40 @@ export default function AuctionRoomPage() {
     const worstScore = sortedByScore[sortedByScore.length - 1]?.ebkTotal ?? bestScore
     const totalBudget = auctionState?.totalBudget ?? 100
 
+    // ── Review-window display helpers ─────────────────────────────────────────
+    const reviewMins = Math.floor(reviewTimeLeft / 60)
+    const reviewSecs = reviewTimeLeft % 60
+    const reviewExpired = reviewTimeLeft === 0 && completedAt !== null
+
+    // ── Share results ─────────────────────────────────────────────────────────
+    const handleShareResults = async () => {
+      const lines = [
+        `EBK Draft Recap · Room ${code}`,
+        `${results[0]?.rosterCount ?? '?'} players · $${totalBudget}M cap`,
+        '',
+        ...sortedByScore.map((r, i) => {
+          const medals = ['🥇', '🥈', '🥉']
+          const medal = medals[i] ?? `#${i + 1}`
+          return `${medal} ${r.name} — ${r.ebkTotal.toFixed(1)} EBK`
+        }),
+        '',
+        `Lower score wins. Play at ebk.gg`,
+      ]
+      const text = lines.join('\n')
+      try {
+        await navigator.clipboard.writeText(text)
+      } catch {
+        const el = document.createElement('textarea')
+        el.value = text
+        document.body.appendChild(el)
+        el.select()
+        document.execCommand('copy')
+        document.body.removeChild(el)
+      }
+      setResultsCopied(true)
+      setTimeout(() => setResultsCopied(false), 2500)
+    }
+
     const getDraftGrade = (ebkTotal: number, rank: number): { grade: string; color: string; bg: string; label: string } => {
       const range = worstScore - bestScore
       const pctFromBest = range > 0 ? (ebkTotal - bestScore) / range : 0
@@ -686,6 +740,62 @@ export default function AuctionRoomPage() {
             DRAFT <span className="text-orange-500">COMPLETE</span>
           </h1>
           <p className="text-white/30 text-sm">{results.length} GM{results.length !== 1 ? 's' : ''} · {results[0]?.rosterCount} players each · ${totalBudget}M budget</p>
+
+          {/* ── "lower = better" pill + review timer + share ── */}
+          <div className="flex items-center justify-center gap-3 mt-4 flex-wrap">
+            {/* Lower = better rule pill */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-950/50 border border-green-700/30 text-green-400 text-[11px] font-black tracking-wide">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+              Lower EBK score wins
+            </div>
+
+            {/* Share results button */}
+            <button
+              onClick={handleShareResults}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-black tracking-wide transition-all duration-200 ${
+                resultsCopied
+                  ? 'bg-green-500/15 border-green-500/40 text-green-400'
+                  : 'bg-white/[0.04] border-white/[0.1] text-white/50 hover:text-white hover:border-white/25 hover:bg-white/[0.07]'
+              }`}
+            >
+              {resultsCopied ? (
+                <>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                  </svg>
+                  Share Results
+                </>
+              )}
+            </button>
+
+            {/* Review window countdown */}
+            {completedAt !== null && (
+              <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-black tracking-wide tabular-nums ${
+                reviewExpired
+                  ? 'bg-white/[0.03] border-white/[0.07] text-white/25'
+                  : reviewTimeLeft < 300
+                  ? 'bg-red-950/40 border-red-700/30 text-red-400'
+                  : 'bg-white/[0.03] border-white/[0.07] text-white/35'
+              }`}>
+                <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 6v6l4 2" />
+                </svg>
+                {reviewExpired
+                  ? 'Review window closed'
+                  : `Results available ${reviewMins}m ${String(reviewSecs).padStart(2, '0')}s`
+                }
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Winner spotlight ── */}
@@ -714,14 +824,15 @@ export default function AuctionRoomPage() {
                 <div className="flex items-center justify-center gap-3 sm:gap-6 bg-black/30 rounded-2xl px-4 sm:px-6 py-3 border border-yellow-700/20 w-full max-w-xs mx-auto">
                   <div className="text-center">
                     <div className="font-display text-2xl text-yellow-400 leading-none tabular-nums">{winner.ebkTotal.toFixed(1)}</div>
-                    <div className="text-[9px] font-black text-white/30 uppercase tracking-widest mt-0.5">EBK Total</div>
+                    <div className="text-[9px] font-black text-white/30 uppercase tracking-widest mt-0.5">EBK</div>
+                    <div className="text-[8px] text-green-500/70 font-bold mt-0.5 uppercase tracking-wide">Lowest wins</div>
                   </div>
-                  <div className="w-px h-8 bg-white/[0.08]" />
+                  <div className="w-px h-10 bg-white/[0.08]" />
                   <div className="text-center">
                     <div className="font-display text-2xl text-green-400 leading-none tabular-nums">${totalBudget - winner.budgetSpent}M</div>
                     <div className="text-[9px] font-black text-white/30 uppercase tracking-widest mt-0.5">Budget Left</div>
                   </div>
-                  <div className="w-px h-8 bg-white/[0.08]" />
+                  <div className="w-px h-10 bg-white/[0.08]" />
                   <div className="text-center">
                     <div className="font-display text-2xl text-orange-400 leading-none tabular-nums">{winner.rosterCount}</div>
                     <div className="text-[9px] font-black text-white/30 uppercase tracking-widest mt-0.5">Players</div>
@@ -788,7 +899,16 @@ export default function AuctionRoomPage() {
                       <div className="font-display text-3xl sm:text-4xl text-orange-400 leading-none tabular-nums">
                         {r.ebkTotal.toFixed(1)}
                       </div>
-                      <div className="text-white/25 text-[10px] uppercase tracking-widest mb-2">EBK Total</div>
+                      <div className="text-white/25 text-[10px] uppercase tracking-widest mt-0.5">EBK Total</div>
+                      {/* Relative score bar — visual spread vs best/worst */}
+                      {worstScore > bestScore && (
+                        <div className="mt-1.5 mb-1.5 w-16 h-1 bg-white/[0.07] rounded-full overflow-hidden ml-auto">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${i === 0 ? 'bg-green-400' : 'bg-orange-500/60'}`}
+                            style={{ width: `${100 - ((r.ebkTotal - bestScore) / (worstScore - bestScore)) * 100}%` }}
+                          />
+                        </div>
+                      )}
                       <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-black ${grade.bg} ${grade.color}`}>
                         <span className="text-base sm:text-xl leading-none">{grade.grade}</span>
                         <span className="hidden sm:inline text-[10px] font-bold opacity-80">{grade.label}</span>
@@ -799,7 +919,10 @@ export default function AuctionRoomPage() {
 
                 {/* ── Roster — full player cards ── */}
                 <div className="px-4 sm:px-5 pb-1">
-                  <div className="text-[9px] font-black uppercase tracking-[0.2em] text-white/20 mb-2 px-1">Final Roster</div>
+                  <div className="flex items-center justify-between mb-2 px-1">
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/20">Final Roster</span>
+                    <span className="text-[9px] text-white/15 font-bold">sorted by EBK ↑</span>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     {r.roster.filter(Boolean).sort((a, b) => a.ebkScore - b.ebkScore).map((p, pi) => {
                       const isBestVal = bestVal && p.id === bestVal.id
@@ -829,7 +952,9 @@ export default function AuctionRoomPage() {
                           </div>
                           <div className="text-right shrink-0">
                             <div className="text-orange-400 text-xs font-black tabular-nums leading-none">{p.ebkScore.toFixed(1)}</div>
-                            <div className="text-white/30 text-[10px] tabular-nums leading-none mt-0.5">${p.paidPrice}M</div>
+                            <div className="text-[8px] text-white/20 uppercase tracking-wider leading-none">EBK</div>
+                            <div className="text-white/40 text-[10px] tabular-nums leading-none mt-1">${p.paidPrice}M</div>
+                            <div className="text-[8px] text-white/15 uppercase tracking-wider leading-none">paid</div>
                           </div>
                         </div>
                       )
@@ -854,12 +979,36 @@ export default function AuctionRoomPage() {
         </div>
 
         {/* ── Action row ── */}
-        <div className="flex justify-center gap-3 flex-wrap pb-8">
-          <Link href="/auction" className="btn-primary">Play Again</Link>
-          <Link href="/leaderboard" className="btn-secondary text-sm">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 flex-wrap pb-10">
+          <Link href="/auction" className="btn-primary w-full sm:w-auto">Play Again</Link>
+          <button
+            onClick={handleShareResults}
+            className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border text-sm font-bold transition-all duration-200 ${
+              resultsCopied
+                ? 'bg-green-500/15 border-green-500/40 text-green-400'
+                : 'bg-white/[0.04] border-white/[0.1] text-white/60 hover:text-white hover:border-white/25 hover:bg-white/[0.07]'
+            }`}
+          >
+            {resultsCopied ? (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Copied!
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                Share Results
+              </>
+            )}
+          </button>
+          <Link href="/leaderboard" className="btn-secondary text-sm w-full sm:w-auto text-center">
             Leaderboard
           </Link>
-          <Link href="/lobby" className="btn-secondary text-sm">
+          <Link href="/lobby" className="btn-secondary text-sm w-full sm:w-auto text-center">
             Back to Lobby
           </Link>
         </div>
