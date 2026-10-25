@@ -24,7 +24,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "type-check": "tsc --noEmit",
-    "generate:icons": "ts-node --project tsconfig.seed.json scripts/generate-icons.ts"
+    "generate:icons": "ts-node --project tsconfig.seed.json scripts/generate-icons.ts",
+    "analyze": "ANALYZE=true npm run build"
   },
   "dependencies": {
     "@prisma/client": "^5.16.2",
@@ -42,6 +43,7 @@
     "typescript": "^5"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^14.2.35",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^18",

@@ -113,50 +113,56 @@ async function fetchLeaderboardData(userId: string | undefined, now: number): Pr
 
 export async function GET(request: NextRequest) {
   try {
-  const now = Date.now()
+    const now = Date.now()
 
-  const ip = (request.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
-  // Rate limit: 60 requests per minute per IP — enough for rapid page refreshes by real users,
-  // prevents automated scraping of username + stats data for account enumeration.
-  const { success } = rateLimit(`leaderboard:${ip}`, 60, 60 * 1000)
-  if (!success) return NextResponse.json({ error: 'Too many requests. Try again in a minute.' }, { status: 429 })
+    const ip = (request.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
+    // Rate limit: 60 requests per minute per IP — enough for rapid page refreshes by real users,
+    // prevents automated scraping of username + stats data for account enumeration.
+    const { success } = rateLimit(`leaderboard:${ip}`, 60, 60 * 1000)
+    if (!success) return NextResponse.json({ error: 'Too many requests. Try again in a minute.' }, { status: 429 })
 
-  // Check if the request includes a logged-in user
-  const cookieStore = await cookies()
-  const token = cookieStore.get('ebk-token')?.value
-  const payload = token ? await verifyToken(token) : null
+    // Check if the request includes a logged-in user
+    const cookieStore = await cookies()
+    const token = cookieStore.get('ebk-token')?.value
+    const payload = token ? await verifyToken(token) : null
 
-  // Cache per userId (or 'anon') so each user's rank data is cached independently
-  const cacheKey = payload?.userId ?? 'anon'
-  const cached = cache.get(cacheKey)
-  const age = cached ? now - cached.at : Infinity
+    // Cache per userId (or 'anon') so each user's rank data is cached independently
+    const cacheKey = payload?.userId ?? 'anon'
+    const cached = cache.get(cacheKey)
+    const age = cached ? now - cached.at : Infinity
 
-  if (age >= CACHE_TTL) {
-    // Hard-expired — block on a fresh DB fetch before responding (thundering-herd
-    // protection: attach to any already-inflight promise for this key)
-    let promise = inflight.get(cacheKey)
-    if (!promise) {
-      promise = fetchLeaderboardData(payload?.userId, now).finally(() => {
-        inflight.delete(cacheKey)
-      })
-      inflight.set(cacheKey, promise)
+    if (age >= CACHE_TTL) {
+      // Hard-expired — block on a fresh DB fetch before responding (thundering-herd
+      // protection: attach to any already-inflight promise for this key)
+      let promise = inflight.get(cacheKey)
+      if (!promise) {
+        promise = fetchLeaderboardData(payload?.userId, now).finally(() => {
+          inflight.delete(cacheKey)
+        })
+        inflight.set(cacheKey, promise)
+      }
+      await promise
+    } else if (age >= SWR_TTL) {
+      // Stale but usable — serve immediately, kick off a background refresh
+      if (!refreshing.get(cacheKey)) {
+        refreshing.set(cacheKey, true)
+        fetchLeaderboardData(payload?.userId, now).catch(err => {
+          console.error('[leaderboard] Background cache refresh failed:', err)
+        }).finally(() => {
+          refreshing.delete(cacheKey)
+        })
+      }
     }
-    await promise
-  } else if (age >= SWR_TTL) {
-    // Stale but usable — serve immediately, kick off a background refresh
-    if (!refreshing.get(cacheKey)) {
-      refreshing.set(cacheKey, true)
-      fetchLeaderboardData(payload?.userId, now).catch(err => {
-        console.error('[leaderboard] Background cache refresh failed:', err)
-      }).finally(() => {
-        refreshing.delete(cacheKey)
-      })
-    }
-  }
-  // Fresh (age < SWR_TTL): serve from cache immediately, no refresh needed
+    // Fresh (age < SWR_TTL): serve from cache immediately, no refresh needed
 
-  const result = cache.get(cacheKey)?.data
-  return NextResponse.json(result)
+    // Guard: if the cache is still empty after a fetch attempt (e.g. DB threw
+    // inside fetchLeaderboardData but the error was swallowed by the inflight
+    // promise chain) return 500 rather than a silent 200 with an empty body.
+    const result = cache.get(cacheKey)?.data
+    if (result === undefined) {
+      return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    }
+    return NextResponse.json(result)
   } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
