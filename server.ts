@@ -3262,6 +3262,10 @@ app.prepare().then(async () => {
             to.roster = to.roster.filter(r => r !== id)
             from.roster.push(id); from.paidPrices[id] = to.paidPrices[id]; delete to.paidPrices[id]
           }
+          // Recalculate budget from paidPrices so that budgetSpent in final results
+          // reflects the traded roster rather than only the original auction spend.
+          from.budget = room.totalBudget - Object.values(from.paidPrices).reduce((s, v) => s + v, 0)
+          to.budget = room.totalBudget - Object.values(to.paidPrices).reduce((s, v) => s + v, 0)
           room.bidLog.push({ name: `${from.name} ↔ ${to.name}`, amount: 0, action: 'trade' })
         }
       }
@@ -3633,6 +3637,13 @@ app.prepare().then(async () => {
               p => p.socketId !== socket.id && io.sockets.sockets.has(p.socketId)
             )
             room.nominatorSocketId = connected.length > 0 ? connected[0].socketId : null
+          }
+          // During the trade phase, remove any pending offers sent by or addressed to
+          // the disconnecting socket so other GMs don't see stale/unresponsive offers.
+          if (room.status === 'trading') {
+            room.tradeOffers = room.tradeOffers.filter(
+              o => o.fromSocketId !== socket.id && o.toSocketId !== socket.id
+            )
           }
           // Broadcast state so remaining players see accurate participant list.
           broadcastAuctionState(io, room)
