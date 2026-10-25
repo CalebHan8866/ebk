@@ -8,9 +8,12 @@ import { containsProfanity } from '@/lib/profanity'
 import bcrypt from 'bcryptjs'
 import { rateLimit } from '@/lib/ratelimit'
 
-// A bcrypt hash of a dummy password used to make the DELETE timing constant
-// regardless of whether the user record exists (mirrors the login pattern).
-const DUMMY_HASH = '$2a$12$irrelevant.hash.to.prevent.timing.sidechannel.XXXXXXXXX'
+// A valid bcrypt hash (cost 12) of a dummy password used to make the DELETE
+// timing constant regardless of whether the user record exists. The hash must
+// be a real bcrypt output — a malformed string causes bcryptjs to fast-path
+// to false in ~0 ms, creating a timing oracle that leaks account existence.
+// Generated once with: bcrypt.hash('__dummy__', 12)
+const DUMMY_HASH = '$2a$12$FaGgjDHfKL1XKPCH0sDRA.zq/Z2A6el7XqnqJkI9Czj.jsb0VyjZS'
 
 async function getAuthUser(request: NextRequest) {
   const cookieStore = await cookies()
