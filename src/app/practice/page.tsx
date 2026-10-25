@@ -270,9 +270,12 @@ function PracticeContent() {
 
   function reset() {
     spinRefs.current.forEach(id => { clearTimeout(id); clearInterval(id) }); spinRefs.current = []
-    setIsSpinning(false); setSpunTeam(null)
+    setIsSpinning(false); setSpunTeam(null); setSpinDisplay('?')
     setPicks([])
     setSpunTeamsHistory([])
+    setShuffledIds([])
+    setSelectedPlayerId(null)
+    setStatMode('games_played')
     setFilterPos('ALL')
     setSearchQuery('')
     setPlayerLoadError(false)
@@ -805,7 +808,7 @@ function PracticeContent() {
         </div>
 
         <div className="flex gap-3 animate-fade-up-4 pb-8">
-          <button onClick={() => { const newPicks = Array(TEAM_SIZES[teamMode]).fill(null); setPicks(newPicks); setSpunTeamsHistory([]); setFilterPos('ALL'); setSearchQuery(''); setScreen('draft'); triggerSpin(players, newPicks) }}
+          <button onClick={() => { const newPicks = Array(TEAM_SIZES[teamMode]).fill(null); setPicks(newPicks); setSpunTeamsHistory([]); setSelectedPlayerId(null); setStatMode('games_played'); setFilterPos('ALL'); setSearchQuery(''); setScreen('draft'); triggerSpin(players, newPicks) }}
             className="btn-secondary flex-1">
             Draft Again
           </button>

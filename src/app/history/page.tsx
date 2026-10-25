@@ -152,7 +152,7 @@ function ScoreVs({
         <span className="font-display text-2xl text-white/25">{oppScore.toFixed(1)}</span>
       </div>
       <div className="text-label mt-0.5">EBK Score</div>
-      <div className={`text-[10px] font-black mt-0.5 tabular-nums ${diff > 0 ? 'text-green-500/60' : 'text-red-500/60'}`}>
+      <div className={`text-[10px] font-black mt-0.5 tabular-nums ${diff > 0 ? 'text-green-500/60' : diff < 0 ? 'text-red-500/60' : 'text-white/30'}`}>
         {diffStr}
       </div>
     </div>
