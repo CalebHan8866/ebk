@@ -62,7 +62,13 @@ function verifyTokenSignature(token: string, userId: string): { nonce: string; i
     const expected = crypto.createHmac('sha256', getHmacSecret())
       .update(`${tid}:${nonce}:${issuedAtStr}`)
       .digest('hex')
-    if (!crypto.timingSafeEqual(Buffer.from(hmac, 'hex'), Buffer.from(expected, 'hex'))) return null
+    const hmacBuf = Buffer.from(hmac, 'hex')
+    const expectedBuf = Buffer.from(expected, 'hex')
+    // Explicit length guard before timingSafeEqual: the function throws when buffers
+    // differ in length, and relying on that throw being caught is a fragile security
+    // control — an explicit check is required for correctness and forward compatibility.
+    if (hmacBuf.length !== expectedBuf.length) return null
+    if (!crypto.timingSafeEqual(hmacBuf, expectedBuf)) return null
     return { nonce, issuedAt }
   } catch {
     return null
