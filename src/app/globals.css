@@ -809,9 +809,9 @@ textarea:focus-visible {
   gap: 8px;
   animation: fade-up 0.3s cubic-bezier(0.22,1,0.36,1) both;
 }
-.empty-state-icon { font-size: 44px; opacity: 0.7; margin-bottom: 8px; }
-.empty-state-title { font-size: 16px; font-weight: 800; color: rgba(255,255,255,0.75); }
-.empty-state-body  { font-size: 13px; color: rgba(255,255,255,0.38); max-width: 260px; line-height: 1.55; }
+.empty-state-icon { font-size: 44px; opacity: 0.8; margin-bottom: 8px; }
+.empty-state-title { font-size: 16px; font-weight: 800; color: rgba(255,255,255,0.85); }
+.empty-state-body  { font-size: 13px; color: rgba(255,255,255,0.50); max-width: 280px; line-height: 1.6; }
 
 /* ── Countdown ring color transitions ────────────────────────────────────────── */
 .timer-danger { color: #ef4444; }

@@ -384,14 +384,14 @@ export default function LobbyPage() {
 
               {/* Countdown — prominent ring */}
               <div className="mt-5 flex flex-col items-center gap-2">
-                <div className={`relative w-full max-w-[260px] h-2 rounded-full overflow-hidden ${
-                  countdownUrgent ? 'bg-red-900/40' : 'bg-white/[0.06]'
+                <div className={`relative w-full max-w-[300px] h-3 rounded-full overflow-hidden ${
+                  countdownUrgent ? 'bg-red-900/50' : 'bg-white/[0.08]'
                 }`}>
                   <div
                     className={`absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ${
-                      countdownUrgent ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'
-                      : countdownWarn ? 'bg-yellow-500'
-                      : 'bg-gradient-to-r from-orange-600 to-orange-400'
+                      countdownUrgent ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.7)]'
+                      : countdownWarn ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.4)]'
+                      : 'bg-gradient-to-r from-orange-600 to-orange-400 shadow-[0_0_8px_rgba(249,115,22,0.3)]'
                     }`}
                     style={{ width: `${(countdown / 60) * 100}%` }}
                   />
@@ -527,8 +527,9 @@ export default function LobbyPage() {
             </div>
 
             {(myReady || oppReady) && !(myReady && oppReady) && (
-              <p className="text-center text-white/40 text-xs pb-5">
-                Waiting for <span className="text-white/70 font-bold">{myReady ? matchInfo.opponentName : displayName}</span> to accept…
+              <p className="text-center text-white/60 text-sm font-medium pb-5 flex items-center justify-center gap-1.5">
+                <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white/70 animate-spin shrink-0" />
+                Waiting for <span className="text-white font-black ml-1">{myReady ? matchInfo.opponentName : displayName}</span>&nbsp;to accept…
               </p>
             )}
           </div>
@@ -649,9 +650,12 @@ export default function LobbyPage() {
 
         {/* Network disconnect banner */}
         {socketDisconnected && !socketFailed && (
-          <div className="bg-yellow-900/30 border border-yellow-600/40 text-yellow-300 rounded-xl px-4 py-3 mb-5 text-sm flex items-center gap-3 animate-slide-up">
+          <div className="bg-yellow-900/40 border border-yellow-600/50 text-yellow-200 rounded-xl px-4 py-3 mb-5 text-sm flex items-center gap-3 animate-slide-up shadow-[0_0_24px_rgba(234,179,8,0.08)]">
             <span className="w-3.5 h-3.5 rounded-full border-2 border-yellow-400/60 border-t-yellow-300 animate-spin shrink-0" />
-            <span>Connection lost — reconnecting…</span>
+            <div>
+              <span className="font-black">Connection lost</span>
+              <span className="text-yellow-300/70 ml-1.5">— reconnecting, please wait…</span>
+            </div>
           </div>
         )}
 
@@ -872,10 +876,10 @@ export default function LobbyPage() {
                           <button
                             key={s}
                             onClick={() => setCreateSeries(s)}
-                            className={`rounded-xl py-2.5 text-center font-black text-sm border transition-all ${
+                            className={`rounded-xl py-3 text-center font-black text-sm border transition-all ${
                               createSeries === s
                                 ? 'border-orange-500/60 bg-orange-600/10 text-orange-400'
-                                : 'border-white/[0.05] text-white/40 hover:border-white/[0.12]'
+                                : 'border-white/[0.08] bg-white/[0.02] text-white/65 hover:border-white/[0.18] hover:text-white/80'
                             }`}
                           >
                             {seriesLabel(s)}
@@ -901,7 +905,7 @@ export default function LobbyPage() {
                             <div className={`font-black text-sm ${createStatCategory === cat ? 'text-orange-400' : 'text-white'}`}>
                               {STAT_CATEGORY_LABELS[cat]}
                             </div>
-                            <div className="text-white/60 text-[10px] mt-0.5 leading-tight">{STAT_CATEGORY_DESC[cat]}</div>
+                            <div className="text-white/55 text-[11px] mt-0.5 leading-tight">{STAT_CATEGORY_DESC[cat]}</div>
                           </button>
                         ))}
                       </div>
@@ -937,11 +941,17 @@ export default function LobbyPage() {
                     </div>
 
                     {/* Host row */}
-                    <div className="flex items-center gap-3 bg-white/[0.03] border border-white/[0.05] rounded-xl px-3 py-2.5">
+                    <div className="flex items-center gap-3 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5">
                       <Avatar name={user.username} />
                       <div className="flex-1 min-w-0">
                         <div className="text-white font-black text-sm truncate">{user.username}</div>
-                        <div className="text-white/40 text-xs">{user.wins}W {user.losses}L · {winPct(user.wins, user.losses)}</div>
+                        <div className="text-white/60 text-xs">
+                          <span className="text-white/75">{user.wins}W</span>
+                          <span className="text-white/30 mx-1">–</span>
+                          <span className="text-white/75">{user.losses}L</span>
+                          <span className="text-white/30 mx-1.5">·</span>
+                          {winPct(user.wins, user.losses)}
+                        </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <span className="live-dot" />
@@ -1043,17 +1053,17 @@ export default function LobbyPage() {
                           Post one to get started — your game will appear here for others to join.
                         </div>
                         {/* Arrow pointing left toward Post Game form (hidden on mobile where form is above) */}
-                        <div className="hidden lg:flex items-center gap-2 mt-4 text-orange-500/50 text-xs font-black uppercase tracking-widest animate-pulse">
-                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                            <path d="M12 4L6 10L12 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <div className="hidden lg:flex items-center gap-2 mt-5 px-4 py-2.5 rounded-xl bg-orange-950/30 border border-orange-800/40 text-orange-400 text-xs font-black uppercase tracking-widest animate-pulse">
+                          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                            <path d="M12 4L6 10L12 16" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
-                          Post Game
+                          Post a Game to get started
                         </div>
                         {/* On mobile (form is above), show a downward-pointing hint */}
-                        <div className="lg:hidden flex flex-col items-center gap-1 mt-4 text-orange-500/50">
+                        <div className="lg:hidden flex flex-col items-center gap-1.5 mt-5 px-4 py-2.5 rounded-xl bg-orange-950/30 border border-orange-800/40 text-orange-400">
                           <span className="text-xs font-black uppercase tracking-widest">Post a game above</span>
                           <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true" className="animate-bounce">
-                            <path d="M10 4V16M10 16L4 10M10 16L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M10 4V16M10 16L4 10M10 16L16 10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         </div>
                       </div>
@@ -1078,30 +1088,32 @@ export default function LobbyPage() {
                                   </span>
                                 )}
                               </div>
-                              <div className="text-white/40 text-[11px]">
-                                {l.hostRecord.wins}W {l.hostRecord.losses}L
-                                <span className="text-white/20 mx-1">·</span>
-                                <span className="text-white/40">{winPct(l.hostRecord.wins, l.hostRecord.losses)}</span>
+                              <div className="text-white/55 text-xs">
+                                <span className="text-white/70">{l.hostRecord.wins}W</span>
+                                <span className="text-white/30 mx-1">–</span>
+                                <span className="text-white/70">{l.hostRecord.losses}L</span>
+                                <span className="text-white/30 mx-1.5">·</span>
+                                <span className="text-white/50">{winPct(l.hostRecord.wins, l.hostRecord.losses)}</span>
                               </div>
                               {/* Format info visible on mobile */}
                               <div className="flex items-center gap-1.5 mt-1 sm:hidden flex-wrap">
-                                <span className="text-[10px] font-black text-white/60 bg-white/[0.04] border border-white/[0.07] rounded px-1.5 py-0.5">{MODE_LABEL[l.teamMode]}</span>
-                                <span className="text-white/35 text-[10px]">{seriesLabel(l.series)}</span>
-                                <span className="text-orange-400 text-[10px] font-black">{STAT_CATEGORY_LABELS[l.statCategory] ?? 'Games Played'}</span>
+                                <span className="text-xs font-black text-white/70 bg-white/[0.05] border border-white/[0.09] rounded px-2 py-0.5">{MODE_LABEL[l.teamMode]}</span>
+                                <span className="text-white/50 text-xs">{seriesLabel(l.series)}</span>
+                                <span className="text-orange-400 text-xs font-black">{STAT_CATEGORY_LABELS[l.statCategory] ?? 'Games Played'}</span>
                               </div>
                             </div>
                             {/* Format chip — desktop only */}
-                            <div className="hidden sm:flex flex-col items-end gap-0.5 shrink-0">
+                            <div className="hidden sm:flex flex-col items-end gap-1 shrink-0">
                               <span className="text-xs font-black text-white/80 bg-white/[0.05] border border-white/[0.08] rounded-lg px-2.5 py-1 leading-none">
                                 {MODE_LABEL[l.teamMode]}
                               </span>
                               <span className="text-white/60 text-[11px]">{seriesLabel(l.series)}</span>
-                              <span className="text-orange-400 text-[10px] font-black">{STAT_CATEGORY_LABELS[l.statCategory] ?? 'Games Played'}</span>
+                              <span className="text-orange-400 text-[11px] font-black">{STAT_CATEGORY_LABELS[l.statCategory] ?? 'Games Played'}</span>
                             </div>
                             <button
                               onClick={() => handleJoinListing(l.code)}
                               disabled={onlineState === 'listing'}
-                              className="btn-primary py-2.5 px-4 text-xs min-h-[44px] min-w-[56px] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none shrink-0"
+                              className="btn-primary py-3 px-5 text-sm min-h-[48px] min-w-[64px] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none shrink-0"
                             >
                               Join
                             </button>
@@ -1197,10 +1209,10 @@ export default function LobbyPage() {
                         <button
                           key={s}
                           onClick={() => setSeries(s)}
-                          className={`rounded-xl py-2.5 text-center font-black text-sm border transition-all ${
+                          className={`rounded-xl py-3 text-center font-black text-sm border transition-all ${
                             series === s
                               ? 'border-orange-500/60 bg-orange-600/10 text-orange-400'
-                              : 'border-white/[0.05] text-white/60 hover:border-white/[0.12]'
+                              : 'border-white/[0.08] bg-white/[0.02] text-white/65 hover:border-white/[0.18] hover:text-white/80'
                           }`}
                         >
                           {seriesLabel(s)}
@@ -1259,7 +1271,7 @@ export default function LobbyPage() {
                           <div className={`font-black text-sm ${statCategory === cat ? 'text-orange-400' : 'text-white'}`}>
                             {STAT_CATEGORY_LABELS[cat]}
                           </div>
-                          <div className="text-white/60 text-[10px] mt-0.5 leading-tight">{STAT_CATEGORY_DESC[cat]}</div>
+                          <div className="text-white/55 text-[11px] mt-0.5 leading-tight">{STAT_CATEGORY_DESC[cat]}</div>
                         </button>
                       ))}
                     </div>

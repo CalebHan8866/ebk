@@ -679,10 +679,10 @@ function GameContent() {
 
           {/* Waiting indicator — pulsing dots when no opponent, spinner when opponent present */}
           {opponentPresent ? (
-            <div className="flex items-center justify-center gap-2.5 mb-5">
-              <span className="w-3.5 h-3.5 rounded-full border-2 border-green-500/40 border-t-green-400 animate-spin shrink-0" />
-              <span className="text-white/50 text-sm">
-                {role === 'host' ? 'Start the game when you\'re both ready' : 'Waiting for host to start the game'}
+            <div className="flex items-center justify-center gap-2.5 mb-5 px-4 py-2.5 rounded-xl bg-green-950/30 border border-green-800/40">
+              <span className="w-3.5 h-3.5 rounded-full border-2 border-green-500/50 border-t-green-400 animate-spin shrink-0" />
+              <span className="text-green-300/80 text-sm font-bold">
+                {role === 'host' ? 'Both players ready — start when you like' : 'Waiting for host to start the game'}
                 <span className="animate-ellipsis" />
               </span>
             </div>
@@ -692,23 +692,23 @@ function GameContent() {
                 {[0, 1, 2].map(d => (
                   <span
                     key={d}
-                    className="w-2 h-2 rounded-full bg-orange-500/60 animate-pulse"
+                    className="w-2.5 h-2.5 rounded-full bg-orange-500/70 animate-pulse"
                     style={{ animationDelay: `${d * 250}ms`, animationDuration: '1.2s' }}
                   />
                 ))}
               </div>
-              <span className="text-white/40 text-sm">Waiting for opponent to join</span>
+              <span className="text-white/65 text-sm font-medium">Waiting for opponent to join…</span>
             </div>
           )}
 
           {/* Game format chips */}
-          <div className="flex items-center justify-center gap-2 text-white/40 text-sm flex-wrap mb-5">
-            <span className="bg-white/[0.04] border border-white/[0.07] rounded-lg px-3 py-1.5 text-xs font-black text-white/60">
+          <div className="flex items-center justify-center gap-2 flex-wrap mb-5">
+            <span className="bg-white/[0.06] border border-white/[0.10] rounded-lg px-3 py-1.5 text-xs font-black text-white/75">
               {room.teamMode === 'starter5' ? 'Starter 5' : room.teamMode === 'bench8' ? 'Bench 8' : 'Full Roster'}
             </span>
-            <span className="text-white/15">·</span>
-            <span className="text-xs text-white/40">{room.series === 1 ? '1 Game' : `Best of ${room.series}`}</span>
-            <span className="text-white/15">·</span>
+            <span className="text-white/25">·</span>
+            <span className="text-xs text-white/60 font-medium">{room.series === 1 ? '1 Game' : `Best of ${room.series}`}</span>
+            <span className="text-white/25">·</span>
             <span className="text-orange-400 text-xs font-black">
               {STAT_CATEGORY_LABELS[room.statCategory] ?? 'Games Played'}
             </span>
@@ -716,11 +716,11 @@ function GameContent() {
 
           {/* Both players present — show a "launching" indicator */}
           {opponentPresent && (
-            <div className="flex items-center justify-center gap-2 text-orange-400/70 animate-pulse">
-              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+            <div className="flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl bg-orange-950/30 border border-orange-700/40 shadow-[0_0_20px_rgba(249,115,22,0.08)] animate-pulse">
+              <svg className="w-4 h-4 text-orange-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              <span className="text-xs font-black uppercase tracking-widest">Launching draft…</span>
+              <span className="text-orange-300 text-sm font-black uppercase tracking-widest">Draft starting soon…</span>
             </div>
           )}
         </div>
