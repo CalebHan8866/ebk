@@ -1442,7 +1442,7 @@ app.prepare().then(async () => {
   //   because once the cooldown clears the pair can rematch and the count will resume from
   //   where it left off anyway. Pruning entries that no longer have a live cooldown entry
   //   bounds the map to at most the number of currently-cooling-down user pairs.
-  setInterval(() => {
+  setInterval(async () => {
     const now = Date.now()
     for (const [userId, opponents] of recentMatchups.entries()) {
       for (const [opponentId, ts] of opponents.entries()) {
@@ -1466,6 +1466,17 @@ app.prepare().then(async () => {
       if (now - entry.windowStart >= USER_CREATE_THROTTLE_WINDOW_MS) {
         userCreateThrottle.delete(userId)
       }
+    }
+    // Prune AuctionRecord rows older than 48 h from the DB.  The schema comment
+    // says rows "can be pruned after 48 h" but nothing ever enforced that — old
+    // rows would accumulate forever and stale codes would remain resolvable for
+    // the lifetime of the DB.  Running this alongside the existing hourly sweep
+    // keeps the table small without adding a separate cron job.
+    try {
+      const cutoff48h = new Date(now - 48 * 60 * 60 * 1000)
+      await prisma.auctionRecord.deleteMany({ where: { completedAt: { lt: cutoff48h } } })
+    } catch (err) {
+      console.error('[auction] Failed to prune stale AuctionRecord rows:', err)
     }
   }, COOLDOWN_PRUNE_MS)
 
@@ -3150,16 +3161,26 @@ app.prepare().then(async () => {
       // results page is not private data (it contains no bid amounts beyond what
       // was already broadcast during the live auction).
       if (!room) {
-        let record: { code: string; teamSize: number; totalBudget: number; results: string } | null = null
+        let record: { code: string; teamSize: number; totalBudget: number; results: string; completedAt: Date } | null = null
         try {
           record = await prisma.auctionRecord.findUnique({
             where: { code: normalizedCode },
-            select: { code: true, teamSize: true, totalBudget: true, results: true },
+            select: { code: true, teamSize: true, totalBudget: true, results: true, completedAt: true },
           })
         } catch (err) {
           console.error('[auction] DB lookup failed for code=%s: %o', normalizedCode, err)
         }
         if (!record) {
+          socket.emit('auction:error', { message: 'Room not found' })
+          return
+        }
+        // Enforce the 48 h review window: results older than 48 h are considered
+        // expired.  Without this check, any visitor to an old code would receive
+        // results from an auction that may have been played weeks ago, and a new
+        // auction that reuses the same short code would be impossible because the
+        // stale DB row would shadow the live room.
+        const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000
+        if (Date.now() - record.completedAt.getTime() > FORTY_EIGHT_HOURS_MS) {
           socket.emit('auction:error', { message: 'Room not found' })
           return
         }
@@ -3395,10 +3416,17 @@ app.prepare().then(async () => {
             if (pickTimer) clearTimeout(pickTimer)
             pickTimers.delete(code)
             io.to(code).emit('partner-disconnected')
-            // Award win to remaining player and loss to disconnector for online games
-            if (room.source === 'online') {
+            // Award win to remaining player and loss to disconnector for online games.
+            // Guard: if BOTH players are now disconnected (second player left during the
+            // grace window and their socket is also gone), skip stat writes entirely.
+            // Writing a win for a player who is also absent would inflate their record
+            // with a phantom victory they never experienced — and a loss for a player who
+            // abandoned along with their opponent is equally unfair.
+            const winner = disconnectorIsHost ? 'guest' : 'host'
+            const winnerSocketId = winner === 'host' ? room.hostSocketId : room.guestSocketId
+            const winnerConnected = winnerSocketId ? io.sockets.sockets.has(winnerSocketId) : false
+            if (room.source === 'online' && winnerConnected) {
               recordMatchup(room.hostUserId, room.guestUserId)
-              const winner = disconnectorIsHost ? 'guest' : 'host'
               // Give the winner enough series wins to clearly win the series
               const winsNeeded = Math.ceil(room.series / 2)
               if (winner === 'host') {
