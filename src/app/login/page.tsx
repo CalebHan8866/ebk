@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 
@@ -63,6 +63,7 @@ function LoginForm() {
   const [touchedEmail, setTouchedEmail] = useState(false)
   const [touchedPassword, setTouchedPassword] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { setUser } = useAuth()
 
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -84,7 +85,11 @@ function LoginForm() {
       // Dynamic import so socket.io-client never loads during SSR/prerender
       const { resetSocket } = await import('@/lib/socket')
       resetSocket()
-      router.push('/lobby')
+      // Honour a ?next= param so users land back where they were trying to go.
+      // Only allow relative paths to prevent open-redirect attacks.
+      const next = searchParams.get('next')
+      const destination = next && next.startsWith('/') ? next : '/lobby'
+      router.push(destination)
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {

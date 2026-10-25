@@ -76,13 +76,13 @@ export default function RegisterPage() {
 
   const validUsername = username.length >= 3 && username.length <= 20
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  const validPassword = password.length >= 6
+  const validPassword = password.length >= 8
 
   // Password strength
   const passwordStrength = (() => {
     if (password.length === 0) return 0
     let score = 0
-    if (password.length >= 6) score++
+    if (password.length >= 8) score++
     if (password.length >= 10) score++
     if (/[A-Z]/.test(password)) score++
     if (/[0-9]/.test(password)) score++
@@ -306,10 +306,10 @@ export default function RegisterPage() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   onBlur={() => setTouchedPassword(true)}
-                  required minLength={6}
+                  required minLength={8}
                   aria-describedby={password.length > 0 ? 'password-strength' : undefined}
                   className={`input-field pr-16 ${touchedPassword ? (validPassword ? 'valid' : 'invalid') : ''}`}
-                  placeholder="Min 6 characters"
+                  placeholder="Min 8 characters"
                   autoComplete="new-password"
                 />
                 {/* Show / hide toggle */}
