@@ -21,6 +21,9 @@ export async function POST(request: NextRequest) {
     if (!token || !password || typeof token !== 'string' || typeof password !== 'string') {
       return noStore({ error: 'Missing fields' }, { status: 400 })
     }
+    // Reject implausibly long tokens before handing them to SHA-256 + DB lookup.
+    // A legitimate reset token is crypto.randomBytes(32).hex = 64 chars; cap at 128.
+    if (token.length > 128) return noStore({ error: 'Reset link is invalid or has expired.' }, { status: 400 })
     if (password.length < 8) return noStore({ error: 'Password must be at least 8 characters' }, { status: 400 })
     if (password.length > 72) return noStore({ error: 'Password must be 72 characters or less' }, { status: 400 })
 

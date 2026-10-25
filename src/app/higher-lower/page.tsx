@@ -65,6 +65,12 @@ export default function HigherLowerPage() {
   // Server-issued game session token — required when claiming a badge to prove
   // this request originated from an actual game session rather than a direct API call.
   const gameTokenRef = useRef<string | null>(null)
+  // Snapshot of bestStreak at the start of each session (before any guesses).
+  // Used to determine whether the current run set a *new* personal best on the
+  // gameover screen — comparing against the live `bestStreak` state would
+  // incorrectly show "New Personal Best!" when the player ties their old record
+  // (because bestStreak is updated in-run via setBestStreak).
+  const sessionBestRef = useRef(0)
 
   useEffect(() => {
     isMounted.current = true
@@ -96,6 +102,9 @@ export default function HigherLowerPage() {
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? parseInt(localStorage.getItem('hl_best') || '0') : 0
     setBestStreak(saved)
+    // Snapshot the pre-session best so gameover can correctly distinguish a new
+    // record from merely tying the old one (bestStreak is mutated during play).
+    sessionBestRef.current = saved
 
     const playersFetch = fetch('/api/players').then(r => r.json())
     const tokenFetch: Promise<string | null> = user
@@ -227,16 +236,30 @@ export default function HigherLowerPage() {
       const seed = Math.floor(Math.random() * 1_000_000)
       setSequence(seededShuffle(allPlayers, seed).slice(0, TOTAL_PLAYERS))
     }
+    // Snapshot the current best streak so gameover can correctly detect a new record
+    // after this session (streak is reset above; bestStreak reflects the all-time high).
+    sessionBestRef.current = bestStreak
+
     // Fetch a fresh game token for the new session so the previous gauntlet's
     // consumed nonce does not block milestone claims in the next play-through.
+    // We hold at 'loading' until the token arrives (or fails) to guarantee that
+    // gameTokenRef is populated before the player can trigger a badge claim.
+    // Without this guard a fast player could reach streak=10 in the window
+    // between setScreen('playing') and the token fetch resolving, causing the
+    // /complete POST to send gameToken: null and receive a 403.
     if (user) {
       gameTokenRef.current = null
+      setScreen('loading')
       fetch('/api/higher-lower/start')
         .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d?.gameToken) gameTokenRef.current = d.gameToken })
-        .catch(() => {})
+        .then(d => {
+          if (d?.gameToken) gameTokenRef.current = d.gameToken
+          if (isMounted.current) setScreen('playing')
+        })
+        .catch(() => { if (isMounted.current) setScreen('playing') })
+    } else {
+      setScreen('playing')
     }
-    setScreen('playing')
   }
 
   /* ── LOADING ────────────────────────────────────────────────────────────── */
@@ -301,7 +324,9 @@ export default function HigherLowerPage() {
     const correctDir = challenger && current
       ? (challenger.ebkScore > current.ebkScore ? 'HIGHER' : challenger.ebkScore < current.ebkScore ? 'LOWER' : 'THE SAME')
       : ''
-    const isNewRecord = streak > 0 && streak >= bestStreak
+    // Use the pre-session snapshot so tying an old record does not falsely
+    // show "New Personal Best!" — only strictly beating it qualifies.
+    const isNewRecord = streak > 0 && streak > sessionBestRef.current
     // Encouraging messages based on streak length
     const encouragement =
       streak === 0 ? "Everyone starts somewhere. Jump back in!" :
@@ -430,7 +455,7 @@ export default function HigherLowerPage() {
           <div className="card-accent p-6 mb-6 animate-fade-up-2">
             <div className="font-display text-7xl text-orange-400 leading-none tabular-nums">{streak}</div>
             <div className="text-label mt-2">Final Streak</div>
-            {bestStreak > 0 && streak >= bestStreak && (
+            {streak > 0 && streak > sessionBestRef.current && (
               <div className="mt-3 flex items-center justify-center gap-2">
                 <div className="h-px flex-1 bg-yellow-500/20" />
                 <span className="text-[10px] font-black text-yellow-500/70 uppercase tracking-widest">Personal Best</span>

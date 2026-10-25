@@ -41,6 +41,11 @@ export async function POST(request: NextRequest) {
     if (!currentPassword || typeof currentPassword !== 'string') {
       return noStore({ error: 'Current password is required' }, { status: 400 })
     }
+    // Cap currentPassword length before bcrypt.compare — bcrypt is intentionally
+    // slow (cost 12 ≈ 300 ms) so an unbounded string would let an attacker POST
+    // multi-megabyte payloads to pin a CPU core.  72 chars is also the bcrypt
+    // effective key length, so anything longer would hash to the same value anyway.
+    if (currentPassword.length > 1024) return noStore({ error: 'Current password is required' }, { status: 400 })
     if (!newPassword || typeof newPassword !== 'string') {
       return noStore({ error: 'New password is required' }, { status: 400 })
     }

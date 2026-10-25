@@ -173,6 +173,12 @@ export async function DELETE(request: NextRequest) {
     if (!password || typeof password !== 'string') {
       return NextResponse.json({ error: 'Password confirmation is required to delete your account' }, { status: 400 })
     }
+    // Cap password length before bcrypt.compare — bcrypt is intentionally slow
+    // (cost 12 ≈ 300 ms) so an unbounded string lets an attacker POST a multi-megabyte
+    // payload to pin a CPU core.  Use a generous cap (1024) so no real password is rejected.
+    if (password.length > 1024) {
+      return NextResponse.json({ error: 'Password confirmation is required to delete your account' }, { status: 400 })
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
