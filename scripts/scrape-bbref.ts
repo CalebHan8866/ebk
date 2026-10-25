@@ -209,6 +209,61 @@ async function main() {
   const all = Array.from(careerMap.values()).filter(p => p.totalGames >= MIN_GAMES_PER_TEAM)
   console.log(`Unique player-team entries (≥${MIN_GAMES_PER_TEAM} game): ${all.length}`)
 
+  // ── Propagate true career totals to all team rows ────────────────────────
+  // Each entry currently holds per-team stats (games/ppg/etc. for that specific
+  // team stint only).  Fun-facts and salary pages display "career" numbers, so
+  // every row for a player (e.g. Butler CHI, Butler MIN, Butler PHI, Butler MIA)
+  // needs to show his full career totals, not just one stint's worth.
+  // The EBK scoring below will use these true totals — a star playing 1 000+
+  // career games scores the same regardless of which team row is displayed.
+  {
+    interface CareerTotal {
+      totalGames: number; ppgGames: number; rpgGames: number; apgGames: number; mpgGames: number
+      ppgSum: number; rpgSum: number; apgSum: number; mpgSum: number
+      yearFrom: number; yearTo: number
+    }
+    const byHref = new Map<string, CareerTotal>()
+
+    for (const p of all) {
+      const ct = byHref.get(p.href)
+      if (ct) {
+        ct.totalGames += p.totalGames
+        ct.ppgSum     += p.careerPPG * p.totalGames
+        ct.rpgSum     += p.careerRPG * p.totalGames
+        ct.apgSum     += p.careerAPG * p.totalGames
+        ct.mpgSum     += p.careerMPG * p.totalGames
+        ct.ppgGames   += p.totalGames
+        ct.rpgGames   += p.totalGames
+        ct.apgGames   += p.totalGames
+        ct.mpgGames   += p.totalGames
+        ct.yearFrom    = Math.min(ct.yearFrom, p.yearFrom)
+        ct.yearTo      = Math.max(ct.yearTo,   p.yearTo)
+      } else {
+        byHref.set(p.href, {
+          totalGames: p.totalGames,
+          ppgSum: p.careerPPG * p.totalGames, rpgSum: p.careerRPG * p.totalGames,
+          apgSum: p.careerAPG * p.totalGames, mpgSum: p.careerMPG * p.totalGames,
+          ppgGames: p.totalGames, rpgGames: p.totalGames,
+          apgGames: p.totalGames, mpgGames: p.totalGames,
+          yearFrom: p.yearFrom, yearTo: p.yearTo,
+        })
+      }
+    }
+
+    // Write career totals back to every team row for this player
+    for (const p of all) {
+      const ct = byHref.get(p.href)!
+      p.totalGames  = ct.totalGames
+      p.careerPPG   = ct.ppgGames  > 0 ? ct.ppgSum  / ct.ppgGames  : 0
+      p.careerRPG   = ct.rpgGames  > 0 ? ct.rpgSum  / ct.rpgGames  : 0
+      p.careerAPG   = ct.apgGames  > 0 ? ct.apgSum  / ct.apgGames  : 0
+      p.careerMPG   = ct.mpgGames  > 0 ? ct.mpgSum  / ct.mpgGames  : 0
+      p.yearFrom     = ct.yearFrom
+      p.yearTo       = ct.yearTo
+    }
+    console.log(`Career totals propagated across ${byHref.size} unique players.`)
+  }
+
   // Compute EBK scores (inverted percentile — lower stats = higher score)
   // MPG is included to break ties among 1-game players:
   //   someone who played 3 min scores higher than someone who played 38 min.
