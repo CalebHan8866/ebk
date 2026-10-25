@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
         where: { id: payload.userId },
         data: {
           equippedBadges: JSON.stringify(equipped),
-          equippedBadge: equipped[0] ?? '',  // keep single-badge field in sync for navbar
+          equippedBadge: equipped[equipped.length - 1] ?? '',  // keep single-badge field in sync for navbar — use most-recently equipped
         },
       })
     } else {

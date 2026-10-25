@@ -698,9 +698,12 @@ async function updateStatsAndUnlock(
     const effectiveMaxStreak = Math.max(u.maxWinStreak, u.winStreak)
 
     const stats = { wins: u.wins, gamesPlayed: u.gamesPlayed, winStreak: u.winStreak, maxWinStreak: effectiveMaxStreak, jcGames: u.jamesonCurryGames }
-    const curBadges:     string[] = JSON.parse(u.unlockedBadges     || '[]')
-    const curEmotes:     string[] = JSON.parse(u.unlockedEmotes     || '[]')
-    const curMilestones: string[] = JSON.parse(u.unlockedMilestones || '[]')
+    let curBadges:     string[] = []
+    let curEmotes:     string[] = []
+    let curMilestones: string[] = []
+    try { curBadges     = JSON.parse(u.unlockedBadges     || '[]') } catch { curBadges     = [] }
+    try { curEmotes     = JSON.parse(u.unlockedEmotes     || '[]') } catch { curEmotes     = [] }
+    try { curMilestones = JSON.parse(u.unlockedMilestones || '[]') } catch { curMilestones = [] }
 
     const newBadges:     string[] = []
     const newEmotes:     string[] = []
