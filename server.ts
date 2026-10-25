@@ -2624,6 +2624,14 @@ app.prepare().then(async () => {
         return
       }
 
+      // Guard: if the guest socket disconnected while we were awaiting Prisma, notify the host
+      // and abort. Without this check, the ready room is created with a stale guest socket and
+      // the host is silently stuck for up to READY_ROOM_TIMEOUT_MS before receiving match-cancelled.
+      if (!io.sockets.sockets.has(socket.id)) {
+        io.to(listing.hostSocketId).emit('match-cancelled', { reason: 'Opponent disconnected before the game started' })
+        return
+      }
+
       const hostEntry: QueueEntry = {
         socketId: listing.hostSocketId, userId: listing.hostUserId, userName: listing.hostName,
         teamMode: listing.teamMode, series: listing.series, difficulty: 'ebk',
