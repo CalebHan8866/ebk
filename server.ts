@@ -709,11 +709,10 @@ async function updateStatsAndUnlock(
     })
     if (!u) return
 
-    // Update maxWinStreak if beaten
-    if (u.winStreak > u.maxWinStreak) {
-      await prisma.user.update({ where: { id: userId }, data: { maxWinStreak: u.winStreak } })
-    }
-    const effectiveMaxStreak = Math.max(u.maxWinStreak, u.winStreak)
+    // Compute the new maxWinStreak in-process — no extra DB round-trip needed.
+    // We fold the conditional maxWinStreak write into the single accessories update below.
+    const newMaxWinStreak = u.winStreak > u.maxWinStreak ? u.winStreak : undefined
+    const effectiveMaxStreak = newMaxWinStreak ?? u.maxWinStreak
 
     const stats = { wins: u.wins, gamesPlayed: u.gamesPlayed, winStreak: u.winStreak, maxWinStreak: effectiveMaxStreak, jcGames: u.jamesonCurryGames }
     let curBadges:     string[] = []
@@ -748,13 +747,17 @@ async function updateStatsAndUnlock(
       if (ok) { newMilestones.push(m.id); newlyUnlocked.push({ type: 'milestone', id: m.id, name: m.name }) }
     }
 
-    if (newBadges.length || newEmotes.length || newMilestones.length) {
+    // Merge maxWinStreak update with accessories update into a single DB write.
+    // Previously this was up to two separate update() calls (one for maxWinStreak,
+    // one for accessories) — now it is always at most one round-trip.
+    if (newMaxWinStreak !== undefined || newBadges.length || newEmotes.length || newMilestones.length) {
       await prisma.user.update({
         where: { id: userId },
         data: {
-          unlockedBadges:     JSON.stringify([...curBadges,     ...newBadges]),
-          unlockedEmotes:     JSON.stringify([...curEmotes,     ...newEmotes]),
-          unlockedMilestones: JSON.stringify([...curMilestones, ...newMilestones]),
+          ...(newMaxWinStreak !== undefined ? { maxWinStreak: newMaxWinStreak } : {}),
+          ...(newBadges.length     ? { unlockedBadges:     JSON.stringify([...curBadges,     ...newBadges])     } : {}),
+          ...(newEmotes.length     ? { unlockedEmotes:     JSON.stringify([...curEmotes,     ...newEmotes])     } : {}),
+          ...(newMilestones.length ? { unlockedMilestones: JSON.stringify([...curMilestones, ...newMilestones]) } : {}),
         },
       })
     }
@@ -2473,12 +2476,15 @@ app.prepare().then(async () => {
 
       const hostRecord = { wins: 0, losses: 0, draws: 0 }
       let hostStreak = 0
+      let hostEquippedBadge = ''
       if (userId) {
         // Re-verify tokenVersion here — the socket middleware only runs at connect time,
         // so a password change mid-session would not be caught without this check.
+        // Fetch stats, tokenVersion, and equippedBadge in one query instead of two
+        // separate findUnique calls (merges the old stats query + badge query).
         const u = await prisma.user.findUnique({
           where: { id: userId },
-          select: { wins: true, losses: true, draws: true, winStreak: true, tokenVersion: true },
+          select: { wins: true, losses: true, draws: true, winStreak: true, tokenVersion: true, equippedBadge: true },
         }).catch(() => null)
         if (!u || u.tokenVersion !== (socket.data.tokenVersion as number | null)) {
           pendingListingCreate.delete(socket.id)
@@ -2486,6 +2492,7 @@ app.prepare().then(async () => {
           return
         }
         hostRecord.wins = u.wins; hostRecord.losses = u.losses; hostRecord.draws = u.draws; hostStreak = u.winStreak
+        hostEquippedBadge = u.equippedBadge
       }
 
       // Guard: if the socket disconnected while we were awaiting Prisma, don't create a ghost listing
@@ -2505,16 +2512,8 @@ app.prepare().then(async () => {
         code = generateCode()
       }
 
-      const hostUser = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { equippedBadge: true } }).catch(() => null) : null
-
-      // Second guard: socket may have disconnected during the second Prisma await
-      if (!io.sockets.sockets.has(socket.id)) {
-        pendingListingCreate.delete(socket.id)
-        return
-      }
-
       const resolvedStatCategory: StatCategory = (statCategory && VALID_STAT_CATEGORIES.includes(statCategory)) ? statCategory : 'games_played'
-      const listing: GameListing = { code, hostSocketId: socket.id, hostUserId: userId, hostName: userName, hostRecord, hostBadge: hostUser?.equippedBadge || '', hostStreak, teamMode, series, statCategory: resolvedStatCategory }
+      const listing: GameListing = { code, hostSocketId: socket.id, hostUserId: userId, hostName: userName, hostRecord, hostBadge: hostEquippedBadge, hostStreak, teamMode, series, statCategory: resolvedStatCategory }
       gameListings.set(code, listing)
 
       // Auto-expire listing after 10 minutes
