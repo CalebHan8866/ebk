@@ -45,7 +45,7 @@ function ResetContent() {
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
 
-  const passwordLongEnough = password.length >= 6
+  const passwordLongEnough = password.length >= 8
   const passwordsMatch = confirm.length > 0 && password === confirm
 
   // Password strength
@@ -66,7 +66,7 @@ function ResetContent() {
     e.preventDefault()
     setError('')
     if (password !== confirm) { setError("Passwords don't match"); return }
-    if (password.length < 6) { setError('Password must be at least 6 characters'); return }
+    if (password.length < 8) { setError('Password must be at least 8 characters'); return }
     setLoading(true)
     try {
       const res = await fetch('/api/auth/reset-password', {
@@ -206,7 +206,7 @@ function ResetContent() {
             )}
           </div>
           {touchedPassword && !passwordLongEnough && (
-            <p role="alert" className="text-red-400 text-[10px] mt-1 ml-1">Must be at least 6 characters</p>
+            <p role="alert" className="text-red-400 text-[10px] mt-1 ml-1">Must be at least 8 characters</p>
           )}
           {/* Password strength meter */}
           {password.length > 0 && (

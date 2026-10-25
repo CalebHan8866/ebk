@@ -16,6 +16,7 @@ function VerifyContent() {
   const error = searchParams.get('error') // 'expired' | 'invalid' | etc.
   const { setUser } = useAuth()
   const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [resendEmail, setResendEmail] = useState('')
 
   useEffect(() => {
     if (success) {
@@ -25,10 +26,15 @@ function VerifyContent() {
     }
   }, [success, setUser])
 
-  async function handleResend() {
+  async function handleResend(emailOverride?: string) {
+    const emailToSend = emailOverride ?? resendEmail
     setResendStatus('sending')
     try {
-      const res = await fetch('/api/auth/resend-verification', { method: 'POST' })
+      const res = await fetch('/api/auth/resend-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailToSend }),
+      })
       setResendStatus(res.ok ? 'sent' : 'error')
     } catch {
       setResendStatus('error')
@@ -136,27 +142,39 @@ function VerifyContent() {
               )}
               {resendStatus === 'error' && (
                 <div className="bg-red-950/30 border border-red-500/30 rounded-xl px-4 py-3 mb-4">
-                  <p className="text-red-400 text-sm">Couldn&apos;t send. Try logging in to resend.</p>
+                  <p className="text-red-400 text-sm">Couldn&apos;t send. Please double-check your email and try again.</p>
                 </div>
               )}
 
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={handleResend}
-                  disabled={resendStatus === 'sending' || resendStatus === 'sent'}
-                  className="btn-primary w-full text-sm tracking-widest"
-                >
-                  {resendStatus === 'sending' ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Spinner className="w-4 h-4" />
-                      Sending…
-                    </span>
-                  ) : 'Resend Verification Email'}
-                </button>
-                <Link href="/login" className="btn-secondary w-full text-sm">
-                  Go to Login
-                </Link>
-              </div>
+              {resendStatus !== 'sent' && (
+                <div className="flex flex-col gap-3 mb-3">
+                  <input
+                    type="email"
+                    value={resendEmail}
+                    onChange={e => setResendEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    className="input-field"
+                    autoComplete="email"
+                    aria-label="Email address for resend"
+                  />
+                  <button
+                    onClick={() => handleResend()}
+                    disabled={resendStatus === 'sending' || !resendEmail.includes('@')}
+                    className="btn-primary w-full text-sm tracking-widest"
+                  >
+                    {resendStatus === 'sending' ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Spinner className="w-4 h-4" />
+                        Sending…
+                      </span>
+                    ) : 'Resend Verification Email'}
+                  </button>
+                </div>
+              )}
+
+              <Link href="/login" className="btn-secondary w-full text-sm">
+                Go to Login
+              </Link>
             </div>
           )}
 
@@ -195,20 +213,31 @@ function VerifyContent() {
                     <p className="text-sm font-bold">New link sent — check your inbox.</p>
                   </div>
                 ) : resendStatus === 'error' ? (
-                  <p className="text-red-400 text-xs">Couldn&apos;t send. Please try again in a moment.</p>
+                  <p className="text-red-400 text-xs">Couldn&apos;t send. Please double-check your email and try again.</p>
                 ) : (
-                  <button
-                    onClick={handleResend}
-                    disabled={resendStatus === 'sending'}
-                    className="btn-secondary w-full text-sm"
-                  >
-                    {resendStatus === 'sending' ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Spinner className="w-3.5 h-3.5" />
-                        Sending…
-                      </span>
-                    ) : 'Resend Verification Email'}
-                  </button>
+                  <div className="flex flex-col gap-2">
+                    <input
+                      type="email"
+                      value={resendEmail}
+                      onChange={e => setResendEmail(e.target.value)}
+                      placeholder="Enter your email address"
+                      className="input-field text-sm"
+                      autoComplete="email"
+                      aria-label="Email address for resend"
+                    />
+                    <button
+                      onClick={() => handleResend()}
+                      disabled={resendStatus === 'sending' || !resendEmail.includes('@')}
+                      className="btn-secondary w-full text-sm"
+                    >
+                      {resendStatus === 'sending' ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Spinner className="w-3.5 h-3.5" />
+                          Sending…
+                        </span>
+                      ) : 'Resend Verification Email'}
+                    </button>
+                  </div>
                 )}
               </div>
 
