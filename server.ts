@@ -251,6 +251,27 @@ const TRADE_THROTTLE_WINDOW_MS = 10_000
 const CONFIRM_READY_THROTTLE_MAX = 5
 /** Sliding-window duration for the confirm-ready throttle (ms) */
 const CONFIRM_READY_WINDOW_MS = 5_000
+/** Per-socket pick-player throttle: max picks per PICK_THROTTLE_WINDOW_MS.
+ *  Each successful pick emits room-updated / game-result / series-complete to both clients;
+ *  unthrottled spam causes redundant broadcasts while the state idempotency check still runs. */
+const PICK_THROTTLE_MAX = 10
+/** Sliding-window duration for the pick-player throttle (ms) */
+const PICK_THROTTLE_WINDOW_MS = 5_000
+/** Per-socket next-game throttle: max next-game requests per NEXT_GAME_THROTTLE_WINDOW_MS.
+ *  Each call can emit draft-started + full allPlayers list to both clients. */
+const NEXT_GAME_THROTTLE_MAX = 3
+/** Sliding-window duration for the next-game throttle (ms) */
+const NEXT_GAME_THROTTLE_WINDOW_MS = 5_000
+/** Per-socket cancel-listing throttle: max cancel-listing calls per CANCEL_LISTING_THROTTLE_WINDOW_MS.
+ *  Each call broadcasts listings-updated to all lobby clients. */
+const CANCEL_LISTING_THROTTLE_MAX = 5
+/** Sliding-window duration for the cancel-listing throttle (ms) */
+const CANCEL_LISTING_THROTTLE_WINDOW_MS = 10_000
+/** Per-userId room/listing creation throttle: max creations per USER_CREATE_THROTTLE_WINDOW_MS.
+ *  Keyed by userId so it survives socket reconnects — prevents reconnect-bypass of per-socket throttles. */
+const USER_CREATE_THROTTLE_MAX = 5
+/** Sliding-window duration for the per-userId room/listing creation throttle (ms) */
+const USER_CREATE_THROTTLE_WINDOW_MS = 60_000
 
 interface GameResult {
   game: number
@@ -476,6 +497,20 @@ const tradeThrottle = new Map<string, { count: number; windowStart: number }>()
 // participants; cap at CONFIRM_READY_THROTTLE_MAX per CONFIRM_READY_WINDOW_MS to prevent
 // a malicious socket from flooding both players' connections before the match starts.
 const confirmReadyThrottle = new Map<string, { count: number; windowStart: number }>()
+// Per-socket pick-player throttle: each successful pick broadcasts room state to both
+// clients; cap at PICK_THROTTLE_MAX per PICK_THROTTLE_WINDOW_MS.
+const pickThrottle = new Map<string, { count: number; windowStart: number }>()
+// Per-socket next-game throttle: each call can broadcast draft-started + full player list;
+// cap at NEXT_GAME_THROTTLE_MAX per NEXT_GAME_THROTTLE_WINDOW_MS.
+const nextGameThrottle = new Map<string, { count: number; windowStart: number }>()
+// Per-socket cancel-listing throttle: each call broadcasts listings-updated to all lobby
+// clients; cap at CANCEL_LISTING_THROTTLE_MAX per CANCEL_LISTING_THROTTLE_WINDOW_MS.
+const cancelListingThrottle = new Map<string, { count: number; windowStart: number }>()
+// Per-userId room/listing creation throttle: keyed by userId so it survives socket
+// reconnects, preventing bypass of per-socket throttles via rapid disconnect/reconnect.
+// Only applies to authenticated users — anonymous users are covered by the IP-level
+// connection limit (20 concurrent connections per IP).
+const userCreateThrottle = new Map<string, { count: number; windowStart: number }>()
 // cooldown: userId → Map(opponentId → timestamp of last game end)
 const recentMatchups = new Map<string, Map<string, number>>()
 // grudge: userId → Map(opponentId → total games played together)
@@ -1362,6 +1397,13 @@ app.prepare().then(async () => {
       }
       if (opponents.size === 0) matchupCount.delete(userId)
     }
+    // Prune expired userCreateThrottle entries to prevent unbounded growth.
+    // Entries whose window has expired are no longer actionable.
+    for (const [userId, entry] of userCreateThrottle.entries()) {
+      if (now - entry.windowStart >= USER_CREATE_THROTTLE_WINDOW_MS) {
+        userCreateThrottle.delete(userId)
+      }
+    }
   }, COOLDOWN_PRUNE_MS)
 
   const httpServer = createServer((req, res) => {
@@ -1646,6 +1688,17 @@ app.prepare().then(async () => {
       // Prefer the server-verified JWT username; fall back to sanitized client name for anonymous players.
       const userId = socket.data.userId as string | null
       userName = ((socket.data.username as string | null) || (typeof userName === 'string' ? userName : '').trim()).slice(0, 20) || 'Player'
+      // Per-userId creation throttle: prevents authenticated users from bypassing the
+      // per-socket throttle by rapidly disconnecting and reconnecting (each reconnect gets
+      // a new socket.id, resetting the per-socket counter).
+      if (userId) {
+        const uctNow = Date.now()
+        const uctEntry = userCreateThrottle.get(userId)
+        if (uctEntry && uctNow - uctEntry.windowStart < USER_CREATE_THROTTLE_WINDOW_MS) {
+          if (uctEntry.count >= USER_CREATE_THROTTLE_MAX) { socket.emit('room-error', { message: 'Too many rooms created. Please wait a moment.' }); return }
+          uctEntry.count++
+        } else { userCreateThrottle.set(userId, { count: 1, windowStart: uctNow }) }
+      }
       let code = generateCode()
       let codeAttempts = 0
       while (rooms.has(code) || readyRooms.has(code) || gameListings.has(code) || auctionRooms.has(code)) {
@@ -1765,6 +1818,15 @@ app.prepare().then(async () => {
       // Runtime type guards — validate before any Map lookups
       if (typeof code !== 'string' || typeof slotPos !== 'string') return
       if (typeof playerId !== 'number' || !Number.isInteger(playerId) || playerId <= 0) return
+      // Rate limit: max 10 picks per 5 seconds per socket.
+      // Each pick emits room-updated / game-result / series-complete to both clients;
+      // unthrottled spam causes redundant broadcasts even when idempotency guards reject the pick.
+      const ppNow = Date.now()
+      const ppThrottle = pickThrottle.get(socket.id)
+      if (ppThrottle && ppNow - ppThrottle.windowStart < PICK_THROTTLE_WINDOW_MS) {
+        if (ppThrottle.count >= PICK_THROTTLE_MAX) { socket.emit('pick-error', { message: 'Too many pick requests. Please slow down.' }); return }
+        ppThrottle.count++
+      } else { pickThrottle.set(socket.id, { count: 1, windowStart: ppNow }) }
       const room = rooms.get(code.trim().toUpperCase())
       if (!room || room.status !== 'drafting') return
 
@@ -1868,6 +1930,14 @@ app.prepare().then(async () => {
 
     socket.on('next-game', ({ code }: { code: string }) => {
       if (typeof code !== 'string') return
+      // Rate limit: max 3 requests per 5 seconds per socket.
+      // Each call can emit draft-started + the full allPlayers list to both clients.
+      const ngNow = Date.now()
+      const ngThrottle = nextGameThrottle.get(socket.id)
+      if (ngThrottle && ngNow - ngThrottle.windowStart < NEXT_GAME_THROTTLE_WINDOW_MS) {
+        if (ngThrottle.count >= NEXT_GAME_THROTTLE_MAX) return // silently drop
+        ngThrottle.count++
+      } else { nextGameThrottle.set(socket.id, { count: 1, windowStart: ngNow }) }
       const room = rooms.get(code.trim().toUpperCase())
       if (!room || room.status !== 'result') return
       if (socket.id !== room.hostSocketId) return // only host can start next game
@@ -2148,6 +2218,21 @@ app.prepare().then(async () => {
       const userId = socket.data.userId as string | null
       const userName: string = (socket.data.username as string | null ?? '').slice(0, 20) || 'Player'
       if (!userId) { pendingListingCreate.delete(socket.id); socket.emit('listing-error', { message: 'Must be signed in to post a game' }); return }
+      // Per-userId creation throttle: prevents reconnect-bypass of the per-socket counter.
+      // A rapid disconnect/reconnect resets socket.id (and thus createListingThrottle), so
+      // we additionally track by userId for authenticated users.
+      {
+        const uctNow = Date.now()
+        const uctEntry = userCreateThrottle.get(userId)
+        if (uctEntry && uctNow - uctEntry.windowStart < USER_CREATE_THROTTLE_WINDOW_MS) {
+          if (uctEntry.count >= USER_CREATE_THROTTLE_MAX) {
+            pendingListingCreate.delete(socket.id)
+            socket.emit('listing-error', { message: 'Too many listings created. Please wait a moment.' })
+            return
+          }
+          uctEntry.count++
+        } else { userCreateThrottle.set(userId, { count: 1, windowStart: uctNow }) }
+      }
       // Guard: refuse if this user is already active in any draft or auction room.
       // The old check only scanned rooms (draft rooms) and missed active auction rooms,
       // allowing a user to post a listing while in a live auction — when both games
@@ -2236,6 +2321,14 @@ app.prepare().then(async () => {
 
     socket.on('cancel-listing', ({ code }: { code: string }) => {
       if (typeof code !== 'string') return
+      // Rate limit: max 5 cancels per 10 seconds per socket.
+      // Each call broadcasts listings-updated to all lobby clients.
+      const clcNow = Date.now()
+      const clcThrottle = cancelListingThrottle.get(socket.id)
+      if (clcThrottle && clcNow - clcThrottle.windowStart < CANCEL_LISTING_THROTTLE_WINDOW_MS) {
+        if (clcThrottle.count >= CANCEL_LISTING_THROTTLE_MAX) return // silently drop
+        clcThrottle.count++
+      } else { cancelListingThrottle.set(socket.id, { count: 1, windowStart: clcNow }) }
       const normCode = code.trim().toUpperCase()
       const listing = gameListings.get(normCode)
       if (!listing || listing.hostSocketId !== socket.id) return
@@ -2494,6 +2587,15 @@ app.prepare().then(async () => {
       // could open multiple tabs and create as many rooms as the per-socket throttle
       // allows (up to 5 per minute per tab), corrupting per-user stat recording.
       const userId: string | null = (socket.data as { userId?: string })?.userId ?? null
+      // Per-userId creation throttle: prevents reconnect-bypass of the per-socket counter.
+      if (userId) {
+        const uctNow = Date.now()
+        const uctEntry = userCreateThrottle.get(userId)
+        if (uctEntry && uctNow - uctEntry.windowStart < USER_CREATE_THROTTLE_WINDOW_MS) {
+          if (uctEntry.count >= USER_CREATE_THROTTLE_MAX) { socket.emit('auction:error', { message: 'Too many rooms created. Please wait a moment.' }); return }
+          uctEntry.count++
+        } else { userCreateThrottle.set(userId, { count: 1, windowStart: uctNow }) }
+      }
       if (userId && isUserActiveInAnyRoom(userId)) {
         socket.emit('auction:error', { message: 'You are already in an active game' }); return
       }
@@ -3109,6 +3211,11 @@ app.prepare().then(async () => {
       createListingThrottle.delete(socket.id)
       tradeThrottle.delete(socket.id)
       confirmReadyThrottle.delete(socket.id)
+      pickThrottle.delete(socket.id)
+      nextGameThrottle.delete(socket.id)
+      cancelListingThrottle.delete(socket.id)
+      // userCreateThrottle is intentionally NOT deleted on disconnect — it is keyed by
+      // userId precisely so that reconnects don't reset the creation rate limit.
       // Remove any open listing by this socket
       for (const [code, listing] of gameListings.entries()) {
         if (listing.hostSocketId === socket.id) {
