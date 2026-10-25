@@ -939,7 +939,7 @@ function startPickTimer(io: SocketServer, room: Room) {
           if (currentRoom.source === 'online') {
             recordMatchup(currentRoom.hostUserId, currentRoom.guestUserId)
             if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, seriesWinnerForDup === 'host', seriesWinnerForDup === 'draw', currentRoom.hostJCGames, true)
-            if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, seriesWinnerForDup === 'guest', seriesWinnerForDup === 'draw', currentRoom.guestJCGames, false)
+            if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId ?? '', seriesWinnerForDup === 'guest', seriesWinnerForDup === 'draw', currentRoom.guestJCGames, false)
             saveGameRecords(currentRoom, seriesWinnerForDup)
           }
           io.to(code).emit('series-complete', { room: currentRoom, seriesWinner: seriesWinnerForDup })
@@ -981,7 +981,7 @@ function startPickTimer(io: SocketServer, room: Room) {
       if (currentRoom.source === 'online') {
         recordMatchup(currentRoom.hostUserId, currentRoom.guestUserId)
         if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, winner === 'host', false, 0, true)
-        if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, winner === 'guest', false, 0, false)
+        if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId ?? '', winner === 'guest', false, 0, false)
         saveGameRecords(currentRoom, winner)
       }
 
@@ -1013,7 +1013,7 @@ function startPickTimer(io: SocketServer, room: Room) {
         if (currentRoom.source === 'online') {
           recordMatchup(currentRoom.hostUserId, currentRoom.guestUserId)
           if (currentRoom.hostUserId) updateStatsAndUnlock(io, currentRoom.hostUserId, currentRoom.hostSocketId, seriesWinner === 'host', seriesWinner === 'draw', currentRoom.hostJCGames, true)
-          if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw', currentRoom.guestJCGames, false)
+          if (currentRoom.guestUserId) updateStatsAndUnlock(io, currentRoom.guestUserId, currentRoom.guestSocketId ?? '', seriesWinner === 'guest', seriesWinner === 'draw', currentRoom.guestJCGames, false)
           saveGameRecords(currentRoom, seriesWinner)
         }
         io.to(code).emit('series-complete', { room: currentRoom, seriesWinner })
@@ -1710,7 +1710,14 @@ app.prepare().then(async () => {
     const cookieHeader = socket.handshake.headers.cookie || ''
     const match = cookieHeader.match(/(?:^|;\s*)ebk-token=([^;]+)/)
     const token = match ? decodeURIComponent(match[1]) : null
-    const payload = token ? await verifyToken(token) : null
+    let payload: Awaited<ReturnType<typeof verifyToken>> | null = null
+    try {
+      payload = token ? await verifyToken(token) : null
+    } catch (err) {
+      // verifyToken threw (e.g. malformed JWT, crypto error) — treat as unauthenticated
+      // rather than hanging the handshake by never calling next().
+      console.error('[socket] verifyToken threw during handshake — treating as anonymous:', err)
+    }
     socket.data.userId = payload?.userId ?? null
     socket.data.username = payload?.username ?? null
     socket.data.tokenVersion = payload?.tokenVersion ?? null
@@ -2008,7 +2015,7 @@ app.prepare().then(async () => {
           if (room.source === 'online') {
             recordMatchup(room.hostUserId, room.guestUserId)
             if (room.hostUserId) updateStatsAndUnlock(io, room.hostUserId, room.hostSocketId, seriesWinner === 'host', seriesWinner === 'draw', room.hostJCGames, true)
-            if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId!, seriesWinner === 'guest', seriesWinner === 'draw', room.guestJCGames, false)
+            if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId ?? '', seriesWinner === 'guest', seriesWinner === 'draw', room.guestJCGames, false)
             saveGameRecords(room, seriesWinner)
           }
           io.to(roomCode).emit('series-complete', { room, seriesWinner })
@@ -2697,7 +2704,7 @@ app.prepare().then(async () => {
       // participant in any draft or auction room.  Without this guard a single account
       // could open multiple tabs and create as many rooms as the per-socket throttle
       // allows (up to 5 per minute per tab), corrupting per-user stat recording.
-      const userId: string | null = (socket.data as { userId?: string })?.userId ?? null
+      const userId = socket.data.userId as string | null
       // Per-userId creation throttle: prevents reconnect-bypass of the per-socket counter.
       if (userId) {
         const uctNow = Date.now()
@@ -2779,7 +2786,7 @@ app.prepare().then(async () => {
       // Security: if the stored participant has a userId, the reconnecting socket must
       // present a matching userId — blocking name-guessing seat hijacks by unauthenticated
       // clients or authenticated clients using a different account.
-      const incomingUserId: string | null = (socket.data as { userId?: string })?.userId ?? null
+      const incomingUserId = socket.data.userId as string | null
       const existingByName = room.participants.find(p => p.name === userName)
       if (existingByName && room.status !== 'waiting') {
         if (existingByName.userId && incomingUserId !== existingByName.userId) {
@@ -2831,7 +2838,7 @@ app.prepare().then(async () => {
       if (room.participants.some(p => p.name === userName)) {
         socket.emit('auction:error', { message: 'That name is already taken in this room' }); return
       }
-      const userId: string | null = (socket.data as { userId?: string })?.userId ?? null
+      const userId = socket.data.userId as string | null
       // Prevent simultaneous multi-game participation: a user already active in a draft
       // or another auction room cannot join a new one — concurrent games would corrupt
       // stat recording (wins/losses written by two finishGame calls for the same userId).
@@ -3246,7 +3253,7 @@ app.prepare().then(async () => {
       if (!existing && userName) {
         const byName = room.participants.find(p => p.name === userName)
         if (byName) {
-          const incomingUserId: string | null = (socket.data as { userId?: string })?.userId ?? null
+          const incomingUserId = socket.data.userId as string | null
           // If the stored participant was authenticated, require a matching userId.
           if (byName.userId && incomingUserId !== byName.userId) {
             socket.emit('auction:error', { message: 'Unauthorized' })
@@ -3454,7 +3461,7 @@ app.prepare().then(async () => {
                 room.guestSeriesScore = Math.max(room.guestSeriesScore, winsNeeded)
               }
               if (room.hostUserId) updateStatsAndUnlock(io, room.hostUserId, room.hostSocketId, winner === 'host', false, room.hostJCGames, true)
-              if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId!, winner === 'guest', false, room.guestJCGames, false)
+              if (room.guestUserId) updateStatsAndUnlock(io, room.guestUserId, room.guestSocketId ?? '', winner === 'guest', false, room.guestJCGames, false)
               saveGameRecords(room, winner)
             }
             // scheduleRoomCleanup cleans up consecutiveTimeouts/pickTimerStartedAt/rooms
