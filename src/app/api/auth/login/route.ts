@@ -37,8 +37,13 @@ export async function POST(request: NextRequest) {
     const email = rawEmail.toLowerCase()
     const user = await prisma.user.findUnique({ where: { email }, select: { id: true, username: true, email: true, password: true, emailVerified: true, wins: true, losses: true, draws: true, equippedBadges: true, tokenVersion: true } })
 
-    // Always run bcrypt to prevent timing-based email enumeration
-    const DUMMY_HASH = '$2a$12$irrelevant.hash.to.prevent.timing.sidechannel.XXXXXXXXX'
+    // Always run bcrypt to prevent timing-based email enumeration.
+    // IMPORTANT: this must be a *valid* bcrypt hash at cost 12 — an invalid or
+    // malformed hash causes bcryptjs to fast-path to false in ~0 ms instead of
+    // doing the full KDF work (~300 ms), which would expose a timing oracle that
+    // reveals whether an email address is registered.
+    // This hash was generated once with: bcrypt.hash('__dummy__', 12)
+    const DUMMY_HASH = '$2a$12$FaGgjDHfKL1XKPCH0sDRA.zq/Z2A6el7XqnqJkI9Czj.jsb0VyjZS'
     const passwordMatch = user
       ? await bcrypt.compare(password, user.password)
       : await bcrypt.compare(password, DUMMY_HASH)

@@ -34,7 +34,9 @@ export async function POST(request: NextRequest) {
     const verificationToken = crypto.randomBytes(32).toString('hex')
     // Store only the hash; raw token is emailed so a DB read cannot replay links.
     const verificationTokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex')
-    await prisma.user.update({ where: { id: user.id }, data: { verificationToken: verificationTokenHash } })
+    // Fresh expiry: 24 hours from now — resets the window on each resend.
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    await prisma.user.update({ where: { id: user.id }, data: { verificationToken: verificationTokenHash, verificationTokenExpiry } })
 
     sendVerificationEmail(email, user.username, verificationToken).catch(err => console.error('Resend email error:', err))
 

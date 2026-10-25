@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (!newPassword || typeof newPassword !== 'string') {
       return noStore({ error: 'New password is required' }, { status: 400 })
     }
-    if (newPassword.length < 6) return noStore({ error: 'Password must be at least 6 characters' }, { status: 400 })
+    if (newPassword.length < 8) return noStore({ error: 'Password must be at least 8 characters' }, { status: 400 })
     if (newPassword.length > 72) return noStore({ error: 'Password must be 72 characters or less' }, { status: 400 })
 
     const user = await prisma.user.findUnique({

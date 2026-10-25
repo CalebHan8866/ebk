@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     if (emailDomain && DISPOSABLE_DOMAINS.has(emailDomain)) {
       return noStore({ error: 'Disposable email addresses are not allowed' }, { status: 400 })
     }
-    if (password.length < 6) return noStore({ error: 'Password must be at least 6 characters' }, { status: 400 })
+    if (password.length < 8) return noStore({ error: 'Password must be at least 8 characters' }, { status: 400 })
     if (password.length > 72) return noStore({ error: 'Password must be 72 characters or less' }, { status: 400 })
     if (username.length < 3) return noStore({ error: 'Username must be at least 3 characters' }, { status: 400 })
     if (username.length > 20) return noStore({ error: 'Username must be 20 characters or less' }, { status: 400 })
@@ -93,10 +93,13 @@ export async function POST(request: NextRequest) {
     // Store only the SHA-256 hash of the token so a DB read cannot be used to
     // replay verification links.  The raw token travels in the email URL only.
     const verificationTokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex')
+    // Verification links expire after 24 hours to limit the exposure window of
+    // an intercepted email. Users can request a fresh link via resend-verify.
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000)
 
     try {
       await prisma.user.create({
-        data: { username, email, password: hashed, verificationToken: verificationTokenHash, emailVerified: false }
+        data: { username, email, password: hashed, verificationToken: verificationTokenHash, verificationTokenExpiry, emailVerified: false }
       })
     } catch (e: unknown) {
       // P2002 = Prisma unique constraint violation (race condition: concurrent signup with same username/email)

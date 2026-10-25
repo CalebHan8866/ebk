@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     if (!token || !password || typeof token !== 'string' || typeof password !== 'string') {
       return noStore({ error: 'Missing fields' }, { status: 400 })
     }
-    if (password.length < 6) return noStore({ error: 'Password must be at least 6 characters' }, { status: 400 })
+    if (password.length < 8) return noStore({ error: 'Password must be at least 8 characters' }, { status: 400 })
     if (password.length > 72) return noStore({ error: 'Password must be 72 characters or less' }, { status: 400 })
 
     // The DB stores the SHA-256 hash of the reset token; hash before lookup.
@@ -32,11 +32,18 @@ export async function POST(request: NextRequest) {
         resetToken: tokenHash,
         resetTokenExpiry: { gt: new Date() },
       },
-      select: { id: true, username: true, tokenVersion: true },
+      select: { id: true, username: true, password: true, tokenVersion: true },
     })
 
     if (!user) {
       return noStore({ error: 'Reset link is invalid or has expired.' }, { status: 400 })
+    }
+
+    // Prevent resetting to the same password — bcrypt.compare does full KDF work
+    // here so timing is consistent whether the passwords match or not.
+    const isSamePassword = await bcrypt.compare(password, user.password)
+    if (isSamePassword) {
+      return noStore({ error: 'New password must differ from your current password.' }, { status: 400 })
     }
 
     const hashed = await bcrypt.hash(password, 12)
