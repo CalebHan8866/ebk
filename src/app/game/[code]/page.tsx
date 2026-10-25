@@ -1734,7 +1734,7 @@ function GameContent() {
                     key={i}
                     onClick={isValidTarget ? () => pickIntoSlot(i) : undefined}
                     aria-label={isValidTarget ? slotLabel : undefined}
-                    className={`rounded px-2 py-1.5 min-h-[32px] text-xs flex items-center gap-1.5 transition-all ${isValidTarget ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60' : ''} ${
+                    className={`rounded px-2 py-1.5 min-h-[40px] text-xs flex items-center gap-1.5 transition-all ${isValidTarget ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60' : ''} ${
                       isNewMyPick
                         ? 'bg-orange-500/20 border border-orange-400/60 animate-slide-up'
                         : isValidTarget
@@ -1861,7 +1861,7 @@ function GameContent() {
                   <span className={`font-display tracking-widest text-sm leading-none ${pickTimeLeft <= 5 && pickTimeLeft > 0 ? 'text-red-200 animate-timer-throb' : 'text-orange-300'}`}>
                     {pickTimeLeft <= 5 && pickTimeLeft > 0 ? 'PICK NOW!' : 'YOUR PICK'}
                   </span>
-                  <span className={`text-[11px] font-black uppercase tracking-wider ${pickTimeLeft <= 5 && pickTimeLeft > 0 ? 'text-red-400/70' : 'text-orange-400/60'}`}>
+                  <span className={`hidden sm:inline text-[11px] font-black uppercase tracking-wider ${pickTimeLeft <= 5 && pickTimeLeft > 0 ? 'text-red-400/70' : 'text-orange-400/60'}`}>
                     — tap a player below
                   </span>
                 </div>
@@ -1973,7 +1973,7 @@ function GameContent() {
             )}
 
             {!isMyTurn ? (
-              <div className="flex flex-col items-center justify-center h-64 rounded-2xl card-surface border border-white/[0.05]">
+              <div className="flex flex-col items-center justify-center h-44 sm:h-64 rounded-2xl card-surface border border-white/[0.05]">
                 {/* Pulsing ring instead of a janky spinner */}
                 <div className="relative w-14 h-14 mb-5">
                   <div className="absolute inset-0 rounded-full border-2 border-white/[0.12]" />
@@ -2034,7 +2034,8 @@ function GameContent() {
                     </div>
                   </div>
                 )}
-                <div className="space-y-1 max-h-[55vh] overflow-y-auto pr-1 -mx-1 px-1">
+                <div className="relative">
+                <div className="space-y-1 max-h-[55vh] overflow-y-auto pr-1 -mx-1 px-1 [mask-image:linear-gradient(to_bottom,black_calc(100%-40px),transparent_100%)]">
                   {filteredPlayers.map((player, idx) => {
                     const playerPositions = player.positions.split(',')
                     const canPick = !isSpinning && spunTeam !== null && !takenIds.has(player.id)
@@ -2169,6 +2170,7 @@ function GameContent() {
                       </div>
                     )
                   })}
+                </div>
                 </div>
               </>
             )}

@@ -156,11 +156,11 @@ function TimerRing({ timeLeft, maxTime }: { timeLeft: number; maxTime: number })
       </svg>
       <span
         aria-hidden="true"
-        className={`font-display text-3xl relative z-10 tabular-nums ${
-          isCritical ? 'text-red-400 animate-timer-critical' : isWarning ? 'text-orange-400 animate-timer-throb' : 'text-white'
+        className={`font-display text-3xl relative z-10 tabular-nums transition-colors duration-300 ${
+          isCritical ? 'text-red-400 animate-timer-critical' : isWarning ? 'text-orange-400 animate-timer-throb' : timeLeft === 0 ? 'text-white/20' : 'text-white'
         }`}
       >
-        {timeLeft}
+        {timeLeft === 0 ? '–' : timeLeft}
       </span>
     </div>
   )
@@ -711,7 +711,7 @@ export default function AuctionRoomPage() {
                   )}
                 </h2>
                 {/* Winner stats bar */}
-                <div className="inline-flex items-center gap-4 sm:gap-6 bg-black/30 rounded-2xl px-6 py-3 border border-yellow-700/20">
+                <div className="flex items-center justify-center gap-3 sm:gap-6 bg-black/30 rounded-2xl px-4 sm:px-6 py-3 border border-yellow-700/20 w-full max-w-xs mx-auto">
                   <div className="text-center">
                     <div className="font-display text-2xl text-yellow-400 leading-none tabular-nums">{winner.ebkTotal.toFixed(1)}</div>
                     <div className="text-[9px] font-black text-white/30 uppercase tracking-widest mt-0.5">EBK Total</div>
@@ -1358,7 +1358,7 @@ export default function AuctionRoomPage() {
                   <PosBadge pos={p.position} />
                   <span className="flex-1 text-left text-white text-xs sm:text-sm font-bold truncate" title={`${p.firstName} ${p.lastName}`}>{p.firstName} {p.lastName}</span>
                   <span className="text-orange-400 text-xs font-black">{p.ebkScore.toFixed(1)}</span>
-                  <span className="text-white/25 text-xs hidden xs:inline">${p.paidPrice}M</span>
+                  <span className="text-white/25 text-xs hidden sm:inline">${p.paidPrice}M</span>
                   {selectedToOffer.includes(p.id)
                     ? <span className="w-4 h-4 rounded-full bg-orange-500/30 border border-orange-400 flex items-center justify-center shrink-0"><svg className="w-2.5 h-2.5 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></span>
                     : <span className="w-4 h-4 rounded-full border border-white/[0.12] shrink-0" />
@@ -1629,7 +1629,7 @@ export default function AuctionRoomPage() {
               role="tab"
               aria-selected={mobilePanel === panel}
               onClick={() => setMobilePanel(panel)}
-              className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider transition-colors ${
+              className={`flex-1 py-3.5 min-h-[44px] text-xs font-black uppercase tracking-wider transition-colors touch-manipulation ${
                 mobilePanel === panel
                   ? 'text-orange-400 border-b-2 border-orange-500'
                   : 'text-white/40 border-b-2 border-transparent'
@@ -1642,7 +1642,7 @@ export default function AuctionRoomPage() {
 
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-0 overflow-hidden">
           {/* Left: Rosters */}
-          <aside className={`lg:col-span-1 border-r border-white/[0.07] p-4 overflow-y-auto ${mobilePanel !== 'rosters' ? 'hidden lg:block' : ''}`}>
+          <aside className={`lg:col-span-1 border-r border-white/[0.07] p-4 overflow-y-auto transition-opacity duration-150 ${mobilePanel !== 'rosters' ? 'hidden lg:block' : 'animate-fade-in'}`}>
             <p className="text-label tracking-[0.18em] mb-4">Rosters</p>
             <div className="space-y-3">
               {auctionState.participants.map(p => {
@@ -1660,9 +1660,11 @@ export default function AuctionRoomPage() {
                       {isRoomHost && !isMe && <span className="text-[9px] font-bold text-white/25 uppercase tracking-wider shrink-0">Host</span>}
                       {isMe && <span className="text-[10px] font-black text-orange-400/70 uppercase tracking-wider shrink-0">{isRoomHost ? 'Host · You' : 'You'}</span>}
                       {/* Roster fill indicator */}
-                      <span className={`text-[9px] font-black tabular-nums shrink-0 ${rosterPct >= 100 ? 'text-green-400' : 'text-white/30'}`}>
-                        {p.rosterCount}/{auctionState.teamSize}
-                      </span>
+                      {rosterPct >= 100 ? (
+                        <span className="text-[9px] font-black uppercase tracking-wider shrink-0 bg-green-500/15 border border-green-500/30 text-green-400 rounded px-1.5 py-0.5">FULL</span>
+                      ) : (
+                        <span className="text-[9px] font-black tabular-nums shrink-0 text-white/30">{p.rosterCount}/{auctionState.teamSize}</span>
+                      )}
                     </div>
                     {/* Budget bar — green > 40%, orange 15–40%, red < 15% */}
                     <div className="budget-bar mb-1.5">
@@ -1727,7 +1729,7 @@ export default function AuctionRoomPage() {
           </aside>
 
           {/* Center: Auction */}
-          <main className={`lg:col-span-2 flex flex-col items-center justify-center p-4 sm:p-6 gap-4 sm:gap-6 relative ${mobilePanel !== 'bid' ? 'hidden lg:flex' : ''}`}>
+          <main className={`lg:col-span-2 flex flex-col items-center justify-center p-4 sm:p-6 gap-4 sm:gap-6 relative ${mobilePanel !== 'bid' ? 'hidden lg:flex' : 'animate-fade-in'}`}>
             {/* Alarm overlay — flashes red border when < 5s */}
             {timeLeft > 0 && timeLeft <= 5 && phase === 'bidding' && (
               <div className="alarm-overlay rounded-none" aria-hidden="true" />
@@ -1776,15 +1778,15 @@ export default function AuctionRoomPage() {
                   </span>
                   <p className="text-label tracking-[0.18em] text-white/35 mt-0.5">EBK SCORE</p>
                 </div>
-                <div className="grid grid-cols-4 gap-1.5 mb-4">
+                <div className="grid grid-cols-4 gap-1 sm:gap-1.5 mb-4">
                   {[
                     { label: 'GP', value: cp.careerGames },
                     { label: 'PPG', value: cp.careerPPG?.toFixed(1) },
                     { label: 'RPG', value: cp.careerRPG?.toFixed(1) },
                     { label: 'APG', value: cp.careerAPG?.toFixed(1) },
                   ].map(s => (
-                    <div key={s.label} className="relative bg-white/[0.04] border border-white/[0.06] rounded-xl py-3 hover:bg-white/[0.06] transition-colors">
-                      <p className="font-display text-xl text-white leading-none">{s.value ?? '–'}</p>
+                    <div key={s.label} className="relative bg-white/[0.04] border border-white/[0.06] rounded-xl py-2.5 sm:py-3 hover:bg-white/[0.06] transition-colors overflow-hidden">
+                      <p className="font-display text-lg sm:text-xl text-white leading-none tabular-nums">{s.value ?? '–'}</p>
                       <p className="text-label mt-1 text-[9px]">{s.label}</p>
                     </div>
                   ))}
@@ -1858,7 +1860,7 @@ export default function AuctionRoomPage() {
                       key={bump}
                       onClick={() => setBidAmount(prev => Math.min(me?.budget ?? prev, prev + bump))}
                       aria-label={`Add $${bump}M to bid`}
-                      className="flex-1 py-2.5 sm:py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/60 text-sm sm:text-xs font-black hover:bg-white/[0.08] hover:text-white/80 active:bg-white/[0.12] transition-all touch-action-manipulation"
+                      className="flex-1 py-2.5 sm:py-1.5 min-h-[44px] rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/60 text-sm sm:text-xs font-black hover:bg-white/[0.08] hover:text-white/80 active:bg-white/[0.12] active:scale-95 transition-all touch-manipulation"
                       style={{ touchAction: 'manipulation' }}
                     >
                       +{bump}
@@ -1932,9 +1934,9 @@ export default function AuctionRoomPage() {
                         ? 'bg-orange-950/20 border-orange-500/20'
                         : 'bg-white/[0.03] border-white/[0.06]'
                     }`}>
-                      <div className="flex items-center justify-between text-xs mb-1.5">
+                      <div className="flex items-center justify-between mb-1.5">
                         <span className="text-label">Your Budget</span>
-                        <span className={`font-black tabular-nums ${myBudgetPct <= 15 ? 'text-red-400' : myBudgetPct <= 40 ? 'text-orange-400' : 'text-green-400'}`}>
+                        <span className={`font-black tabular-nums text-sm ${myBudgetPct <= 15 ? 'text-red-400' : myBudgetPct <= 40 ? 'text-orange-400' : 'text-green-400'}`}>
                           ${me.budget}M
                           {myBudgetPct <= 15 && <span className="ml-1 text-[9px] uppercase tracking-widest opacity-80">critical</span>}
                           {myBudgetPct > 15 && myBudgetPct <= 40 && <span className="ml-1 text-[9px] uppercase tracking-widest opacity-70">low</span>}
@@ -1990,7 +1992,7 @@ export default function AuctionRoomPage() {
                       <div className="text-label mb-0.5 tracking-[0.15em]">Steal Price</div>
                       <div className="font-display text-3xl text-yellow-400 leading-none">${stealPrice}M</div>
                     </div>
-                    <p className="text-white/25 text-xs mt-3">Tap ⚡ on any opponent&apos;s player in the Rosters tab to steal</p>
+                    <p className="text-white/55 text-xs mt-3">Tap ⚡ on any opponent&apos;s player in the <span className="font-black text-yellow-400/80">GMs</span> tab to steal</p>
                   </div>
                 )}
               </div>
@@ -1998,7 +2000,7 @@ export default function AuctionRoomPage() {
           </main>
 
           {/* Right: Bid log */}
-          <aside className={`lg:col-span-1 border-l border-white/[0.07] p-4 flex flex-col ${mobilePanel !== 'log' ? 'hidden lg:flex' : ''}`}>
+          <aside className={`lg:col-span-1 border-l border-white/[0.07] p-4 flex flex-col ${mobilePanel !== 'log' ? 'hidden lg:flex' : 'animate-fade-in'}`}>
             <p className="text-label tracking-[0.2em] mb-4">Bid Log</p>
             <div className="flex-1 overflow-y-auto space-y-0.5">
               {auctionState.bidLog.length === 0 && (
