@@ -138,14 +138,16 @@ function parseName(fullName: string): { firstName: string; lastName: string } {
   return { firstName: parts.slice(0, -1).join(' '), lastName: parts[parts.length - 1] }
 }
 
-// Stable numeric ID from BBRef href + team abbr (djb2, range 100000–2099999)
+// Stable numeric ID from BBRef href + team abbr (djb2, range 100000000–2099999999).
+// Hash space is 2 billion to keep expected collisions < 0.1 for datasets up to 15k
+// player-team entries (the prior 2M range caused ~56 expected collisions per run).
 function stableId(href: string, team: string): number {
   const key = `${href}::${team}`
   let h = 5381
   for (let i = 0; i < key.length; i++) {
     h = ((h * 33) ^ key.charCodeAt(i)) >>> 0
   }
-  return (h % 2000000) + 100000
+  return (h % 2000000000) + 100000000
 }
 
 // Include all player-team stints regardless of games played.
@@ -295,8 +297,15 @@ async function main() {
     const apgs  = entries.map(p => p.careerAPG)
     const mpgs  = entries.map(p => p.careerMPG)
 
-    // Collect all wikiViews values (0 for players not yet fetched) for percentile calc
-    const views = entries.map(p => wikiViewsMap.get(p.name) ?? 0)
+    // Collect all wikiViews values (0 for players not yet fetched) for percentile calc.
+    // Use parseName to derive the lookup key — this matches the key format used when
+    // building wikiViewsMap from the DB (firstName + ' ' + lastName).  Without this,
+    // single-name players like Nene (DB key = "Nene Nene", p.name = "Nene") would
+    // miss their wikiViews and have them reset to 0 on every re-scrape.
+    const views = entries.map(p => {
+      const { firstName, lastName } = parseName(p.name)
+      return wikiViewsMap.get(`${firstName} ${lastName}`) ?? 0
+    })
 
     return entries.map((p, i) => {
       const gpScore  = invertedPct(games, p.totalGames)
